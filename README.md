@@ -11,7 +11,8 @@ Looking time and stimulus presentation script for PsychoPy.
 <li>If you do use it for a study that you then submit for publication, please cite <b>both PsychoPy and PyHab</b>. PyHab relies very heavily on PsychoPy (but is not directly affiliated with or developed by the makers of PsychoPy), so credit is due as much to them as it is to me.</li>
 </ul>
 <h2>"Installing" PyHab</h2>
-Working on it.
+<p>Simply download all of the files above (including DemoMaterials) into a single folder. Open the scripts in PsychoPy's coder view, and if you've downloaded everything you should be able to simply hit "run" and get a fully functional demo of either version.</p>
+<p>The upchime1.wav file is the only one that <b>MUST</b> always be in the same folder as the MovieStim script in order for the script to work. Future versions will hopefully change that.</p>
 <h2>Citing PyHab and PsychoPy</h2>
 <p>Note that I do not have a formal article for PyHab yet, but I may at some point in the future. For the time being, please cite the following:</p>
 <ul>
