@@ -20,13 +20,14 @@ maxOff = 2 #maximum number of consecutive seconds of offtime to end trial
 minOn = 1 #minimum on-time for a trial (seconds)
 prefix='PyHab' #prefix for data files. All data filenames will start with this text.
 habituationDesign = False #Habituation or familiarization? True = habituation design. False = familiarziation/VoE
-moviePath = '' #Folder where movie files can be located (if not in same folder as script)
+moviePath = 'DemoMaterials/' #Folder where movie files can be located (if not in same folder as script)
 habMovieNames = ['3x2_1_1_1','3x2_1_2_1','3x2_1_3_1'] #List of names of movies to be used during habituation, WITHOUT FILE EXTENSIONS. 
 testMovieNames = ['3x2_2_1_1', '3x2_2_2_1'] #names of files to be used during test.
 introMovieNames = [] #if there are intro movies other than the hab and test movies in a VoE design
 movieExt = '.mov' #File extension/movie type
 randPres=False #controls whether the program will look for an external randomization file to determine presentation order
 #If not, hab will present the first thing in each of the lists above, and VoE will just go through the lists in order
+condPath = 'DemoMaterials' #path for the condition file.
 condFile = 'finalCondListDNO.csv' #if you have a condition file, put filename here (WITH EXTENSION). Must be .csv
 condList = ['1','2','3'] #list of conditions for the dropdown menu, if using random presentation.
 #HABITUATION DESIGN SETTINGS
@@ -1121,7 +1122,7 @@ if startDlg.OK:
     ageDay = dayCount - DOB.day 
     #here is where we set the condition from a separate file that no human gets to see, disabled in demo mode
     if habituationDesign:
-        testReader=csv.reader(open(condFile, 'rU')) #if running from a cond list file, in format [1,2] hab,test
+        testReader=csv.reader(open(condPath+condFile, 'rU')) #if running from a cond list file, in format [1,2] hab,test
         testStuff=[]
         for row in testReader:
             testStuff.append(row)
