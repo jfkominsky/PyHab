@@ -5,10 +5,10 @@ Looking time and stimulus presentation script for PsychoPy.
 <p>I felt that it was time for an update, so I built a script that runs in PsychoPy (freely available from <a href="http://psychopy.org">psychopy.org</a>) that can both replace older looking-time coding software with something open-source, and also control stimulus presentation directly.</p>
 <h2>Important notes</h2>
 <ul>
-<li>PyHab is not a stand-alone program. It is a script that runs in PsychoPy.</li>
-<li>To make your own experiment in PsychoPy requires changing a few lines of options in the script. They are clearly marked and the manual explains everything they do, but don't expect a slick GUI for building experiments (yet, anyways)</li>
-<li>PyHab is still very much in development. Right now it can be used for habituation/dishabituation designs and some violation of expectation designs, but it is currently limited in a lot of ways. If there are things you need it to do that it currently can't do, let me know! Right now it is very specifically geared towards my own projects, but I would like to make it into a tool that is flexible enough to be used by anyone conducting this kind of study.</li>
-<li>If you do use it for a study that you then submit for publication, please cite <b>both PsychoPy and PyHab</b>. PyHab relies very heavily on PsychoPy (but is not directly affiliated with or developed by the makers of PsychoPy), so credit is due as much to them as it is to me.</li>
+<li>PyHab is not a stand-alone program. It is a script that runs in PsychoPy. You open the .py files in PsychoPy's coder view and run them from there.</li>
+<li>To make your own experiment in PyHab requires changing a few lines of options in the script. They are clearly marked and the manual explains everything they do, but don't expect a slick GUI for building experiments (yet, anyways)</li>
+<li>PyHab is still very much in development! Right now it can be used for habituation/dishabituation designs and some violation of expectation designs, but it is currently limited in a lot of ways. Don't be shy about contacting me for feature requests! Right now it is very specifically geared towards my own projects, but I would like to make it into a tool that is flexible enough to be used by anyone conducting this kind of research, because the field has needed a tool like this for a while.</li>
+<li>If you do use PyHab for a study that you then submit for publication, please cite <b>both PsychoPy and PyHab</b>. PyHab relies very heavily on PsychoPy (but is not directly affiliated with or developed by the makers of PsychoPy), so credit is due as much to them as it is to me.</li>
 </ul>
 <h2>"Installing" PyHab</h2>
 <p>Simply download all of the files above (including DemoMaterials) into a single folder. Open the scripts in PsychoPy's coder view, and if you've downloaded everything you should be able to simply hit "run" and get a fully functional demo of either version.</p>
