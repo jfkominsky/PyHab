@@ -57,8 +57,6 @@ badVerboseOn=[] #same as above but for bad trials
 badVerboseOff=[] #same as above but for bad trials
 badVerboseOn2=[]
 badVerboseOff2=[]
-endTrialSound=sound.Sound('A',octave=4, sampleRate=44100, secs=0.2, bits=8)
-endHabSound=sound.Sound('G',octave=4, sampleRate=44100, secs=0.2, bits=8)
 HeyListen=sound.Sound('upchime1.wav',secs=3) #will become attn-getter
 #It turns out the best way to get the status monitor and the stimuli to display on separate screens
 #is to have separate windows, now that pyglet deigns to behave.
@@ -242,7 +240,6 @@ def checkStop(onArray, offArray, trial, onArray2, offArray2):
             #end habituation and go to test
             for i in [0, 1, 2]:
                 core.wait(.25)
-                endHabSound.play()
             return True
         else:
             return False
@@ -587,7 +584,6 @@ def doTrial(number, type,disMovie):
         elif core.getTime() - startTrial >= maxDur: #reached max trial duration
             runTrial = False
             endTrial = core.getTime() - startTrial
-            endTrialSound.play()
             #determine if they were looking or not at end of trial and update appropriate array
             if gazeOn:
                 onDur = endTrial - startOn
@@ -603,7 +599,6 @@ def doTrial(number, type,disMovie):
                 #if they have previously looked for at least .5s and now looked away for 2 continuous sec
                 runTrial = False
                 endTrial = core.getTime() - startTrial
-                endTrialSound.play()
                 endOff = nowOff
                 offDur = nowOff - startOff
                 tempGazeArray = [number, type, startOff, endOff, offDur]
