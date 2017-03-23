@@ -1,4 +1,4 @@
-from psychopy import visual, event, core, data, gui, monitors, tools, sound
+from psychopy import visual, event, core, data, gui, monitors, tools, sound,logging
 import pyglet
 from pyglet import input as pyglet_input
 import wx, random, csv
@@ -21,7 +21,7 @@ minOn = 1 #minimum on-time for a trial (seconds)
 prefix='PyHab' #prefix for data files. All data filenames will start with this text.
 habituationDesign = False #Habituation or familiarization? True = habituation design. False = familiarziation/VoE
 moviePath = 'DemoMaterials/' #Folder where movie files can be located (if not in same folder as script)
-habMovieNames = ['3x2_1_1_1','3x2_1_2_1','3x2_1_3_1'] #List of names of movies to be used during habituation, WITHOUT FILE EXTENSIONS. 
+habMovieNames = ['babyLaugh','babyLaugh','3x2_1_2_1'] #List of names of movies to be used during habituation, WITHOUT FILE EXTENSIONS. 
 testMovieNames = ['3x2_2_1_1', '3x2_2_2_1'] #names of files to be used during test.
 introMovieNames = [] #if there are intro movies other than the hab and test movies in a VoE design
 movieExt = '.mov' #File extension/movie type
@@ -57,16 +57,17 @@ badVerboseOn=[] #same as above but for bad trials
 badVerboseOff=[] #same as above but for bad trials
 badVerboseOn2=[]
 badVerboseOff2=[]
+endTrialSound=sound.Sound('A',octave=4, sampleRate=44100, secs=0.2, bits=8)
+endHabSound=sound.Sound('G',octave=4, sampleRate=44100, secs=0.2, bits=8)
 HeyListen=sound.Sound('upchime1.wav',secs=3) #will become attn-getter
 #It turns out the best way to get the status monitor and the stimuli to display on separate screens
 #is to have separate windows, now that pyglet deigns to behave.
 statusOffset = 0
 statusOffsetY = 0
 testOffset = 0
-
+lastLog = logging.LogFile("lastRun.log", level=logging.INFO, filemode='w')
 frameCount = 0 #the frame counter for the movement of A and B, based on the refresh rate. 
 
-#Total movement should take 120fr + 20fr ISI
 '''
 FUNCTIONS
 '''
@@ -81,7 +82,7 @@ def abortTrial(onArray, offArray, trial, ttype, onArray2, offArray2): #the 2nd a
         sumOff = sumOff + offArray[j][4]
     sumOn2=0
     sumOff2=0
-    if len(onArray2) > 0:
+    if len(offArray2) > 0:
         for i in range(0,len(onArray2)):
                 sumOn2 = sumOn2 + onArray2[i][4]
         for j in range(0,len(offArray2)):
@@ -107,7 +108,7 @@ def dataRec(onArray,offArray,trial,type,onArray2,offArray2):
         sumOff = sumOff + offArray[j][4]
     sumOn2 = 0
     sumOff2 = 0
-    if len(onArray2)>0:
+    if len(offArray2)>0:
         for i in range(0,len(onArray2)):
             sumOn2 = sumOn2 + onArray2[i][4]
         for j in range(0,len(offArray2)):
@@ -167,7 +168,7 @@ def redoTrial(trialNum):
         else:
             l += 1
     #and then we need to look at the second coder too...
-    if len(verboseOn2) > 0:
+    if len(verboseOn2) > 0: 
         for i in range(0, len(verboseOn2)):
             if verboseOn2[i][0] == trialNum:
                 badVerboseOn2.append(verboseOn2[i])
@@ -201,7 +202,7 @@ def checkStop(onArray, offArray, trial, onArray2, offArray2):
         sumOff = sumOff + offArray[j][4]
     sumOn2 = 0
     sumOff2 = 0
-    if len(onArray2)>0:
+    if len(offArray2)>0:
         for i in range(0,len(onArray2)):
             sumOn2 = sumOn2 + onArray2[i][4]
         for j in range(0,len(offArray2)):
@@ -240,6 +241,7 @@ def checkStop(onArray, offArray, trial, onArray2, offArray2):
             #end habituation and go to test
             for i in [0, 1, 2]:
                 core.wait(.25)
+                #endHabSound.play()
             return True
         else:
             return False
@@ -311,31 +313,31 @@ def dispTrial(trialType,dispMovie):
     #now for the test trial display
     ISI = 20 #n frames between loops(if desired)
     if frameCount == 0: #initial setup
-        dispMovie.seek(frameCount) #unreliable!
         dispMovie.draw()
-        dispMovie.pause()
         frameCount+=1
-        win.flip()
         if trialType == 0:
             frameCount=0 # for attn-getter
+            dispMovie.pause(log=lastLog)
+        win.flip()
     elif frameCount == 1:
-        #print('playing')
-        dispMovie.play()        
+        print('playing')
+        dispMovie.play(log=lastLog)
         dispMovie.draw()
         frameCount+=1
         win.flip()
         if trialType == 0: #It's necessary to jump forward to play the movie for one frame before it can pause properly. 
             frameCount=0
-            dispMovie.pause()
+            dispMovie.pause(log=lastLog)
     elif frameCount>=(dispMovie.duration*60)-3 and frameCount < (dispMovie.duration*60)-3 + ISI: # we're staring counting from 0, so count num frames and subtract 2 to get second-to-last frame. -3 for safety in rounding.
-        dispMovie.pause()
+        dispMovie.pause(log=lastLog)
         dispMovie.draw() #might want to have it vanish rather than leave it on the screen for the ISI, in which case comment out this line.
         frameCount += 1
         win.flip()
     elif frameCount >= (dispMovie.duration*60)-3 + ISI:
         dispMovie.draw()
-        print('repeating at frame ' + str(frameCount))
-        frameCount = 0
+        print('repeating at frame ' + str(frameCount)) 
+        frameCount = 1
+        dispMovie.seek(0) #'seek' and 'play' have interesting interactions w/r/t audio. 
         win.flip()
     else:
         dispMovie.draw()
@@ -387,7 +389,8 @@ def doExperiment():
                     disMovie = testMovies[cond[1]]
         else: #VoE design
             disMovie=actualTrialOrder[trialNum-1]
-        disMovie.seek(0)
+        #disMovie.seek(0)
+        #disMovie.pause()
         while not keyboard[key.A]: #wait for 'ready' key, check at frame intervals
             statusSquareA.draw()
             readyText.text="No trial active" + rdyTextAppend
@@ -409,7 +412,7 @@ def doExperiment():
                 else:
                     for z in range(0,len(trialOrder)):
                         if trialOrder[z] == 3:
-                            trialType = actualTrialOrder[z]
+                            trialType = trialOrder[z]
                             trialNum = z
                             z=len(trialOrder)
                 rdyTextAppend = " NEXT: TEST TRIAL"
@@ -435,7 +438,7 @@ def doExperiment():
         win2.flip()
         attnGetter() #plays the attention-getter
         core.wait(.1) #this wait is important to make the attentiongetter not look like it is turning into the stimulus
-        frameCount=1
+        frameCount=0
         dispTrial(0,disMovie)
         core.wait(.2) #this delay ensures that the trial only starts after the images have appeared on the screen, static, for 200ms
         waitStart = True
@@ -477,7 +480,7 @@ def doExperiment():
                 else:
                     for z in range(0,len(trialOrder)):
                         if trialOrder[z] == 3:
-                            trialType = actualTrialOrder[z]
+                            trialType = trialOrder[z]
                             trialNum = z
                             z=len(trialOrder)
                 rdyTextAppend = " NEXT: TEST TRIAL"
@@ -485,7 +488,19 @@ def doExperiment():
                 trialType =1
                 rdyTextAppend = " NEXT: HAB TRIAL"
             else:
-                dispTrial(0,disMovie)
+                statusSquareA.fillColor='blue'
+                statusTextA.text="RDY"
+                statusSquareA.draw()
+                statusTextA.draw()
+                trialText.draw()
+                readyText.draw()
+                if verbose:
+                    statusSquareB.fillColor='blue'
+                    statusTextB.text="RDY"
+                    statusSquareB.draw()
+                    statusTextB.draw()
+                win2.flip() #flips the status screen without delaying the stimulus onset.
+                #dispTrial(0,disMovie)
         x = doTrial(trialNum, trialType,disMovie) #the actual trial, returning one of four status values at the end
         if x == 2: # end experiment, either due to final trial ending or 'end experiment altogether' button.
             runExp = False
@@ -503,7 +518,7 @@ def doExperiment():
             if habituationDesign:
                 trialType = 1
             else:
-                trialType = actualTrialOrder[trialNum-1]
+                trialType = trialOrder[trialNum-1]
                 if trialOrder[trialNum-1] == 3:
                     rdyTextAppend=" NEXT: TEST TRIAL"
             didRedo = False
@@ -517,6 +532,7 @@ def doTrial(number, type,disMovie):
     global frameCount
     frameCount = 0 #reset display
     #returns 0 if do next hab trial, 1 if do test trial, 2 if done test trial (or end experiment), 3 if abort/redo
+    disMovie.seek(0)
     startTrial = core.getTime()
     startTrial2=core.getTime()
     onArray = []
@@ -584,6 +600,7 @@ def doTrial(number, type,disMovie):
         elif core.getTime() - startTrial >= maxDur: #reached max trial duration
             runTrial = False
             endTrial = core.getTime() - startTrial
+            #endTrialSound.play()
             #determine if they were looking or not at end of trial and update appropriate array
             if gazeOn:
                 onDur = endTrial - startOn
@@ -599,6 +616,7 @@ def doTrial(number, type,disMovie):
                 #if they have previously looked for at least .5s and now looked away for 2 continuous sec
                 runTrial = False
                 endTrial = core.getTime() - startTrial
+                #endTrialSound.play()
                 endOff = nowOff
                 offDur = nowOff - startOff
                 tempGazeArray = [number, type, startOff, endOff, offDur]
@@ -654,6 +672,8 @@ def doTrial(number, type,disMovie):
     #print offArray
     #print onArray2
     #print offArray2
+    disMovie.seek(0) #this is the reset, we hope.
+    disMovie.pause(log=lastLog)
     statusSquareA.fillColor='black'
     statusSquareB.fillColor='black'
     statusTextA.text=""
@@ -698,7 +718,7 @@ def endExperiment(onArray, offArray, trial, onArray2, offArray2):
         sumOn = sumOn + onArray[i][4]
     for j in range(0,len(offArray)):
         sumOff = sumOff + offArray[j][4]
-    if len(onArray2)>0:
+    if len(offArray2)>0:
         for i in range(0,len(onArray2)):
             sumOn2 = sumOn2 + onArray2[i][4]
         for j in range(0,len(offArray2)):
@@ -712,7 +732,7 @@ def endExperiment(onArray, offArray, trial, onArray2, offArray2):
     #print verboseOn2
     #data format: snum, age in months, age in days, sex, condition, trial, GNGtrial, trial type, hab crit, on-time, number of gazes, off-time, number of look-offs
     #then same again at the end for b-coder?
-    tempData=[sNum, ageMo, ageDay, sex, cond, trial, 1, 2, habCrit, sumOn, len(onArray), sumOff, len(offArray),sumOn2,len(onArray2),sumOff2,len(offArray2)]
+    tempData=[sNum, ageMo, ageDay, sex, thisInfo[6], trial, 1, 2, habCrit, sumOn, len(onArray), sumOff, len(offArray),sumOn2,len(onArray2),sumOff2,len(offArray2)]
     #print tempData
     dataMatrix.append(tempData)
     #sort the data matrices and shuffle them together.
@@ -738,14 +758,14 @@ def endExperiment(onArray, offArray, trial, onArray2, offArray2):
         #on and off until we reach the end of a given trial, to reconstruct it.
         #at the start of each line, add information: sNum, ageMo, ageDay, sex, cond, GNG, ON/OFF
         for n in range(0, len(verboseOn)):
-            verboseOn[n][0:0]=[sNum, ageMo, ageDay, sex, cond,1,1]
+            verboseOn[n][0:0]=[sNum, ageMo, ageDay, sex, thisInfo[6],1,1]
         for m in range(0, len(verboseOff)):# adding the details to the verbose array
-            verboseOff[m][0:0]=[sNum, ageMo, ageDay, sex, cond,1,0]
+            verboseOff[m][0:0]=[sNum, ageMo, ageDay, sex, thisInfo[6],1,0]
         if len(badTrials)>0:
             for o in range(0,len(badVerboseOn)):
-                badVerboseOn[o][0:0]=[sNum, ageMo, ageDay, sex,cond,0,1]
+                badVerboseOn[o][0:0]=[sNum, ageMo, ageDay, sex,thisInfo[6],0,1]
             for p in range(0,len(badVerboseOff)):#same details for the bad trials
-                badVerboseOff[p][0:0]=[sNum, ageMo, ageDay, sex,cond,0,0]
+                badVerboseOff[p][0:0]=[sNum, ageMo, ageDay, sex,thisInfo[6],0,0]
         #read the final data matrix and go trial by trial.
         #print(verboseOn) #debug, to make sure verboseOn is being constructed correctly
         for q in range(0, len(dataMatrix)):
@@ -860,14 +880,14 @@ def endExperiment(onArray, offArray, trial, onArray2, offArray2):
         if verbose and len(verboseOn2)>0:
             verboseMatrix2 = []
             for n in range(0, len(verboseOn2)):
-                verboseOn2[n][0:0]=[sNum, ageMo, ageDay, sex, cond,1,1]
+                verboseOn2[n][0:0]=[sNum, ageMo, ageDay, sex, thisInfo[6],1,1]
             for m in range(0, len(verboseOff2)):
-                verboseOff2[m][0:0]=[sNum, ageMo, ageDay, sex, cond,1,0]
+                verboseOff2[m][0:0]=[sNum, ageMo, ageDay, sex, thisInfo[6],1,0]
             if len(badTrials)>0:
                 for o in range(0,len(badVerboseOn2)):
-                    badVerboseOn2[o][0:0]=[sNum, ageMo, ageDay, sex,cond,0,1]
+                    badVerboseOn2[o][0:0]=[sNum, ageMo, ageDay, sex,thisInfo[6],0,1]
                 for p in range(0,len(badVerboseOff2)):
-                    badVerboseOff2[p][0:0]=[sNum, ageMo, ageDay, sex,cond,0,0]
+                    badVerboseOff2[p][0:0]=[sNum, ageMo, ageDay, sex,thisInfo[6],0,0]
         #read the final data matrix and go trial by trial.
         #print(verboseOn) #debug, to make sure verboseOn is being constructed correctly
             for q in range(0, len(dataMatrix)):
@@ -1054,18 +1074,28 @@ def reliability(verboseMatrix, verboseMatrix2):
     stats.append(str(k))
     #Average Observer Agreement
     tg = 0
-    for i in range(0, dataMatrix[-1][5]):
-        a=0
-        d=0
-        for (m, l) in zip(timewarp, timewarp2):
-            if m[0]==i+1 and l[0]==i+1:
-                if m[1]==l[1]:
-                    a+=1
-                else:
-                    d+=1
-        tg=tg + float(a)/(a+d)
-    aoagreement=str(float(tg)/dataMatrix[-1][5])
-    stats.append(aoagreement)
+    if dataMatrix[-1][6] == 1: #make sure last trial is good
+        finalTrial = dataMatrix[-1][5]
+    else:
+        finalTrial = 0
+        for i in range(1,len(dataMatrix)):
+            if dataMatrix[-1*i][6]==1:
+                finalTrial = dataMatrix[-1*i][5]
+    if finalTrial > 0: #if there are NO good trials, well it's probably crashed already, but JIC
+        for i in range(0, dataMatrix[-1][5]): #need contingency if last trial is bad trial?
+            a=0
+            d=0
+            for (m, l) in zip(timewarp, timewarp2):
+                if m[0]==i+1 and l[0]==i+1:
+                    if m[1]==l[1]:
+                        a+=1
+                    else:
+                        d+=1
+            tg=tg + float(a)/(a+d)
+        aoagreement=str(float(tg)/dataMatrix[-1][5])
+        stats.append(aoagreement)
+    else:
+        stats.append('N/A')
     stats.append(r)
     return stats
 
@@ -1085,7 +1115,7 @@ startDlg.addField('Verbose data/multiple coders? ', choices=['Y','N'])
 startDlg.show()
 if startDlg.OK:
     win = visual.Window((1280.0,800.0),fullscr=False, screen=1,allowGUI=False, units='pix', rgb=[-1,-1,-1])
-    win2 = visual.Window((400,400),fullscr=False,screen=0,allowGUI=False,units='pix',waitBlanking=False, rgb=[-1,-1,-1])
+    win2 = visual.Window((400,400),fullscr=False,screen=0,allowGUI=True,units='pix',waitBlanking=False, rgb=[-1,-1,-1])
     thisInfo = startDlg.data
     sNum = thisInfo[0]
     sID = thisInfo[1]
