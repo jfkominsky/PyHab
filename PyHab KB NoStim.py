@@ -72,7 +72,7 @@ def abortTrial(onArray, offArray, trial, ttype, onArray2, offArray2): #the 2nd a
         sumOff = sumOff + offArray[j][4]
     sumOn2=0
     sumOff2=0
-    if len(onArray2) > 0:
+    if len(offArray2) > 0:
         for i in range(0,len(onArray2)):
                 sumOn2 = sumOn2 + onArray2[i][4]
         for j in range(0,len(offArray2)):
@@ -98,7 +98,7 @@ def dataRec(onArray,offArray,trial,type,onArray2,offArray2):
         sumOff = sumOff + offArray[j][4]
     sumOn2 = 0
     sumOff2 = 0
-    if len(onArray2)>0:
+    if len(offArray2)>0:
         for i in range(0,len(onArray2)):
             sumOn2 = sumOn2 + onArray2[i][4]
         for j in range(0,len(offArray2)):
@@ -192,7 +192,7 @@ def checkStop(onArray, offArray, trial, onArray2, offArray2):
         sumOff = sumOff + offArray[j][4]
     sumOn2 = 0
     sumOff2 = 0
-    if len(onArray2)>0:
+    if len(offArray2)>0:
         for i in range(0,len(onArray2)):
             sumOn2 = sumOn2 + onArray2[i][4]
         for j in range(0,len(offArray2)):
@@ -705,7 +705,7 @@ def endExperiment(onArray, offArray, trial, onArray2, offArray2):
         sumOn = sumOn + onArray[i][4]
     for j in range(0,len(offArray)):
         sumOff = sumOff + offArray[j][4]
-    if len(onArray2)>0:
+    if len(offArray2)>0:
         for i in range(0,len(onArray2)):
             sumOn2 = sumOn2 + onArray2[i][4]
         for j in range(0,len(offArray2)):
@@ -1061,18 +1061,28 @@ def reliability(verboseMatrix, verboseMatrix2):
     stats.append(str(k))
     #Average Observer Agreement
     tg = 0
-    for i in range(0, dataMatrix[-1][5]):
-        a=0
-        d=0
-        for (m, l) in zip(timewarp, timewarp2):
-            if m[0]==i+1 and l[0]==i+1:
-                if m[1]==l[1]:
-                    a+=1
-                else:
-                    d+=1
-        tg=tg + float(a)/(a+d)
-    aoagreement=str(float(tg)/dataMatrix[-1][5])
-    stats.append(aoagreement)
+    if dataMatrix[-1][6] == 1: #make sure last trial is good
+        finalTrial = dataMatrix[-1][5]
+    else:
+        finalTrial = 0
+        for i in range(1,len(dataMatrix)):
+            if dataMatrix[-1*i][6]==1:
+                finalTrial = dataMatrix[-1*i][5]
+    if finalTrial > 0: #if there are NO good trials, well it's probably crashed already, but JIC
+        for i in range(0, dataMatrix[-1][5]): #need contingency if last trial is bad trial?
+            a=0
+            d=0
+            for (m, l) in zip(timewarp, timewarp2):
+                if m[0]==i+1 and l[0]==i+1:
+                    if m[1]==l[1]:
+                        a+=1
+                    else:
+                        d+=1
+            tg=tg + float(a)/(a+d)
+        aoagreement=str(float(tg)/dataMatrix[-1][5])
+        stats.append(aoagreement)
+    else:
+        stats.append('N/A')
     stats.append(r)
     return stats
 
