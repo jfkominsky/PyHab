@@ -1,4 +1,4 @@
-from psychopy import visual, event, core, data, gui, monitors, tools, sound,logging
+from psychopy import visual, event, core, data, gui, monitors, tools, sound
 import pyglet
 from pyglet import input as pyglet_input
 import wx, random, csv
@@ -65,7 +65,6 @@ HeyListen=sound.Sound('upchime1.wav',secs=3) #will become attn-getter
 statusOffset = 0
 statusOffsetY = 0
 testOffset = 0
-lastLog = logging.LogFile("lastRun.log", level=logging.INFO, filemode='w')
 frameCount = 0 #the frame counter for the movement of A and B, based on the refresh rate. 
 
 '''
@@ -317,19 +316,19 @@ def dispTrial(trialType,dispMovie):
         frameCount+=1
         if trialType == 0:
             frameCount=0 # for attn-getter
-            dispMovie.pause(log=lastLog)
+            dispMovie.pause()
         win.flip()
     elif frameCount == 1:
         print('playing')
-        dispMovie.play(log=lastLog)
+        dispMovie.play()
         dispMovie.draw()
         frameCount+=1
         win.flip()
         if trialType == 0: #It's necessary to jump forward to play the movie for one frame before it can pause properly. 
             frameCount=0
-            dispMovie.pause(log=lastLog)
+            dispMovie.pause()
     elif frameCount>=(dispMovie.duration*60)-3 and frameCount < (dispMovie.duration*60)-3 + ISI: # we're staring counting from 0, so count num frames and subtract 2 to get second-to-last frame. -3 for safety in rounding.
-        dispMovie.pause(log=lastLog)
+        dispMovie.pause()
         dispMovie.draw() #might want to have it vanish rather than leave it on the screen for the ISI, in which case comment out this line.
         frameCount += 1
         win.flip()
@@ -673,7 +672,7 @@ def doTrial(number, type,disMovie):
     #print onArray2
     #print offArray2
     disMovie.seek(0) #this is the reset, we hope.
-    disMovie.pause(log=lastLog)
+    disMovie.pause()
     statusSquareA.fillColor='black'
     statusSquareB.fillColor='black'
     statusTextA.text=""
