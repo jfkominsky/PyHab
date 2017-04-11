@@ -14,7 +14,7 @@ Looking time and stimulus presentation script for PsychoPy.
 <p>Simply download all of the files above (including DemoMaterials) into a single folder. Open the scripts in PsychoPy's coder view, and if you've downloaded everything you should be able to simply hit "run" and get a fully functional demo of either version.</p>
 <p>The upchime1.wav file is the only one that <b>MUST</b> always be in the same folder as the MovieStim script in order for the script to work. Future versions will hopefully change that.</p>
 <p>For some movie files, you may need to have VLC media player installed on your computer, because PsychoPy uses some of its code to play movie files. VLC is free.</p>
-<p>As of March 23, 2017, there is an issue with movies that have an audio component that is due to a bug in PsychoPy itself that I cannot fix from the script. I have submitted a fix to the PsychoPy developers which has been merged, and should be part of the next release.</p>
+<p>NOTE: There is an audio bug in how PsychoPy presented movies that was fixed in release 1.85.1. If you use an earlier release of psychopy, there is chance that movies with audio will double up.</p>
 <h2>Citing PyHab and PsychoPy</h2>
 <p>Note that I do not have a formal article for PyHab yet, but I may at some point in the future. For the time being, please cite the following:</p>
 <ul>
