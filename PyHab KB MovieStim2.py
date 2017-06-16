@@ -333,9 +333,9 @@ def dispTrial(trialType,dispMovie):
         frameCount += 1
         win.flip()
     elif frameCount >= (dispMovie.duration*60)-3 + ISI:
-        dispMovie.draw()
+        dispMovie.draw() # Comment this out as well to blank between loops.
         print('repeating at frame ' + str(frameCount)) 
-        frameCount = 1
+        frameCount = 0 #changed to 0 to better enable studies that want to blank between trials
         dispMovie.seek(0) #'seek' and 'play' have interesting interactions w/r/t audio. 
         win.flip()
     else:
