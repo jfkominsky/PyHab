@@ -731,7 +731,11 @@ def endExperiment(onArray, offArray, trial, onArray2, offArray2):
     #print verboseOn2
     #data format: snum, age in months, age in days, sex, condition, trial, GNGtrial, trial type, hab crit, on-time, number of gazes, off-time, number of look-offs
     #then same again at the end for b-coder?
-    tempData=[sNum, ageMo, ageDay, sex, thisInfo[6], trial, 1, 2, habCrit, sumOn, len(onArray), sumOff, len(offArray),sumOn2,len(onArray2),sumOff2,len(offArray2)]
+    if habituationDesign:
+        type = 2
+    else:
+        type = 3
+    tempData=[sNum, ageMo, ageDay, sex, thisInfo[6], trial, 1, type, habCrit, sumOn, len(onArray), sumOff, len(offArray),sumOn2,len(onArray2),sumOff2,len(offArray2)]
     #print tempData
     dataMatrix.append(tempData)
     #sort the data matrices and shuffle them together.
