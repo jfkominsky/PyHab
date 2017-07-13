@@ -1126,7 +1126,7 @@ if startDlg.OK:
         else:
             monthCount = 12
     else:
-        dayCount = today.day
+        dayCount = DOT.day
         if DOT.month < DOB.month:
             monthCount = DOT.month + 12
         else:
