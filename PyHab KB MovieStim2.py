@@ -20,6 +20,7 @@ maxOff = 2 #maximum number of consecutive seconds of offtime to end trial
 minOn = 1 #minimum on-time for a trial (seconds)
 prefix='PyHab' #prefix for data files. All data filenames will start with this text.
 habituationDesign = False #Habituation or familiarization? True = habituation design. False = familiarziation/VoE
+blindPres = False
 moviePath = 'DemoMaterials/' #Folder where movie files can be located (if not in same folder as script)
 habMovieNames = ['babyLaugh','babyLaugh','3x2_1_2_1'] #List of names of movies to be used during habituation, WITHOUT FILE EXTENSIONS. 
 testMovieNames = ['3x2_2_1_1', '3x2_2_2_1'] #names of files to be used during test.
@@ -357,6 +358,7 @@ def doExperiment():
     trialNum = 1
     trialText.text="Trial no. " + str(trialNum)
     readyText.text="Before first trial"
+    rdyTextAppend=""
     trialText.draw()
     readyText.draw()
     win2.flip()
@@ -364,21 +366,25 @@ def doExperiment():
     if habituationDesign:
         if maxHabTrials > 0:
             trialType = 1 #here is where we must set trial type, if there are hab trials start with hab, if not goto test
-            rdyTextAppend=" NEXT: HAB TRIAL"
+            if not blindPres:
+                rdyTextAppend=" NEXT: HAB TRIAL"
         else:
             trialType = 2
-            rdyTextAppend=" NEXT: TEST TRIAL"
+            if not blindPres:
+                rdyTextAppend=" NEXT: TEST TRIAL"
     else:
         trialType = trialOrder[0]
         disMovie= actualTrialOrder[0]
-        if trialOrder[0] == 1:
-            rdyTextAppend=" NEXT: INTRO TRIAL"
-        elif trialOrder[0] == 2:
-            rdyTextAppend=" NEXT: FAM TRIAL"
-        elif trialOrder[0] == 3:
-            rdyTextAppend=" NEXT: TEST TRIAL"
+        if not blindPres:
+            if trialOrder[0] == 1:
+                rdyTextAppend=" NEXT: INTRO TRIAL"
+            elif trialOrder[0] == 2:
+                rdyTextAppend=" NEXT: FAM TRIAL"
+            elif trialOrder[0] == 3:
+                rdyTextAppend=" NEXT: TEST TRIAL"
     didRedo = False
     while runExp:
+        trialText.text="Trial no. " + str(trialNum)
         statusSquareA.fillColor='black'
         statusSquareB.fillColor='black'
         #select movie for trial
@@ -421,10 +427,12 @@ def doExperiment():
                             trialType = trialOrder[z]
                             trialNum = z
                             z=len(trialOrder)
-                rdyTextAppend = " NEXT: TEST TRIAL"
+                if not blindPres:
+                    rdyTextAppend = " NEXT: TEST TRIAL"
             elif trialType == 2 and keyboard[key.I] and habituationDesign: #insert additional hab trial
                 trialType =1
-                rdyTextAppend = " NEXT: HAB TRIAL"
+                if not blindPres:
+                    rdyTextAppend = " NEXT: HAB TRIAL"
             win2.flip()
         frameCount = 0
         #framerate = win.getActualFrameRate() 
@@ -489,10 +497,12 @@ def doExperiment():
                             trialType = trialOrder[z]
                             trialNum = z
                             z=len(trialOrder)
-                rdyTextAppend = " NEXT: TEST TRIAL"
+                if not blindPres:
+                    rdyTextAppend = " NEXT: TEST TRIAL"
             elif trialType == 2 and keyboard[key.I] and habituationDesign: #insert additional hab trial
                 trialType =1
-                rdyTextAppend = " NEXT: HAB TRIAL"
+                if not blindPres:
+                    rdyTextAppend = " NEXT: HAB TRIAL"
             else:
                 statusSquareA.fillColor='blue'
                 statusTextA.text="RDY"
@@ -517,7 +527,8 @@ def doExperiment():
         elif x == 1: #goto test trial
             trialNum += 1
             trialType = 2
-            rdyTextAppend=" NEXT: TEST TRIAL"
+            if not blindPres:
+                rdyTextAppend=" NEXT: TEST TRIAL"
             didRedo = False
         elif x == 0: #continue hab
             trialNum += 1
@@ -525,7 +536,7 @@ def doExperiment():
                 trialType = 1
             else:
                 trialType = trialOrder[trialNum-1]
-                if trialOrder[trialNum-1] == 3:
+                if trialOrder[trialNum-1] == 3 and not blindPres:
                     rdyTextAppend=" NEXT: TEST TRIAL"
             didRedo = False
 
