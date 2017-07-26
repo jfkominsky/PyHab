@@ -749,9 +749,10 @@ def endExperiment(onArray, offArray, trial, type, onArray2, offArray2):
     #print verboseOn2
     #data format: snum, age in months, age in days, sex, condition, trial, GNGtrial, trial type, hab crit, on-time, number of gazes, off-time, number of look-offs
     #then same again at the end for b-coder?
-    tempData=[sNum, ageMo, ageDay, sex, cond, trial, 1, type, habCrit, sumOn, len(onArray), sumOff, len(offArray),sumOn2,len(onArray2),sumOff2,len(offArray2)]
-    #print tempData
-    dataMatrix.append(tempData)
+    if sumOn > 0: #Only add another item to the list if there's a real trial to add!
+        tempData=[sNum, ageMo, ageDay, sex, cond, trial, 1, type, habCrit, sumOn, len(onArray), sumOff, len(offArray),sumOn2,len(onArray2),sumOff2,len(offArray2)]
+        #print tempData
+        dataMatrix.append(tempData)
     #sort the data matrices and shuffle them together.
     if len(badTrials) > 0: #if there are any redos, they need to be shuffled in appropriately. 
         for i in range(0,len(badTrials)):
