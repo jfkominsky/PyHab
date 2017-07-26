@@ -731,9 +731,10 @@ def endExperiment(onArray, offArray, trial, type, onArray2):
     #print verboseOn2
     #data format: snum, age in months, age in days, sex, condition, trial, GNGtrial, trial type, hab crit, on-timeL, number of gazesL, on-timeR, number of gazesR,
     #off-time, number of looks away altogether
-    tempData=[sNum, ageMo, ageDay, sex, cond, trial, 1, type, habCrit, sumOn, len(onArray),sumOn2,len(onArray2),sumOff,len(offArray)]
-    #print tempData
-    dataMatrix.append(tempData)
+    if sumOn >0 or sumOn2>0: #only if there is data in the final trial.
+        tempData=[sNum, ageMo, ageDay, sex, cond, trial, 1, type, habCrit, sumOn, len(onArray),sumOn2,len(onArray2),sumOff,len(offArray)]
+        #print tempData
+        dataMatrix.append(tempData)
     #sort the data matrices and shuffle them together.
     #print('last trial added')
     if len(badTrials) > 0: #if there are any redos, they need to be shuffled in appropriately. 

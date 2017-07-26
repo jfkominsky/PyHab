@@ -411,15 +411,15 @@ def doExperiment():
             if verbose:
                 statusSquareB.draw()
             if keyboard[key.Y]:
-                endExperiment([[0,0,0,0,0]],[[0,0,0,0,0]],trialNum,[],[]) #takes a bunch of arrays so we feed it blanks
+                endExperiment([[0,0,0,0,0]],[[0,0,0,0,0]],trialNum,trialType,[],[]) #takes a bunch of arrays so we feed it blanks
                 core.quit()
             elif keyboard[key.R] and not didRedo:
                 if trialNum >1:
                     trialNum -= 1
                 redoTrial(trialNum)
                 didRedo = True
-            elif keyboard[key.J] and not trialType == 2: #jump to test
-                if habituationDesign:
+            elif keyboard[key.J]: #jump to test
+                if habituationDesign and not trialType == 2:
                     trialType = 2
                 else:
                     for z in range(0,len(trialOrder)):
@@ -458,7 +458,7 @@ def doExperiment():
         waitStart = True
         while waitStart:
             if keyboard[key.Y]: #End experiment right there and then.
-                endExperiment([[0,0,0,0,0]],[[0,0,0,0,0]],trialNum,[],[]) 
+                endExperiment([[0,0,0,0,0]],[[0,0,0,0,0]],trialNum,trialType,[],[]) 
                 core.quit()
             elif keyboard[key.A]:
                 attnGetter()
@@ -716,17 +716,17 @@ def doTrial(number, type,disMovie):
             dataRec(onArray, offArray, number, type, onArray2, offArray2)
             return 1
         else: #should only be tripped on a (the last) test trial, or occasionally on the 'kill the whole experiment' button
-            endExperiment(onArray, offArray, number, onArray2, offArray2)
+            endExperiment(onArray, offArray, number, type,onArray2, offArray2)
             return 2
     elif not habituationDesign: #for VoE designs
         if number >= len(trialOrder):
-            endExperiment(onArray, offArray, number, onArray2, offArray2)
+            endExperiment(onArray, offArray, number,type, onArray2, offArray2)
             return 2
         else:
             dataRec(onArray, offArray, number, type, onArray2, offArray2)
             return 0 #with a set order, it doesn't really matter!
 
-def endExperiment(onArray, offArray, trial, onArray2, offArray2):
+def endExperiment(onArray, offArray, trial, type, onArray2, offArray2):
     sumOn = 0
     sumOff = 0
     sumOn2 = 0
@@ -749,10 +749,6 @@ def endExperiment(onArray, offArray, trial, onArray2, offArray2):
     #print verboseOn2
     #data format: snum, age in months, age in days, sex, condition, trial, GNGtrial, trial type, hab crit, on-time, number of gazes, off-time, number of look-offs
     #then same again at the end for b-coder?
-    if habituationDesign:
-        type = 2
-    else:
-        type = 3
     tempData=[sNum, ageMo, ageDay, sex, cond, trial, 1, type, habCrit, sumOn, len(onArray), sumOff, len(offArray),sumOn2,len(onArray2),sumOff2,len(offArray2)]
     #print tempData
     dataMatrix.append(tempData)
