@@ -12,6 +12,7 @@ from datetime import *
 #presentation can be swapped in and still have the trial autoadvance appropriately.
 #Keyboard coding: A = ready, B = coder 1 on, L = coder 2 on, F = abort trial, Y = end experiment (for fussouts)
 #Other keyboard commands: R = redo previous trial, J = jump to test trial, I = insert additional habituation trial
+# P = print last trial. Similar to Xhab's "review" function.
 
 #Xhab-like data output, to csv: Subject no, age, condition, trial, trialtype, hab crit, ontime, [ontime2,] offtime, [offtime2,]
 
@@ -22,10 +23,14 @@ maxDur = 60 #maximum number of seconds in a trial
 maxOff = 2 #maximum number of consecutive seconds of offtime to end trial
 minOn = 1 #minimum on-time for a trial (seconds)
 prefix='PyHab'
-habituationDesign = True #Habituation or familiarization? True = habituation design. False = familiarziation/VoE, no hab criterion will be set.
+habituationDesign = False #Habituation or familiarization? True = habituation design. False = familiarziation/VoE, no hab criterion will be set.
 maxHabTrials = 14 #number of habituation trials, or familiarization trials if not a hab design.
 numTestTrials = 1 #number of test trials (must be at least 1)
-trialOrder = [2,2,2,2,3,3] #VoE order, 1=intro, 2=familiarization, 3=test.
+trialOrder = ['A','A','B','B','C','C'] #VoE order, 1=intro, 2=familiarization, 3=test. For the purposes of nostim, this could be arbitrary info.
+randPres = False # If you want to use a condition file to fill in the trial types
+condList = [] #If randPres is true, put the list of conditions for the drop-down menu here.
+condFile=".csv" #Name of condition file.
+blindPres = False #If true, presenter only sees trial number, not trial type.
 
 '''
 END SETTINGS
@@ -371,6 +376,7 @@ def doExperiment():
     trialNum = 1
     trialText.text="Trial no. " + str(trialNum)
     readyText.text="Before first trial"
+    rdyTextAppend =""
     trialText.draw()
     readyText.draw()
     win2.flip()
@@ -378,27 +384,25 @@ def doExperiment():
     if habituationDesign:
         if maxHabTrials > 0:
             trialType = 1 #here is where we must set trial type, if there are hab trials start with hab, if not goto test
-            rdyTextAppend=" NEXT: HAB TRIAL"
+            if not blindPres:
+                rdyTextAppend=" NEXT: HAB TRIAL"
         else:
             trialType = 2
-            rdyTextAppend=" NEXT: TEST TRIAL"
+            if not blindPres:
+                rdyTextAppend=" NEXT: TEST TRIAL"
     else:
         trialType = trialOrder[0]
-        if trialOrder[0] == 1:
-            rdyTextAppend=" NEXT: INTRO TRIAL"
-        elif trialOrder[0] == 2:
-            rdyTextAppend=" NEXT: FAM TRIAL"
-        elif trialOrder[0] == 3:
-            rdyTextAppend=" NEXT: TEST TRIAL"
+        if not blindPres:
+            rdyTextAppend = " NEXT TRIAL TYPE: " + str(trialType)
     didRedo = False
     while runExp:
+        reviewed=False
         statusSquareA.fillColor='black'
         statusSquareB.fillColor='black'
+        trialText.text="Trial no. " + str(trialNum)
         while not keyboard[key.A]: #wait for 'ready' key, check at frame intervals
             statusSquareA.draw()
             readyText.text="No trial active" + rdyTextAppend
-            trialText.draw()
-            readyText.draw()
             if verbose:
                 statusSquareB.draw()
             if keyboard[key.Y]:
@@ -409,19 +413,31 @@ def doExperiment():
                     trialNum -= 1
                 redoTrial(trialNum)
                 didRedo = True
-            elif keyboard[key.J] and not trialType == 2: #jump to test
-                if habituationDesign:
+            elif keyboard[key.J]: #jump to test
+                if habituationDesign and not trialType == 2:
                     trialType = 2
-                else:
-                    for z in range(0,len(trialOrder)):
-                        if trialOrder[z] == 3:
-                            trialType = trialOrder[z]
-                            trialNum = z
-                            z=len(trialOrder)
-                rdyTextAppend = " NEXT: TEST TRIAL"
+                    if not blindPres:
+                        rdyTextAppend = " NEXT: TEST TRIAL"
+                        readyText.text="No trial active" + rdyTextAppend
+#                elif not habituationDesign:
+#                    for z in range(0,len(trialOrder)):
+#                        if trialOrder[z] == 3:
+#                            trialType = trialOrder[z]
+#                            trialNum = z
+#                            z=len(trialOrder)
             elif trialType == 2 and keyboard[key.I] and habituationDesign: #insert additional hab trial
                 trialType =1
-                rdyTextAppend = " NEXT: HAB TRIAL"
+                if not blindPres:
+                    rdyTextAppend = " NEXT: HAB TRIAL"
+                    readyText.text="No trial active" + rdyTextAppend
+            elif keyboard[key.P] and trialNum > 1 and not reviewed: #review last trial
+                reviewed = True
+                print("hab crit, on-timeA, numOnA, offtimeA, numOffA, onTimeB, numOnB, offTimeB, numOffB")
+                print("-------------------------------------------------------------------------------------------")
+                for i in range(0, len(dataMatrix)):
+                    print(dataMatrix[i][8:])
+            trialText.draw()
+            readyText.draw()
             win2.flip()
         frameCount = 0
         #framerate = win.getActualFrameRate() 
@@ -476,19 +492,21 @@ def doExperiment():
                     trialNum -= 1
                 redoTrial(trialNum)
                 didRedo = True
-            elif keyboard[key.J] and not trialType == 2: #jump to test
-                if habituationDesign:
+            elif keyboard[key.J]: #jump to test
+                if habituationDesign and not trialType == 2:
                     trialType = 2
-                else:
-                    for z in range(0,len(trialOrder)):
-                        if trialOrder[z] == 3:
-                            trialType = trialOrder[z]
-                            trialNum = z
-                            z=len(trialOrder)
-                rdyTextAppend = " NEXT: TEST TRIAL"
+                    if not blindPres:
+                        rdyTextAppend = " NEXT: TEST TRIAL"
+#                else:
+#                    for z in range(0,len(trialOrder)):
+#                        if trialOrder[z] == 3:
+#                            trialType = trialOrder[z]
+#                            trialNum = z
+#                            z=len(trialOrder)
             elif trialType == 2 and keyboard[key.I] and habituationDesign: #insert additional hab trial
                 trialType =1
-                rdyTextAppend = " NEXT: HAB TRIAL"
+                if not blindPres:
+                    rdyTextAppend = " NEXT: HAB TRIAL"
             else:
                 dispTrial(0)
         x = doTrial(trialNum, trialType) #the actual trial, returning one of four status values at the end
@@ -500,8 +518,10 @@ def doExperiment():
             didRedo = True
         elif x == 1: #goto test trial
             trialNum += 1
-            trialType = 2
-            rdyTextAppend=" NEXT: TEST TRIAL"
+            if habituationDesign:
+                trialType = 2 
+                if not blindPres:
+                    rdyTextAppend=" NEXT: TEST TRIAL"
             didRedo = False
         elif x == 0: #continue hab
             trialNum += 1
@@ -509,8 +529,8 @@ def doExperiment():
                 trialType = 1
             else:
                 trialType = trialOrder[trialNum-1]
-                if trialOrder[trialNum-1] == 3:
-                    rdyTextAppend=" NEXT: TEST TRIAL"
+                if  not blindPres:
+                    rdyTextAppend=" NEXT TRIAL TYPE: " + str(trialType)
             didRedo = False
 
 
@@ -1098,8 +1118,10 @@ startDlg.addField('sex: ')
 startDlg.addField('DOB(month): ')
 startDlg.addField('DOB(day): ')
 startDlg.addField('DOB(year): ')
-#startDlg.addField('Cond: ', choices=['C1t3LR','C1t3RL','C3t1LR','C3t1RL','D1t3LR','D1t3RL','D3t1LR','D3t1RL'])
-startDlg.addField('Cond: ')
+if randPres:
+    startDlg.addField('Cond: ', choices=condList)
+else:
+    startDlg.addField('Cond: ')
 startDlg.addField('Verbose data/multiple coders? ', choices=['Y','N'])
 startDlg.addField('Run date(month): ')
 startDlg.addField('Run date(day): ')
@@ -1135,14 +1157,19 @@ if startDlg.OK:
         monthCount += 12*(DOT.year-DOB.year)
     ageMo = monthCount - DOB.month
     ageDay = dayCount - DOB.day 
-    #here is where we set the condition from a separate file that no human gets to see, disabled in demo mode
-#    testReader=csv.reader(open('finalCondListDNO.csv'))
-#    testStuff=[]
-#    for row in testReader:
-#        testStuff.append(row)
-#    testDict = dict(testStuff)
-#    cond = testDict[thisInfo[6]]
-    cond=thisInfo[6]
+    #here is where we set the condition from a separate file that no human gets to see
+    if randPres:
+        testReader=csv.reader(open(condFile, 'rU'))
+        testStuff=[]
+        for row in testReader:
+            testStuff.append(row)
+        testDict = dict(testStuff)
+        trialOrder = testDict[thisInfo[6]]
+        trialOrder = eval(cond)
+        cond = thisInfo[6] #in theory this should allow you to select a condition and have the name of the condition in the "condition" field,
+        #But each trial in that condition appear in the trial type field.
+    else:
+        cond=thisInfo[6] #In this case trial type is set above.
     verbose = thisInfo[7]
     #notably, using pygame here breaks visual.TextStim, so your text need to be in some other format if you are
     #presenting text-based stimuli (which you almost never will be)
