@@ -33,10 +33,10 @@ prefix='PyHab'
 habituationDesign = True #Habituation or familiarization? True = habituation design. False = familiarziation/VoE, no hab criterion will be set.
 maxHabTrials = 14 #number of habituation trials, or familiarization trials if not a hab design.
 numTestTrials = 4 #number of test trials (must be at least 1)
-trialOrder = [2,2,2,2,3,3] #VoE order, 1=intro, 2=familiarization, 3=test. In NoStim this can be arbitrary text and will appear in the "trial type" field.
+trialOrder = ['A','A','B','B','C','C'] #VoE order, 1=intro, 2=familiarization, 3=test. For the purposes of nostim, this could be arbitrary info.
 randPres = False # If you want to use a condition file to fill in the trial types
-condList = [] #If randPres is true, put the list of conditions for the drop-down menu here.
-condFile=".csv" #Name of condition file.
+condList = ['Order 1','Order 2','Order 3'] #If randPres is true, put the list of conditions for the drop-down menu here.
+condFile="DemoCondList.csv" #Name of condition file.
 blindPres = False #If true, presenter only sees trial number, not trial type.
 
 '''
@@ -1115,7 +1115,7 @@ if startDlg.OK:
             testStuff.append(row)
         testDict = dict(testStuff)
         trialOrder = testDict[thisInfo[6]]
-        trialOrder = eval(cond)
+        trialOrder = eval(trialOrder)
         cond = thisInfo[6] #in theory this should allow you to select a condition and have the name of the condition in the "condition" field,
         #But each trial in that condition appear in the trial type field.
     else:
@@ -1126,7 +1126,7 @@ if startDlg.OK:
     #create a window to draw in. The window needs to be as small as possible while extending over two screens or the framerate tanks.
    #win = visual.Window((1280.0,800.0),fullscr=False, screen=1,allowGUI=False, units='pix', rgb=[-1,-1,-1],
    #     winType=joystick.backend)#as of v1.72.00 you need the winType and joystick.backend to match
-    win2 = visual.Window((400,400),fullscr=False,screen=0,allowGUI=False,units='pix',waitBlanking=False, rgb=[-1,-1,-1])
+    win2 = visual.Window((400,400),fullscr=False,screen=0,allowGUI=True,units='pix',waitBlanking=False, rgb=[-1,-1,-1])
     key=pyglet.window.key
     keyboard = key.KeyStateHandler()
     #win.winHandle.push_handlers(keyboard)
