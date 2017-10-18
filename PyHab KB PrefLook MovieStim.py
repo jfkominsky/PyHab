@@ -256,6 +256,7 @@ def dispTrial(trialType,dispMovie):
     #display loops. Test trial needs to know condition, but more importantly needs to know test vs. hab. 
     #but hab needs to know cause v. noncause. Start with cause alone.
     global frameCount
+    global pauseCount
     global locAx
     global locBx
     #first, let's just get the status squares out of the way.
@@ -1191,7 +1192,7 @@ if startDlg.OK:
                 lastTest += 1
                 if lastTest >= len(testMovieNames):
                     lastTest = 0
-            print 'trial # %.2fs loaded' %(i)
+            print 'trial # %.2fs loaded' %(i+1)
     verbose = thisInfo[7]
     key=pyglet.window.key
     keyboard = key.KeyStateHandler()

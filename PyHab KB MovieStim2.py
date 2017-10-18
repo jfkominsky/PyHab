@@ -1245,7 +1245,7 @@ if startDlg.OK:
                 lastTest += 1
                 if lastTest >= len(testMovieNames):
                     lastTest = 0
-            print 'trial # %.2fs loaded' %(i)
+            print 'trial # %.2fs loaded' %(i+1)
     verbose = thisInfo[7]
     key=pyglet.window.key
     keyboard = key.KeyStateHandler()
