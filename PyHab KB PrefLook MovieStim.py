@@ -26,6 +26,9 @@ habMovieNames = ['babyLaugh','babyLaugh','3x2_1_2_1'] #List of names of movies t
 testMovieNames = ['3x2_2_1_1', '3x2_2_2_1'] #names of files to be used during test.
 introMovieNames = [] #if there are intro movies other than the hab and test movies in a VoE design
 movieExt = '.mov' #File extension/movie type
+screenWidth = 1280 #Display screen width, in pixels
+screenHeight = 800 #Display screen height, in pixels
+ISI=.5 #time between loops (in seconds, if desired)
 randPres=False #controls whether the program will look for an external randomization file to determine presentation order
 #If not, hab will present the first thing in each of the lists above, and VoE will just go through the lists in order
 condPath = 'DemoMaterials/' #path for the condition file.
@@ -65,6 +68,7 @@ statusOffset = 0
 statusOffsetY = 0
 testOffset = 0
 frameCount = 0 #the frame counter for the movement of A and B, based on the refresh rate. 
+pauseCount = 0 #for ISIs
 
 '''
 FUNCTIONS
@@ -212,7 +216,7 @@ def checkStop(onArray, offArray, trial, onArray2):
             #end habituation and go to test
             for i in [0, 1, 2]:
                 core.wait(.25)
-                endHabSound.play()
+                #endHabSound.play()
             return True
         else:
             return False
@@ -281,7 +285,6 @@ def dispTrial(trialType,dispMovie):
     statusTextB.draw()
     win2.flip() #flips the status screen without delaying the stimulus onset.
     #now for the test trial display
-    ISI = 20 #n frames between loops(if desired)
     if frameCount == 0: #initial setup
         dispMovie.draw()
         frameCount+=1
@@ -298,16 +301,18 @@ def dispTrial(trialType,dispMovie):
         if trialType == 0: #It's necessary to jump forward to play the movie for one frame before it can pause properly. 
             frameCount=0
             dispMovie.pause()
-    elif frameCount>=(dispMovie.duration*60)-3 and frameCount < (dispMovie.duration*60)-3 + ISI: # we're staring counting from 0, so count num frames and subtract 2 to get second-to-last frame. -3 for safety in rounding.
+    elif dispMovie.getCurrentFrameTime() >= dispMovie.duration-.05 and pauseCount<ISI*60: #pause, check for ISI.
         dispMovie.pause()
         dispMovie.draw() #might want to have it vanish rather than leave it on the screen for the ISI, in which case comment out this line.
         frameCount += 1
+        pauseCount += 1
         win.flip()
-    elif frameCount >= (dispMovie.duration*60)-3 + ISI:
-        dispMovie.draw() # Comment this out as well to blank between loops.
-        print('repeating at frame ' + str(frameCount)) 
+    elif pauseCount >= ISI*60:
+        print('repeating at ' + str(dispMovie.getCurrentFrameTime())) 
         frameCount = 0 #changed to 0 to better enable studies that want to blank between trials
-        dispMovie.seek(0) #'seek' and 'play' have interesting interactions w/r/t audio. 
+        pauseCount = 0
+        dispMovie.seek(0.01) #'seek' and 'play' have interesting interactions w/r/t audio. 
+        dispMovie.draw() # Comment this out as well to blank between loops.
         win.flip()
     else:
         dispMovie.draw()
@@ -342,7 +347,6 @@ def doExperiment():
                 rdyTextAppend=" NEXT: TEST TRIAL"
     else:
         trialType = trialOrder[0]
-        disMovie= actualTrialOrder[0]
         if not blindPres:
             if trialOrder[0] == 1:
                 rdyTextAppend=" NEXT: INTRO TRIAL"
@@ -357,19 +361,7 @@ def doExperiment():
         statusSquareA.fillColor='black'
         statusSquareB.fillColor='black'
         #select movie for trial
-        if habituationDesign:
-            if trialType == 1: 
-                disMovie = habMovies[cond[0]-1]
-            elif trialType == 2:
-                if cond[1] >=0:
-                    disMovie = testMovies[cond[1]-1]
-                else:
-                    disMovie = testMovies[currTestTrial]
-                    currTestTrial += 1
-                    if currTestTrial == len(testMovies):
-                        currTestTrial = 0
-        else: #VoE design
-            disMovie=actualTrialOrder[trialNum-1]
+        disMovie=actualTrialOrder[trialNum-1]
         #disMovie.seek(0)
         #disMovie.pause()
         while not keyboard[key.A]: #wait for 'ready' key, check at frame intervals
@@ -601,7 +593,7 @@ def doTrial(number, type,disMovie):
         elif core.getTime() - startTrial >= maxDur: #reached max trial duration
             runTrial = False
             endTrial = core.getTime() - startTrial
-            endTrialSound.play()
+            #endTrialSound.play()
             #determine if they were looking or not at end of trial and update appropriate array
             if gazeOn:
                 onDur = endTrial - startOn
@@ -621,7 +613,7 @@ def doTrial(number, type,disMovie):
                 #if they have previously looked for at least 1s and now looked away for 2 continuous sec
                 runTrial = False
                 endTrial = core.getTime() - startTrial
-                endTrialSound.play()
+                #endTrialSound.play()
                 endOff = nowOff
                 offDur = nowOff - startOff
                 tempGazeArray = [number, type, startOff, endOff, offDur]
@@ -1065,6 +1057,13 @@ def reliability(verboseMatrix, verboseMatrix2):
     stats.append(r)
     return stats
 
+def isInt(t): #silly little function for validating a very narrow usage of "cond" field
+    try:
+        int(t)
+        return True
+    except ValueError:
+        return False
+
 startDlg = gui.Dlg(title=prefix + ' Movie Presentation Experiment')
 startDlg.addText('Subject info')
 startDlg.addField('Subject Number: ')
@@ -1080,7 +1079,7 @@ else:
 startDlg.addField('Verbose data/multiple coders? ', choices=['Y','N'])
 startDlg.show()
 if startDlg.OK:
-    win = visual.Window((1280.0,800.0),fullscr=False, screen=1,allowGUI=False, units='pix', rgb=[-1,-1,-1])
+    win = visual.Window((screenWidth,screenHeight),fullscr=False, screen=1,allowGUI=False, units='pix', rgb=[-1,-1,-1])
     win2 = visual.Window((400,400),fullscr=False,screen=0,allowGUI=True,units='pix',waitBlanking=False, rgb=[-1,-1,-1])
     thisInfo = startDlg.data
     sNum = thisInfo[0]
@@ -1112,7 +1111,11 @@ if startDlg.OK:
     ageMo = monthCount - DOB.month
     ageDay = dayCount - DOB.day 
     #here is where we set the condition from a separate file that no human gets to see, disabled in demo mode
-    if habituationDesign:
+    actualTrialOrder=[]
+    lastFam = 0
+    lastTest = 0
+    lastIntro = 0
+    if habituationDesign: #both designs (hab and VOE) now use the same basic strategy of loading separate movies for each trial. More RAM, but more reliable
         if randPres:
             testReader=csv.reader(open(condPath+condFile, 'rU')) #if running from a cond list file, in format [1,2] hab,test
             testStuff=[]
@@ -1121,30 +1124,27 @@ if startDlg.OK:
             testDict = dict(testStuff)
             cond = testDict[thisInfo[6]] 
             cond=eval(cond)
+            cond[0] = cond[0] -1 #correct appropriately for array index.
+            cond[1] = cond[1] - 1
         else:
-            cond=[eval(thisInfo[6]),-1] #Assuming multiple test trials with different content, this expects only a selection of the hab movie.
-        if len(introMovieNames) > 0:
-            introMovies=[]
-            for k in range(0, len(introMovieNames)):
-                tempMovie = visual.MovieStim3(win, moviePath+introMovieNames[k]+movieExt, flipHoriz=False, flipVert=False, loop=False)
-                introMovies.append(tempMovie)
-                print 'duration=%.2fs' %(tempMovie.duration)
-        habMovies = [] #array of moviestim objects for the hab trials
-        #For stupid reasons, you need to have two separate movie objects or python breaks. So, whichever hab movie
-        #is specified, load that twice.
-        for i in range(0, len(habMovieNames)): #preload the hab movies
-            tempMovie = visual.MovieStim3(win, moviePath+habMovieNames[i]+movieExt, flipHoriz=False, flipVert=False, loop=False)
-            habMovies.append(tempMovie)
-            print 'duration=%.2fs' %(tempMovie.duration)
-        testMovies = []
-        for j in range(0, len(testMovieNames)): #preload all the test movies
-            tempMovie = visual.MovieStim3(win, moviePath+testMovieNames[j]+movieExt, flipHoriz=False, flipVert=False, loop=False)
-            testMovies.append(tempMovie)
+            if isInt(thisInfo[6]) and int(thisInfo[6])-1 < len(habMovieNames):
+                cond= [int(thisInfo[6])-1,0] # Selects the hab movie only, for now.
+            else:
+                cond=[0,0]
+        if len(introMovieNames) > 0:#if we have intro movies to load
+            for i in range(0, len(introMovieNames)):
+                tempMovie = visual.MovieStim3(win, moviePath+introMovieNames[i]+movieExt, flipHoriz=False, flipVert=False, loop=False)
+                actualTrialOrder.append(tempMovie)
+                print 'intro trial # %.2fs loaded' %(i+1)
+        for i in range(0, maxHabTrials): #Build hab trials
+            tempMovie = visual.MovieStim3(win, moviePath+habMovieNames[cond[0]]+movieExt, flipHoriz=False, flipVert=False, loop=False)
+            actualTrialOrder.append(tempMovie)
+            print 'hab trial # %.2fs loaded' %(i+1)
+        for i in range(0, numTestTrials): #Build test trials
+            tempMovie = visual.MovieStim3(win, moviePath+testMovieNames[cond[1]]+movieExt, flipHoriz=False, flipVert=False, loop=False)
+            actualTrialOrder.append(tempMovie)
+            print 'test trial # %.2fs loaded' %(i+1)
     else: #familiarization design: build trial order
-        actualTrialOrder=[]
-        lastFam = 0
-        lastTest = 0
-        lastIntro = 0
         if randPres:
             testReader=csv.reader(open(condFile,'rU'))
             testStuff=[]
@@ -1172,40 +1172,27 @@ if startDlg.OK:
             testMovieNames=newTestTrials
         else:
             cond=thisInfo[6]
-        if len(introMovieNames) > 0:
-            introMovies=[]
-            for k in range(0, len(introMovieNames)):
-                tempMovie = visual.MovieStim3(win, moviePath+introMovieNames[k]+movieExt, flipHoriz=False, flipVert=False, loop=False)
-                introMovies.append(tempMovie)
-                print 'duration=%.2fs' %(tempMovie.duration)
-        habMovies = [] #array of moviestim objects for the hab trials
-        for i in range(0, len(habMovieNames)): #preload all the hab movies
-            tempMovie = visual.MovieStim3(win, moviePath+habMovieNames[i]+movieExt, flipHoriz=False, flipVert=False, loop=False)
-            habMovies.append(tempMovie)
-            print 'duration=%.2fs' %(tempMovie.duration)
-        testMovies = []
-        for j in range(0, len(testMovieNames)): #preload all the test movies
-            tempMovie = visual.MovieStim3(win, moviePath+testMovieNames[j]+movieExt, flipHoriz=False, flipVert=False, loop=False)
-            testMovies.append(tempMovie)
         for i in range(0, len(trialOrder)): #now that we've configured the internal order as needed, we can build our actual trials
             if trialOrder[i] == 1: #intro trial
-                actualTrialOrder.append(introMovies[lastIntro])
+                tempMovie = visual.MovieStim3(win, moviePath+introMovieNames[lastIntro]+movieExt, flipHoriz=False, flipVert=False, loop=False)
+                actualTrialOrder.append(tempMovie)
                 lastIntro += 1
-                if lastIntro >= len(introMovies):
+                if lastIntro >= len(introMovieNames):
                     lastIntro = 0
             elif trialOrder[i] == 2: #familiarization trial
-                actualTrialOrder.append(habMovies[lastFam])
+                tempMovie = visual.MovieStim3(win, moviePath+habMovieNames[lastFam]+movieExt, flipHoriz=False, flipVert=False, loop=False)
+                actualTrialOrder.append(tempMovie)
                 lastFam += 1
-                if lastFam >= len(habMovies):
+                if lastFam >= len(habMovieNames):
                     lastFam = 0
             elif trialOrder[i] == 3: #test trial
-                actualTrialOrder.append(testMovies[lastTest])
+                tempMovie = visual.MovieStim3(win, moviePath+testMovieNames[lastTest]+movieExt, flipHoriz=False, flipVert=False, loop=False)
+                actualTrialOrder.append(tempMovie)
                 lastTest += 1
-                if lastTest >= len(testMovies):
+                if lastTest >= len(testMovieNames):
                     lastTest = 0
+            print 'trial # %.2fs loaded' %(i)
     verbose = thisInfo[7]
-    #notably, using pygame here breaks visual.TextStim, so your text need to be in some other format if you are
-    #presenting text-based stimuli (which you almost never will be)
     key=pyglet.window.key
     keyboard = key.KeyStateHandler()
     win.winHandle.push_handlers(keyboard)
