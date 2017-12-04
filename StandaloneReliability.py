@@ -107,21 +107,25 @@ def reliability(verboseMatrix, verboseMatrix2):
     stats.append(r)
     return stats
 
+ready = False
+#switch from this to fileOpenDlg
 startDlg = gui.Dlg(title='PyHab reliability calculator')
 startDlg.addText('Subject info')
 startDlg.addField('Subject Number: ')
 startDlg.addField('Subject ID: ')
-startDlg.addText('Verbose Data files')
-startDlg.addField('Folder (leave blank if in script folder, end with /): ')
-startDlg.addField('Filename 1 (incl. extension): ')
-startDlg.addField('Filename 2 (incl. extension): ')
+startDlg.addText('Click OK to select the two verbose files (the file select window may take a while to load)')
 startDlg.show()
 if startDlg.OK:
+    dlg1 = gui.fileOpenDlg()
+    print(dlg1)
+    if type(dlg1) is not 'NoneType':
+        dlg2 = gui.fileOpenDlg()
+        if type(dlg2) is not 'NoneType':
+            ready = True
+if ready:
     thisInfo = startDlg.data
-    fn1 = thisInfo[2] + thisInfo[3]
-    fn2 = thisInfo[2] + thisInfo[4]
-    VF1 = csv.reader(open(fn1, 'rU')) 
-    VF2 = csv.reader(open(fn2, 'rU'))
+    VF1 = csv.reader(open(dlg1[0], 'rU')) 
+    VF2 = csv.reader(open(dlg2[0], 'rU'))
     Verb1=[]
     Verb2=[]
     for row in VF1:
@@ -144,7 +148,7 @@ if startDlg.OK:
             Verb2[i][j] = float(Verb2[i][j])
     relstats = reliability(Verb1, Verb2)
     print relstats
-    outputWriter4 = csv.writer(open(thisInfo[2]+str(thisInfo[0])+'_'+str(thisInfo[1])+'_Reliability.csv','w'), lineterminator ='\n')
+    outputWriter4 = csv.writer(open(str(thisInfo[0])+'_'+str(thisInfo[1])+'_Reliability.csv','w'), lineterminator ='\n')
     headers3=['WeightedPercentageAgreement', 'CohensKappa','AverageObserverAgreement','PearsonsR']
     outputWriter4.writerow(headers3)
     outputWriter4.writerow(relstats)
