@@ -9,8 +9,10 @@ from math import *
 from datetime import *
 #PyHab + stimulus control system
 #Jonathan Kominsky, 2016-2017
-#Keyboard coding: A = ready, B = coder 1 on, L = coder 2 on, R = abort trial, Y = end experiment (for fussouts)
+#Keyboard coding: A = ready, B = gaze-on LEFT, M = gaze-on RIGHT, R = abort trial, Y = end experiment (for fussouts)
 #Between-trials: R = redo previous trial, J = jump to test trial, I = insert additional habituation trial (hab only)
+
+#Preferential Looking Version - different data columns, no secondary coder, left versus right gaze-on.
 
 '''
 SETTINGS
@@ -18,14 +20,12 @@ SETTINGS
 #DATA
 #Customizeable output. Possible columns are: 'sNum', 'months', 'days', 'sex', 'cond', 'condLabel',
 #                                'trial','GNG','trialType','stimName','habCrit',
-#                                'sumOnA','numOnA','sumOffA','numOffA',
-#                                'sumOnB','numOnB','sumOffB','numOffB'
+#                                'sumOnL','numOnL','sumOnR','numOnR','sumOff','numOff']
 #Anything not listed will simply not appear in the summary data file. Order is order of columns in data file and can be changed at will.
 dataColumns = ['sNum', 'months', 'days', 'sex', 'cond','condLabel',
                                 'trial','GNG','trialType','stimName','habCrit',
-                                'sumOnA','numOnA','sumOffA','numOffA',
-                                'sumOnB','numOnB','sumOffB','numOffB']
-prefix='PyHab' #prefix for data files. All data filenames will start with this text.
+                                'sumOnL','numOnL','sumOnR','numOnR','sumOff','numOff']
+prefix='PyHab_PrefLook' #prefix for data files. All data filenames will start with this text.
 
 
 #UNIVERSAL SETTINGS
@@ -106,7 +106,7 @@ if type(maxDur) is int: #Secretly MaxDur will always be a dict, but if it's a co
 '''
 FUNCTIONS
 '''
-def abortTrial(onArray, offArray, trial, ttype, onArray2, offArray2,stimName=''): #the 2nd arrays are if there are two coders.
+def abortTrial(onArray, offArray, trial, ttype, onArray2, stimName=''): #the 2nd arrays are if there are two coders.
     #only happens when the 'abort' button is pressed. In the main trial loop we can not advance the trial number, this mostly 
     #serves to create a separate data array of bad trials that we can incorporate later
     sumOn = 0
@@ -118,28 +118,23 @@ def abortTrial(onArray, offArray, trial, ttype, onArray2, offArray2,stimName='')
         sumOn = sumOn + onArray[i][4]
     for j in range(0,len(offArray)):
         sumOff = sumOff + offArray[j][4]
-    #needs to be .extend or you get weird array-within-array-within-array issues that become problematic later
-    badVerboseOn.extend(onArray)
-    badVerboseOff.extend(offArray)
     sumOn2=0
-    sumOff2=0
-    if len(onArray2) > 0 or len(offArray2) > 0:
-        for i in range(0,len(onArray2)):
+    for i in range(0,len(onArray2)):
             sumOn2 = sumOn2 + onArray2[i][4]
-        for j in range(0,len(offArray2)):
-            sumOff2 = sumOff2 + offArray2[j][4]
-        badVerboseOn2.extend(onArray2)
-        badVerboseOff2.extend(offArray2)
+    badVerboseOn2.extend(onArray2)
     #data format: snum, age in months, age in days, sex, condition, trial, GNGtrial, trial type, hab crit, on-time, number of gazes, off-time, number of look-offs
     #then same again at the end for b-coder
     #tempData=[sNum, ageMo, ageDay, sex, cond, trial, 0, ttype, habCrit, sumOn, len(onArray), sumOff, len(offArray),sumOn2, len(onArray2), sumOff2, len(offArray2)]
     tempData={'sNum':sNum, 'months':ageMo, 'days':ageDay, 'sex':sex, 'cond':cond,'condLabel':condLabel, 
                             'trial':trial, 'GNG':0, 'trialType':ttype, 'stimName':stimName, 'habCrit':habCrit, 
-                            'sumOnA':sumOn, 'numOnA':len(onArray), 'sumOffA':sumOff, 'numOffA':len(offArray),
-                            'sumOnB':sumOn2,'numOnB':len(onArray2),'sumOffB':sumOff2,'numOffB':len(offArray2)}
+                            'sumOnL':sumOn, 'numOnL':len(onArray), 
+                            'sumOnR':sumOn2,'numOnR':len(onArray2),'sumOff':sumOff,'numOff':len(offArray)}
     badTrials.append(tempData)
+    #needs to be .extend or you get weird array-within-array-within-array issues that become problematic later
+    badVerboseOn.extend(onArray)
+    badVerboseOff.extend(offArray)
 
-def dataRec(onArray,offArray,trial,type,onArray2,offArray2,stimName=''):
+def dataRec(onArray,offArray,trial,type,onArray2,stimName=''):
     global habCrit
     sumOn = 0
     sumOff = 0
@@ -149,14 +144,9 @@ def dataRec(onArray,offArray,trial,type,onArray2,offArray2,stimName=''):
     for j in range(0,len(offArray)):
         sumOff = sumOff + offArray[j][4]
     sumOn2 = 0
-    sumOff2 = 0
-    if len(offArray2)>0 or len(onArray2)>0:
-        for i in range(0,len(onArray2)):
-            sumOn2 = sumOn2 + onArray2[i][4]
-        for j in range(0,len(offArray2)):
-            sumOff2 = sumOff2 + offArray2[j][4]
-        verboseOn2.extend(onArray2)
-        verboseOff2.extend(offArray2)
+    for i in range(0,len(onArray2)):
+        sumOn2 = sumOn2 + onArray2[i][4]
+    verboseOn2.extend(onArray2)
     #add to verbose master gaze array
     verboseOn.extend(onArray)
     verboseOff.extend(offArray)
@@ -165,8 +155,8 @@ def dataRec(onArray,offArray,trial,type,onArray2,offArray2,stimName=''):
     #tempData=[sNum, ageMo, ageDay, sex, cond, trial, 1, type, habCrit, sumOn, len(onArray), sumOff, len(offArray),sumOn2,len(onArray2),sumOff2,len(offArray2)]
     tempData={'sNum':sNum, 'months':ageMo, 'days':ageDay, 'sex':sex, 'cond':cond,'condLabel':condLabel, 
                             'trial':trial, 'GNG':1, 'trialType':type, 'stimName':stimName, 'habCrit':habCrit, 
-                            'sumOnA':sumOn, 'numOnA':len(onArray), 'sumOffA':sumOff, 'numOffA':len(offArray),
-                            'sumOnB':sumOn2,'numOnB':len(onArray2),'sumOffB':sumOff2,'numOffB':len(offArray2)}
+                            'sumOnL':sumOn, 'numOnL':len(onArray), 
+                            'sumOnR':sumOn2,'numOnR':len(onArray2),'sumOff':sumOff,'numOff':len(offArray)}
     dataMatrix.append(tempData)
 
 def redoTrial(trialNum):
@@ -180,7 +170,7 @@ def redoTrial(trialNum):
         if dataMatrix[i]['trial'] == trialNum:
             trialIndex = i
             newTempData=dataMatrix[i]
-            #print newTempData
+#            print newTempData
             i+=1
         else:
             i+=1
@@ -203,9 +193,14 @@ def redoTrial(trialNum):
         if verboseOff[j][0] == trialNum:
             badVerboseOff.append(verboseOff[j][:])
             verboseOff[j][0] = 99
+    for i in range(0, len(verboseOn2)):
+        if verboseOn2[i][0] == trialNum:
+            badVerboseOn2.append(verboseOn2[i][:])
+            verboseOn2[i][0] = 99
     #need to do deletions separately because we keep changing the index every time we remove something.
     k = 0
     l = 0
+    m=0
     while k < len(verboseOn):
         if verboseOn[k][0] == 99:
             verboseOn.remove(verboseOn[k]) #since this removes the entire index, then we should not advance because the next line will come up.
@@ -216,28 +211,11 @@ def redoTrial(trialNum):
             verboseOff.remove(verboseOff[l])
         else:
             l += 1
-    #and then we need to look at the second coder too...
-    if len(verboseOn2) > 0: 
-        for i in range(0, len(verboseOn2)):
-            if verboseOn2[i][0] == trialNum:
-                badVerboseOn2.append(verboseOn2[i][:])
-                verboseOn2[i][0] = 99
-        for j in range(0, len(verboseOff2)):
-            if verboseOff2[j][0] == trialNum:
-                badVerboseOff2.append(verboseOff2[j][:])
-                verboseOff2[j][0] = 99
-        m=0
-        n=0
-        while m < len(verboseOn2):
-            if verboseOn2[m][0] == 99:
-                verboseOn2.remove(verboseOn2[m])
-            else:
-                m += 1
-        while n < len(verboseOff2):
-            if verboseOff2[n][0] == 99:
-                verboseOff2.remove(verboseOff2[n])
-            else:
-                n += 1
+    while m < len(verboseOn2):
+        if verboseOn2[m][0] == 99:
+            verboseOn2.remove(verboseOn2[m])
+        else:
+            m += 1
 
 def checkStop(trial,numHab):
     #checks the habitution criteria and returns 'true' if any of them are met.
@@ -252,7 +230,7 @@ def checkStop(trial,numHab):
                 break
         for k in range(x, len(dataMatrix)):
             if dataMatrix[k]['GNG'] == 1: #just in case there are any bad trials, we don't want to incorporate them into setting the criterion
-                sumOnTimes = sumOnTimes + dataMatrix[k]['sumOnA'] #add up total looking time for first three (good) trials
+                sumOnTimes = sumOnTimes + dataMatrix[k]['sumOnL'] + dataMatrix[k]['sumOnR'] #add up total looking time for first three (good) trials
         habCrit = sumOnTimes/setCritDivisor
     elif habCount == maxHabTrials:
         #end habituation and goto test
@@ -268,7 +246,7 @@ def checkStop(trial,numHab):
                 m = m+1
         for n in range(index, len(dataMatrix)): #now, starting with that trial, go through and add up the good trial looking times
             if dataMatrix[n]['GNG'] == 1: #only good trials!
-                sumOnTimes = sumOnTimes + dataMatrix[n]['sumOnA'] #add up total looking time
+                sumOnTimes = sumOnTimes + dataMatrix[n]['sumOnL'] + dataMatrix[n]['sumOnR'] #add up total looking time
             sumOnTimes=sumOnTimes/metCritDivisor
         if sumOnTimes < habCrit:
             #end habituation and go to test
@@ -295,20 +273,18 @@ def attnGetter(): #an animation and sound to be called whenever an attentiongett
          attnGetterSquare.draw()
          win.flip()
      statusSquareA.fillColor='blue'
+     statusSquareB.fillColor='blue'
      if blindPres < 2:
          statusTextA.text="RDY"
+         statusTextB.text="RDY"
      statusSquareA.draw()
      statusTextA.draw()
+     statusSquareB.draw()
+     statusTextB.draw()
      if blindPres <2:
          trialText.draw()
          if blindPres < 1:
             readyText.draw()
-     if verbose:
-         statusSquareB.fillColor='blue'
-         if blindPres < 2:
-             statusTextB.text="RDY"
-         statusSquareB.draw()
-         statusTextB.draw()
      win2.flip()
      if stimPres:
          win.flip() #clear screen
@@ -337,25 +313,24 @@ def dispTrial(trialType,dispMovie=stimPres): #if stimPres = false, so too dispMo
         statusTextA.text=""
     statusSquareA.draw()
     statusTextA.draw()
+    if keyboard[key.M] and blindPres < 2:
+        statusSquareB.fillColor='green'
+        statusTextB.text="ON"
+    elif trialType==0 and blindPres < 2:
+        statusSquareB.fillColor='blue'
+        statusTextB.text="RDY"
+    elif blindPres < 2:
+        statusSquareB.fillColor='red'
+        statusTextB.text="OFF"
+    else:
+        statusSquareB.fillColor='blue'
+        statusTextB.text=""
+    statusSquareB.draw()
+    statusTextB.draw()
     if blindPres<2:
         trialText.draw()
         if blindPres < 1:
             readyText.draw()
-    if verbose: 
-        if keyboard[key.L] and blindPres < 2:
-            statusSquareB.fillColor='green'
-            statusTextB.text="ON"
-        elif trialType==0 and blindPres < 2:
-            statusSquareB.fillColor='blue'
-            statusTextB.text="RDY"
-        elif blindPres < 2:
-            statusSquareB.fillColor='red'
-            statusTextB.text="OFF"
-        else:
-            statusSquareB.fillColor='blue'
-            statusTextB.text=""
-        statusSquareB.draw()
-        statusTextB.draw()
     win2.flip() #flips the status screen without delaying the stimulus onset.
     #now for the test trial display
     if stimPres:
@@ -397,9 +372,8 @@ def doExperiment():
     statusSquareA.draw()
     statusTextA.draw()
     currTestTrial=0
-    if verbose:
-        statusSquareB.draw()
-        statusTextB.draw()
+    statusSquareB.draw()
+    statusTextB.draw()
     #primary trial loop, go until end of exp.
     runExp = True
     trialNum = 1
@@ -432,14 +406,13 @@ def doExperiment():
             rdyTextAppend = " NEXT: " + actualTrialOrder[trialNum-1] + " TRIAL"
         while not keyboard[key.A] and not AA: #wait for 'ready' key, check at frame intervals
             statusSquareA.draw()
+            statusSquareB.draw()
             readyText.text="No trial active" + rdyTextAppend
             if blindPres < 2:
                 trialText.draw()
             readyText.draw()
-            if verbose:
-                statusSquareB.draw()
             if keyboard[key.Y]:
-                endExperiment([[0,0,0,0,0]],[[0,0,0,0,0]],trialNum,trialType,[],[],stimName) #takes a bunch of arrays so we feed it blanks
+                endExperiment([[0,0,0,0,0]],[[0,0,0,0,0]],trialNum,trialType,[],stimName) #takes a bunch of arrays so we feed it blanks
                 core.quit()
             elif keyboard[key.R] and not didRedo:
                 if trialNum >1:
@@ -495,7 +468,7 @@ def doExperiment():
                 print("hab crit, on-timeA, numOnA, offtimeA, numOffA, onTimeB, numOnB, offTimeB, numOffB")
                 print("-------------------------------------------------------------------------------------------")
                 for i in range(0, len(dataMatrix)): 
-                    dataList = [dataMatrix[i]['habCrit'],dataMatrix[i]['sumOnA'],dataMatrix[i]['numOnA'],dataMatrix[i]['sumOffA'],dataMatrix[i]['numOffA'],dataMatrix[i]['sumOnB'],dataMatrix[i]['numOnB'],dataMatrix[i]['sumOffB'],dataMatrix[i]['numOffB']]
+                    dataList = [dataMatrix[i]['habCrit'],dataMatrix[i]['sumOnL'],dataMatrix[i]['numOnL'],dataMatrix[i]['sumOnR'],dataMatrix[i]['numOnR'],dataMatrix[i]['sumOff'],dataMatrix[i]['numOff']]
                     print(dataList) 
             win2.flip()
         frameCount = 0
@@ -509,11 +482,10 @@ def doExperiment():
             trialText.draw()
             readyText.text="Trial active"
             readyText.draw()
-            if verbose:
-                statusSquareB.fillColor='blue'
-                statusTextB.text="RDY"
-                statusSquareB.draw()
-                statusTextB.draw()
+            statusSquareB.fillColor='blue'
+            statusTextB.text="RDY"
+            statusSquareB.draw()
+            statusTextB.draw()
             win2.flip()
         if stimPres:
             if playAttnGetter:
@@ -534,7 +506,7 @@ def doExperiment():
                 waitStart = False
         while waitStart and not AA:
             if keyboard[key.Y]: #End experiment right there and then.
-                endExperiment([[0,0,0,0,0]],[[0,0,0,0,0]],trialNum,trialType,[],[],stimName) 
+                endExperiment([[0,0,0,0,0]],[[0,0,0,0,0]],trialNum,trialType,[],stimName) 
                 core.quit()
             elif keyboard[key.A]:
                 if stimPres:
@@ -550,24 +522,35 @@ def doExperiment():
                 if blindPres < 2:
                     statusSquareA.fillColor='green'
                     statusTextA.text="ON"
+                    statusSquareB.fillcolor='red'
+                    statusTextB.text="OFF"
                 statusSquareA.draw()
                 statusTextA.draw()
+                statusSquareB.draw()
+                statusTextB.draw()
                 if blindPres < 2:
                     trialText.draw()
                     if blindPres < 1:
                         readyText.draw()
-                if verbose:
-                    if keyboard[key.L] and blindPres < 2: 
-                        statusSquareB.fillColor='green'
-                        statusTextB.text="ON"
-                    elif blindPres < 2:
-                        statusSquareB.fillColor='red'
-                        statusTextB.text="OFF"
-                    statusSquareB.draw()
-                    statusTextB.draw()
+                win2.flip()
+            elif keyboard[key.M]:
+                waitStart = False
+                if blindPres < 2:
+                    statusSquareB.fillColor='green'
+                    statusTextB.text="ON"
+                    statusSquareA.fillcolor='red'
+                    statusTextA.text="OFF"
+                statusSquareA.draw()
+                statusTextA.draw()
+                statusSquareB.draw()
+                statusTextB.draw()
+                if blindPres < 2:
+                    trialText.draw()
+                    if blindPres < 1:
+                        readyText.draw()
                 win2.flip()
             elif keyboard[key.R] and not didRedo: #Redo last trial, mark last trial as bad
-                if trialNum > 1:
+                if trialNum > 0:
                     trialNum -= 1
                     trialText.text="Trial no. " + str(trialNum)
                     trialType = actualTrialOrder[trialNum-1]
@@ -617,20 +600,18 @@ def doExperiment():
                     rdyTextAppend=" NEXT: "+ trialType +" TRIAL"
             else:
                 statusSquareA.fillColor='blue'
+                statusSquareB.fillColor='blue'
                 if blindPres <2:
                     statusTextA.text="RDY"
+                    statusTextB.text="RDY"
                 statusSquareA.draw()
                 statusTextA.draw()
+                statusSquareB.draw()
+                statusTextB.draw()
                 if blindPres < 2:
                     trialText.draw()
                     if blindPres < 1:
                         readyText.draw()
-                if verbose:
-                    statusSquareB.fillColor='blue'
-                    if blindPres < 2:
-                        statusTextB.text="RDY"
-                    statusSquareB.draw()
-                    statusTextB.draw()
                 win2.flip() #flips the status screen without delaying the stimulus onset.
                 #dispTrial(0,disMovie)
         x = doTrial(trialNum, trialType,disMovie) #the actual trial, returning one of four status values at the end
@@ -678,7 +659,6 @@ def doTrial(number, type,disMovie):
     onArray = []
     offArray = []
     onArray2=[]
-    offArray2=[]
     numOn = 0
     numOff = 0
     sumOn = 0
@@ -696,15 +676,14 @@ def doTrial(number, type,disMovie):
         gazeOn = False
         numOff = 1
         startOff = 0
-    if verbose:
-        if keyboard[key.L]:
-            gazeOn2 = True
-            startOn2 = 0
-            numOn2 = 1
-        else:
-            gazeOn2 = False
-            numOff2 = 1
-            startOff2 = 0
+    if keyboard[key.M]:
+        gazeOn2 = True
+        startOn2 = 0
+        numOn2 = 1
+    else:
+        gazeOn2 = False
+        numOff2 = 1
+        startOff2 = 0
     while runTrial:
         if keyboard[key.R]: #'abort trial' is pressed
             redo = True
@@ -715,6 +694,10 @@ def doTrial(number, type,disMovie):
                 onDur = endTrial - startOn
                 tempGazeArray = [number, type, startOn, endTrial, onDur]
                 onArray.append(tempGazeArray)
+            elif gazeOn2:
+                onDur = endTrial - startOn2
+                tempGazeArray = [number, type, startOn2, endTrial, onDur]
+                onArray2.append(tempGazeArray)
             else:
                 offDur = endTrial - startOff
                 tempGazeArray = [number, type, startOff, endTrial, offDur]
@@ -727,12 +710,18 @@ def doTrial(number, type,disMovie):
                 onDur = endTrial - startOn
                 tempGazeArray = [number, type, startOn, endTrial, onDur]
                 onArray.append(tempGazeArray)
+            elif gazeOn2:
+                onDur = endTrial - startOn2
+                tempGazeArray = [number, type, startOn2, endTrial, onDur]
+                onArray2.append(tempGazeArray)
             else:
                 offDur = endTrial - startOff
                 tempGazeArray = [number, type, startOff, endTrial, offDur]
                 offArray.append(tempGazeArray)
             if len(onArray) == 0:
                 onArray.append([0,0,0,0,0])
+            if len(onArray2) == 0:
+                onArray2.append([0,0,0,0,0])
             if len(offArray) == 0:
                 offArray.append([0,0,0,0,0]) #keeps it from crashing while trying to write data.
             type = 4 #to force an immediate quit.
@@ -747,11 +736,15 @@ def doTrial(number, type,disMovie):
                 onDur = endTrial - startOn
                 tempGazeArray = [number, type, startOn, endTrial, onDur]
                 onArray.append(tempGazeArray)
+            elif gazeOn2:
+                onDur = endTrial - startOn2
+                tempGazeArray = [number, type, startOn2, endTrial, onDur]
+                onArray2.append(tempGazeArray)
             else:
                 offDur = endTrial - startOff
                 tempGazeArray = [number, type, startOff, endTrial, offDur]
                 offArray.append(tempGazeArray)
-        elif not gazeOn: #if they are not looking as of the previous refresh, check if they have been looking away for too long
+        elif not gazeOn and not gazeOn2: #if they are not looking as of the previous refresh, check if they have been looking away for too long
             nowOff = core.getTime() - startTrial
             if sumOn > minOn and nowOff - startOff >= maxOff and type not in playThrough: 
                 #if they have previously looked for at least .5s and now looked away for 2 continuous sec
@@ -772,6 +765,15 @@ def doTrial(number, type,disMovie):
                 offDur = endOff - startOff
                 tempGazeArray = [number, type, startOff, endOff, offDur]
                 offArray.append(tempGazeArray)
+            elif keyboard[key.M]:
+                gazeOn2 = True
+                numOn2 = numOn2 + 1
+                startOn2 = core.getTime() - startTrial
+                endOff = core.getTime() - startTrial 
+                #by definition, if this is tripped there will be a preceding 'off' section if this is tripped because gazeOn is set at start
+                offDur = endOff - startOff
+                tempGazeArray = [number, type, startOff, endOff, offDur]
+                offArray.append(tempGazeArray)
         elif gazeOn and not keyboard[key.B]: #if they were looking and have looked away.
             gazeOn = False
             endOn = core.getTime() - startTrial
@@ -781,36 +783,28 @@ def doTrial(number, type,disMovie):
             tempGazeArray = [number, type, startOn, endOn, onDur]
             onArray.append(tempGazeArray)
             sumOn = sumOn + onDur 
-        if verbose:
-            if not gazeOn2: #if they are not looking as of the previous refresh
-                nowOff2 = core.getTime() - startTrial2
-                if keyboard[key.L]: #if they have started looking since the last refresh and not met criterion
-                    gazeOn2 = True
-                    numOn2 = numOn2 + 1
-                    startOn2 = core.getTime() - startTrial2
-                    endOff2 = core.getTime() - startTrial2
-                    offDur2 = endOff2 - startOff2
-                    tempGazeArray2 = [number, type, startOff2, endOff2, offDur2]
-                    offArray2.append(tempGazeArray2)
-            elif gazeOn2 and not keyboard[key.L]: #if they were looking and have looked away.
-                gazeOn2 = False
-                endOn2 = core.getTime() - startTrial2
-                onDur2 = endOn2 - startOn2
-                numOff2 = numOff2 + 1
-                startOff2 = core.getTime() - startTrial2
-                tempGazeArray2 = [number, type, startOn2, endOn2, onDur2]
-                onArray2.append(tempGazeArray2)
-                sumOn2 = sumOn2 + onDur2
+            if keyboard[key.M]:
+                gazeOn2 = True
+                numOn2 = numOn2 + 1
+                startOn2 = core.getTime() - startTrial
+            else:
+                numOff = numOff + 1
+                startOff = core.getTime() - startTrial
+        elif gazeOn2 and not keyboard[key.M]: #if they were looking at R and have looked away.
+            gazeOn2 = False
+            endOn2 = core.getTime() - startTrial
+            onDur2 = endOn2 - startOn2
+            tempGazeArray2 = [number, type, startOn2, endOn2, onDur2]
+            onArray2.append(tempGazeArray2)
+            sumOn = sumOn + onDur2
+            if keyboard[key.B]:
+                gazeOn = True
+                numOn = numOn + 1
+                startOn = core.getTime() - startTrial
+            else:
+                numOff = numOff + 1
+                startOff = core.getTime() - startTrial
         dispTrial(type,disMovie) 
-    if verbose:
-        if gazeOn2:
-                onDur2 = endTrial - startOn2
-                tempGazeArray2 = [number, type, startOn2, endTrial, onDur2]
-                onArray2.append(tempGazeArray2)
-        else:
-            offDur2 = endTrial - startOff2
-            tempGazeArray2 = [number, type, startOff2, endTrial, offDur2]
-            offArray2.append(tempGazeArray2)
     #print offArray
     #print onArray2
     #print offArray2
@@ -822,48 +816,42 @@ def doTrial(number, type,disMovie):
     statusTextA.text=""
     statusTextB.text=""
     statusSquareA.draw()
+    statusSquareB.draw()
     if blindPres < 2:
         trialText.draw()
         if blindPres < 1:
             readyText.draw()
-    if verbose:
-        statusSquareB.draw()
     win2.flip()
     if stimPres:
         win.flip() #blanks the screen outright.
     if redo: #if the abort button was pressed
-        abortTrial(onArray, offArray, number,type,onArray2, offArray2,stimName)
+        abortTrial(onArray, offArray, number,type,onArray2, stimName)
         return 3
     if type == 'Hab': #if still during habituation
         #need to check based on number of HAB trial specifically
-        dataRec(onArray, offArray, number, type, onArray2, offArray2,stimName)
+        dataRec(onArray, offArray, number, type, onArray2, stimName)
         if checkStop(number, habCount):
             return 1
         else:
             return 0
     elif number >= len(actualTrialOrder) or type == 4:
-        endExperiment(onArray, offArray, number,type, onArray2, offArray2,stimName)
+        endExperiment(onArray, offArray, number,type, onArray2, stimName)
         return 2
     else:
-        dataRec(onArray, offArray, number, type, onArray2, offArray2,stimName)
+        dataRec(onArray, offArray, number, type, onArray2, stimName)
         return 0 #with a set order, it doesn't really matter!
 
-def endExperiment(onArray, offArray, trial, type, onArray2, offArray2,stimName=''):
+def endExperiment(onArray, offArray, trial, type, onArray2, stimName=''):
     sumOn = 0
     sumOff = 0
     sumOn2 = 0
-    sumOff2 = 0
     for i in range(0,len(onArray)):
         sumOn = sumOn + onArray[i][4]
     for j in range(0,len(offArray)):
         sumOff = sumOff + offArray[j][4]
-    if len(offArray2)>0:
-        for i in range(0,len(onArray2)):
-            sumOn2 = sumOn2 + onArray2[i][4]
-        for j in range(0,len(offArray2)):
-            sumOff2 = sumOff2 + offArray2[j][4]
-        verboseOn2.extend(onArray2)
-        verboseOff2.extend(offArray2)
+    for i in range(0,len(onArray2)):
+        sumOn2 = sumOn2 + onArray2[i][4]
+    verboseOn2.extend(onArray2)
     #add to master gaze array
     verboseOn.extend(onArray)
     verboseOff.extend(offArray)
@@ -871,11 +859,11 @@ def endExperiment(onArray, offArray, trial, type, onArray2, offArray2,stimName='
     #print verboseOn2
     #data format: snum, age in months, age in days, sex, condition, trial, GNGtrial, trial type, hab crit, on-time, number of gazes, off-time, number of look-offs
     #then same again at the end for b-coder?
-    if sumOn > 0: #Only add another item to the list if there's a real trial to add!
+    if sumOn + sumOn2 > 0: #Only add another item to the list if there's a real trial to add!
         tempData={'sNum':sNum, 'months':ageMo, 'days':ageDay, 'sex':sex, 'cond':cond,'condLabel':condLabel, 
                             'trial':trial, 'GNG':1, 'trialType':type, 'stimName':stimName, 'habCrit':habCrit, 
-                            'sumOnA':sumOn, 'numOnA':len(onArray), 'sumOffA':sumOff, 'numOffA':len(offArray),
-                            'sumOnB':sumOn2,'numOnB':len(onArray2),'sumOffB':sumOff2,'numOffB':len(offArray2)}
+                            'sumOnL':sumOn, 'numOnL':len(onArray), 
+                            'sumOnR':sumOn2,'numOnR':len(onArray2),'sumOff':sumOff,'numOff':len(offArray)}
         #print tempData
         dataMatrix.append(tempData)
     #sort the data matrices and shuffle them together.
@@ -904,17 +892,23 @@ def endExperiment(onArray, offArray, trial, type, onArray2, offArray2,stimName='
             verboseOn[n][0:0]=[sNum, ageMo, ageDay, sex, thisInfo[6],1,1]
         for m in range(0, len(verboseOff)):# adding the details to the verbose array
             verboseOff[m][0:0]=[sNum, ageMo, ageDay, sex, thisInfo[6],1,0]
+        for o in range(0, len(verboseOn2)):
+            verboseOn2[o][0:0]=[sNum, ageMo, ageDay, sex, thisInfo[6],1,2]
         if len(badTrials)>0:
             for o in range(0,len(badVerboseOn)):
                 badVerboseOn[o][0:0]=[sNum, ageMo, ageDay, sex,thisInfo[6],0,1]
             for p in range(0,len(badVerboseOff)):#same details for the bad trials
                 badVerboseOff[p][0:0]=[sNum, ageMo, ageDay, sex,thisInfo[6],0,0]
+            for r in range(0, len(badVerboseOn2)):
+                badVerboseOn2[r][0:0]=[sNum, ageMo, ageDay, sex,thisInfo[6],0,2]
         #read the final data matrix and go trial by trial.
         #print(verboseOn) #debug, to make sure verboseOn is being constructed correctly
         for q in range(0, len(dataMatrix)):
             tnum = dataMatrix[q]['trial']
             onIndex = -1
+            onIndex2 = -1
             offIndex = -1
+            onOff = 1 #1 for on, 0 for off, for alternating
             if dataMatrix[q]['GNG'] == 1: #separate for good and bad trials
                 for x in range(0, len(verboseOn)): 
                     if verboseOn[x][7] == tnum and onIndex == -1: #find the right index in the verbose matrices
@@ -922,12 +916,20 @@ def endExperiment(onArray, offArray, trial, type, onArray2, offArray2,stimName='
                 for y in range(0, len(verboseOff)):
                     if verboseOff[y][7] == tnum and offIndex == -1: 
                         offIndex = y
-                trialVerbose = []
+                for z in range(0, len(verboseOn2)):
+                    if verboseOn2[z][7] == tnum and onIndex2 == -1:
+                        onIndex2=z
+                trialVerbose = [] #This is a new trick that sorts the verbose data much more easily.
                 if onIndex >= 0:
                     while onIndex < len(verboseOn):
                         if verboseOn[onIndex][7] == tnum:
                             trialVerbose.append(verboseOn[onIndex])
                         onIndex += 1
+                if onIndex2 >= 0:
+                    while onIndex2 < len(verboseOn2):
+                        if verboseOn2[onIndex2][7]== tnum:
+                            trialVerbose.append(verboseOn2[onIndex2])
+                        onIndex2 += 1
                 if offIndex >= 0:
                     while offIndex < len(verboseOff):
                         if verboseOff[offIndex][7]==tnum:
@@ -935,101 +937,41 @@ def endExperiment(onArray, offArray, trial, type, onArray2, offArray2,stimName='
                         offIndex += 1
                 trialVerbose2 = sorted(trialVerbose, key=lambda trialVerbose:trialVerbose[9]) #this is the magic bullet, in theory.
                 verboseMatrix.extend(trialVerbose2)
-            elif dataMatrix[q]['GNG']==0: #bad trials. 
-                if q > 0 and dataMatrix[q-1]['GNG']==0: 
-                    pass #stops it from doubling up. If there is more than one consecutive bad trial, it will get all of them in a row the first time,
-                else:
-                    trialVerbose = []
-                    for x in range(0,len(badVerboseOn)):
-                        if badVerboseOn[x][7] == tnum and onIndex == -1:
-                            onIndex = x
-                    for y in range(0, len(badVerboseOff)): 
-                        if badVerboseOff[y][7] == tnum and offIndex == -1:
-                            offIndex = y
-                    if onIndex >= 0:
-                        while onIndex < len(badVerboseOn):
-                            if badVerboseOn[onIndex][7] == tnum:
-                                trialVerbose.append(badVerboseOn[onIndex])
-                            onIndex += 1
-                    if offIndex >=0: 
-                        while offIndex < len(badVerboseOff):
-                            if badVerboseOff[offIndex][7]==tnum:
-                                trialVerbose.append(badVerboseOff[offIndex])
-                            offIndex += 1
-                    trialVerbose2 = sorted(trialVerbose, key=lambda trialVerbose:trialVerbose[9]) #this is the magic bullet, in theory.
-                    verboseMatrix.extend(trialVerbose2)
+            elif dataMatrix[q]['GNG']==0: #for bad trials. The new system is flexible enough to just do it right the first time.
+                for x in range(0, len(badVerboseOn)): 
+                    if badVerboseOn[x][7] == tnum and onIndex == -1: #find the right index in the verbose matrices
+                        onIndex = x
+                for y in range(0, len(badVerboseOff)):
+                    if badVerboseOff[y][7] == tnum and offIndex == -1: 
+                        offIndex = y
+                for z in range(0, len(badVerboseOn2)):
+                    if badVerboseOn2[z][7] == tnum and onIndex2 == -1:
+                        onIndex2=z
+                #we can create a concatenated list and then sort it!
+                trialVerbose = []
+                #print(onIndex, ' ', onIndex2, ' ', offIndex)
+                if onIndex >= 0:
+                    while onIndex < len(badVerboseOn):
+                        if badVerboseOn[onIndex][7] == tnum:
+                            trialVerbose.append(badVerboseOn[onIndex])
+                        onIndex += 1
+                if onIndex2 >= 0:
+                    while onIndex2 < len(badVerboseOn2):
+                        if badVerboseOn2[onIndex2][7]== tnum:
+                            trialVerbose.append(badVerboseOn2[onIndex2])
+                        onIndex2 += 1
+                if offIndex >= 0:
+                    while offIndex < len(badVerboseOff):
+                        if badVerboseOff[offIndex][7]==tnum:
+                            trialVerbose.append(badVerboseOff[offIndex])
+                        offIndex += 1
+                trialVerbose2 = sorted(trialVerbose, key=lambda trialVerbose:trialVerbose[9]) #this is the magic bullet, in theory.
+                verboseMatrix.extend(trialVerbose2)
         outputWriter2 = csv.writer(open(prefix+str(sNum)+'_'+str(sID)+'_'+str(today.month)+str(today.day)+str(today.year)+'_VERBOSE.csv','w'), lineterminator ='\n') #careful! this OVERWRITES the existing file. Fills from snum.
         headers2=['snum', 'months', 'days', 'sex','cond','GNG','gazeOnOff','trial','trialType','startTime','endTime','duration']
         outputWriter2.writerow(headers2)
         for z in range(0,len(verboseMatrix)):
             outputWriter2.writerow(verboseMatrix[z])
-        if verbose and len(verboseOn2)>0:
-            verboseMatrix2 = []
-            for n in range(0, len(verboseOn2)):
-                verboseOn2[n][0:0]=[sNum, ageMo, ageDay, sex, thisInfo[6],1,1]
-            for m in range(0, len(verboseOff2)):
-                verboseOff2[m][0:0]=[sNum, ageMo, ageDay, sex, thisInfo[6],1,0]
-            if len(badTrials)>0:
-                for o in range(0,len(badVerboseOn2)):
-                    badVerboseOn2[o][0:0]=[sNum, ageMo, ageDay, sex,thisInfo[6],0,1]
-                for p in range(0,len(badVerboseOff2)):
-                    badVerboseOff2[p][0:0]=[sNum, ageMo, ageDay, sex,thisInfo[6],0,0]
-            for q in range(0, len(dataMatrix)):
-                tnum = dataMatrix[q]['trial']
-                onIndex2 = -1
-                offIndex2 = -1
-                if dataMatrix[q]['GNG'] == 1: #separate for good and bad trials
-                    for x in range(0, len(verboseOn2)): 
-                        if verboseOn2[x][7] == tnum and onIndex2 == -1: #find the right index in the verbose matrices
-                            onIndex2 = x
-                    for y in range(0, len(verboseOff2)):
-                        if verboseOff2[y][7] == tnum and offIndex2 == -1: 
-                            offIndex2 = y
-                    trialVerbose=[]
-                    if onIndex2 >=0:
-                        while onIndex2 < len(verboseOn2):
-                            if verboseOn2[onIndex2][7]==tnum:
-                                trialVerbose.append(verboseOn2[onIndex2])
-                            onIndex2 += 1
-                    if offIndex2 >=0:
-                        while offIndex2 < len(verboseOff2):
-                            if verboseOff2[offIndex2][7]==tnum:
-                                trialVerbose.append(verboseOff2[offIndex2])
-                            offIndex2 += 1                    
-                    trialVerbose2 = sorted(trialVerbose, key=lambda trialVerbose:trialVerbose[9])
-                    verboseMatrix2.extend(trialVerbose2)
-                elif dataMatrix[q]['GNG']==0: #bad trials. These arrays will be much less predictable, so putting them together is inherently more challenging
-                    if q > 0 and dataMatrix[q-1]['GNG']==0: 
-                        pass #stops it from doubling up. If there is more than one consecutive bad trial, it will get all of them in a row the first time,
-                    else:
-                        for x in range(0,len(badVerboseOn2)):
-                            if badVerboseOn2[x][7] == tnum and onIndex2 == -1:
-                                onIndex2  = x
-                        for y in range(0, len(badVerboseOff2)): 
-                            if badVerboseOff2[y][7] == tnum and offIndex2 == -1:
-                                offIndex2 = y
-                        trialVerbose=[]
-                        if onIndex2 >=0:
-                            while onIndex2 < len(badVerboseOn2):
-                                if badVerboseOn2[onIndex2][7]==tnum:
-                                    trialVerbose.append(badVerboseOn2[onIndex2])
-                                onIndex2 += 1
-                        if offIndex2 >=0:
-                            while offIndex2 < len(badVerboseOff2):
-                                if badVerboseOff2[offIndex2][7]==tnum:
-                                    trialVerbose.append(badVerboseOff2[offIndex2])
-                                offIndex2 += 1                    
-                        trialVerbose2 = sorted(trialVerbose, key=lambda trialVerbose:trialVerbose[9]) 
-                        verboseMatrix2.extend(trialVerbose2)
-            outputWriter3 = csv.writer(open(prefix+str(sNum)+'_'+str(sID)+'_'+str(today.month)+str(today.day)+str(today.year)+'_VERBOSEb.csv','w'), lineterminator ='\n') 
-            outputWriter3.writerow(headers2)
-            for k in range(0,len(verboseMatrix2)):
-                outputWriter3.writerow(verboseMatrix2[k])
-            rel=reliability(verboseMatrix, verboseMatrix2)
-            outputWriter4 = csv.writer(open(prefix+str(sNum)+'_'+str(sID)+'_'+str(today.month)+str(today.day)+str(today.year)+'_Stats.csv','w'), lineterminator ='\n')
-            headers3=['WeightedPercentageAgreement', 'CohensKappa','AverageObserverAgreement','PearsonsR']
-            outputWriter4.writerow(headers3)
-            outputWriter4.writerow(rel)
     core.wait(.3)
     win2.close()
     core.quit()
