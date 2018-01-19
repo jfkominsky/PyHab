@@ -1168,16 +1168,20 @@ if startDlg.OK:
         movieDict = {x:[] for x in movieNames.keys()} #This will hold the loaded movies. 
         counters = {x:0 for x in movieNames.keys()} #list of counters, one per index of the dict, so it knows which movie to play
         tempCtr = {x:0 for x in movieNames.keys()}
-        for i, j in movieNames.iteritems():
+        n=1
+        for i in actualTrialOrder:
             if i is not 'Hab':
-                for q in range(0, len(j)):
-                    tempMovie = visual.MovieStim3(win, moviePath+j[q]+movieExt, size=[movieWidth,movieHeight], flipHoriz=False, flipVert=False, loop=False)
-                    movieDict[i].append(tempMovie)
-                    print 'Movie type ' + i + ' loaded'
-            else: #for hab trials, only load the very first entry in the list, ignore the rest. This is after scrambling, so allows for between manips.
-                tempMovie = visual.MovieStim3(win, moviePath+j[0]+movieExt, size=[movieWidth,movieHeight], flipHoriz=False, flipVert=False, loop=False)
+                tempMovie = visual.MovieStim3(win, moviePath+movieNames[i][tempCtr[i]]+movieExt, size=[movieWidth,movieHeight], flipHoriz=False, flipVert=False, loop=False)
                 movieDict[i].append(tempMovie)
-                print 'Movie type ' + i + ' loaded'
+                tempCtr[i] += 1
+                print 'Trial ' + str(n) + ' loaded'
+                n += 1
+                if tempCtr[i] >= len(movieNames[i]):
+                    tempCtr[i] = 0
+            else: #for hab trials, only load the very first entry in the list, ignore the rest. This is after scrambling, so allows for between manips.
+                tempMovie = visual.MovieStim3(win, moviePath+movieNames[i][0]+movieExt, size=[movieWidth,movieHeight], flipHoriz=False, flipVert=False, loop=False)
+                print 'Trial ' + str(n) + ' loaded'
+                n += 1
     verbose = thisInfo[7]
     key=pyglet.window.key
     keyboard = key.KeyStateHandler()
