@@ -85,7 +85,7 @@ class pyHabBuilder():
             self.trialTypesArray={'shapes':[],'text':[],'labels':[]}
         else:
             self.settings = settingsDict
-            evalList = ['dataColumns','maxDur','condList','trialOrder','movieNames','trialTypes'] #eval all the things that need eval.
+            evalList = ['dataColumns','maxDur','condList','playThrough','trialOrder','movieNames','trialTypes'] #eval all the things that need eval.
             for i in evalList:
                 self.settings[i] = eval(self.settings[i])
             self.trialTypesArray = self.loadTypes()
@@ -279,7 +279,11 @@ class pyHabBuilder():
                 typeDlg.addField("Max duration", prevInfo[1])
             else: #if there is no existing indeces to refer to
                 typeDlg.addField("Max duration",60)
-            typeDlg.addField("Gaze-contingent trial type", choices = ["Yes","No"])
+            if trialType in self.settings['playThrough']:
+                chz = ["No","Yes"]
+            else:
+                chz=["Yes","No"]
+            typeDlg.addField("Gaze-contingent trial type", choices = chz)
             typeInfo = typeDlg.show()
             if typeDlg.OK:
                 #Update all the things, or create them.
@@ -316,9 +320,9 @@ class pyHabBuilder():
                     trialType = typeInfo[0]
                 if not skip:
                     self.settings['maxDur'][trialType] = typeInfo[1] #Update maxDur
-                    if typeInfo[-1] == "Yes" and trialType in self.settings['playThrough']: #gaze-contingent trial type, not already tagged as such.
+                    if typeInfo[len(typeInfo)-1] == "Yes" and trialType in self.settings['playThrough']: #gaze-contingent trial type, not already tagged as such.
                         self.settings['playThrough'].remove(trialType)
-                    elif typeInfo[-1] == "No" and trialType in self.settings['playThrough']: #not gaze-contingent, add to playThrough
+                    elif typeInfo[len(typeInfo)-1] == "No" and not trialType in self.settings['playThrough']: #not gaze-contingent, add to playThrough
                         self.settings['playThrough'].append(trialType)
                     if len(typeInfo) > 3: #Again, if there were movies to list.
                         tempMovies = [] #This will just replace the movienames list

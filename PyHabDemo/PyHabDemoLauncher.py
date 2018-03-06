@@ -15,19 +15,25 @@ def run():
     launcherDlg = gui.Dlg(title="PyHab Launcher",labelButtonCancel=u'Exit')
     launcherDlg.addText('Current setings file: ' + setName)
     launcherDlg.addField('Run study or open builder?', choices=['Run','Builder'])
-    if len(setDict['movieNames'])>0:
+    tempOrd = eval(setDict['trialOrder'])
+    tempMovs = eval(setDict['movieNames'])
+    stPres = True
+    if len(tempMovs) > 0:
+        for i in tempOrd:
+            if len(tempMovs[i]) == 0:
+                stPres = False
+    if stPres:
         ch = ['On','Off']
-    else:
-        ch = ['Off','On']
-    launcherDlg.addField('Stimulus presentation mode (Run only): ', choices=ch)
+        launcherDlg.addField('Stimulus presentation mode (Run only): ', choices=ch)
     launcherDlg.show()
     if launcherDlg.OK:
         launcher = launcherDlg.data
         if launcher[0] == 'Run':
-            if launcher[1] == 'On':
-                setDict['stimPres'] = '1'
-            else:
-                setDict['stimPres'] = '0'
+            if stPres:
+                if launcher[1] == 'On':
+                    setDict['stimPres'] = '1'
+                else:
+                    setDict['stimPres'] = '0'
             if setDict['prefLook'] in['0',0,'False',False]:
                 experiment = PH.pyHab(setDict)
             else:

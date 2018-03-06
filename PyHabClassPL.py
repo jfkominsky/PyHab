@@ -747,7 +747,7 @@ class pyHabPL():
                 runTrial = False
                 endTrial = core.getTime() - startTrial
                 if not self.stimPres:
-                    endTrialSound.play()
+                    self.endTrialSound.play()
                 #determine if they were looking or not at end of trial and update appropriate array
                 if gazeOn:
                     onDur = endTrial - startOn
