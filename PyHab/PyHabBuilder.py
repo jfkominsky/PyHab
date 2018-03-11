@@ -1157,7 +1157,8 @@ class pyHabBuilder():
                 print('creating launcher script failed!')
         if success:
             saveSuccessDlg = gui.Dlg(title="Experiment saved!")
-            saveSuccessDlg.addText("Experiment saved successfully")
+            saveSuccessDlg.addText("Experiment saved successfully to" + self.folderPath)
             saveSuccessDlg.show()
+
         
         

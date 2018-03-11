@@ -2,18 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="a1b525e9-d047-44a8-8684-abce4432eb7a" name="Default" comment="">
-      <change beforePath="$PROJECT_DIR$/NewPyHabProject.py" afterPath="$PROJECT_DIR$/NewPyHabProject.py" />
-      <change beforePath="$PROJECT_DIR$/PyHabDemo/PyHabBuilder.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/PyHabDemo/PyHabClass.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/PyHabDemo/PyHabClassPL.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/PyHabDemo/PyHabDemoLauncher.py" afterPath="$PROJECT_DIR$/PyHabDemo/PyHabDemoLauncher.py" />
-      <change beforePath="$PROJECT_DIR$/PyHabDemo/PyHabDemoSettings.csv" afterPath="$PROJECT_DIR$/PyHabDemo/PyHabDemoSettings.csv" />
-      <change beforePath="$PROJECT_DIR$/PyHabDemo/conditions.csv" afterPath="$PROJECT_DIR$/PyHabDemo/conditions.csv" />
-      <change beforePath="$PROJECT_DIR$/source/PyHab Launcher.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/source/PyHabBuilder.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/source/PyHabClass.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/source/PyHabClassPL.py" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/source/upchime1.wav" afterPath="" />
+      <change beforePath="$PROJECT_DIR$/PyHab/PyHabBuilder.py" afterPath="$PROJECT_DIR$/PyHab/PyHabBuilder.py" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -37,8 +26,8 @@
       <file leaf-file-name="PyHabBuilder.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/PyHab/PyHabBuilder.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-17060">
-              <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+            <state relative-caret-position="279">
+              <caret line="1161" column="0" lean-forward="false" selection-start-line="1161" selection-start-column="0" selection-end-line="1161" selection-end-column="0" />
               <folding>
                 <element signature="e#0#75#0" expanded="true" />
               </folding>
@@ -75,6 +64,7 @@
         <option value="$PROJECT_DIR$/NewPyHabProject.py" />
         <option value="$PROJECT_DIR$/source/PyHabBuilder.py" />
         <option value="$PROJECT_DIR$/source/PyHab Launcher.py" />
+        <option value="$PROJECT_DIR$/PyHab/PyHabBuilder.py" />
       </list>
     </option>
   </component>
@@ -208,10 +198,10 @@
     <layout>
       <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="SLIDING" type="SLIDING" visible="false" show_stripe_button="true" weight="0.25344563" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32896653" sideWeight="0.49693722" order="6" side_tool="false" content_ui="tabs" />
-      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.3173217" sideWeight="0.5245023" order="7" side_tool="true" content_ui="tabs" />
-      <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32896653" sideWeight="0.49387443" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.32896653" sideWeight="0.50918835" order="7" side_tool="true" content_ui="tabs" />
+      <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.32896653" sideWeight="0.49081165" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32896653" sideWeight="0.47856048" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.3173217" sideWeight="0.4754977" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3173217" sideWeight="0.4754977" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.24961714" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32896653" sideWeight="0.47856048" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
@@ -225,8 +215,37 @@
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
     </layout>
   </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State>
+              <option name="RECENTLY_FILTERED_USER_GROUPS">
+                <collection />
+              </option>
+              <option name="RECENTLY_FILTERED_BRANCH_GROUPS">
+                <collection />
+              </option>
+              <option name="COLUMN_ORDER">
+                <list>
+                  <option value="0" />
+                  <option value="1" />
+                  <option value="2" />
+                  <option value="3" />
+                </list>
+              </option>
+            </State>
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
   <component name="VcsContentAnnotationSettings">
     <option name="myLimit" value="2678400000" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <option name="LAST_COMMIT_MESSAGE" value="" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager />
@@ -429,8 +448,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/PyHab/PyHabBuilder.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-17060">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        <state relative-caret-position="279">
+          <caret line="1161" column="0" lean-forward="false" selection-start-line="1161" selection-start-column="0" selection-end-line="1161" selection-end-column="0" />
           <folding>
             <element signature="e#0#75#0" expanded="true" />
           </folding>
