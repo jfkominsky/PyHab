@@ -4,7 +4,7 @@ from PyHab import PyHabClassPL as PHL
 from PyHab import PyHabBuilder as PB
 import csv, os
 
-setName = "PyHabDemoSettings.csv"
+setName = 'DUMMY FILENAME'
 
 def run():
     setFile=csv.reader(open(setName,'rU'))
