@@ -11,7 +11,7 @@ Looking time and stimulus presentation system for PsychoPy.
 <li>If you do use PyHab for a study that you then submit for publication, please cite <b>both PsychoPy and PyHab</b>. PyHab relies very heavily on PsychoPy (but is not directly affiliated with or developed by the makers of PsychoPy), so credit is due as much to them as it is to me.</li>
 </ul>
 <h2>"Installing" PyHab</h2>
-<p>Click the big green button, hit "download as zip", unzip the file into a folder, and put the folder wherever you want. Make sure you do not move anything around inside the folder.</p>
+<p>Click the big green button, hit "download as zip" (or go to releases and select "source code.zip"), unzip the file into a folder, and put the folder wherever you want. Make sure you do not move anything around inside the folder.</p>
 <p>Then, just open PsychoPy, go to coder view (control-L or command-L), open "NewPyHabProject.py" from there, and hit the big green "Run" button.</p>
 <p>You will need VLC media player installed on your computer in order to use PsychoPy to present movie stimuli. VLC is free. Just google it, download, and install.</p>
 <h2>Citing PyHab and PsychoPy</h2>
