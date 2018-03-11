@@ -1,7 +1,7 @@
 from psychopy import gui,core
-import PyHabClass as PH
-import PyHabClassPL as PHL
-import PyHabBuilder as PB
+from PyHab import PyHabClass as PH
+from PyHab import PyHabClassPL as PHL
+from PyHab import PyHabBuilder as PB
 import csv, os
 
 setName = "PyHabDemoSettings.csv"

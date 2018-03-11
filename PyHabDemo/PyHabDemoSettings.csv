@@ -1,34 +1,34 @@
-minOn,1
-randPres,True
 maxDur,"{'Test': 60, 'Intro': 60, 'Fam': 60}"
 trialOrder,"['Intro', 'Intro', 'Fam', 'Fam', 'Fam', 'Fam', 'Test', 'Test']"
-trialTypes,"['Intro', 'Fam', 'Test']"
 moviePath,stimuli/
-freezeFrame,0.2
-dataColumns,"['months', 'days', 'sex', 'cond', 'condLabel', 'trial', 'GNG', 'trialType', 'stimName', 'habCrit', 'sumOnA', 'numOnA', 'sumOffA', 'numOffA', 'sumOnB', 'numOnB', 'sumOffB', 'numOffB']"
-ISI,0
+dataColumns,"['sNum', 'months', 'days', 'sex', 'cond', 'condLabel', 'trial', 'GNG', 'trialType', 'stimName', 'habCrit', 'sumOnA', 'numOnA', 'sumOffA', 'numOffA', 'sumOnB', 'numOnB', 'sumOffB', 'numOffB']"
 blindPres,0
-movieExt,
-stimPres,0
-condList,"['A', 'B', 'C', 'D', 'BetweenA', 'BetweenB']"
+trialTypes,"['Intro', 'Fam', 'Test']"
 prefix,PyHabDemo
-folderPath,/Users/jonk/Desktop/Active Studies/Infant studies/PyHab/Bug fixes 3-6-18/PyHabDemo/
-setCritWindow,3
-autoAdvance,False
-playAttnGetter,1
 movieHeight,600
+playAttnGetter,1
 screenWidth,1080
 maxOff,2
 setCritDivisor,2
-playThrough,[]
 screenIndex,1
-metCritDivisor,1
-movieNames,"{'Test': [u'3x2_2_2_1_1-converted.mp4', u'3x2_2_3_1_1-converted.mp4'], 'Intro': [u'3x2_1_1_1-converted.mp4', u'3x2_1_2_1_1-converted.mp4'], 'Fam': [u'3x2_1_3_1_1-converted.mp4', u'3x2_2_1_1_1-converted.mp4']}"
+stimPres,0
 prefLook,0
 dataloc,data/
-screenHeight,700
 maxHabTrials,14
 movieWidth,800
 metCritWindow,3
 condFile,conditions.csv
+minOn,1
+randPres,True
 condPath,
+movieNames,"{'Test': [u'3x2_2_2_1_1-converted.mp4', u'3x2_2_3_1_1-converted.mp4'], 'Intro': [u'3x2_1_1_1-converted.mp4', u'3x2_1_2_1_1-converted.mp4'], 'Fam': [u'3x2_1_3_1_1-converted.mp4', u'3x2_2_1_1_1-converted.mp4']}"
+metCritDivisor,1
+movieExt,
+condList,"['A', 'B', 'C', 'D', 'BetA', 'BetB']"
+setCritWindow,3
+autoAdvance,False
+folderPath,/Users/jonk/Desktop/Active Studies/Infant studies/PyHab/PyHab Repository/PyHab/PyHabDemo/
+playThrough,[]
+ISI,0
+screenHeight,700
+freezeFrame,0.2

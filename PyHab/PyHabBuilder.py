@@ -181,7 +181,12 @@ class pyHabBuilder():
         self.mainLoop()
        
     
-    def mainLoop(self): #The main loop that controls interaction and whatnot.
+    def mainLoop(self):
+        '''
+        Main loop of the whole program.
+        :return:
+        :rtype:
+        '''
         while self.allDone==False:        
             self.showMainUI()
             self.win.flip()
@@ -225,7 +230,12 @@ class pyHabBuilder():
         self.win.close()
         
             
-    def showMainUI(self): #This method draws the "home" menu of the builder, as it were.
+    def showMainUI(self):
+        '''
+        Main draw loop of the primary builder interface
+        :return:
+        :rtype:
+        '''
         self.flowRect.draw()        #Draw flow area and study flow
         for i in range(0, len(self.studyFlowArray['lines'])):
             self.studyFlowArray['lines'][i].draw()
@@ -243,6 +253,20 @@ class pyHabBuilder():
             self.buttonList['text'][i].draw()
     
     def trialTypeDlg(self,trialType="TrialTypeNew", makeNew=True,prevInfo=[]):
+        '''
+        Dialog for creating OR modifying a trial type. Allows you to set
+        the maximum duration of that trial type as well as remove movies
+        from it, and also set whether the trial type is gaze contingent.
+
+        :param trialType: Name of the trial type
+        :type trialType: str
+        :param makeNew: Making a new trial type or modifying an existing one?
+        :type makeNew: bool
+        :param prevInfo: If user attempts to create an invalid trial type, the dialog is re-opened with the previously entered information stored and restored
+        :type prevInfo: list
+        :return:
+        :rtype:
+        '''
         self.showMainUI()
         self.workingRect.draw()
         self.workingText.draw()
@@ -348,6 +372,11 @@ class pyHabBuilder():
         self.trialTypeDlg(trialType="Hab")
     
     def delTrialTypeDlg(self):
+        '''
+        Dialog for deleting a trial type, and all instances of that trial type in the study flow
+        :return:
+        :rtype:
+        '''
         self.showMainUI()
         self.workingRect.draw()
         self.workingText.draw()
@@ -370,7 +399,15 @@ class pyHabBuilder():
                     self.settings['trialOrder'].remove(dType)
                 self.studyFlowArray=self.loadFlow()
 
-    def moveTrialInFlow(self,flowIndex): #A function for when a trial is clicked in the study flow, allowing you to either swap it or remove it.
+    def moveTrialInFlow(self,flowIndex):
+        '''
+        A function for when a trial is clicked in the study flow, allowing you to either swap it or remove it.
+
+        :param flowIndex: The index in the flowArray of the trial being modified
+        :type flowIndex: int
+        :return:
+        :rtype:
+        '''
         #Display a text tooltip at the bottom of the flow area.
         instrText = visual.TextStim(self.win, text="Click another trial to swap positions, or click the remove button to delete from the study flow, click anywhere else to cancel.", bold=True,
                     height = abs(self.flowArea[3]-self.flowArea[2])*.05, pos=[-.5, self.flowArea[3]+.12*float(abs(self.flowArea[3]-self.flowArea[2]))],alignHoriz='center',alignVert='center')
@@ -406,7 +443,12 @@ class pyHabBuilder():
 
     
     def loadFlow(self):
-        #This just creates the array of objects to be drawn elsewhere.
+        '''
+        This creates the array of objects in the study flow display
+
+        :return:
+        :rtype:
+        '''
         tOrd = self.settings['trialOrder']
         numItems = len(tOrd)
         tTypes = self.settings['trialTypes']
@@ -450,6 +492,11 @@ class pyHabBuilder():
         return outputDict
     
     def loadTypes(self): #A "pallette" of trial types on one side, only needed when loading from save.
+        '''
+        This function creates the trial types palette
+        :return:
+        :rtype:
+        '''
         if len(self.settings['trialTypes']) == 0:#if working w/ an old settings file or one that for w/e reason has no ttypes.
             tOrd = self.settings['trialOrder']
             tTypes = []#list of trial types
@@ -473,6 +520,11 @@ class pyHabBuilder():
         return(outputDict)
     
     def quitFunc(self):
+        '''
+        Simple function for quitting, checks if you want to save first (if there's anything to save).
+        :return:
+        :rtype:
+        '''
         self.allDone=True
         if len(self.trialTypesArray['labels']) > 0: #Don't save if no trial types have been created
             saveDlg = gui.Dlg(title="Save?",labelButtonOK='Yes', labelButtonCancel='No')
@@ -485,6 +537,21 @@ class pyHabBuilder():
                     self.saveEverything()
     
     def univSettingsDlg(self): #The universal settings button.
+        '''
+        Settings that apply to every PyHab study regardless of anything else.
+
+        prefix: The prefix of the launcher and all data files.
+        maxOff: Max consecutive seconds looking away needed to end gaze-contingent trials
+        minOn: Minimum gaze-on time before maxOff is used to determine end of trial.
+        ISI: Minimum time between loops of stimuli.
+        autoAdvance: Whether the attention-getter needs to be manually triggered or
+            is triggered automatically after each trial
+        blindPres: Level of experimenter blinding, 0 (none), 1 (no trial type info), or
+            2 (only info is whether a trial is currently active.
+        prefLook: Whether the study is preferential-looking or single-target.
+        :return:
+        :rtype:
+        '''
         self.showMainUI()
         self.workingRect.draw()
         self.workingText.draw()
@@ -494,7 +561,7 @@ class pyHabBuilder():
         uDlg.addField("Experiment name",self.settings['prefix'])
         uDlg.addField("Number of continuous seconds looking away to end trial", self.settings['maxOff'])
         uDlg.addField("Minimum time looking at screen before stimuli can be ended (not consecutive)",self.settings['minOn'])
-        uDlg.addField("Minimum ITI between trials, in seconds", self.settings['ISI'])
+        uDlg.addField("Minimum ISI between loops, in seconds", self.settings['ISI'])
         if self.settings['autoAdvance'] in [0,'0','False',False]:
             setBox = False
         else:
@@ -529,7 +596,14 @@ class pyHabBuilder():
                 self.settings['prefLook'] = 0
                 self.settings['dataColumns'] = self.allDataColumns
         
-    def dataSettingsDlg(self): #A list of data columns to include or not, plus prefix
+    def dataSettingsDlg(self):
+        '''
+        Which columns of data are recorded.
+        Resets if the experiment type is switched to or from preferential looking.
+
+        :return:
+        :rtype:
+        '''
         self.showMainUI()
         self.workingRect.draw()
         self.workingText.draw()
@@ -554,7 +628,22 @@ class pyHabBuilder():
                     tempCols.append(self.allDataColumns[j]) 
             self.settings['dataColumns'] = tempCols
         
-    def stimSettingsDlg(self): #screen h/w, freezeframe, playattngetter, all movie settings...? Need a sep way to add movies to ttypes.
+    def stimSettingsDlg(self):
+        '''
+        Settings relating to stimulus presentation
+
+        screenWidth: Width of stim window
+        screenHeight: Height of stim window
+        movieWidth: Width of movieStim3 object inside stim window. Future: Allows for movie default resolution?
+        movieWidth: Height of movieStim3 object inside stim window
+        screenIndex: Which screen to display the stim window on.
+        playAttnGetter: Whether to use PyHab's built-in attention-getter or not.
+            Also affects study flow, in that the movie now starts playing on "A" press.
+        freezeFrame: If playAttnGetter == True, this is the minimum time the first frame
+            of the movie will be displayed after the attention-getter finishes.
+        :return:
+        :rtype:
+        '''
         self.showMainUI()
         self.workingRect.draw()
         self.workingText.draw()
@@ -585,6 +674,13 @@ class pyHabBuilder():
             self.settings['freezeFrame'] = stimfo[6]
         
     def addMoviesToTypesDlg(self):
+        '''
+        A series dialog boxes, the first selecting a trial type and the number of movies to add,
+        then one file open dialog for each movie, which is in turn added to the movieNames list
+        for that trial type.
+        :return:
+        :rtype:
+        '''
         self.showMainUI()
         self.workingRect.draw()
         self.workingText.draw()
@@ -616,6 +712,14 @@ class pyHabBuilder():
             e = errDlg.show()
         
     def condSettingsDlg(self): #Settings relating to conditions and randomization
+        '''
+        The dialog window for "condition settings", not to be confused with the
+        condition interface created by self.condMaker(). This determines whether
+        condition randomization is used at all, a separate interface is used to
+        define the conditions themselves.
+        :return:
+        :rtype:
+        '''
         cDlg = gui.Dlg(title="Conditions settings")
         #Welcome to waterloo. The simple version is just "make a list of conditions and set them after saving". 
         #The ideal is that it reads off movienames (or # movies) and all and lets you specify for each order...
@@ -660,7 +764,13 @@ class pyHabBuilder():
                 self.settings['condFile'] = '' #Erases one if it existed.
 
     def condMaker(self, rep=False): #For dealing with conditions.
-        #What we really need here is basically a whole separate window with condition labels on the left and "columns" for each ttype.
+        '''
+        A whole separate interface for managing condition creation.
+        :param rep: Basically whether we are recursing while editing conditions
+        :type rep: bool
+        :return:
+        :rtype:
+        '''
         condHeader = visual.TextStim(self.win, text="Conditions",height=.1, bold=True,pos=[-.83,.9])
         divLinesV = [] #Vertical dividing lines (actually very thin rects)
         divLinesH = [] #Horizontal dividing lines
@@ -799,18 +909,26 @@ class pyHabBuilder():
                 
     
     def condSetter(self, cond='NEW', ex=False): #Modifying or making new condition information.
+        '''
+        One dialog per trial type. Each dialog has a list of all the movies in that type
+        This is not intuitive under the hood. The output of this is a dict with an array like this for each trial type: [1, 2, 3]
+        Those numbers refer to the index of the movie in that trial's movieNames array.
+        But, in this dialog, users are inputting the point in the order in which they would like each one to appear.
+        So if the third movie in the names gets the number 1 in this dialog, the output array starts [3, ]
+        Also yes the ouput is using the index plus one. This is because originally you had to hand-code this condition file, and it makes it
+        more intelligible to non-programmer users.
+        :param cond: Condition name
+        :type cond: str
+        :param ex: Whether the condition already exists
+        :type ex: bool
+        :return:
+        :rtype:
+        '''
         condDlg2=gui.Dlg(title="Define condition")
         condDlg2.addField("Condition label:", cond)
         condDlg2.addText("You will have separate dialogs to set the order of movies in each trial type. Press OK to begin")
         condDinfo = condDlg2.show()
         if condDlg2.OK:
-            #One dialog trial type. Each dialog has a list of all the movies in that type
-            #This is not intuitive under the hood. The output of this is a dict with an array like this for each trial type: [1, 2, 3]
-            #Those numbers refer to the index of the movie in that trial's movieNames array.
-            #But, in this dialog, users are inputting the point in the order in which they would like each one to appear.
-            #So if the third movie in the names gets the number 1 in this dialog, the output array starts [3, ]
-            #Also yes the ouput is using the index plus one. This is because originally you had to hand-code this condition file, and it makes it
-            #more intelligible to non-programmer users.
             condDinfo[0] = str(condDinfo[0])
             if ex and condDinfo[0] != cond: #Renamed existing condition
                 self.settings['condList'][self.settings['condList'].index(cond)] = condDinfo[0] 
@@ -883,7 +1001,9 @@ class pyHabBuilder():
                 self.settings['condList'].append(str(cond))
         
     def delCond(self):
-        #Present list of existing conditions. Erase one.
+        '''
+        Present list of existing conditions. Choose one to remove.
+        '''
         dCondDlg = gui.Dlg(title="Delete a condition")
         dCondDlg.addField('Choose a condition to delete', choices = self.settings['condList'])
         delCond = dCondDlg.show()
@@ -893,7 +1013,18 @@ class pyHabBuilder():
             
    
    
-    def habSettingsDlg(self): #Habituation criteria 
+    def habSettingsDlg(self): #Habituation criteria
+        '''
+        Dialog for settings relating to habituation criteria:
+        maxHabTrials (maximum possible hab trials if criterion not met)
+        setCritWindow (# trials summed over when creating criterion)
+        setCritDivisor (denominator of criterion calculation . e.g., sum of first 3 trials
+            divided by 2 would have 3 for setCritWindow and 2 for this.)
+        metCritWindow (# trials summed over when evaluating whether criterion has been met)
+        metCritDivisor (denominator of sum calculated when determining if criterion has been met)
+        :return:
+        :rtype:
+        '''
         hDlg = gui.Dlg(title="Habituation block settings")
         hDlg.addField("Max number of habituation trials (if criterion not met)", self.settings['maxHabTrials'])
         hDlg.addField("Number of trials to sum looking time over when making hab criterion", self.settings['setCritWindow'])
@@ -908,7 +1039,13 @@ class pyHabBuilder():
             self.settings['metCritWindow'] = habDat[3]
             self.settings['metCritDivisor'] = habDat[4]
     
-    def saveDlg(self): #For setting which folder to save to.
+    def saveDlg(self):
+        '''
+        Opens a save dialog allowing you to choose where to save your project.
+        Essentially sets self.folderPath
+        :return:
+        :rtype:
+        '''
         NoneType = type(None)
         sDlg = gui.fileSaveDlg(prompt="Name a folder to save study into")  #We would put prefix as a default but it makes the system fail.
         if type(sDlg) is not NoneType:
@@ -924,6 +1061,11 @@ class pyHabBuilder():
             self.saveEverything()
     
     def saveEverything(self):
+        '''
+        Saves a PyHab project to a set of folders dictated by self.folderPath
+        :return:
+        :rtype:
+        '''
         if not os.path.exists(self.folderPath):
             os.makedirs(self.folderPath) #creates the initial folder if it did not exist.
         success=True #Assume it's going to work.
@@ -934,6 +1076,10 @@ class pyHabBuilder():
         stimPath = self.folderPath+'stimuli'+self.dirMarker
         if not os.path.exists(stimPath):
             os.makedirs(stimPath)
+        codePath = self.folderPath+'PyHab'+self.dirMarker
+        if not os.path.exists(codePath):
+            os.makedirs(codePath)
+        srcDir = 'PyHab'+self.dirMarker
         #Condition file!
         if len(self.condDict)>0:
             tempArray = []
@@ -944,7 +1090,7 @@ class pyHabBuilder():
                 secretWriter.writerow(tempArray[k]) #hope that closes too...
         #copy stimuli if there are stimuli. Also pulls upchime1.wav
         if len(self.stimSource)>0:
-            upchimePath='upchime1.wav' #need upchime1.wav or it won't work!
+            upchimePath='PyHab' + self.dirMarker + 'upchime1.wav' #need upchime1.wav or it won't work!
             newchimePath = self.folderPath + 'upchime1.wav'
             if not os.path.exists(newchimePath):
                 shutil.copyfile(upchimePath,newchimePath)
@@ -966,18 +1112,22 @@ class pyHabBuilder():
             settingsOutput.writerow([i, j])
         #Copy over the class and such. Since these aren't modiied, make sure they don't exist first.
         classPath = 'PyHabClass.py'
-        classTarg = self.folderPath+classPath
+        classTarg = codePath+classPath
         classPLPath = 'PyHabClassPL.py'
-        classPLTarg = self.folderPath+classPLPath
+        classPLTarg = codePath+classPLPath
         buildPath = 'PyHabBuilder.py'
-        buildTarg = self.folderPath+buildPath
+        buildTarg = codePath+buildPath
+        initPath = '__init__.py'
+        initTarg = codePath+initPath
         try:
             if not os.path.exists(classTarg):
-                shutil.copyfile(classPath, classTarg)
+                shutil.copyfile(srcDir+classPath, classTarg)
             if not os.path.exists(classPLTarg):
-                shutil.copyfile(classPLPath,classPLTarg)
+                shutil.copyfile(srcDir+classPLPath,classPLTarg)
             if not os.path.exists(buildTarg):
-                shutil.copyfile(buildPath,buildTarg)
+                shutil.copyfile(srcDir+buildPath,buildTarg)
+            if not os.path.exists(initTarg):
+                shutil.copyfile(srcDir+initPath,initTarg)
         except:
             #error dialog?
             errDlg = gui.Dlg(title="Could not copy PyHab and builder!")
@@ -990,7 +1140,7 @@ class pyHabBuilder():
         if not os.path.exists(launcherPath):
             try:
                 # the location of the pyHabLauncher template file
-                launcherSource = 'PyHab Launcher.py'
+                launcherSource = srcDir+'PyHab Launcher.py'
                 #Open file and find line 5, aka the path to the settings file, replace it appropriately
                 with open(launcherSource,'r') as file:
                     launcherFile = file.readlines()
@@ -1007,7 +1157,8 @@ class pyHabBuilder():
                 print('creating launcher script failed!')
         if success:
             saveSuccessDlg = gui.Dlg(title="Experiment saved!")
-            saveSuccessDlg.addText("Experiment saved successfully")
+            saveSuccessDlg.addText("Experiment saved successfully to" + self.folderPath)
             saveSuccessDlg.show()
+
         
         
