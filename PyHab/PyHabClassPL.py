@@ -658,7 +658,7 @@ class pyHabPL():
                 didRedo = False
     
     def doTrial(self,number, type,disMovie):
-        print(number)
+        #print(number)
         self.trialText.text = "Trial no. " + str(number)
 #        global habCount
 #        global frameCount

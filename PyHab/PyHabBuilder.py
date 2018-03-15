@@ -1,6 +1,4 @@
-from psychopy import visual, event, core, data, gui, monitors, tools, sound
-#import pyglet
-#from pyglet import input as pyglet_input #...?
+from psychopy import visual, event, core, gui, monitors, tools, sound,__version__
 import wx, random, csv, shutil, os
 from math import *
 from datetime import *
@@ -10,7 +8,7 @@ from datetime import *
 # The class takes the settings dict, failing that it has a blank to fill in.
 #To fix: A better way of removing movies from a trial type.
 
-class pyHabBuilder():    
+class pyHabBuilder():
     def __init__(self, loadedSaved=False, settingsDict={}):
         self.loadSave = loadedSaved #For easy reference elsewhere
         if os.name is 'posix': #glorious simplicity of unix filesystem
@@ -1144,8 +1142,9 @@ class pyHabBuilder():
                 #Open file and find line 5, aka the path to the settings file, replace it appropriately
                 with open(launcherSource,'r') as file:
                     launcherFile = file.readlines()
-                newLine = 'setName = \"' + self.settings['prefix']+'Settings.csv\"\n' #Simplified, so it always runs the settings file in that folder.
+                newLine = 'setName = \"' + self.settings['prefix']+'Settings.csv\"\r\n' #Simplified, so it always runs the settings file in that folder.
                 launcherFile[6] = newLine
+                launcherFile[7] = "#Created in PsychoPy version " + __version__ + "\r\n"
                 #now write the new file!
                 with open (launcherPath, 'w') as t:
                     t.writelines(launcherFile)
