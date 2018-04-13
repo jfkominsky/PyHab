@@ -3,7 +3,6 @@ from psychopy import visual, event, core, data, gui, monitors, tools, sound
 #from pyglet import input as pyglet_input #...?
 import wx, random, csv, shutil, os
 from math import *
-from datetime import *
 
 # This program designed to *create* PyHab files using a relatively straightforward GUI. Hoo boy.
 # Outputs a folder. Folder contains a launcher script that allows PyHab to either run or edit.

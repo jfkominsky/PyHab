@@ -11,7 +11,7 @@ from math import *
 from datetime import *
 from dateutil.relativedelta import *
 #PyHab + stimulus control system
-#Jonathan Kominsky, 2016-2017
+#Jonathan Kominsky, 2016-2018
 #Keyboard coding: A = ready, B = coder 1 on, L = coder 2 on, R = abort trial, Y = end experiment (for fussouts)
 #Between-trials: R = redo previous trial, J = jump to test trial, I = insert additional habituation trial (hab only)
 
@@ -194,7 +194,7 @@ class pyHab():
         while i < len(self.dataMatrix):
             if self.dataMatrix[i]['trial'] == trialNum:
                 trialIndex = i
-                newTempData=dataMatrix[i]
+                newTempData= self.dataMatrix[i]
                 #print newTempData
                 i+=1
             else:
@@ -207,7 +207,7 @@ class pyHab():
             self.habCount -= 1
         self.badTrials.append(newTempData)
         #remove it from dataMatrix
-        self.dataMatrix.remove(dataMatrix[trialIndex])
+        self.dataMatrix.remove(self.dataMatrix[trialIndex])
         #now for the hard part: shifting the verbose data!
         #basically need to read through the verbose matrices, add everything that references that trial to BadVerboseOn, and mark the relevant lines for later deletion
         for i in range(0, len(self.verboseOn)):
@@ -245,12 +245,12 @@ class pyHab():
             n=0
             while m < len(self.verboseOn2):
                 if self.verboseOn2[m][0] == 99:
-                    self.verboseOn2.remove(verboseOn2[m])
+                    self.verboseOn2.remove(self.verboseOn2[m])
                 else:
                     m += 1
             while n < len(self.verboseOff2):
                 if self.verboseOff2[n][0] == 99:
-                    self.verboseOff2.remove(verboseOff2[n])
+                    self.verboseOff2.remove(self.verboseOff2[n])
                 else:
                     n += 1
     
@@ -848,7 +848,7 @@ class pyHab():
                     tempGazeArray2 = [number, type, startOn2, endOn2, onDur2]
                     onArray2.append(tempGazeArray2)
                     sumOn2 = sumOn2 + onDur2
-            movieStatus = self.dispTrial(type,disMovie) #TODO: This is where we would have to get fancy with finding movie end.
+            movieStatus = self.dispTrial(type,disMovie)
             if type in self.movieEnd and endFlag and movieStatus == 1:
                 runTrial = False
                 endTrial = core.getTime() - startTrial
