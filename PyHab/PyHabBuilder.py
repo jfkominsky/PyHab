@@ -331,20 +331,20 @@ class pyHabBuilder():
                 chz = ["Yes", "OnOnly", "No"]
             typeDlg.addField("Gaze-contingent trial type", choices = chz)
             if trialType in self.settings['autoAdvance']:
-                chz2 = ["Yes","No"]
+                chz2 = True
             else:
-                chz2 = ["No", "Yes"]
-            typeDlg.addField("Auto-advance INTO trial without waiting for expeirmenter?", choices=chz2)
+                chz2 = False
+            typeDlg.addField("Auto-advance INTO trial without waiting for expeirmenter?", initial=chz2)
             if makeNew == False and trialType not in self.settings['playAttnGetter']:
-                chz3 = ["No", "Yes"]
+                chz3 = False
             else:
-                chz3 = ["Yes","No"]
-            typeDlg.addField("Play attention-getter on this trial type? (Stim presentation mode only)", choices=chz3)
+                chz3 = True
+            typeDlg.addField("Play attention-getter on this trial type? (Stim presentation mode only)", initial=chz3)
             if trialType in self.settings['movieEnd']:
-                chz4 = ["Yes","No"]
+                chz4 = True
             else:
-                chz4 = ["No","Yes"]
-            typeDlg.addField("Only end trial on end of movie repetition? (Only works when presenting stimuli)", choices=chz4)
+                chz4 = False
+            typeDlg.addField("Only end trial on end of movie repetition? (Only works when presenting stimuli)", initial=chz4)
             typeInfo = typeDlg.show()
             if typeDlg.OK:
                 #Update all the things, or create them.
@@ -386,17 +386,17 @@ class pyHabBuilder():
                         self.settings['playThrough'][trialType] = 2
                     elif typeInfo[len(typeInfo)-4] == "OnOnly" and self.settings['playThrough'][trialType] is not 1:
                         self.settings['playThrough'][trialType] = 1
-                    if typeInfo[len(typeInfo)-3] == "No" and trialType in self.settings['autoAdvance']: #gaze-contingent trial type, not already tagged as such.
+                    if typeInfo[len(typeInfo)-3] in [False,0,'False','0'] and trialType in self.settings['autoAdvance']: #gaze-contingent trial type, not already tagged as such.
                         self.settings['autoAdvance'].remove(trialType)
-                    elif typeInfo[len(typeInfo)-3] == "Yes" and not trialType in self.settings['autoAdvance']:
+                    elif typeInfo[len(typeInfo)-3] in [True, 1, 'True', '1'] and not trialType in self.settings['autoAdvance']:
                         self.settings['autoAdvance'].append(trialType)
-                    if typeInfo[len(typeInfo)-2] == "No" and trialType in self.settings['playAttnGetter']:
+                    if typeInfo[len(typeInfo)-2] in [False,0,'False','0'] and trialType in self.settings['playAttnGetter']:
                         self.settings['playAttnGetter'].remove(trialType)
-                    elif typeInfo[len(typeInfo)-2] == "Yes" and not trialType in self.settings['playAttnGetter']:
+                    elif typeInfo[len(typeInfo)-2] in [True, 1, 'True', '1'] and not trialType in self.settings['playAttnGetter']:
                         self.settings['playAttnGetter'].append(trialType)
-                    if typeInfo[len(typeInfo)-1] == "No" and trialType in self.settings['movieEnd']:
+                    if typeInfo[len(typeInfo)-1] in [False,0,'False','0'] and trialType in self.settings['movieEnd']:
                         self.settings['movieEnd'].remove(trialType)
-                    elif typeInfo[len(typeInfo)-1] == "Yes" and not trialType in self.settings['movieEnd']:
+                    elif typeInfo[len(typeInfo)-1] in [True, 1, 'True', '1'] and not trialType in self.settings['movieEnd']:
                         self.settings['movieEnd'].append(trialType)
                     if len(typeInfo) > 6: #Again, if there were movies to list.
                         tempMovies = [] #This will just replace the movienames list
@@ -437,28 +437,28 @@ class pyHabBuilder():
         else:
             typeDlg.addField("Maximum duration",60)
         if 'Hab' in self.settings['autoAdvance']:
-            chz2 = ["Yes", "No"]
+            chz2 = True
         else:
-            chz2 = ["No", "Yes"]
-        typeDlg.addField("Auto-advance INTO trial without waiting for expeirmenter?", choices=chz2)
+            chz2 = False
+        typeDlg.addField("Auto-advance INTO trial without waiting for expeirmenter?", initial=chz2)
         if makeNew == False and 'Hab' not in self.settings['playAttnGetter']:
-            chz3 = ["No", "Yes"]
+            chz3 = False
         else:
-            chz3 = ["Yes", "No"]
-        typeDlg.addField("Play attention-getter on this trial type? (Stim presentation mode only)", choices=chz3)
+            chz3 = True
+        typeDlg.addField("Play attention-getter on this trial type? (Stim presentation mode only)", initial=chz3)
         typeDlg.addText("Hab block sub-trials")
         if not makeNew:
             if len(self.settings['habTrialList']) > 0:
-                chz = ['Yes', 'No']
+                chz = True
                 numSub = len(self.settings['habTrialList'])
             else:
-                chz = ['No', 'Yes']
+                chz = False
                 numSub = 0
         else:
-            chz = ['No', 'Yes']
+            chz = False
             numSub = 0
-        typeDlg.addField("Use sub-trials? (If yes, new dialog will open)", choices=chz)
-        typeDlg.addField("Number of sub-trials (including Hab trial)", numSub)
+        typeDlg.addField("Use sub-trials? (If checked, new dialog will open)", initial=chz)
+        typeDlg.addField("Number of sub-trials (INCLUDING Hab trial)", numSub)
         habInfo = typeDlg.show()
 
         if typeDlg.OK:
@@ -468,13 +468,13 @@ class pyHabBuilder():
             x = self.buttonList['functions'].index(self.addHabBlock) #gets index
             self.buttonList['text'][x].text="Mod Hab Block" #Updates button text
             self.settings['maxDur']['Hab'] = habInfo[0]
-            if habInfo[len(habInfo) - 2] == "No" and 'Hab' in self.settings['autoAdvance']:
+            if habInfo[len(habInfo) - 2] in [False,0,'False','0'] and 'Hab' in self.settings['autoAdvance']:
                 self.settings['autoAdvance'].remove('Hab')
-            elif habInfo[len(habInfo) - 2] == "Yes" and not 'Hab' in self.settings['autoAdvance']:
+            elif habInfo[len(habInfo) - 2] in [True, 1, 'True', '1'] and not 'Hab' in self.settings['autoAdvance']:
                 self.settings['autoAdvance'].append('Hab')
-            if habInfo[len(habInfo) - 1] == "No" and 'Hab' in self.settings['playAttnGetter']:
+            if habInfo[len(habInfo) - 1] in [False,0,'False','0'] and 'Hab' in self.settings['playAttnGetter']:
                 self.settings['playAttnGetter'].remove('Hab')
-            elif habInfo[len(habInfo) - 1] == "Yes" and not 'Hab' in self.settings['playAttnGetter']:
+            elif habInfo[len(habInfo) - 1] in [True, 1, 'True', '1'] and not 'Hab' in self.settings['playAttnGetter']:
                 self.settings['playAttnGetter'].append('Hab')
             if makeNew:
                 i = len(self.trialTypesArray['labels'])  # Grab length before adding, conveniently the index we need for position info etc.
@@ -499,13 +499,13 @@ class pyHabBuilder():
                         tempMovies.append(self.settings['movieNames']['Hab'][i])
                 self.settings['movieNames']['Hab'] = tempMovies
             #Check if we need to make a set of sub-trials.
-            if habInfo[-2] == 'Yes' and habInfo[-1] > 1:
+            if habInfo[-2] in [True, 1, 'True', '1'] and habInfo[-1] > 1:
                self.setHabSubTrials(habInfo[-1])
-            elif habInfo[-2] == 'Yes' and habInfo[-1] <= 1:
+            elif habInfo[-2] in [True, 1, 'True', '1'] and habInfo[-1] <= 1:
                 errDlg = gui.Dlg("No sub-block created")
                 errDlg.addText("Sub-block of 1 or 0 defaults to single hab trial. Hab trial saved.")
                 errDlg.show()
-            elif len(self.settings['habTrialList']) > 0 and habInfo[-2] == 'No':
+            elif len(self.settings['habTrialList']) > 0 and habInfo[-2] in [False,0,'False','0'] :
                 self.settings['habTrialList'] = [] #If the sub-block functionality was on and is now off
 
     def setHabSubTrials(self,numHab):
