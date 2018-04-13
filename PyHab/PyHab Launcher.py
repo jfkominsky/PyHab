@@ -13,7 +13,7 @@ def run():
         setArr.append(row)
     setDict = dict(setArr) 
     launcherDlg = gui.Dlg(title="PyHab Launcher",labelButtonCancel=u'Exit')
-    launcherDlg.addText('Current setings file: ' + setName)
+    launcherDlg.addText('Current settings file: ' + setName)
     launcherDlg.addField('Run study or open builder?', choices=['Run','Builder'])
     tempOrd = eval(setDict['trialOrder'])
     tempMovs = eval(setDict['movieNames'])

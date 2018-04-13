@@ -1,7 +1,6 @@
 from psychopy import visual, event, core, gui, monitors, tools, sound,__version__
 import wx, random, csv, shutil, os
 from math import *
-from datetime import *
 
 # This program designed to *create* PyHab files using a relatively straightforward GUI. Hoo boy.
 # Outputs a folder. Folder contains a launcher script that allows PyHab to either run or edit.
@@ -49,11 +48,12 @@ class pyHabBuilder():
                                                         'prefix': 'PyHab', 
                                                         'dataloc':'data'+self.dirMarker,
                                                         'maxDur': { }, 
-                                                        'playThrough': [], 
+                                                        'playThrough': { },
+                                                        'movieEnd': [],
                                                         'maxOff': '2', 
                                                         'minOn': '1', 
                                                         'blindPres': '0', 
-                                                        'autoAdvance': '0', 
+                                                        'autoAdvance': [],
                                                         'randPres': '0', 
                                                         'condPath': '', 
                                                         'condFile': '', 
@@ -63,7 +63,8 @@ class pyHabBuilder():
                                                         'setCritWindow': '3', 
                                                         'setCritDivisor': '2', 
                                                         'metCritWindow': '3', 
-                                                        'metCritDivisor': '1', 
+                                                        'metCritDivisor': '1',
+                                                        'habTrialList':[],
                                                         'stimPres': 0,  #Will be set on each run anyways.
                                                         'moviePath': 'stimuli'+self.dirMarker, 
                                                         'movieNames':{}, 
@@ -75,7 +76,7 @@ class pyHabBuilder():
                                                         'screenIndex': '1', 
                                                         'ISI': '0',
                                                         'freezeFrame': '0.2',
-                                                        'playAttnGetter': '1',
+                                                        'playAttnGetter': [],
                                                         'folderPath':'',
                                                         'trialTypes':[],
                                                         'prefLook':'0'}
@@ -83,7 +84,7 @@ class pyHabBuilder():
             self.trialTypesArray={'shapes':[],'text':[],'labels':[]}
         else:
             self.settings = settingsDict
-            evalList = ['dataColumns','maxDur','condList','playThrough','trialOrder','movieNames','trialTypes'] #eval all the things that need eval.
+            evalList = ['dataColumns','maxDur','condList','movieEnd','playThrough','trialOrder','movieNames','autoAdvance','playAttnGetter','trialTypes','habTrialList'] #eval all the things that need eval.
             for i in evalList:
                 self.settings[i] = eval(self.settings[i])
             self.trialTypesArray = self.loadTypes()
@@ -132,7 +133,11 @@ class pyHabBuilder():
         self.buttonList['functions'].append(self.delTrialTypeDlg)
         addHabButton = visual.Rect(self.win, width=.9*(self.paletteArea[1]-self.paletteArea[0]),height=abs(self.paletteArea[3]-self.paletteArea[2])*.10, fillColor="yellow", lineColor="black",
                 pos=[self.paletteArea[0]+float(abs(self.paletteArea[1]-self.paletteArea[0]))/2,self.paletteArea[2]-float(abs(self.paletteArea[3]-self.paletteArea[2])*.2)])
-        addHabText=visual.TextStim(self.win, alignHoriz='center', alignVert='center', text = "Add Hab Block",height=.55*addHabButton.height, pos=addHabButton.pos,color="black")
+        if 'Hab' in self.settings['trialTypes']:
+            txt = 'Mod Hab Block'
+        else:
+            txt = 'Add Hab Block'
+        addHabText=visual.TextStim(self.win, alignHoriz='center', alignVert='center', text = txt,height=.55*addHabButton.height, pos=addHabButton.pos,color="black")
         self.buttonList['shapes'].append(addHabButton)
         self.buttonList['text'].append(addHabText)
         self.buttonList['functions'].append(self.addHabBlock)
@@ -199,7 +204,13 @@ class pyHabBuilder():
                         while self.mouse.getPressed()[0] == 1:
                             pass
                         self.win.winHandle.set_visible(visible=False)
-                    self.buttonList['functions'][i]() #It should not be this easy, BUT IT IS. Python is great.
+                    if self.buttonList['functions'][i] == self.addHabBlock: #one special case
+                        if self.buttonList['text'][i].text == "Mod Hab Block":
+                            self.addHabBlock(makeNew=False)
+                        else:
+                            self.addHabBlock()
+                    else:
+                        self.buttonList['functions'][i]() #It should not be this easy, BUT IT IS. Python is great.
                     if os.name is not 'posix':
                         self.win.winHandle.set_visible(visible=True)
             #Check all the trial type elements.
@@ -255,6 +266,8 @@ class pyHabBuilder():
         Dialog for creating OR modifying a trial type. Allows you to set
         the maximum duration of that trial type as well as remove movies
         from it, and also set whether the trial type is gaze contingent.
+        Now also sets whether the study should auto-advance into this
+        trial and whether the built-in attention-getter should be used.
 
         :param trialType: Name of the trial type
         :type trialType: str
@@ -271,15 +284,15 @@ class pyHabBuilder():
         self.win.flip()
         #For when a trial is right-clicked, or a new one created, open a dialog with info about it.
         skip = False
-        if len(self.trialTypesArray['labels']) == 8:
+        if len(self.trialTypesArray['labels']) == 7:
             errDlg = gui.Dlg(title="Max trial types reached!")
-            errDlg.addText("PyHab's builder currently supports a maximum of 8 trial types.")
+            errDlg.addText("PyHab's builder currently supports a maximum of 7 trial types + hab trials.")
             errDlg.show()
         else:
             typeDlg = gui.Dlg(title="Trial Type " + trialType)
             typeDlg.addField("Trial type name: ", trialType)
             if not makeNew: #if this modifying an existing trial type, pre-fill the existing info.
-                if len(prevInfo) == 0: #Changing how movienames.
+                if len(prevInfo) == 0: #allows for removal of movies from the trial type
                     typeDlg.addField("Max duration", self.settings['maxDur'][trialType])
                     if len(self.settings['movieNames'][trialType]) > 0:
                         typeDlg.addText("Current movie files in trial type (uncheck to remove)")
@@ -297,15 +310,39 @@ class pyHabBuilder():
                     if self.studyFlowArray['labels'][i] == trialType:
                         flowIndexes.append(i) 
                 typeIndex =self.trialTypesArray['labels'].index(trialType)
+                if self.settings['playThrough'][trialType] == 2:
+                    chz = ["No", "OnOnly", "Yes"]
+                elif self.settings['playThrough'][trialType] == 1:
+                    chz = ["OnOnly", "Yes", "No"]
+                else:
+                    chz = ["Yes", "OnOnly", "No"]
             elif len(prevInfo) > 0:
                 typeDlg.addField("Max duration", prevInfo[1])
+                if prevInfo[2] == 2:
+                    chz = ["No", "OnOnly", "Yes"]
+                elif prevInfo[2] == 1:
+                    chz = ["OnOnly", "Yes", "No"]
+                else:
+                    chz = ["Yes", "OnOnly", "No"]
             else: #if there is no existing indeces to refer to
                 typeDlg.addField("Max duration",60)
-            if trialType in self.settings['playThrough']:
-                chz = ["No","Yes"]
-            else:
-                chz=["Yes","No"]
+                chz = ["Yes", "OnOnly", "No"]
             typeDlg.addField("Gaze-contingent trial type", choices = chz)
+            if trialType in self.settings['autoAdvance']:
+                chz2 = True
+            else:
+                chz2 = False
+            typeDlg.addField("Auto-advance INTO trial without waiting for expeirmenter?", initial=chz2)
+            if makeNew == False and trialType not in self.settings['playAttnGetter']:
+                chz3 = False
+            else:
+                chz3 = True
+            typeDlg.addField("Play attention-getter on this trial type? (Stim presentation mode only)", initial=chz3)
+            if trialType in self.settings['movieEnd']:
+                chz4 = True
+            else:
+                chz4 = False
+            typeDlg.addField("Only end trial on end of movie repetition? (Only works when presenting stimuli)", initial=chz4)
             typeInfo = typeDlg.show()
             if typeDlg.OK:
                 #Update all the things, or create them.
@@ -315,10 +352,7 @@ class pyHabBuilder():
                         #change all the dicts and everything.
                         self.settings['movieNames'][typeInfo[0]] = self.settings['movieNames'].pop(trialType)
                         self.settings['maxDur'][typeInfo[0]]=self.settings['maxDur'].pop(trialType)
-                        if trialType in self.settings['playThrough']:
-                            for i in range(0,len(self.settings['playThrough'])):
-                                if self.settings['playThrough'][i]==trialType:
-                                    self.settings['playThrough'][i] = typeInfo[0] #replace.
+                        self.settings['playThrough'][typeInfo[0]] = self.settings['playThrough'].pop(trialType)
                         #update trial type and study flow too
                         numChar = len(typeInfo[0])
                         if numChar <= 3:
@@ -342,11 +376,27 @@ class pyHabBuilder():
                     trialType = typeInfo[0]
                 if not skip:
                     self.settings['maxDur'][trialType] = typeInfo[1] #Update maxDur
-                    if typeInfo[len(typeInfo)-1] == "Yes" and trialType in self.settings['playThrough']: #gaze-contingent trial type, not already tagged as such.
-                        self.settings['playThrough'].remove(trialType)
-                    elif typeInfo[len(typeInfo)-1] == "No" and not trialType in self.settings['playThrough']: #not gaze-contingent, add to playThrough
-                        self.settings['playThrough'].append(trialType)
-                    if len(typeInfo) > 3: #Again, if there were movies to list.
+                    if trialType not in self.settings['playThrough'].keys(): #Initialize if needed.
+                        self.settings['playThrough'][trialType] = 0
+                    if typeInfo[len(typeInfo)-4] == "Yes" and self.settings['playThrough'][trialType] is not 0: #gaze-contingent trial type, not already tagged as such.
+                        self.settings['playThrough'][trialType] = 0
+                    elif typeInfo[len(typeInfo)-4] == "No" and self.settings['playThrough'][trialType] is not 2:
+                        self.settings['playThrough'][trialType] = 2
+                    elif typeInfo[len(typeInfo)-4] == "OnOnly" and self.settings['playThrough'][trialType] is not 1:
+                        self.settings['playThrough'][trialType] = 1
+                    if typeInfo[len(typeInfo)-3] in [False,0,'False','0'] and trialType in self.settings['autoAdvance']: #gaze-contingent trial type, not already tagged as such.
+                        self.settings['autoAdvance'].remove(trialType)
+                    elif typeInfo[len(typeInfo)-3] in [True, 1, 'True', '1'] and not trialType in self.settings['autoAdvance']:
+                        self.settings['autoAdvance'].append(trialType)
+                    if typeInfo[len(typeInfo)-2] in [False,0,'False','0'] and trialType in self.settings['playAttnGetter']:
+                        self.settings['playAttnGetter'].remove(trialType)
+                    elif typeInfo[len(typeInfo)-2] in [True, 1, 'True', '1'] and not trialType in self.settings['playAttnGetter']:
+                        self.settings['playAttnGetter'].append(trialType)
+                    if typeInfo[len(typeInfo)-1] in [False,0,'False','0'] and trialType in self.settings['movieEnd']:
+                        self.settings['movieEnd'].remove(trialType)
+                    elif typeInfo[len(typeInfo)-1] in [True, 1, 'True', '1'] and not trialType in self.settings['movieEnd']:
+                        self.settings['movieEnd'].append(trialType)
+                    if len(typeInfo) > 6: #Again, if there were movies to list.
                         tempMovies = [] #This will just replace the movienames list
                         for i in range(0,len(self.settings['movieNames'][trialType])):
                             if typeInfo[i+2]:
@@ -366,8 +416,121 @@ class pyHabBuilder():
                         self.settings['trialTypes'].append(typeInfo[0])
                         self.settings['movieNames'][typeInfo[0]] = []
     
-    def addHabBlock(self):
-        self.trialTypeDlg(trialType="Hab")
+    def addHabBlock(self, makeNew = True):
+        '''
+        Creates a hab trial type, which consists of a hab trial plus, now, some other number of trials
+        It essentially needs to create a sub-flow.
+        :return:
+        :rtype:
+        '''
+        #Some stuff is predetermined, specifically name and gaze-contingency
+        typeDlg = gui.Dlg(title="Hab block creator")
+        typeDlg.addText("Hab trial settings")
+        if not makeNew:
+            typeDlg.addField("Maximum duration",self.settings['maxDur']['Hab'])
+            if len(self.settings['movieNames']['Hab']) > 0:
+                typeDlg.addText("Current movie files in trial type (uncheck to remove)")
+                for i in range(0, len(self.settings['movieNames']['Hab'])):
+                    typeDlg.addField(self.settings['movieNames']['Hab'][i], initial=True)
+        else:
+            typeDlg.addField("Maximum duration",60)
+        if 'Hab' in self.settings['autoAdvance']:
+            chz2 = True
+        else:
+            chz2 = False
+        typeDlg.addField("Auto-advance INTO trial without waiting for expeirmenter?", initial=chz2)
+        if makeNew == False and 'Hab' not in self.settings['playAttnGetter']:
+            chz3 = False
+        else:
+            chz3 = True
+        typeDlg.addField("Play attention-getter on this trial type? (Stim presentation mode only)", initial=chz3)
+        typeDlg.addText("Hab block sub-trials")
+        if not makeNew:
+            if len(self.settings['habTrialList']) > 0:
+                chz = True
+                numSub = len(self.settings['habTrialList'])
+            else:
+                chz = False
+                numSub = 0
+        else:
+            chz = False
+            numSub = 0
+        typeDlg.addField("Use sub-trials? (If checked, new dialog will open)", initial=chz)
+        typeDlg.addField("Number of sub-trials (INCLUDING Hab trial)", numSub)
+        habInfo = typeDlg.show()
+
+        if typeDlg.OK:
+            #On OK, create a new ui with a drop-down from trialtypes that includes hab.
+            #Need to change text of hab button
+            self.settings['playThrough']['Hab'] = 0
+            x = self.buttonList['functions'].index(self.addHabBlock) #gets index
+            self.buttonList['text'][x].text="Mod Hab Block" #Updates button text
+            self.settings['maxDur']['Hab'] = habInfo[0]
+            if habInfo[len(habInfo) - 2] in [False,0,'False','0'] and 'Hab' in self.settings['autoAdvance']:
+                self.settings['autoAdvance'].remove('Hab')
+            elif habInfo[len(habInfo) - 2] in [True, 1, 'True', '1'] and not 'Hab' in self.settings['autoAdvance']:
+                self.settings['autoAdvance'].append('Hab')
+            if habInfo[len(habInfo) - 1] in [False,0,'False','0'] and 'Hab' in self.settings['playAttnGetter']:
+                self.settings['playAttnGetter'].remove('Hab')
+            elif habInfo[len(habInfo) - 1] in [True, 1, 'True', '1'] and not 'Hab' in self.settings['playAttnGetter']:
+                self.settings['playAttnGetter'].append('Hab')
+            if makeNew:
+                i = len(self.trialTypesArray['labels'])  # Grab length before adding, conveniently the index we need for position info etc.
+                self.trialTypesArray['labels'].append('Hab')
+                tempObj = visual.Rect(self.win, width=self.typeWidthObj, height=self.typeHeightObj,
+                                      fillColor=self.colorsArray[i], pos=self.typeLocs[i])
+                numChar = len('Hab')
+                if numChar <= 3:
+                    numChar = 4  # Maximum height
+                tempTxt = visual.TextStim(self.win, alignHoriz='center', alignVert='center', bold=True,
+                                          height=self.typeHeightObj / (.38 * numChar), text='Hab',
+                                          pos=self.typeLocs[i])
+                self.trialTypesArray['shapes'].append(tempObj)
+                self.trialTypesArray['text'].append(tempTxt)
+                self.settings['trialTypes'].append('Hab')
+                self.settings['movieNames']['Hab'] = []
+            #Check about movies.
+            if len(habInfo) > 5:  # Again, if there were movies to list.
+                tempMovies = []  # This will just replace the movienames list
+                for i in range(0, len(self.settings['movieNames']['Hab'])):
+                    if habInfo[i + 1]:
+                        tempMovies.append(self.settings['movieNames']['Hab'][i])
+                self.settings['movieNames']['Hab'] = tempMovies
+            #Check if we need to make a set of sub-trials.
+            if habInfo[-2] in [True, 1, 'True', '1'] and habInfo[-1] > 1:
+               self.setHabSubTrials(habInfo[-1])
+            elif habInfo[-2] in [True, 1, 'True', '1'] and habInfo[-1] <= 1:
+                errDlg = gui.Dlg("No sub-block created")
+                errDlg.addText("Sub-block of 1 or 0 defaults to single hab trial. Hab trial saved.")
+                errDlg.show()
+            elif len(self.settings['habTrialList']) > 0 and habInfo[-2] in [False,0,'False','0'] :
+                self.settings['habTrialList'] = [] #If the sub-block functionality was on and is now off
+
+    def setHabSubTrials(self,numHab):
+        # We're going to ignore if there is already something in place, on the assumption that these
+        # sub-blocks will be small.
+        subBlockDlg = gui.Dlg("Hab Sub-trials")
+        subBlockDlg.addText("EXACTLY ONE must be set to Hab")
+        for i in range(0, numHab):
+            subBlockDlg.addField('sub-trial ' + str(i + 1), choices=self.settings['trialTypes'])
+        subBlockInfo = subBlockDlg.show()
+        if subBlockDlg.OK:
+            if 'Hab' not in subBlockInfo:
+                errDlg = gui.Dlg("Invalid sub-trials!")
+                errDlg.addText("Sub-trials must include AT LEAST one Hab trial!")
+                errDlg.show()
+                self.setHabSubTrials(numHab)
+            elif subBlockInfo.count('Hab') > 1:
+                errDlg = gui.Dlg("Invalid sub-trials!")
+                errDlg.addText("Sub-trials must include NO MORE THAN one Hab trial!")
+                errDlg.show()
+                self.setHabSubTrials(numHab)
+            else:
+                tempList = []
+                for i in range(0, len(subBlockInfo)):
+                    tempList.append(subBlockInfo[i])
+                self.settings['habTrialList'] = tempList
+
     
     def delTrialTypeDlg(self):
         '''
@@ -389,7 +552,7 @@ class pyHabBuilder():
             del self.settings['movieNames'][dType] #remove from movienames
             del self.settings['maxDur'][dType]# remove from maxdur
             if dType in self.settings['playThrough']: #if it was in playThrough, remove it from there too.
-                self.settings['playThrough'].remove(dType)
+                self.settings['playThrough'].pop(dType, None)
             self.trialTypesArray=self.loadTypes() #easiest to just reload the trial types.
             #For the study flow, it's easiest just to remove it from the trial order and reload the study flow.
             if dType in self.settings['trialOrder']:
@@ -542,8 +705,7 @@ class pyHabBuilder():
         maxOff: Max consecutive seconds looking away needed to end gaze-contingent trials
         minOn: Minimum gaze-on time before maxOff is used to determine end of trial.
         ISI: Minimum time between loops of stimuli.
-        autoAdvance: Whether the attention-getter needs to be manually triggered or
-            is triggered automatically after each trial
+
         blindPres: Level of experimenter blinding, 0 (none), 1 (no trial type info), or
             2 (only info is whether a trial is currently active.
         prefLook: Whether the study is preferential-looking or single-target.
@@ -560,11 +722,6 @@ class pyHabBuilder():
         uDlg.addField("Number of continuous seconds looking away to end trial", self.settings['maxOff'])
         uDlg.addField("Minimum time looking at screen before stimuli can be ended (not consecutive)",self.settings['minOn'])
         uDlg.addField("Minimum ISI between loops, in seconds", self.settings['ISI'])
-        if self.settings['autoAdvance'] in [0,'0','False',False]:
-            setBox = False
-        else:
-            setBox = True
-        uDlg.addField("Auto-advance from one trial to the next? (If checked, attention getter will play automatically after end of trial when ITI has passed)",initial=setBox)
         ch = []
         if self.settings['blindPres'] == '1' or self.settings['blindPres'] == 1:
             ch=[1,0,2]
@@ -585,12 +742,11 @@ class pyHabBuilder():
             self.settings['maxOff'] = uInfo[1]
             self.settings['minOn'] = uInfo[2]
             self.settings['ISI'] = uInfo[3]
-            self.settings['autoAdvance'] = uInfo[4]
-            self.settings['blindPres'] = uInfo[5]
-            if uInfo[6] == "Preferential looking" and self.settings['prefLook'] in [0,'0','False',False]: #specifically switching, reactivate all data cols.
+            self.settings['blindPres'] = uInfo[4]
+            if uInfo[5] == "Preferential looking" and self.settings['prefLook'] in [0,'0','False',False]: #specifically switching, reactivate all data cols.
                 self.settings['prefLook'] = 1
                 self.settings['dataColumns'] = self.allDataColumnsPL
-            elif uInfo[6] == "Single-target" and self.settings['prefLook'] in [1,'1','True',True]:
+            elif uInfo[5] == "Single-target" and self.settings['prefLook'] in [1,'1','True',True]:
                 self.settings['prefLook'] = 0
                 self.settings['dataColumns'] = self.allDataColumns
         
@@ -635,9 +791,7 @@ class pyHabBuilder():
         movieWidth: Width of movieStim3 object inside stim window. Future: Allows for movie default resolution?
         movieWidth: Height of movieStim3 object inside stim window
         screenIndex: Which screen to display the stim window on.
-        playAttnGetter: Whether to use PyHab's built-in attention-getter or not.
-            Also affects study flow, in that the movie now starts playing on "A" press.
-        freezeFrame: If playAttnGetter == True, this is the minimum time the first frame
+        freezeFrame: If playAttnGetter == True (for a given trial type), this is the minimum time the first frame
             of the movie will be displayed after the attention-getter finishes.
         :return:
         :rtype:
@@ -652,11 +806,6 @@ class pyHabBuilder():
         sDlg.addField("Width of movie stimuli in pixels", self.settings['movieWidth'])
         sDlg.addField("Height of movie stimuli in pixels", self.settings['movieHeight'])
         sDlg.addField("Screen index of presentation screen (0 = primary display, 1 = secondary screen)", self.settings['screenIndex'])
-        if self.settings['playAttnGetter'] in [1,'1','True',True]:
-            attCh = ['Yes','No']
-        else:
-            attCh=['No','Yes']
-        sDlg.addField("Use built-in attention-getter? ", choices=attCh)
         sDlg.addField("Freeze first frame for how many seconds after attention-getter?", self.settings['freezeFrame'])
         stimfo = sDlg.show()
         if sDlg.OK:
@@ -665,11 +814,7 @@ class pyHabBuilder():
             self.settings['movieWidth'] = stimfo[2]
             self.settings['movieHeight'] = stimfo[3]
             self.settings['screenIndex'] = stimfo[4]
-            if stimfo[5] == 'Yes':
-                self.settings['playAttnGetter']=1
-            else:
-                self.settings['playAttnGetter'] = 0
-            self.settings['freezeFrame'] = stimfo[6]
+            self.settings['freezeFrame'] = stimfo[5]
         
     def addMoviesToTypesDlg(self):
         '''
