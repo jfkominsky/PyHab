@@ -1162,7 +1162,7 @@ class pyHabPL():
         startDlg.addField('DOB(month): ')
         startDlg.addField('DOB(day): ')
         startDlg.addField('DOB(year): ')
-        if self.randPres:
+        if self.randPres and len(self.condList)>0:
             startDlg.addField('Cond: ', choices=self.condList)
         else:
             startDlg.addField('Cond: ')
@@ -1207,7 +1207,7 @@ class pyHabPL():
             lastTest = 0
             lastIntro = 0
             #build trial order
-            if self.randPres:
+            if self.randPres and len(self.condList)>0:
                 self.condLabel = thisInfo[6]
                 testReader=csv.reader(open(self.condPath+self.condFile,'rU'))
                 testStuff=[]

@@ -57,7 +57,7 @@ class pyHabBuilder():
                                                         'randPres': '0', 
                                                         'condPath': '', 
                                                         'condFile': '', 
-                                                        'condList': [ ],
+                                                        'condList': [],
                                                         'trialOrder': [], 
                                                         'maxHabTrials': '14',
                                                         'setCritWindow': '3', 
@@ -90,15 +90,18 @@ class pyHabBuilder():
             self.trialTypesArray = self.loadTypes()
             self.studyFlowArray=self.loadFlow()
             #Get conditions!
-            if self.settings['randPres'] in [1,'1'] or len(self.settings['condFile'])>0: #If there is a random presentation file...
-                testReader=csv.reader(open(self.settings['condFile'],'rU'))
-                testStuff=[]
-                for row in testReader:
-                    testStuff.append(row)
-                testDict = dict(testStuff) 
-                for i in testDict.keys():
-                    testDict[i] = eval(testDict[i]) 
-                self.condDict = testDict
+            if self.settings['randPres'] in [1,'1','True',True] or len(self.settings['condFile'])>0: #If there is a random presentation file...
+                if os.path.exists(self.settings['condFile']):
+                    testReader=csv.reader(open(self.settings['condFile'],'rU'))
+                    testStuff=[]
+                    for row in testReader:
+                        testStuff.append(row)
+                    testDict = dict(testStuff)
+                    for i in testDict.keys():
+                        testDict[i] = eval(testDict[i])
+                    self.condDict = testDict
+                else:
+                    self.condDict={}
             self.settings['folderPath'] = os.getcwd()+self.dirMarker #On load, reset the folder path to wherever you are now.
         self.folderPath = self.settings['folderPath'] #The location where all the pieces are saved.
         self.allDataColumns=['sNum', 'months', 'days', 'sex', 'cond','condLabel', 'trial','GNG','trialType','stimName','habCrit','sumOnA','numOnA','sumOffA','numOffA','sumOnB','numOnB','sumOffB','numOffB']
@@ -877,10 +880,6 @@ class pyHabBuilder():
             self.settings['randPres'] = condInfo[0]
             if condInfo[0]:
                 #A new dialog that allows you to re-order things...somehow
-                if len(condInfo[1]) > 0:
-                    self.settings['condFile'] = condInfo[1]
-                else:
-                    self.settings['condFile'] = "conditions.csv"
                 #Check if there are movies to re-order.
                 allReady = True
                 if len(self.trialTypesArray['labels']) == 0:
@@ -891,6 +890,10 @@ class pyHabBuilder():
                     elif len(self.settings['movieNames'][self.trialTypesArray['labels'][i]]) == 0:
                         allReady = False
                 if allReady:
+                    if len(condInfo[1]) > 0:
+                        self.settings['condFile'] = condInfo[1]
+                    else:
+                        self.settings['condFile'] = "conditions.csv"
                     if os.name is not 'posix':
                         self.win.winHandle.set_visible(visible=True)
                     self.condMaker()
@@ -905,6 +908,7 @@ class pyHabBuilder():
                         self.settings['condList'] = e[0]
             else:
                 self.settings['condFile'] = '' #Erases one if it existed.
+                self.settings['condList'] = [] #Gets rid of existing condition list to save trouble.
 
     def condMaker(self, rep=False): #For dealing with conditions.
         '''
