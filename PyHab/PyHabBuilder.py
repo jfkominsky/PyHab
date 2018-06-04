@@ -1,14 +1,29 @@
 from psychopy import visual, event, core, gui, monitors, tools, sound,__version__
-import wx, random, csv, shutil, os
+from psychopy.app import coder
+import wx, random, csv, shutil, os, sys, threading
 from math import *
 
-# This program designed to *create* PyHab files using a relatively straightforward GUI. Hoo boy.
-# Outputs a folder. Folder contains a launcher script that allows PyHab to either run or edit.
-# The class takes the settings dict, failing that it has a blank to fill in.
-#To fix: A better way of removing movies from a trial type.
 
 class pyHabBuilder():
+    """
+    TODO: Better installation, open new folder/launcher script on initial save
+    One approach would be to create an instance of the psychopy app, launching PyHab from somewhere else. That would
+    give us control of psychopy app functions like opening new coder windows etc.
+    Got there on opening the launcher for newly created experiments using a monster kludge of the coder's "StartThread"
+    system for running scripts.
+    So, in principle, if I can create something that opens psychopy, I can use the same trick to run all PyHab stuff in
+    a more automatic way. That's going to be a hell of a thing.
+
+    """
     def __init__(self, loadedSaved=False, settingsDict={}):
+        """
+
+        :param loadedSaved: Are we loading from a saved settings file?
+        :type loadedSaved: bool
+        :param settingsDict: If we are loading from a saved file, this is the content of that file passed by the launcher
+        :type settingsDict: dict
+        """
+
         self.loadSave = loadedSaved #For easy reference elsewhere
         if os.name is 'posix': #glorious simplicity of unix filesystem
             self.dirMarker = '/'
@@ -45,7 +60,7 @@ class pyHabBuilder():
         if not loadedSaved: #A new blank experiment
             #Load some defaults to start with.
             self.settings={'dataColumns': ['sNum', 'months', 'days', 'sex', 'cond','condLabel', 'trial','GNG','trialType','stimName','habCrit','sumOnA','numOnA','sumOffA','numOffA','sumOnB','numOnB','sumOffB','numOffB'], 
-                                                        'prefix': 'PyHab', 
+                                                        'prefix': 'PyHabExperiment',
                                                         'dataloc':'data'+self.dirMarker,
                                                         'maxDur': { }, 
                                                         'playThrough': { },
@@ -77,6 +92,7 @@ class pyHabBuilder():
                                                         'ISI': '0',
                                                         'freezeFrame': '0.2',
                                                         'playAttnGetter': [],
+                                                        'attnGetterFile':'upchime1.wav',
                                                         'folderPath':'',
                                                         'trialTypes':[],
                                                         'prefLook':'0'}
@@ -699,6 +715,11 @@ class pyHabBuilder():
                     self.saveDlg()
                 else:
                     self.saveEverything()
+            if not self.loadSave and len(self.folderPath)>0: #If this is the first time saving a new experiment, relaunch from launcher!
+                self.win.close()
+                launcherPath = self.folderPath+self.settings['prefix']+'Launcher.py'
+                launcher = coder.ScriptThread(target=self._runLauncher(launcherPath), gui=self)
+                launcher.start()
     
     def univSettingsDlg(self): #The universal settings button.
         '''
@@ -810,6 +831,7 @@ class pyHabBuilder():
         sDlg.addField("Height of movie stimuli in pixels", self.settings['movieHeight'])
         sDlg.addField("Screen index of presentation screen (0 = primary display, 1 = secondary screen)", self.settings['screenIndex'])
         sDlg.addField("Freeze first frame for how many seconds after attention-getter?", self.settings['freezeFrame'])
+        sDlg.addField("Use default attention getter? (If No, a file-open dialog will let you select a new attention-getter)", choices=["Yes","No"])
         stimfo = sDlg.show()
         if sDlg.OK:
             self.settings['screenWidth'] = stimfo[0]
@@ -818,6 +840,14 @@ class pyHabBuilder():
             self.settings['movieHeight'] = stimfo[3]
             self.settings['screenIndex'] = stimfo[4]
             self.settings['freezeFrame'] = stimfo[5]
+            if stimfo[6] == "Yes":
+                self.settings['attnGetterFile'] = 'upchime1.wav'
+            else:
+                attnGttrDlg = gui.fileOpenDlg(prompt="Select attention-getter (sound or movie)")
+                if type(attnGttrDlg) is not NoneType:
+                    self.settings['attnGetterFile'] = attnGttrDlg
+
+
         
     def addMoviesToTypesDlg(self):
         '''
@@ -1194,9 +1224,12 @@ class pyHabBuilder():
         :rtype:
         '''
         NoneType = type(None)
-        sDlg = gui.fileSaveDlg(prompt="Name a folder to save study into")  #We would put prefix as a default but it makes the system fail.
+        sDlg = gui.fileSaveDlg(initFilePath=os.getcwd(), initFileName=self.settings['prefix'], prompt="Name a folder to save study into")
         if type(sDlg) is not NoneType:
             self.settings['folderPath'] = sDlg+self.dirMarker #Makes a folder of w/e they entered
+            #If there is no pre-selected prefix, make the prefix the folder name!
+            if self.settings['prefix'] == "PyHabExperiment":
+                self.settings['prefix'] = os.path.split(sDlg)[1]
             self.folderPath=self.settings['folderPath']
             #Add save button if it does not exist.
             if self.saveEverything not in self.buttonList['functions']:
@@ -1237,13 +1270,23 @@ class pyHabBuilder():
                 secretWriter.writerow(tempArray[k]) #hope that closes too...
         #copy stimuli if there are stimuli. Also pulls upchime1.wav
         if len(self.stimSource)>0:
-            upchimePath='PyHab' + self.dirMarker + 'upchime1.wav' #need upchime1.wav or it won't work!
-            newchimePath = self.folderPath + 'upchime1.wav'
-            if not os.path.exists(newchimePath):
-                shutil.copyfile(upchimePath,newchimePath)
-            for i, j in self.stimSource.iteritems(): #Find each file, WILL NOT WORK IN PY3
+            #TODO: Make trial-by-trial attention-getter system.
+            if self.settings['attnGetterFile'] == 'upchime1.wav':
+                upchimePath='PyHab' + self.dirMarker + 'upchime1.wav' #need upchime1.wav or it won't work!
+                newchimePath = self.folderPath + 'upchime1.wav'
+                if not os.path.exists(newchimePath):
+                    shutil.copyfile(upchimePath, newchimePath)
+            else:
+                fileIndex = self.settings['attnGetterFile'].rfind(self.dirMarker) + 1  # Finds last instance of / or \
+                attnName = self.settings['attnGetterFile'][fileIndex:] #the filename in isolation, for later.
+                upchimePath = self.settings['attnGetterFile']
+                newchimePath = self.folderPath + attnName
+                if not os.path.exists(newchimePath):
+                    shutil.copyfile(upchimePath,newchimePath)
+                    self.settings['attnGetterFile'] = attnName
+            for i, j in self.stimSource.items(): #Find each file, copy it over
                 try:
-                    targPath = stimPath + i + self.settings['movieExt']
+                    targPath = stimPath + i
                     shutil.copyfile(j, targPath)
                 except:
                     success = False
@@ -1254,9 +1297,12 @@ class pyHabBuilder():
             errDlg.show()
         #create/overwrite the settings csv.
         settingsPath = self.folderPath+self.settings['prefix']+'Settings.csv'
-        settingsOutput = csv.writer(open(settingsPath,'w'), lineterminator='\n')
-        for i, j in self.settings.iteritems():#this is how you write key/value pairs
+        so = open(settingsPath,'w')
+        settingsOutput = csv.writer(so, lineterminator='\n')
+        for i, j in self.settings.items():#this is how you write key/value pairs
             settingsOutput.writerow([i, j])
+        #close the settings file, to allow it to be read immediately (in theory)
+        so.close()
         #Copy over the class and such. Since these aren't modiied, make sure they don't exist first.
         classPath = 'PyHabClass.py'
         classTarg = codePath+classPath
@@ -1270,13 +1316,13 @@ class pyHabBuilder():
             if not os.path.exists(classTarg):
                 shutil.copyfile(srcDir+classPath, classTarg)
             if not os.path.exists(classPLTarg):
-                shutil.copyfile(srcDir+classPLPath,classPLTarg)
+                shutil.copyfile(srcDir+classPLPath, classPLTarg)
             if not os.path.exists(buildTarg):
-                shutil.copyfile(srcDir+buildPath,buildTarg)
+                shutil.copyfile(srcDir+buildPath, buildTarg)
             if not os.path.exists(initTarg):
-                shutil.copyfile(srcDir+initPath,initTarg)
+                shutil.copyfile(srcDir+initPath, initTarg)
         except:
-            #error dialog?
+            #error dialog
             errDlg = gui.Dlg(title="Could not copy PyHab and builder!")
             errDlg.addText("Failed to copy PyHab class scripts and builder script. These can be copied manually from the PyHab folder and will be needed!")
             errDlg.show()
@@ -1295,7 +1341,7 @@ class pyHabBuilder():
                 launcherFile[6] = newLine
                 launcherFile[7] = "#Created in PsychoPy version " + __version__ + "\r\n"
                 #now write the new file!
-                with open (launcherPath, 'w') as t:
+                with open(launcherPath, 'w') as t:
                     t.writelines(launcherFile)
             except:
                 errDlg = gui.Dlg(title="Could not save!")
@@ -1308,5 +1354,26 @@ class pyHabBuilder():
             saveSuccessDlg.addText("Experiment saved successfully to" + self.folderPath)
             saveSuccessDlg.show()
 
-        
-        
+
+    def _runLauncher(self,launcherPath):
+        """
+        Flagrantly copied from psychopy's own app/coder interface, where it is used for running scripts in the IDE.
+        Basically it's like hitting the "run" button in the coder interface, but from within an actively-running script.
+
+        :param launcherPath: Full path to launcher file created by builder
+        :type launcherPath: string
+        :return:
+        :rtype:
+        """
+        fullPath = launcherPath
+        path, scriptName = os.path.split(fullPath)
+        importName, ext = os.path.splitext(scriptName)
+        # set the directory and add to path
+        os.chdir(path)  # try to rewrite to avoid doing chdir in the coder
+        sys.path.insert(0, path)
+
+        # do an 'import' on the file to run it
+        # delete the sys reference to it (so we think its a new import)
+        if importName in sys.modules:
+            sys.modules.pop(importName)
+        exec ('import %s' % (importName))  # or run first time
