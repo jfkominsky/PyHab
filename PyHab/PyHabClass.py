@@ -13,7 +13,7 @@ from datetime import *
 from dateutil.relativedelta import *
 
 
-class pyHab():
+class pyHab:
     """
 
     PyHab looking time coding + stimulus control system
@@ -129,7 +129,7 @@ class pyHab():
             self.endTrialSound = sound.Sound('A', octave=4, sampleRate=44100, secs=0.2)
             self.endHabSound = sound.Sound('G', octave=4, sampleRate=44100, secs=0.2)
         elif len(self.playAttnGetter) > 0:
-            # TODO: Make felxible about content of attngetter, audio vs. video, and trial-by-trial
+            # TODO: Make felxible about content of attngetter, audio vs. video, and trial-type-specific.
             self.HeyListen = sound.Sound('upchime1.wav', secs=3)  # will become attn-getter.
         if type(
                 self.maxDur) is int:  # Secretly MaxDur will always be a dict, but if it's a constant we just create the dict here
@@ -354,7 +354,7 @@ class pyHab():
         else:
             return False
 
-    def attnGetter(self):
+    def attnGetter(self, trialType):
         """
         Currently: the default attention-getter animation
         Todo: plays either a default attention-getter animation or a user-selected one.
@@ -362,119 +362,154 @@ class pyHab():
         :return:
         :rtype:
         """
-        self.HeyListen.play()  # add ability to customize?
-        x = 0
-        self.attnGetterSquare.ori = 0
-        self.attnGetterSquare.fillColor = 'yellow'
-        for i in range(0, 60):  # a 1-second animation
-            self.attnGetterSquare.ori += 5
-            x += .1
-            self.attnGetterSquare.height = sin(x) * 120
-            self.attnGetterSquare.width = tan(.25 * x) * 120
-            self.attnGetterSquare.draw()
-            self.win.flip()
-        self.statusSquareA.fillColor = 'blue'
-        if self.blindPres < 2:
-            self.statusTextA.text = "RDY"
-        self.statusSquareA.draw()
-        self.statusTextA.draw()
-        if self.blindPres < 2:
-            self.trialText.draw()
-            if self.blindPres < 1:
-                self.readyText.draw()
-        self.statusSquareB.fillColor = 'blue'
-        if self.blindPres < 2:
-            self.statusTextB.text = "RDY"
-        self.statusSquareB.draw()
-        self.statusTextB.draw()
-        self.win2.flip()
-        if self.stimPres:
-            self.win.flip()  # clear screen
 
-    def dispTrial(self, trialType, dispMovie=False):  # if stimPres = false, so too dispMovie.
+        # So either we will have an audio file under heyListen, or a movie. Could vary by trial.
+        # We need to be able to figure out whether it's audio or a movie
+        # OK, self.playAttnGetter is now a dict of dicts, each dict has a variable 'stimType'
+        # and a 'file' which we will have to construct on load with the other movies and such.
+        if self.playAttnGetter[trialType]['stimType'] is 'Audio':
+
+            self.playAttnGetter[trialType]['file'].play()
+            x = 0
+            self.attnGetterSquare.ori = 0
+            self.attnGetterSquare.fillColor = 'yellow'
+            for i in range(0, 60):  # a 1-second animation
+                self.attnGetterSquare.ori += 5
+                x += .1
+                self.attnGetterSquare.height = sin(x) * 120
+                self.attnGetterSquare.width = tan(.25 * x) * 120
+                self.attnGetterSquare.draw()
+                self.win.flip()
+        else:
+            dMovie = self.playAttnGetter[trialType]['file'] # TODO: So we will need to load this...
+            self.frameCount = 0
+            self.pauseCount = self.ISI*60
+            while self.dispStimWindow(1, dMovie) < 2:
+                pass
+
+        self.dispCoderWindow(0)
+        self.win.flip()  # clear screen (change?)
+
+    def dispCoderWindow(self, trialType = -1):
         """
-        Draws each frame of the trial. For stimPres, returns an incidental movie-status value
+        Draws the coder window, according to trial type and blinding settings.
 
-        :param trialType: Current trial type
-        :type trialType: string
-        :param dispMovie: Movie file for stimulus presentation (if applicable)
-        :type dispMovie: bool or movieStim3 object.
+        :param trialType: -1 = black (betwen trials). 0 = ready state. Otherwise irrelevant.
+        :type trialType: int or string
         :return:
         :rtype:
         """
-        # first, let's just get the coder display sorted out. That occupies everything up to win2.flip
-        if self.keyboard[self.key.B] and self.blindPres < 2:
-            self.statusSquareA.fillColor = 'green'
-            self.statusTextA.text = "ON"
-        elif trialType == 0 and self.blindPres < 2:
-            self.statusSquareA.fillColor = 'blue'
-            self.statusTextA.text = "RDY"
+        if trialType == -1:
+            self.statusSquareA.fillColor = 'black'
+            self.statusTextA.text = ''
         elif self.blindPres < 2:
-            self.statusSquareA.fillColor = 'red'
-            self.statusTextA.text = "OFF"
+            if trialType == 0:
+                self.statusSquareA.fillColor = 'blue'
+                self.statusTextA.text = "RDY"
+            elif self.keyboard[self.key.B]:
+                self.statusSquareA.fillColor = 'green'
+                self.statusTextA.text = "ON"
+            else:
+                self.statusSquareA.fillColor = 'red'
+                self.statusTextA.text = "OFF"
         else:
             self.statusSquareA.fillColor = 'blue'
             self.statusTextA.text = ""
+
         self.statusSquareA.draw()
         self.statusTextA.draw()
-        if self.blindPres < 2:
-            self.trialText.draw()
-            if self.blindPres < 1:
-                self.readyText.draw()
-        if self.keyboard[self.secondKey] and self.blindPres < 2:
-            self.statusSquareB.fillColor = 'green'
-            self.statusTextB.text = "ON"
-        elif trialType == 0 and self.blindPres < 2:
-            self.statusSquareB.fillColor = 'blue'
-            self.statusTextB.text = "RDY"
+        #Again for second coder box.
+        if trialType == -1:
+            self.statusSquareB.fillColor = 'black'
+            self.statusTextB.text = ''
         elif self.blindPres < 2:
-            self.statusSquareB.fillColor = 'red'
-            self.statusTextB.text = "OFF"
+            if trialType == 0:
+                self.statusSquareB.fillColor = 'blue'
+                self.statusTextB.text = "RDY"
+            elif self.keyboard[self.secondKey]:
+                self.statusSquareB.fillColor = 'green'
+                self.statusTextB.text = "ON"
+            else:
+                self.statusSquareB.fillColor = 'red'
+                self.statusTextB.text = "OFF"
         else:
             self.statusSquareB.fillColor = 'blue'
             self.statusTextB.text = ""
         self.statusSquareB.draw()
         self.statusTextB.draw()
+        if self.blindPres < 2:
+            self.trialText.draw()
+            if self.blindPres < 1:
+                self.readyText.draw()
         self.win2.flip()  # flips the status screen without delaying the stimulus onset.
-        # now for the test trial display
-        if self.stimPres:
-            if self.frameCount == 0:  # initial setup
-                dispMovie.draw()
-                self.frameCount += 1
-                if trialType == 0:
-                    self.frameCount = 0  # for attn-getter
-                    dispMovie.pause()
-                self.win.flip()
-                return 0
-            elif self.frameCount == 1:
-                # print('playing')
-                dispMovie.play()
-                dispMovie.draw()
-                self.frameCount += 1
-                self.win.flip()
-                return 0
-            elif dispMovie.getCurrentFrameTime() >= dispMovie.duration - .05 and self.pauseCount < self.ISI * 60:  # pause, check for ISI.
+
+    def dispStimWindow(self, trialType, dispMovie):
+        """
+        Draws the stimulus display, including for movie-based attn-getters!
+        :param trialType: 0 for paused, otherwise a string
+        :type trialType: int or str
+        :param dispMovie: The moviestim3 object for the stimuli
+        :type dispMovie: moviestim3 object
+        :return: an int specifying whether the movie is in progress (0), paused on its last frame (1), or ending and
+        looping (2)
+        :rtype: int
+        """
+
+        if self.frameCount == 0:  # initial setup
+            dispMovie.draw()
+            self.frameCount += 1
+            if trialType == 0:
+                self.frameCount = 0  # for post-attn-getter pause
                 dispMovie.pause()
-                dispMovie.draw()  # might want to have it vanish rather than leave it on the screen for the ISI, in which case comment out this line.
-                self.frameCount += 1
-                self.pauseCount += 1
-                self.win.flip()
-                return 1
-            elif dispMovie.getCurrentFrameTime() >= dispMovie.duration - .05 and self.pauseCount >= self.ISI * 60:  # MovieStim's Loop functionality can't do an ISI
-                # print('repeating at ' + str(dispMovie.getCurrentFrameTime()))
-                self.frameCount = 0  # changed to 0 to better enable studies that want to blank between trials
-                self.pauseCount = 0
-                dispMovie.draw()  # Comment this out as well to blank between loops.
-                self.win.flip()
-                dispMovie.seek(0)
-                return 1
-            else:
-                dispMovie.draw()
-                self.frameCount += 1
-                self.win.flip()
-                return 0
+            self.win.flip()
+            return 0
+        elif self.frameCount == 1:
+            # print('playing')
+            dispMovie.play()
+            dispMovie.draw()
+            self.frameCount += 1
+            self.win.flip()
+            return 0
+        elif dispMovie.getCurrentFrameTime() >= dispMovie.duration - .05 and self.pauseCount < self.ISI * 60:  # pause, check for ISI.
+            dispMovie.pause()
+            dispMovie.draw()  # might want to have it vanish rather than leave it on the screen for the ISI, in which case comment out this line.
+            self.frameCount += 1
+            self.pauseCount += 1
+            self.win.flip()
+            return 1
+        elif dispMovie.getCurrentFrameTime() >= dispMovie.duration - .05 and self.pauseCount >= self.ISI * 60:  # MovieStim's Loop functionality can't do an ISI
+            # print('repeating at ' + str(dispMovie.getCurrentFrameTime()))
+            self.frameCount = 0  # changed to 0 to better enable studies that want to blank between trials
+            self.pauseCount = 0
+            dispMovie.draw()  # Comment this out as well to blank between loops.
+            self.win.flip()
+            dispMovie.seek(0)
+            return 2
         else:
-            return 0  # Totally irrelevant.
+            dispMovie.draw()
+            self.frameCount += 1
+            self.win.flip()
+            return 0
+
+    def dispTrial(self, trialType, dispMovie = False): #If no stim, dispMovie defaults to false.
+        """
+        Draws each frame of the trial. For stimPres, returns a movie-status value for determining when the movie has
+        ended
+
+        :param trialType: Current trial type
+        :type trialType: string
+        :param dispMovie: Movie file for stimulus presentation (if applicable)
+        :type dispMovie: bool or movieStim3 object.
+        :return: 1 or 0. 1 = end of movie for trials that end on that.
+        :rtype: int
+        """
+        self.dispCoderWindow(trialType)
+        # now for the test trial display TODO: can we use this for attngetter? Yes...
+        if self.stimPres:
+            t = self.dispStimWindow(trialType, dispMovie)
+        else:
+            t = 0  # Totally irrelevant.
+        return t
 
     def doExperiment(self):
         """
@@ -483,11 +518,7 @@ class pyHab():
         :return:
         :rtype:
         """
-        self.statusSquareA.draw()
-        self.statusTextA.draw()
         self.currTestTrial = 0
-        self.statusSquareB.draw()
-        self.statusTextB.draw()
         # primary trial loop, go until end of exp.
         runExp = True
         trialNum = 1
@@ -499,8 +530,7 @@ class pyHab():
         if self.blindPres < 1:
             self.rdyTextAppend = " NEXT: " + trialType + " TRIAL"
         didRedo = False
-        self.readyText.draw()
-        self.win2.flip()
+        self.dispCoderWindow() #Update coder window
         AA = []  # a localized autoadvance to allow for first trial
         while runExp:
             reviewed = False
@@ -520,12 +550,6 @@ class pyHab():
                 self.rdyTextAppend = " NEXT: " + self.actualTrialOrder[trialNum - 1] + " TRIAL"
             end = False
             while not self.keyboard[self.key.A] and trialType not in AA and not end:  # wait for 'ready' key, check at frame intervals
-                self.statusSquareA.draw()
-                self.readyText.text = "No trial active" + self.rdyTextAppend
-                if self.blindPres < 2:
-                    self.trialText.draw()
-                self.readyText.draw()
-                self.statusSquareB.draw()
                 if self.keyboard[self.key.Y]:
                     end = True
                 elif self.keyboard[self.key.R] and not didRedo:
@@ -581,6 +605,7 @@ class pyHab():
                         disMovie = 0
                     if self.blindPres < 1:
                         self.rdyTextAppend = " NEXT: " + trialType + " TRIAL"
+
                 elif trialNum > 1 and not self.stimPres and self.keyboard[self.key.P] and not reviewed:  # Print data so far, as xHab. Non-stimulus version only. Only between trials.
                     reviewed = True
                     print("hab crit, on-timeA, numOnA, offtimeA, numOffA, onTimeB, numOnB, offTimeB, numOffB")
@@ -592,27 +617,17 @@ class pyHab():
                                     self.dataMatrix[i]['numOnB'], self.dataMatrix[i]['sumOffB'],
                                     self.dataMatrix[i]['numOffB']]
                         print(dataList)
-                self.win2.flip()
-            if not end:
+                self.readyText.text = "No trial active" + self.rdyTextAppend
+                self.dispCoderWindow()
+            if not end: #This if statement checks if we're trying to quit.
                 self.frameCount = 0
                 # framerate = win.getActualFrameRate()
                 # print(framerate)               #just some debug code.
                 if trialType not in AA and self.blindPres < 2:
-                    self.statusSquareA.fillColor = 'blue'
-                    self.statusTextA.text = "RDY"
-                    self.statusSquareA.draw()
-                    self.statusTextA.draw()
-                    self.trialText.draw()
                     self.readyText.text = "Trial active"
-                    self.readyText.draw()
-                    self.statusSquareB.fillColor = 'blue'
-                    self.statusTextB.text = "RDY"
-                    self.statusSquareB.draw()
-                    self.statusTextB.draw()
-                    self.win2.flip()
                 if self.stimPres:
-                    if trialType in self.playAttnGetter:
-                        self.attnGetter()  # plays the attention-getter
+                    if trialType in self.playAttnGetter: #Shockingly, this will work.
+                        self.attnGetter(trialType)  # plays the attention-getter
                         core.wait(.1)  # this wait is important to make the attentiongetter not look like it is turning into the stimulus
                         self.frameCount = 0
                         irrel = self.dispTrial(0, disMovie)
@@ -628,6 +643,7 @@ class pyHab():
                         waitStart = True
                     else:
                         waitStart = False
+                self.dispCoderWindow(0)
                 while waitStart and trialType not in AA and not end:  # Wait for first gaze-on
                     if self.keyboard[self.key.Y]:  # End experiment right there and then.
                         end = True
@@ -642,24 +658,7 @@ class pyHab():
                             core.wait(.2 + self.freezeFrame)
                     elif self.lookKeysPressed():
                         waitStart = False
-                        if self.blindPres < 2:
-                            self.statusSquareA.fillColor = 'green'
-                            self.statusTextA.text = "ON"
-                        self.statusSquareA.draw()
-                        self.statusTextA.draw()
-                        if self.blindPres < 2:
-                            self.trialText.draw()
-                            if self.blindPres < 1:
-                                self.readyText.draw()
-                        if self.keyboard[self.secondKey] and self.blindPres < 2:
-                            self.statusSquareB.fillColor = 'green'
-                            self.statusTextB.text = "ON"
-                        elif self.blindPres < 2:
-                            self.statusSquareB.fillColor = 'red'
-                            self.statusTextB.text = "OFF"
-                        self.statusSquareB.draw()
-                        self.statusTextB.draw()
-                        self.win2.flip()
+                        self.dispCoderWindow(trialType)
                     elif self.keyboard[self.key.R] and not didRedo:  # Redo last trial, mark last trial as bad
                         if trialNum > 1:
                             trialNum -= 1
@@ -715,24 +714,9 @@ class pyHab():
                         if self.blindPres < 1:
                             self.rdyTextAppend = " NEXT: " + trialType + " TRIAL"
                     else:
-                        self.statusSquareA.fillColor = 'blue'
-                        if self.blindPres < 2:
-                            self.statusTextA.text = "RDY"
-                        self.statusSquareA.draw()
-                        self.statusTextA.draw()
-                        if self.blindPres < 2:
-                            self.trialText.draw()
-                            if self.blindPres < 1:
-                                self.readyText.draw()
-                        self.statusSquareB.fillColor = 'blue'
-                        if self.blindPres < 2:
-                            self.statusTextB.text = "RDY"
-                        self.statusSquareB.draw()
-                        self.statusTextB.draw()
-                        self.win2.flip()  # flips the status screen without delaying the stimulus onset.
-                        # dispTrial(0,disMovie)
+                        self.dispCoderWindow(0)
             if not end: #If Y has not been pressed, do the trial! Otherwise, end the experiment.
-                x = self.doTrial(trialNum, trialType,disMovie)  # the actual trial, returning one of four status values at the end
+                x = self.doTrial(trialNum, trialType, disMovie)  # the actual trial, returning one of four status values at the end
                 AA = self.autoAdvance  # After the very first trial AA will always be whatever it was set to at the top.
             else:
                 x = 2
@@ -946,7 +930,7 @@ class pyHab():
                 onArray2.append(tempGazeArray2)
                 sumOn2 = sumOn2 + onDur2
             movieStatus = self.dispTrial(type, disMovie)
-            if type in self.movieEnd and endFlag and movieStatus == 1:
+            if type in self.movieEnd and endFlag and movieStatus >= 1:
                 runTrial = False
                 endTrial = core.getTime() - startTrial
                 if gazeOn:
@@ -971,17 +955,7 @@ class pyHab():
         if self.stimPres:
             disMovie.seek(0)  # this is the reset, we hope.
             disMovie.pause()
-        self.statusSquareA.fillColor = 'black'
-        self.statusSquareB.fillColor = 'black'
-        self.statusTextA.text = ""
-        self.statusTextB.text = ""
-        self.statusSquareA.draw()
-        if self.blindPres < 2:
-            self.trialText.draw()
-            if self.blindPres < 1:
-                self.readyText.draw()
-        self.statusSquareB.draw()
-        self.win2.flip()
+        self.dispCoderWindow()
         if self.stimPres:
             self.win.flip()  # blanks the screen outright.
         if redo:  # if the abort button was pressed
@@ -1469,6 +1443,18 @@ class pyHab():
                                                       size=[self.movieWidth, self.movieHeight], flipHoriz=False,
                                                       flipVert=False, loop=False)
                         self.movieDict[i].append(tempMovie)
+                # TODO: Load attention-getters.
+                if len(list(self.playAttnGetter.keys())) > 0:
+                    for i in list(self.playAttnGetter.keys()):
+                        if self.playAttnGetter[i]['stimType'] == 'Audio':
+                            self.playAttnGetter[i]['file'] = sound.Sound(self.moviePath + 'attnGetters' + self.dirMarker + self.playAttnGetter[i]['stimName'],
+                                                                         secs = self.playAttnGetter[i]['stimDur'])
+                        else:
+                            tempStimPath = self.moviePath + 'attnGetters' + self.dirMarker + self.playAttnGetter[i]['stimName']
+                            self.playAttnGetter[i]['file'] = visual.MovieStim3(self.win, tempStimPath,
+                                                                               size=[self.movieWidth, self.movieHeight],
+                                                                               flipHoriz=False, flipVert=False, loop=False)
+
             self.keyboard = self.key.KeyStateHandler()
             self.win2.winHandle.push_handlers(self.keyboard)
             if self.stimPres:

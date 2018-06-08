@@ -6,13 +6,8 @@ from math import *
 
 class pyHabBuilder():
     """
-    TODO: Better installation, open new folder/launcher script on initial save
-    One approach would be to create an instance of the psychopy app, launching PyHab from somewhere else. That would
-    give us control of psychopy app functions like opening new coder windows etc.
-    Got there on opening the launcher for newly created experiments using a monster kludge of the coder's "StartThread"
-    system for running scripts.
-    So, in principle, if I can create something that opens psychopy, I can use the same trick to run all PyHab stuff in
-    a more automatic way. That's going to be a hell of a thing.
+    TODO: New attentionGetter dialog for selecting attngetter files.
+
 
     """
     def __init__(self, loadedSaved=False, settingsDict={}):
@@ -91,8 +86,11 @@ class pyHabBuilder():
                                                         'screenIndex': '1', 
                                                         'ISI': '0',
                                                         'freezeFrame': '0.2',
-                                                        'playAttnGetter': [],
-                                                        'attnGetterFile':'upchime1.wav',
+                                                        'playAttnGetter': {},
+                                                        'attnGetterList':{'PyHabDefault':{'stimType':'Audio',
+                                                                                          'stimName':'upchime1.wav',
+                                                                                          'stimDur':3,
+                                                                                          'stimLoc':'PyHab' + self.dirMarker + 'upchime1.wav'}},
                                                         'folderPath':'',
                                                         'trialTypes':[],
                                                         'prefLook':'0'}
@@ -100,7 +98,8 @@ class pyHabBuilder():
             self.trialTypesArray={'shapes':[],'text':[],'labels':[]}
         else:
             self.settings = settingsDict
-            evalList = ['dataColumns','maxDur','condList','movieEnd','playThrough','trialOrder','movieNames','autoAdvance','playAttnGetter','trialTypes','habTrialList'] #eval all the things that need eval.
+            evalList = ['dataColumns','maxDur','condList','movieEnd','playThrough','trialOrder','movieNames',
+                        'autoAdvance','playAttnGetter','attnGetterList','trialTypes','habTrialList'] #eval all the things that need eval.
             for i in evalList:
                 self.settings[i] = eval(self.settings[i])
             self.trialTypesArray = self.loadTypes()
@@ -280,7 +279,7 @@ class pyHabBuilder():
             self.buttonList['shapes'][i].draw()
             self.buttonList['text'][i].draw()
     
-    def trialTypeDlg(self,trialType="TrialTypeNew", makeNew=True,prevInfo=[]):
+    def trialTypeDlg(self, trialType="TrialTypeNew", makeNew=True, prevInfo=[]):
         '''
         Dialog for creating OR modifying a trial type. Allows you to set
         the maximum duration of that trial type as well as remove movies
@@ -352,11 +351,14 @@ class pyHabBuilder():
             else:
                 chz2 = False
             typeDlg.addField("Auto-advance INTO trial without waiting for expeirmenter?", initial=chz2)
-            if makeNew == False and trialType not in self.settings['playAttnGetter']:
-                chz3 = False
-            else:
-                chz3 = True
-            typeDlg.addField("Play attention-getter on this trial type? (Stim presentation mode only)", initial=chz3)
+            if trialType not in self.settings['playAttnGetter']:
+                chz3 = list(self.settings['attnGetterList'].keys())
+                chz3.insert(1,'None') # Defaults to...well, the default
+            elif trialType in self.settings['playAttnGetter']:
+                chz3 = [x for x in list(self.settings['attnGetterList'].keys()) if x is not self.settings['playAttnGetter'][trialType]['agname']]
+                chz3.insert(0,'None')
+                chz3.insert(0,self.settings['playAttnGetter'][trialType]['agname'])
+            typeDlg.addField("Attention-getter for this trial type (Stim presentation mode only)", choices=chz3)
             if trialType in self.settings['movieEnd']:
                 chz4 = True
             else:
@@ -395,6 +397,8 @@ class pyHabBuilder():
                     trialType = typeInfo[0]
                 if not skip:
                     self.settings['maxDur'][trialType] = typeInfo[1] #Update maxDur
+
+                    # Gaze-contingency settings
                     if trialType not in self.settings['playThrough'].keys(): #Initialize if needed.
                         self.settings['playThrough'][trialType] = 0
                     if typeInfo[len(typeInfo)-4] == "Yes" and self.settings['playThrough'][trialType] is not 0: #gaze-contingent trial type, not already tagged as such.
@@ -403,24 +407,44 @@ class pyHabBuilder():
                         self.settings['playThrough'][trialType] = 2
                     elif typeInfo[len(typeInfo)-4] == "OnOnly" and self.settings['playThrough'][trialType] is not 1:
                         self.settings['playThrough'][trialType] = 1
+
+                    # Auto-advance settings
                     if typeInfo[len(typeInfo)-3] in [False,0,'False','0'] and trialType in self.settings['autoAdvance']: #gaze-contingent trial type, not already tagged as such.
                         self.settings['autoAdvance'].remove(trialType)
                     elif typeInfo[len(typeInfo)-3] in [True, 1, 'True', '1'] and not trialType in self.settings['autoAdvance']:
                         self.settings['autoAdvance'].append(trialType)
-                    if typeInfo[len(typeInfo)-2] in [False,0,'False','0'] and trialType in self.settings['playAttnGetter']:
-                        self.settings['playAttnGetter'].remove(trialType)
-                    elif typeInfo[len(typeInfo)-2] in [True, 1, 'True', '1'] and not trialType in self.settings['playAttnGetter']:
-                        self.settings['playAttnGetter'].append(trialType)
+
+                    # Attention-getter settings
+                    if typeInfo[len(typeInfo)-2] is 'None' and trialType in self.settings['playAttnGetter']:
+                        del self.settings['playAttnGetter'][trialType]
+                    elif trialType not in self.settings['playAttnGetter']: # If it did not have an attngetter before.
+                        agname = typeInfo[len(typeInfo)-2]
+                        self.settings['playAttnGetter'][trialType] = {'agname': agname,
+                                                                      'stimType': self.settings['attnGetterList'][agname]['stimType'],
+                                                                      'stimName': self.settings['attnGetterList'][agname]['stimName'],
+                                                                      'stimDur': self.settings['attnGetterList'][agname]['stimDur']}
+                    elif typeInfo[len(typeInfo)-2] is not self.settings['playAttnGetter'][trialType]['agname']:
+                        # If a different attention-getter has been selected
+                        agname = typeInfo[len(typeInfo) - 2]
+                        self.settings['playAttnGetter'][trialType] = {'agname': agname,
+                                                                      'stimType': self.settings['attnGetterList'][agname]['stimType'],
+                                                                      'stimName': self.settings['attnGetterList'][agname]['stimName'],
+                                                                      'stimDur': self.settings['attnGetterList'][agname]['stimDur']}
+
+                    # End-trial-on-movie-end settings
                     if typeInfo[len(typeInfo)-1] in [False,0,'False','0'] and trialType in self.settings['movieEnd']:
                         self.settings['movieEnd'].remove(trialType)
                     elif typeInfo[len(typeInfo)-1] in [True, 1, 'True', '1'] and not trialType in self.settings['movieEnd']:
                         self.settings['movieEnd'].append(trialType)
+
+                    # Remove stimuli if needed
                     if len(typeInfo) > 6: #Again, if there were movies to list.
                         tempMovies = [] #This will just replace the movienames list
                         for i in range(0,len(self.settings['movieNames'][trialType])):
                             if typeInfo[i+2]:
                                 tempMovies.append(self.settings['movieNames'][trialType][i])
                         self.settings['movieNames'][trialType] = tempMovies
+
                     #if we need to update the flow pane, it's taken care of above. Here we update the type pallette.
                     if makeNew:
                         i = len(self.trialTypesArray['labels']) #Grab length before adding, conveniently the index we need for position info etc.
@@ -1265,25 +1289,13 @@ class pyHabBuilder():
             tempArray = []
             for j in range(0, len(self.settings['condList'])):
                 tempArray.append([self.settings['condList'][j],self.condDict[self.settings['condList'][j]]])
-            secretWriter = csv.writer(open(self.folderPath+self.settings['condFile'],'wb'))
+            co = open(self.folderPath+self.settings['condFile'],'wb')
+            secretWriter = csv.writer(co)
             for k in range(0, len(tempArray)):
-                secretWriter.writerow(tempArray[k]) #hope that closes too...
-        #copy stimuli if there are stimuli. Also pulls upchime1.wav
-        if len(self.stimSource)>0:
-            #TODO: Make trial-by-trial attention-getter system.
-            if self.settings['attnGetterFile'] == 'upchime1.wav':
-                upchimePath='PyHab' + self.dirMarker + 'upchime1.wav' #need upchime1.wav or it won't work!
-                newchimePath = self.folderPath + 'upchime1.wav'
-                if not os.path.exists(newchimePath):
-                    shutil.copyfile(upchimePath, newchimePath)
-            else:
-                fileIndex = self.settings['attnGetterFile'].rfind(self.dirMarker) + 1  # Finds last instance of / or \
-                attnName = self.settings['attnGetterFile'][fileIndex:] #the filename in isolation, for later.
-                upchimePath = self.settings['attnGetterFile']
-                newchimePath = self.folderPath + attnName
-                if not os.path.exists(newchimePath):
-                    shutil.copyfile(upchimePath,newchimePath)
-                    self.settings['attnGetterFile'] = attnName
+                secretWriter.writerow(tempArray[k])
+            co.close()
+        #copy stimuli if there are stimuli.
+        if len(self.stimSource) > 0:
             for i, j in self.stimSource.items(): #Find each file, copy it over
                 try:
                     targPath = stimPath + i
@@ -1291,6 +1303,18 @@ class pyHabBuilder():
                 except:
                     success = False
                     print('Could not copy file ' + j + '. Make sure it exists!')
+            if len(list(self.settings['attnGetterList'].keys())) > 0:
+                for i, j in self.settings['attnGetterList'].items():
+                    try:
+                        targPath = stimPath + 'attnGetters' + self.dirMarker
+                        if not os.path.exists(targPath):
+                            os.makedirs(targPath)
+                        shutil.copyfile(j['stimLoc'], targPath + j['stimName'])
+                        j['stimLoc'] = targPath + j['stimName']
+                    except:
+                        success = False
+                        print('Could not copy file ' + j['stimLoc'] + '. Make sure it exists!')
+
         if not success:
             errDlg = gui.Dlg(title="Could not copy stimuli!")
             errDlg.addText("Some stimuli could not be copied successfully. See the output of the coder window for details.")
