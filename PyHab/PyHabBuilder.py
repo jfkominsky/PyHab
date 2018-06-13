@@ -1,14 +1,24 @@
 from psychopy import visual, event, core, gui, monitors, tools, sound,__version__
-import wx, random, csv, shutil, os
+from psychopy.app import coder
+import wx, random, csv, shutil, os, sys, threading
 from math import *
 
-# This program designed to *create* PyHab files using a relatively straightforward GUI. Hoo boy.
-# Outputs a folder. Folder contains a launcher script that allows PyHab to either run or edit.
-# The class takes the settings dict, failing that it has a blank to fill in.
-#To fix: A better way of removing movies from a trial type.
 
 class pyHabBuilder():
+    """
+    TODO: New attentionGetter dialog for selecting attngetter files.
+
+
+    """
     def __init__(self, loadedSaved=False, settingsDict={}):
+        """
+
+        :param loadedSaved: Are we loading from a saved settings file?
+        :type loadedSaved: bool
+        :param settingsDict: If we are loading from a saved file, this is the content of that file passed by the launcher
+        :type settingsDict: dict
+        """
+
         self.loadSave = loadedSaved #For easy reference elsewhere
         if os.name is 'posix': #glorious simplicity of unix filesystem
             self.dirMarker = '/'
@@ -45,7 +55,7 @@ class pyHabBuilder():
         if not loadedSaved: #A new blank experiment
             #Load some defaults to start with.
             self.settings={'dataColumns': ['sNum', 'months', 'days', 'sex', 'cond','condLabel', 'trial','GNG','trialType','stimName','habCrit','sumOnA','numOnA','sumOffA','numOffA','sumOnB','numOnB','sumOffB','numOffB'], 
-                                                        'prefix': 'PyHab', 
+                                                        'prefix': 'PyHabExperiment',
                                                         'dataloc':'data'+self.dirMarker,
                                                         'maxDur': { }, 
                                                         'playThrough': { },
@@ -57,7 +67,7 @@ class pyHabBuilder():
                                                         'randPres': '0', 
                                                         'condPath': '', 
                                                         'condFile': '', 
-                                                        'condList': [ ],
+                                                        'condList': [],
                                                         'trialOrder': [], 
                                                         'maxHabTrials': '14',
                                                         'setCritWindow': '3', 
@@ -76,7 +86,11 @@ class pyHabBuilder():
                                                         'screenIndex': '1', 
                                                         'ISI': '0',
                                                         'freezeFrame': '0.2',
-                                                        'playAttnGetter': [],
+                                                        'playAttnGetter': {},
+                                                        'attnGetterList':{'PyHabDefault':{'stimType':'Audio',
+                                                                                          'stimName':'upchime1.wav',
+                                                                                          'stimDur':3,
+                                                                                          'stimLoc':'PyHab' + self.dirMarker + 'upchime1.wav'}},
                                                         'folderPath':'',
                                                         'trialTypes':[],
                                                         'prefLook':'0'}
@@ -84,21 +98,25 @@ class pyHabBuilder():
             self.trialTypesArray={'shapes':[],'text':[],'labels':[]}
         else:
             self.settings = settingsDict
-            evalList = ['dataColumns','maxDur','condList','movieEnd','playThrough','trialOrder','movieNames','autoAdvance','playAttnGetter','trialTypes','habTrialList'] #eval all the things that need eval.
+            evalList = ['dataColumns','maxDur','condList','movieEnd','playThrough','trialOrder','movieNames',
+                        'autoAdvance','playAttnGetter','attnGetterList','trialTypes','habTrialList'] #eval all the things that need eval.
             for i in evalList:
                 self.settings[i] = eval(self.settings[i])
             self.trialTypesArray = self.loadTypes()
             self.studyFlowArray=self.loadFlow()
             #Get conditions!
-            if self.settings['randPres'] in [1,'1'] or len(self.settings['condFile'])>0: #If there is a random presentation file...
-                testReader=csv.reader(open(self.settings['condFile'],'rU'))
-                testStuff=[]
-                for row in testReader:
-                    testStuff.append(row)
-                testDict = dict(testStuff) 
-                for i in testDict.keys():
-                    testDict[i] = eval(testDict[i]) 
-                self.condDict = testDict
+            if self.settings['randPres'] in [1,'1','True',True] or len(self.settings['condFile'])>0: #If there is a random presentation file...
+                if os.path.exists(self.settings['condFile']):
+                    testReader=csv.reader(open(self.settings['condFile'],'rU'))
+                    testStuff=[]
+                    for row in testReader:
+                        testStuff.append(row)
+                    testDict = dict(testStuff)
+                    for i in testDict.keys():
+                        testDict[i] = eval(testDict[i])
+                    self.condDict = testDict
+                else:
+                    self.condDict={}
             self.settings['folderPath'] = os.getcwd()+self.dirMarker #On load, reset the folder path to wherever you are now.
         self.folderPath = self.settings['folderPath'] #The location where all the pieces are saved.
         self.allDataColumns=['sNum', 'months', 'days', 'sex', 'cond','condLabel', 'trial','GNG','trialType','stimName','habCrit','sumOnA','numOnA','sumOffA','numOffA','sumOnB','numOnB','sumOffB','numOffB']
@@ -261,7 +279,7 @@ class pyHabBuilder():
             self.buttonList['shapes'][i].draw()
             self.buttonList['text'][i].draw()
     
-    def trialTypeDlg(self,trialType="TrialTypeNew", makeNew=True,prevInfo=[]):
+    def trialTypeDlg(self, trialType="TrialTypeNew", makeNew=True, prevInfo=[]):
         '''
         Dialog for creating OR modifying a trial type. Allows you to set
         the maximum duration of that trial type as well as remove movies
@@ -333,11 +351,14 @@ class pyHabBuilder():
             else:
                 chz2 = False
             typeDlg.addField("Auto-advance INTO trial without waiting for expeirmenter?", initial=chz2)
-            if makeNew == False and trialType not in self.settings['playAttnGetter']:
-                chz3 = False
-            else:
-                chz3 = True
-            typeDlg.addField("Play attention-getter on this trial type? (Stim presentation mode only)", initial=chz3)
+            if trialType not in self.settings['playAttnGetter']:
+                chz3 = list(self.settings['attnGetterList'].keys())
+                chz3.insert(1,'None') # Defaults to...well, the default
+            elif trialType in self.settings['playAttnGetter']:
+                chz3 = [x for x in list(self.settings['attnGetterList'].keys()) if x is not self.settings['playAttnGetter'][trialType]['agname']]
+                chz3.insert(0,'None')
+                chz3.insert(0,self.settings['playAttnGetter'][trialType]['agname'])
+            typeDlg.addField("Attention-getter for this trial type (Stim presentation mode only)", choices=chz3)
             if trialType in self.settings['movieEnd']:
                 chz4 = True
             else:
@@ -376,6 +397,8 @@ class pyHabBuilder():
                     trialType = typeInfo[0]
                 if not skip:
                     self.settings['maxDur'][trialType] = typeInfo[1] #Update maxDur
+
+                    # Gaze-contingency settings
                     if trialType not in self.settings['playThrough'].keys(): #Initialize if needed.
                         self.settings['playThrough'][trialType] = 0
                     if typeInfo[len(typeInfo)-4] == "Yes" and self.settings['playThrough'][trialType] is not 0: #gaze-contingent trial type, not already tagged as such.
@@ -384,24 +407,44 @@ class pyHabBuilder():
                         self.settings['playThrough'][trialType] = 2
                     elif typeInfo[len(typeInfo)-4] == "OnOnly" and self.settings['playThrough'][trialType] is not 1:
                         self.settings['playThrough'][trialType] = 1
+
+                    # Auto-advance settings
                     if typeInfo[len(typeInfo)-3] in [False,0,'False','0'] and trialType in self.settings['autoAdvance']: #gaze-contingent trial type, not already tagged as such.
                         self.settings['autoAdvance'].remove(trialType)
                     elif typeInfo[len(typeInfo)-3] in [True, 1, 'True', '1'] and not trialType in self.settings['autoAdvance']:
                         self.settings['autoAdvance'].append(trialType)
-                    if typeInfo[len(typeInfo)-2] in [False,0,'False','0'] and trialType in self.settings['playAttnGetter']:
-                        self.settings['playAttnGetter'].remove(trialType)
-                    elif typeInfo[len(typeInfo)-2] in [True, 1, 'True', '1'] and not trialType in self.settings['playAttnGetter']:
-                        self.settings['playAttnGetter'].append(trialType)
+
+                    # Attention-getter settings
+                    if typeInfo[len(typeInfo)-2] is 'None' and trialType in self.settings['playAttnGetter']:
+                        del self.settings['playAttnGetter'][trialType]
+                    elif trialType not in self.settings['playAttnGetter']: # If it did not have an attngetter before.
+                        agname = typeInfo[len(typeInfo)-2]
+                        self.settings['playAttnGetter'][trialType] = {'agname': agname,
+                                                                      'stimType': self.settings['attnGetterList'][agname]['stimType'],
+                                                                      'stimName': self.settings['attnGetterList'][agname]['stimName'],
+                                                                      'stimDur': self.settings['attnGetterList'][agname]['stimDur']}
+                    elif typeInfo[len(typeInfo)-2] is not self.settings['playAttnGetter'][trialType]['agname']:
+                        # If a different attention-getter has been selected
+                        agname = typeInfo[len(typeInfo) - 2]
+                        self.settings['playAttnGetter'][trialType] = {'agname': agname,
+                                                                      'stimType': self.settings['attnGetterList'][agname]['stimType'],
+                                                                      'stimName': self.settings['attnGetterList'][agname]['stimName'],
+                                                                      'stimDur': self.settings['attnGetterList'][agname]['stimDur']}
+
+                    # End-trial-on-movie-end settings
                     if typeInfo[len(typeInfo)-1] in [False,0,'False','0'] and trialType in self.settings['movieEnd']:
                         self.settings['movieEnd'].remove(trialType)
                     elif typeInfo[len(typeInfo)-1] in [True, 1, 'True', '1'] and not trialType in self.settings['movieEnd']:
                         self.settings['movieEnd'].append(trialType)
+
+                    # Remove stimuli if needed
                     if len(typeInfo) > 6: #Again, if there were movies to list.
                         tempMovies = [] #This will just replace the movienames list
                         for i in range(0,len(self.settings['movieNames'][trialType])):
                             if typeInfo[i+2]:
                                 tempMovies.append(self.settings['movieNames'][trialType][i])
                         self.settings['movieNames'][trialType] = tempMovies
+
                     #if we need to update the flow pane, it's taken care of above. Here we update the type pallette.
                     if makeNew:
                         i = len(self.trialTypesArray['labels']) #Grab length before adding, conveniently the index we need for position info etc.
@@ -696,6 +739,11 @@ class pyHabBuilder():
                     self.saveDlg()
                 else:
                     self.saveEverything()
+            if not self.loadSave and len(self.folderPath)>0: #If this is the first time saving a new experiment, relaunch from launcher!
+                self.win.close()
+                launcherPath = self.folderPath+self.settings['prefix']+'Launcher.py'
+                launcher = coder.ScriptThread(target=self._runLauncher(launcherPath), gui=self)
+                launcher.start()
     
     def univSettingsDlg(self): #The universal settings button.
         '''
@@ -807,6 +855,7 @@ class pyHabBuilder():
         sDlg.addField("Height of movie stimuli in pixels", self.settings['movieHeight'])
         sDlg.addField("Screen index of presentation screen (0 = primary display, 1 = secondary screen)", self.settings['screenIndex'])
         sDlg.addField("Freeze first frame for how many seconds after attention-getter?", self.settings['freezeFrame'])
+        sDlg.addField("Use default attention getter? (If No, a file-open dialog will let you select a new attention-getter)", choices=["Yes","No"])
         stimfo = sDlg.show()
         if sDlg.OK:
             self.settings['screenWidth'] = stimfo[0]
@@ -815,6 +864,14 @@ class pyHabBuilder():
             self.settings['movieHeight'] = stimfo[3]
             self.settings['screenIndex'] = stimfo[4]
             self.settings['freezeFrame'] = stimfo[5]
+            if stimfo[6] == "Yes":
+                self.settings['attnGetterFile'] = 'upchime1.wav'
+            else:
+                attnGttrDlg = gui.fileOpenDlg(prompt="Select attention-getter (sound or movie)")
+                if type(attnGttrDlg) is not NoneType:
+                    self.settings['attnGetterFile'] = attnGttrDlg
+
+
         
     def addMoviesToTypesDlg(self):
         '''
@@ -877,10 +934,6 @@ class pyHabBuilder():
             self.settings['randPres'] = condInfo[0]
             if condInfo[0]:
                 #A new dialog that allows you to re-order things...somehow
-                if len(condInfo[1]) > 0:
-                    self.settings['condFile'] = condInfo[1]
-                else:
-                    self.settings['condFile'] = "conditions.csv"
                 #Check if there are movies to re-order.
                 allReady = True
                 if len(self.trialTypesArray['labels']) == 0:
@@ -891,6 +944,10 @@ class pyHabBuilder():
                     elif len(self.settings['movieNames'][self.trialTypesArray['labels'][i]]) == 0:
                         allReady = False
                 if allReady:
+                    if len(condInfo[1]) > 0:
+                        self.settings['condFile'] = condInfo[1]
+                    else:
+                        self.settings['condFile'] = "conditions.csv"
                     if os.name is not 'posix':
                         self.win.winHandle.set_visible(visible=True)
                     self.condMaker()
@@ -905,6 +962,7 @@ class pyHabBuilder():
                         self.settings['condList'] = e[0]
             else:
                 self.settings['condFile'] = '' #Erases one if it existed.
+                self.settings['condList'] = [] #Gets rid of existing condition list to save trouble.
 
     def condMaker(self, rep=False): #For dealing with conditions.
         '''
@@ -1190,9 +1248,12 @@ class pyHabBuilder():
         :rtype:
         '''
         NoneType = type(None)
-        sDlg = gui.fileSaveDlg(prompt="Name a folder to save study into")  #We would put prefix as a default but it makes the system fail.
+        sDlg = gui.fileSaveDlg(initFilePath=os.getcwd(), initFileName=self.settings['prefix'], prompt="Name a folder to save study into")
         if type(sDlg) is not NoneType:
             self.settings['folderPath'] = sDlg+self.dirMarker #Makes a folder of w/e they entered
+            #If there is no pre-selected prefix, make the prefix the folder name!
+            if self.settings['prefix'] == "PyHabExperiment":
+                self.settings['prefix'] = os.path.split(sDlg)[1]
             self.folderPath=self.settings['folderPath']
             #Add save button if it does not exist.
             if self.saveEverything not in self.buttonList['functions']:
@@ -1228,31 +1289,44 @@ class pyHabBuilder():
             tempArray = []
             for j in range(0, len(self.settings['condList'])):
                 tempArray.append([self.settings['condList'][j],self.condDict[self.settings['condList'][j]]])
-            secretWriter = csv.writer(open(self.folderPath+self.settings['condFile'],'wb'))
+            co = open(self.folderPath+self.settings['condFile'],'wb')
+            secretWriter = csv.writer(co)
             for k in range(0, len(tempArray)):
-                secretWriter.writerow(tempArray[k]) #hope that closes too...
-        #copy stimuli if there are stimuli. Also pulls upchime1.wav
-        if len(self.stimSource)>0:
-            upchimePath='PyHab' + self.dirMarker + 'upchime1.wav' #need upchime1.wav or it won't work!
-            newchimePath = self.folderPath + 'upchime1.wav'
-            if not os.path.exists(newchimePath):
-                shutil.copyfile(upchimePath,newchimePath)
-            for i, j in self.stimSource.iteritems(): #Find each file, WILL NOT WORK IN PY3
+                secretWriter.writerow(tempArray[k])
+            co.close()
+        #copy stimuli if there are stimuli.
+        if len(self.stimSource) > 0:
+            for i, j in self.stimSource.items(): #Find each file, copy it over
                 try:
-                    targPath = stimPath + i + self.settings['movieExt']
+                    targPath = stimPath + i
                     shutil.copyfile(j, targPath)
                 except:
                     success = False
                     print('Could not copy file ' + j + '. Make sure it exists!')
+            if len(list(self.settings['attnGetterList'].keys())) > 0:
+                for i, j in self.settings['attnGetterList'].items():
+                    try:
+                        targPath = stimPath + 'attnGetters' + self.dirMarker
+                        if not os.path.exists(targPath):
+                            os.makedirs(targPath)
+                        shutil.copyfile(j['stimLoc'], targPath + j['stimName'])
+                        j['stimLoc'] = targPath + j['stimName']
+                    except:
+                        success = False
+                        print('Could not copy file ' + j['stimLoc'] + '. Make sure it exists!')
+
         if not success:
             errDlg = gui.Dlg(title="Could not copy stimuli!")
             errDlg.addText("Some stimuli could not be copied successfully. See the output of the coder window for details.")
             errDlg.show()
         #create/overwrite the settings csv.
         settingsPath = self.folderPath+self.settings['prefix']+'Settings.csv'
-        settingsOutput = csv.writer(open(settingsPath,'w'), lineterminator='\n')
-        for i, j in self.settings.iteritems():#this is how you write key/value pairs
+        so = open(settingsPath,'w')
+        settingsOutput = csv.writer(so, lineterminator='\n')
+        for i, j in self.settings.items():#this is how you write key/value pairs
             settingsOutput.writerow([i, j])
+        #close the settings file, to allow it to be read immediately (in theory)
+        so.close()
         #Copy over the class and such. Since these aren't modiied, make sure they don't exist first.
         classPath = 'PyHabClass.py'
         classTarg = codePath+classPath
@@ -1266,13 +1340,13 @@ class pyHabBuilder():
             if not os.path.exists(classTarg):
                 shutil.copyfile(srcDir+classPath, classTarg)
             if not os.path.exists(classPLTarg):
-                shutil.copyfile(srcDir+classPLPath,classPLTarg)
+                shutil.copyfile(srcDir+classPLPath, classPLTarg)
             if not os.path.exists(buildTarg):
-                shutil.copyfile(srcDir+buildPath,buildTarg)
+                shutil.copyfile(srcDir+buildPath, buildTarg)
             if not os.path.exists(initTarg):
-                shutil.copyfile(srcDir+initPath,initTarg)
+                shutil.copyfile(srcDir+initPath, initTarg)
         except:
-            #error dialog?
+            #error dialog
             errDlg = gui.Dlg(title="Could not copy PyHab and builder!")
             errDlg.addText("Failed to copy PyHab class scripts and builder script. These can be copied manually from the PyHab folder and will be needed!")
             errDlg.show()
@@ -1291,7 +1365,7 @@ class pyHabBuilder():
                 launcherFile[6] = newLine
                 launcherFile[7] = "#Created in PsychoPy version " + __version__ + "\r\n"
                 #now write the new file!
-                with open (launcherPath, 'w') as t:
+                with open(launcherPath, 'w') as t:
                     t.writelines(launcherFile)
             except:
                 errDlg = gui.Dlg(title="Could not save!")
@@ -1304,5 +1378,26 @@ class pyHabBuilder():
             saveSuccessDlg.addText("Experiment saved successfully to" + self.folderPath)
             saveSuccessDlg.show()
 
-        
-        
+
+    def _runLauncher(self,launcherPath):
+        """
+        Flagrantly copied from psychopy's own app/coder interface, where it is used for running scripts in the IDE.
+        Basically it's like hitting the "run" button in the coder interface, but from within an actively-running script.
+
+        :param launcherPath: Full path to launcher file created by builder
+        :type launcherPath: string
+        :return:
+        :rtype:
+        """
+        fullPath = launcherPath
+        path, scriptName = os.path.split(fullPath)
+        importName, ext = os.path.splitext(scriptName)
+        # set the directory and add to path
+        os.chdir(path)  # try to rewrite to avoid doing chdir in the coder
+        sys.path.insert(0, path)
+
+        # do an 'import' on the file to run it
+        # delete the sys reference to it (so we think its a new import)
+        if importName in sys.modules:
+            sys.modules.pop(importName)
+        exec ('import %s' % (importName))  # or run first time
