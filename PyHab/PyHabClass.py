@@ -103,8 +103,7 @@ class pyHab:
         self.screenIndex = eval(settingsDict['screenIndex'])  # which monitor stimuli are presented on. 1 for secondary monitor, 0 for primary monitor.
         self.ISI = eval(settingsDict['ISI'])  # time between loops (in seconds, if desired)
         self.freezeFrame = eval(settingsDict['freezeFrame'])  # time that movie remains on first frame at start of trial.
-        self.playAttnGetter = eval(settingsDict['playAttnGetter'])  # Trial-by-trial marker of whether the attention-getter should be played.
-        self.attnGetterFile = settingsDict['attnGetterFile']
+        self.playAttnGetter = eval(settingsDict['playAttnGetter'])  # Trial-by-trial marker of which attngetter goes with which trial (if applicable).
         if len(self.moviePath) > 0 and self.moviePath[-1] is not self.dirMarker:
             self.moviePath = [self.dirMarker if x == otherOS else x for x in self.moviePath]
             self.moviePath = ''.join(self.moviePath)
@@ -128,11 +127,7 @@ class pyHab:
         if not self.stimPres:
             self.endTrialSound = sound.Sound('A', octave=4, sampleRate=44100, secs=0.2)
             self.endHabSound = sound.Sound('G', octave=4, sampleRate=44100, secs=0.2)
-        elif len(self.playAttnGetter) > 0:
-            # TODO: Make felxible about content of attngetter, audio vs. video, and trial-type-specific.
-            self.HeyListen = sound.Sound('upchime1.wav', secs=3)  # will become attn-getter.
-        if type(
-                self.maxDur) is int:  # Secretly MaxDur will always be a dict, but if it's a constant we just create the dict here
+        if type(self.maxDur) is int:  # Secretly MaxDur will always be a dict, but if it's a constant we just create the dict here
             tempDur = self.maxDur
             self.maxDur = {}  # create a dict
             # look up unique names in trialOrder to get all the trial types
@@ -356,34 +351,41 @@ class pyHab:
 
     def attnGetter(self, trialType):
         """
-        Currently: the default attention-getter animation
-        Todo: plays either a default attention-getter animation or a user-selected one.
+        Plays either a default attention-getter animation or a user-defined one.
+        Separate settings for audio w/shape and video file attention-getters.
 
         :return:
         :rtype:
         """
 
-        # So either we will have an audio file under heyListen, or a movie. Could vary by trial.
-        # We need to be able to figure out whether it's audio or a movie
-        # OK, self.playAttnGetter is now a dict of dicts, each dict has a variable 'stimType'
-        # and a 'file' which we will have to construct on load with the other movies and such.
         if self.playAttnGetter[trialType]['stimType'] is 'Audio':
-
-            self.playAttnGetter[trialType]['file'].play()
+            if self.playAttnGetter[trialType]['shape'] is 'Rectangle':
+                useShape = self.attnGetterSquare
+            elif self.playAttnGetter[trialType]['shape'] is 'Cross':
+                useShape = self.attnGetterCross
+                sizeMult = 50
+            else:
+                useShape = self.attnGetterStar
+                sizeMult = 1
             x = 0
-            self.attnGetterSquare.ori = 0
-            self.attnGetterSquare.fillColor = 'yellow'
-            for i in range(0, 60):  # a 1-second animation
-                self.attnGetterSquare.ori += 5
+            useShape.ori = 0
+            useShape.fillColor = self.playAttnGetter[trialType]['color']
+            animDur = int(60*self.playAttnGetter[trialType]['file'].getDuration())
+            self.playAttnGetter[trialType]['file'].play()
+            for i in range(0, animDur):  # Animation set to length of sound
+                useShape.ori += 5  # Defines rotation speed in degrees. Arbitrary.
                 x += .1
-                self.attnGetterSquare.height = sin(x) * 120
-                self.attnGetterSquare.width = tan(.25 * x) * 120
-                self.attnGetterSquare.draw()
+                if self.playAttnGetter[trialType]['shape'] is 'Rectangle':
+                    useShape.height = sin(x) * (2*animDur) # I don't know why this one works so well, but it does.
+                    useShape.width = tan(.25 * x) * (2*animDur)
+                else:
+                    useShape.size = tan(.025 * x) * (sizeMult*self.baseSize)
+                useShape.draw()
                 self.win.flip()
         else:
-            dMovie = self.playAttnGetter[trialType]['file'] # TODO: So we will need to load this...
+            dMovie = self.playAttnGetter[trialType]['file']
             self.frameCount = 0
-            self.pauseCount = self.ISI*60
+            self.pauseCount = self.ISI*60 #To make it end instantly while ignoring ISI
             while self.dispStimWindow(1, dMovie) < 2:
                 pass
 
@@ -638,8 +640,7 @@ class pyHab:
                         waitStart = False
                 else:
                     if trialType in self.playAttnGetter:
-                        #TODO: Replace arbitrary .2 with something that tracks the actual length of the attngetter
-                        core.wait(.2 + self.freezeFrame)  # an attempt to match the delay caused by the attention-getter playing.
+                        core.wait(self.playAttnGetter[trialType]['stimDur'] + self.freezeFrame)  # an attempt to match the delay caused by the attention-getter playing.
                         waitStart = True
                     else:
                         waitStart = False
@@ -650,12 +651,13 @@ class pyHab:
                     elif self.keyboard[self.key.A]:
                         if self.stimPres:
                             if trialType in self.playAttnGetter:
-                                self.attnGetter()
+                                self.attnGetter(trialType)
                                 core.wait(.1)
                             irrel = self.dispTrial(0, disMovie)
                             core.wait(self.freezeFrame)
                         else:
-                            core.wait(.2 + self.freezeFrame)
+                            if trialType in self.playAttnGetter:
+                                core.wait(self.playAttnGetter[trialType]['stimDur'] + self.freezeFrame)  # an attempt to match the delay caused by the attention-getter playing.
                     elif self.lookKeysPressed():
                         waitStart = False
                         self.dispCoderWindow(trialType)
@@ -1407,7 +1409,7 @@ class pyHab:
                 # now to rearrange the lists of each trial type.
                 finalDict = []
                 if sys.version_info[0] < 3:
-                    for i, j in self.cond.iteritems():
+                    for i, j in self.cond.items():
                         newTempTrials = []
                         for q in range(0, len(j)):
                             newTempTrials.append(self.movieNames[i][j[q] - 1])
@@ -1447,8 +1449,7 @@ class pyHab:
                 if len(list(self.playAttnGetter.keys())) > 0:
                     for i in list(self.playAttnGetter.keys()):
                         if self.playAttnGetter[i]['stimType'] == 'Audio':
-                            self.playAttnGetter[i]['file'] = sound.Sound(self.moviePath + 'attnGetters' + self.dirMarker + self.playAttnGetter[i]['stimName'],
-                                                                         secs = self.playAttnGetter[i]['stimDur'])
+                            self.playAttnGetter[i]['file'] = sound.Sound(self.moviePath + 'attnGetters' + self.dirMarker + self.playAttnGetter[i]['stimName'])
                         else:
                             tempStimPath = self.moviePath + 'attnGetters' + self.dirMarker + self.playAttnGetter[i]['stimName']
                             self.playAttnGetter[i]['file'] = visual.MovieStim3(self.win, tempStimPath,
@@ -1459,7 +1460,23 @@ class pyHab:
             self.win2.winHandle.push_handlers(self.keyboard)
             if self.stimPres:
                 self.win.winHandle.push_handlers(self.keyboard)
-                self.attnGetterSquare = visual.Rect(self.win, height=40, width=40, pos=[self.testOffset + 0, 0],fillColor='black')
+                self.baseSize = 40 # Base size of all attention-getters, in pixels
+                self.attnGetterSquare = visual.Rect(self.win, height=self.baseSize, width=self.baseSize, pos=[self.testOffset + 0, 0], fillColor='black')
+                self.attnGetterCross = visual.ShapeStim(self.win, vertices='cross', size=self.baseSize, pos=[self.testOffset + 0, 0], fillColor='black')
+
+                numVertices = 10
+                starRad = self.baseSize #This creates a large but static rotating star. It does not loom.
+                starVerts = []
+                for x in range(0,numVertices):
+                    if x % 2 == 1:
+                        tempRad = starRad*.55  # How much to draw in between the "points"
+                    else:
+                        tempRad = starRad
+                    tempVert = [tempRad*sin((2*pi)/numVertices * x), tempRad*cos((2*pi)/numVertices * x)]
+                    starVerts.append(tempVert)
+
+                self.attnGetterStar = visual.ShapeStim(self.win, vertices=starVerts, pos=[self.testOffset + 0, 0], fillColor='black')
+
             self.statusSquareA = visual.Rect(self.win2, height=80, width=80,
                                              pos=[self.statusOffset - 60, self.statusOffsetY + 0],
                                              fillColor='black')  # These two appear on the status screen window.

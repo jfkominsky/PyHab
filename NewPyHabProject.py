@@ -4,3 +4,4 @@
 from PyHab import PyHabBuilder as PB
 
 builder = PB.pyHabBuilder()
+builder.run()

@@ -41,6 +41,7 @@ def run():
             experiment.run()
         else:
             builder = PB.pyHabBuilder(loadedSaved = True, settingsDict=setDict)
+            builder.run()
         #After you're done: Relaunch launcher!
         run()
     else:
