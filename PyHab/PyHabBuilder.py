@@ -7,6 +7,7 @@ from math import *
 class pyHabBuilder():
     """
     TODO: New attentionGetter dialog for selecting attngetter files.
+    TODO: Background color in stim settings
 
 
     """
@@ -51,10 +52,10 @@ class pyHabBuilder():
         for y in [.25,.75]: #two rows for the study flow.
             for z in range(1,11):
                     self.flowLocs.append([self.flowArea[0]+z*(self.flowArea[1]-self.flowArea[0])*.09, self.flowArea[2]+y*(self.flowArea[3]-self.flowArea[2])])
-        #loadedSaved is "is this a new experiment or are we operating inside an existing experiment's folder?"
-        if not loadedSaved: #A new blank experiment
-            #Load some defaults to start with.
-            self.settings={'dataColumns': ['sNum', 'months', 'days', 'sex', 'cond','condLabel', 'trial','GNG','trialType','stimName','habCrit','sumOnA','numOnA','sumOffA','numOffA','sumOnB','numOnB','sumOffB','numOffB'], 
+        # loadedSaved is "is this a new experiment or are we operating inside an existing experiment's folder?"
+        if not loadedSaved:  # A new blank experiment
+            # Load some defaults to start with.
+            self.settings = {'dataColumns': ['sNum', 'months', 'days', 'sex', 'cond','condLabel', 'trial','GNG','trialType','stimName','habCrit','sumOnA','numOnA','sumOffA','numOffA','sumOnB','numOnB','sumOffB','numOffB'],
                                                         'prefix': 'PyHabExperiment',
                                                         'dataloc':'data'+self.dirMarker,
                                                         'maxDur': { }, 
@@ -90,7 +91,9 @@ class pyHabBuilder():
                                                         'attnGetterList':{'PyHabDefault':{'stimType':'Audio',
                                                                                           'stimName':'upchime1.wav',
                                                                                           'stimDur':3,
-                                                                                          'stimLoc':'PyHab' + self.dirMarker + 'upchime1.wav'}},
+                                                                                          'stimLoc':'PyHab' + self.dirMarker + 'upchime1.wav',
+                                                                                          'shape':'Rectangle',
+                                                                                          'color':'yellow'}},
                                                         'folderPath':'',
                                                         'trialTypes':[],
                                                         'prefLook':'0'}
@@ -103,8 +106,8 @@ class pyHabBuilder():
             for i in evalList:
                 self.settings[i] = eval(self.settings[i])
             self.trialTypesArray = self.loadTypes()
-            self.studyFlowArray=self.loadFlow()
-            #Get conditions!
+            self.studyFlowArray = self.loadFlow()
+            # Get conditions!
             if self.settings['randPres'] in [1,'1','True',True] or len(self.settings['condFile'])>0: #If there is a random presentation file...
                 if os.path.exists(self.settings['condFile']):
                     testReader=csv.reader(open(self.settings['condFile'],'rU'))
@@ -117,13 +120,13 @@ class pyHabBuilder():
                     self.condDict = testDict
                 else:
                     self.condDict={}
-            self.settings['folderPath'] = os.getcwd()+self.dirMarker #On load, reset the folder path to wherever you are now.
-        self.folderPath = self.settings['folderPath'] #The location where all the pieces are saved.
+            self.settings['folderPath'] = os.getcwd()+self.dirMarker  # On load, reset the folder path to wherever you are now.
+        self.folderPath = self.settings['folderPath']  # The location where all the pieces are saved.
         self.allDataColumns=['sNum', 'months', 'days', 'sex', 'cond','condLabel', 'trial','GNG','trialType','stimName','habCrit','sumOnA','numOnA','sumOffA','numOffA','sumOnB','numOnB','sumOffB','numOffB']
         self.allDataColumnsPL =['sNum', 'months', 'days', 'sex', 'cond','condLabel','trial','GNG','trialType','stimName','habCrit', 'sumOnL','numOnL','sumOnR','numOnR','sumOff','numOff']
-        self.stimSource={} #A list of the source folder(s) for each stimulus file, a dict where each key is the filename in movienames?
+        self.stimSource={}  # A list of the source folder(s) for each stimulus file, a dict where each key is the filename in movienames?
         self.allDone=False
-        #Various main UI buttons, put into a dict of lists for easy looping through.
+        # Various main UI buttons, put into a dict of lists for easy looping through.
         self.buttonList={'shapes':[],'text':[],'functions':[]}#Yes, python means we can put the functions in there too.
         if len(self.folderPath) > 0:
             #Make a "save" button, not just a "save as" button, but only if there is a place to save to!
@@ -194,20 +197,31 @@ class pyHabBuilder():
         self.buttonList['shapes'].append(addMovButton)
         self.buttonList['text'].append(addMovText)
         self.buttonList['functions'].append(self.addMoviesToTypesDlg)
+
+        attnGetterButton = visual.Rect(self.win, width=.4, height=.5*(.2/self.aspect), pos=[.5, -.8], fillColor = "white")
+        attnGetterText = visual.TextStim(self.win, text="Customize \nattention-getters",color="black",height=attnGetterButton.height*.3,alignHoriz='center', pos=attnGetterButton.pos)
+        self.buttonList['shapes'].append(attnGetterButton)
+        self.buttonList['text'].append(attnGetterText)
+        self.buttonList['functions'].append(self.attnGetterDlg)
         
         self.workingRect = visual.Rect(self.win, width=1, height=.5, pos=[0,0], fillColor = 'green') #Because there are certain things that take a while.
         self.workingText = visual.TextStim(self.win, text="Working...", height= .3, bold=True, alignHoriz='center', pos=[0,0])
-        
-        #Begin
+
+
+    def run(self):
+        """
+        Exists exclusively to be called to start the main loop.
+        :return:
+        :rtype:
+        """
         self.mainLoop()
-       
     
     def mainLoop(self):
-        '''
+        """
         Main loop of the whole program.
         :return:
         :rtype:
-        '''
+        """
         while self.allDone==False:        
             self.showMainUI()
             self.win.flip()
@@ -258,11 +272,11 @@ class pyHabBuilder():
         
             
     def showMainUI(self):
-        '''
+        """
         Main draw loop of the primary builder interface
         :return:
         :rtype:
-        '''
+        """
         self.flowRect.draw()        #Draw flow area and study flow
         for i in range(0, len(self.studyFlowArray['lines'])):
             self.studyFlowArray['lines'][i].draw()
@@ -280,7 +294,7 @@ class pyHabBuilder():
             self.buttonList['text'][i].draw()
     
     def trialTypeDlg(self, trialType="TrialTypeNew", makeNew=True, prevInfo=[]):
-        '''
+        """
         Dialog for creating OR modifying a trial type. Allows you to set
         the maximum duration of that trial type as well as remove movies
         from it, and also set whether the trial type is gaze contingent.
@@ -295,7 +309,7 @@ class pyHabBuilder():
         :type prevInfo: list
         :return:
         :rtype:
-        '''
+        """
         self.showMainUI()
         self.workingRect.draw()
         self.workingText.draw()
@@ -309,8 +323,8 @@ class pyHabBuilder():
         else:
             typeDlg = gui.Dlg(title="Trial Type " + trialType)
             typeDlg.addField("Trial type name: ", trialType)
-            if not makeNew: #if this modifying an existing trial type, pre-fill the existing info.
-                if len(prevInfo) == 0: #allows for removal of movies from the trial type
+            if not makeNew:  # if this modifying an existing trial type, pre-fill the existing info.
+                if len(prevInfo) == 0:  # allows for removal of movies from the trial type
                     typeDlg.addField("Max duration", self.settings['maxDur'][trialType])
                     if len(self.settings['movieNames'][trialType]) > 0:
                         typeDlg.addText("Current movie files in trial type (uncheck to remove)")
@@ -318,11 +332,11 @@ class pyHabBuilder():
                             typeDlg.addField(self.settings['movieNames'][trialType][i], initial=True)
                 else:
                     typeDlg.addField("Max duration", prevInfo[1])
-                    if len(prevInfo) > 3: #If there were no movies to start with, this will have a length of 3.
+                    if len(prevInfo) > 3:  # If there were no movies to start with, this will have a length of 3.
                         typeDlg.addText("Current movie files in trial type (uncheck to remove)")
                         for i in range(0,len(self.settings['movieNames'][trialType])):
                             typeDlg.addField(self.settings['movieNames'][trialType][i], initial=prevInfo[i+2])
-                #find the index of the existing trial type in the study flow and type pane.
+                # Find the index of the existing trial type in the study flow and type pane.
                 flowIndexes=[]
                 for i in range(0,len(self.studyFlowArray['labels'])):
                     if self.studyFlowArray['labels'][i] == trialType:
@@ -342,42 +356,44 @@ class pyHabBuilder():
                     chz = ["OnOnly", "Yes", "No"]
                 else:
                     chz = ["Yes", "OnOnly", "No"]
-            else: #if there is no existing indeces to refer to
+            else:  # if there is no existing indeces to refer to
                 typeDlg.addField("Max duration",60)
                 chz = ["Yes", "OnOnly", "No"]
-            typeDlg.addField("Gaze-contingent trial type", choices = chz)
+            typeDlg.addField("Gaze-contingent trial type", choices=chz)
             if trialType in self.settings['autoAdvance']:
                 chz2 = True
             else:
                 chz2 = False
             typeDlg.addField("Auto-advance INTO trial without waiting for expeirmenter?", initial=chz2)
             if trialType not in self.settings['playAttnGetter']:
-                chz3 = list(self.settings['attnGetterList'].keys())
-                chz3.insert(1,'None') # Defaults to...well, the default
+                ags = list(self.settings['attnGetterList'].keys())
+                chz3 = [x for x in ags if x is not 'PyHabDefault']
+                chz3.insert(0, 'None')
+                chz3.insert(0, 'PyHabDefault')  # Defaults to...well, the default
             elif trialType in self.settings['playAttnGetter']:
                 chz3 = [x for x in list(self.settings['attnGetterList'].keys()) if x is not self.settings['playAttnGetter'][trialType]['agname']]
-                chz3.insert(0,'None')
-                chz3.insert(0,self.settings['playAttnGetter'][trialType]['agname'])
-            typeDlg.addField("Attention-getter for this trial type (Stim presentation mode only)", choices=chz3)
+                chz3.insert(0, 'None')
+                chz3.insert(0, self.settings['playAttnGetter'][trialType]['agname'])
+            typeDlg.addField("Attention-getter for this trial type (Stim presentation mode only)", choices = chz3)
             if trialType in self.settings['movieEnd']:
                 chz4 = True
             else:
                 chz4 = False
-            typeDlg.addField("Only end trial on end of movie repetition? (Only works when presenting stimuli)", initial=chz4)
+            typeDlg.addField("Only end trial on end of movie repetition? (Only works when presenting stimuli)", initial = chz4)
             typeInfo = typeDlg.show()
             if typeDlg.OK:
-                #Update all the things, or create them.
-                typeInfo[0] = str(typeInfo[0])#Ditch PyQT BS I hope.
-                if typeInfo[0] is not trialType: #First, do we need to change the trial type label for an existing type?
+                # Update all the things, or create them.
+                typeInfo[0] = str(typeInfo[0])  # Ditch PyQT BS I hope.
+                if typeInfo[0] is not trialType:  # First, do we need to change the trial type label for an existing type?
                     if not makeNew and typeInfo[0] not in self.trialTypesArray['labels']:
-                        #change all the dicts and everything.
+                        # change all the dicts and everything.
                         self.settings['movieNames'][typeInfo[0]] = self.settings['movieNames'].pop(trialType)
                         self.settings['maxDur'][typeInfo[0]]=self.settings['maxDur'].pop(trialType)
                         self.settings['playThrough'][typeInfo[0]] = self.settings['playThrough'].pop(trialType)
-                        #update trial type and study flow too
+                        # update trial type and study flow too
                         numChar = len(typeInfo[0])
                         if numChar <= 3:
-                            numChar = 4 #Maximum height
+                            numChar = 4  # Maximum height
                         for i in flowIndexes:
                             self.studyFlowArray['labels'][i] = typeInfo[0]
                             self.studyFlowArray['text'][i].text=typeInfo[0]
@@ -456,12 +472,12 @@ class pyHabBuilder():
                         self.settings['movieNames'][typeInfo[0]] = []
     
     def addHabBlock(self, makeNew = True):
-        '''
+        """
         Creates a hab trial type, which consists of a hab trial plus, now, some other number of trials
         It essentially needs to create a sub-flow.
         :return:
         :rtype:
-        '''
+        """
         #Some stuff is predetermined, specifically name and gaze-contingency
         typeDlg = gui.Dlg(title="Hab block creator")
         typeDlg.addText("Hab trial settings")
@@ -546,8 +562,15 @@ class pyHabBuilder():
                 self.settings['habTrialList'] = [] #If the sub-block functionality was on and is now off
 
     def setHabSubTrials(self,numHab):
-        # We're going to ignore if there is already something in place, on the assumption that these
-        # sub-blocks will be small.
+        """
+        Groups trial types into hab blocks. Hab blocks can have multiple trial types, but one must always be Hab.
+        This function doesn't care if you've made a hab block before, it just overwrites whatever exists. This is under
+        the assumption that hab blocks will have few trials.
+        :param numHab: Number of trials in a hab block
+        :type numHab: int
+        :return:
+        :rtype:
+        """
         subBlockDlg = gui.Dlg("Hab Sub-trials")
         subBlockDlg.addText("EXACTLY ONE must be set to Hab")
         for i in range(0, numHab):
@@ -572,11 +595,11 @@ class pyHabBuilder():
 
     
     def delTrialTypeDlg(self):
-        '''
+        """
         Dialog for deleting a trial type, and all instances of that trial type in the study flow
         :return:
         :rtype:
-        '''
+        """
         self.showMainUI()
         self.workingRect.draw()
         self.workingText.draw()
@@ -600,14 +623,14 @@ class pyHabBuilder():
                 self.studyFlowArray=self.loadFlow()
 
     def moveTrialInFlow(self,flowIndex):
-        '''
+        """
         A function for when a trial is clicked in the study flow, allowing you to either swap it or remove it.
 
         :param flowIndex: The index in the flowArray of the trial being modified
         :type flowIndex: int
         :return:
         :rtype:
-        '''
+        """
         #Display a text tooltip at the bottom of the flow area.
         instrText = visual.TextStim(self.win, text="Click another trial to swap positions, or click the remove button to delete from the study flow, click anywhere else to cancel.", bold=True,
                     height = abs(self.flowArea[3]-self.flowArea[2])*.05, pos=[-.5, self.flowArea[3]+.12*float(abs(self.flowArea[3]-self.flowArea[2]))],alignHoriz='center',alignVert='center')
@@ -643,12 +666,12 @@ class pyHabBuilder():
 
     
     def loadFlow(self):
-        '''
+        """
         This creates the array of objects in the study flow display
 
         :return:
         :rtype:
-        '''
+        """
         tOrd = self.settings['trialOrder']
         numItems = len(tOrd)
         tTypes = self.settings['trialTypes']
@@ -692,11 +715,11 @@ class pyHabBuilder():
         return outputDict
     
     def loadTypes(self): #A "pallette" of trial types on one side, only needed when loading from save.
-        '''
+        """
         This function creates the trial types palette
         :return:
         :rtype:
-        '''
+        """
         if len(self.settings['trialTypes']) == 0:#if working w/ an old settings file or one that for w/e reason has no ttypes.
             tOrd = self.settings['trialOrder']
             tTypes = []#list of trial types
@@ -720,11 +743,11 @@ class pyHabBuilder():
         return(outputDict)
     
     def quitFunc(self):
-        '''
+        """
         Simple function for quitting, checks if you want to save first (if there's anything to save).
         :return:
         :rtype:
-        '''
+        """
         self.allDone=True
         if len(self.trialTypesArray['labels']) > 0: #Don't save if no trial types have been created
             saveDlg = gui.Dlg(title="Save?",labelButtonOK='Yes', labelButtonCancel='No')
@@ -742,7 +765,7 @@ class pyHabBuilder():
                 launcher.start()
     
     def univSettingsDlg(self): #The universal settings button.
-        '''
+        """
         Settings that apply to every PyHab study regardless of anything else.
 
         prefix: The prefix of the launcher and all data files.
@@ -755,7 +778,7 @@ class pyHabBuilder():
         prefLook: Whether the study is preferential-looking or single-target.
         :return:
         :rtype:
-        '''
+        """
         self.showMainUI()
         self.workingRect.draw()
         self.workingText.draw()
@@ -795,13 +818,13 @@ class pyHabBuilder():
                 self.settings['dataColumns'] = self.allDataColumns
         
     def dataSettingsDlg(self):
-        '''
+        """
         Which columns of data are recorded.
         Resets if the experiment type is switched to or from preferential looking.
 
         :return:
         :rtype:
-        '''
+        """
         self.showMainUI()
         self.workingRect.draw()
         self.workingText.draw()
@@ -827,7 +850,7 @@ class pyHabBuilder():
             self.settings['dataColumns'] = tempCols
         
     def stimSettingsDlg(self):
-        '''
+        """
         Settings relating to stimulus presentation
 
         screenWidth: Width of stim window
@@ -839,7 +862,7 @@ class pyHabBuilder():
             of the movie will be displayed after the attention-getter finishes.
         :return:
         :rtype:
-        '''
+        """
         self.showMainUI()
         self.workingRect.draw()
         self.workingText.draw()
@@ -851,7 +874,6 @@ class pyHabBuilder():
         sDlg.addField("Height of movie stimuli in pixels", self.settings['movieHeight'])
         sDlg.addField("Screen index of presentation screen (0 = primary display, 1 = secondary screen)", self.settings['screenIndex'])
         sDlg.addField("Freeze first frame for how many seconds after attention-getter?", self.settings['freezeFrame'])
-        sDlg.addField("Use default attention getter? (If No, a file-open dialog will let you select a new attention-getter)", choices=["Yes","No"])
         stimfo = sDlg.show()
         if sDlg.OK:
             self.settings['screenWidth'] = stimfo[0]
@@ -860,23 +882,18 @@ class pyHabBuilder():
             self.settings['movieHeight'] = stimfo[3]
             self.settings['screenIndex'] = stimfo[4]
             self.settings['freezeFrame'] = stimfo[5]
-            if stimfo[6] == "Yes":
-                self.settings['attnGetterFile'] = 'upchime1.wav'
-            else:
-                attnGttrDlg = gui.fileOpenDlg(prompt="Select attention-getter (sound or movie)")
-                if type(attnGttrDlg) is not NoneType:
-                    self.settings['attnGetterFile'] = attnGttrDlg
+
 
 
         
     def addMoviesToTypesDlg(self):
-        '''
+        """
         A series dialog boxes, the first selecting a trial type and the number of movies to add,
         then one file open dialog for each movie, which is in turn added to the movieNames list
         for that trial type.
         :return:
         :rtype:
-        '''
+        """
         self.showMainUI()
         self.workingRect.draw()
         self.workingText.draw()
@@ -906,19 +923,153 @@ class pyHabBuilder():
             errDlg = gui.Dlg(title="No trial types!")
             errDlg.addText("No trial types to add movies to! Please create trial types first.")
             e = errDlg.show()
-        
+
+
+    def attnGetterAudioDlg(self):
+        """
+        A modular dialog for setting the options for an audio-based attention-getter
+        :return: A dictionary containing all the info required for an audio attention-getter
+        :rtype: dict
+        """
+        NoneType = type(None)
+        aDlg3 = gui.Dlg(title="Audio attention-getter settings")
+        aDlg3.addField("Looming shape type", choices=['Rectangle', 'Cross', 'Star'])
+        aDlg3.addField("Looming shape color", choices=['yellow', 'green', 'red', 'blue', 'white', 'black'])
+        ans3 = aDlg3.show()
+        if aDlg3.OK:
+            shape = ans3[0].split()  # Pulls out rectangle, cross, or star.
+            fileSelectDlg = gui.fileOpenDlg(prompt="Select attention-getter audio file")
+            if type(fileSelectDlg) is not NoneType:
+                path, namething = os.path.split(fileSelectDlg[0])
+                # Again an ugly but necessary solution for getting the duration.
+                tempSound = sound.Sound(fileSelectDlg[0])
+                tempGetter = {'stimLoc': fileSelectDlg[0], 'stimName': namething,
+                                   'shape': shape[-1], 'color': ans3[1],
+                                   'stimDur': tempSound.getDuration()}
+                del tempSound
+                return tempGetter
+            else:
+                return {}
+        else:
+            return {}
+
+    def attnGetterVideoDlg(self):
+        """
+        A modular dialog for setting the options for a video-based attention-getter
+        :return: A dictionary containing all the info required for a video attention-getter
+        :rtype: dict
+        """
+        NoneType = type(None)
+        fileSelectDlg = gui.fileOpenDlg(prompt="Select attention-getter movie file")
+        if type(fileSelectDlg) is not NoneType:
+            path, namething = os.path.split(fileSelectDlg[0])
+            # Suboptimal solution for getting duration, but possibly only available.
+            tempMovie = visual.MovieStim3(self.win, fileSelectDlg[0])
+            tempGetter = {'stimLoc': fileSelectDlg[0], 'stimName': namething,
+                               'stimDur': tempMovie.duration}
+            del tempMovie
+            return tempGetter
+        else:
+            return {}
+
+    def attnGetterDlg(self):
+        """
+        The dialog window for customizing the attention-getters available to use for different trials.
+        Two-stage: Modify existing attngetter or make new, then what do you do with ether of those.
+        Allows audio with PsychoPy-produced looming shape or just a video file.
+        :return:
+        :rtype:
+        """
+        self.showMainUI()
+        self.workingRect.draw()
+        self.workingText.draw()
+        self.win.flip()
+        achz = list(self.settings['attnGetterList'].keys())
+        # Remove default (which cannot be messed with).
+        achz = [a for a in achz if a is not 'PyHabDefault']
+        achz.insert(0, 'Make New')  # Top item will always be "make new"
+        aDlg1 = gui.Dlg(title="Select attention-getter or make new")
+        aDlg1.addField("Select attention-getter or 'Make New'", choices=achz)
+        ans1 = aDlg1.show()
+        NoneType = type(None)
+        if aDlg1.OK:
+            if ans1[0] is 'Make New':
+                # New window to design an attention getter! Choose your own adventure a bit.
+                aDlg2 = gui.Dlg(title="Make new attention-getter: step 1")
+                aDlg2.addField("Attention-getter name: ", 'NewAttnGetter')
+                aDlg2.addField("Audio (with built-in shape) or video?", choices=['Audio','Video'])
+                ans2 = aDlg2.show()
+                if aDlg2.OK:
+                    tempGetter={'stimType': ans2[1]}
+                    if tempGetter['stimType'] is 'Video':
+                        newTempGet = self.attnGetterVideoDlg()
+                    else:
+                        newTempGet = self.attnGetterAudioDlg()
+                    if len(newTempGet) > 0:
+                        tempGetter.update(newTempGet)
+                        self.settings['attnGetterList'][ans2[0]] = tempGetter
+
+            else: # Modifying an existing AG. Little complex.
+                aDlg2b = gui.Dlg(title="Change attention-getter properties")
+                currAG = self.settings['attnGetterList'][ans1[0]] #The current attention-getter.
+                aDlg2b.addField("Attention-getter name: ", ans1[0])
+                if currAG['stimType'] is 'Audio':
+                    chz = ['Audio', 'Video']
+                else:
+                    chz = ['Video, Audio']
+                aDlg2b.addField("Attention-getter type: ", choices=chz)
+                aDlg2b.addField("Change current file (%s)?" % currAG['stimName'], choices=["No","Yes"])
+                if currAG['stimType'] is 'Audio':
+                    allShapes = ['Rectangle','Cross','Star']
+                    shapeChz = [x for x in allShapes if x is not currAG['shape']]
+                    shapeChz.insert(0, currAG['shape'])
+                    aDlg2b.addField("Looming shape type", choices=shapeChz)
+                    allColors = ['yellow', 'green', 'red', 'blue', 'white', 'black']
+                    colorChz = [x for x in allColors if x is not currAG['color']]
+                    colorChz.insert(0, currAG['color']) # A more elegant shuffle because the words match
+                    aDlg2b.addField("Looming shape color", choices=colorChz)
+                ans2b = aDlg2b.show
+                if aDlg2b.OK:
+                    if ans2b[0] is not ans1[0]:  # Did they change the name?
+                        self.settings['attnGetterList'][ans2b[0]] = self.settings['attnGetterList'].pop(ans1[0])
+                        currAG = self.settings['attnGetterList'][ans2b[0]]
+                    if ans2b[1] is not currAG['stimType']:  # if they change it from audio to video or the reverse...
+                        tempGetter = {'stimType': ans2b[1]}
+                        # 1. If going to audio, select shape then new file.
+                        if currAG['stimType'] is 'Video':
+                            newTempGet = self.attnGetterAudioDlg()
+                        else:
+                            newTempGet = self.attnGetterVideoDlg()
+                        if len(newTempGet) > 0:
+                            tempGetter.update(newTempGet)
+                            self.settings['attnGetterList'][ans2b[0]] = tempGetter # Overwrite existing.
+                    elif ans2b[2] is "Yes":  # Same stim type, change file. Ignore shape settings for now
+                        fileSelectDlg = gui.fileOpenDlg(prompt="Select attention-getter file")
+                        if type(fileSelectDlg) is not NoneType:
+                            path, namething = os.path.split(fileSelectDlg[0])
+                            if ans2b[1] is 'Video':
+                                tempStim = visual.MovieStim3(self.win, fileSelectDlg[0])
+                            else:
+                                tempStim = sound.Sound(fileSelectDlg[0])
+                            self.settings['attnGetterList'][ans2b[0]].update({'stimLoc': fileSelectDlg[0],
+                                                                              'stimName': namething,
+                                                                              'stimDur': tempStim.duration})
+                            del tempStim
+                    if len(ans2b) > 2:  # If we had shape/color settings
+                        self.settings['attnGetterList'][ans2b[0]].update({'shape': ans2b[3], 'color': ans2b[4]})
+
     def condSettingsDlg(self): #Settings relating to conditions and randomization
-        '''
+        """
         The dialog window for "condition settings", not to be confused with the
         condition interface created by self.condMaker(). This determines whether
         condition randomization is used at all, a separate interface is used to
         define the conditions themselves.
         :return:
         :rtype:
-        '''
+        """
         cDlg = gui.Dlg(title="Conditions settings")
-        #Welcome to waterloo. The simple version is just "make a list of conditions and set them after saving". 
-        #The ideal is that it reads off movienames (or # movies) and all and lets you specify for each order...
+        # Welcome to waterloo. The simple version is just "make a list of conditions and set them after saving".
+        # The ideal is that it reads off movienames (or # movies) and all and lets you specify for each order...
         chkBox = False
         if self.settings['randPres'] in [1,'1',True,'True']:
             chkBox = True
@@ -961,13 +1112,13 @@ class pyHabBuilder():
                 self.settings['condList'] = [] #Gets rid of existing condition list to save trouble.
 
     def condMaker(self, rep=False): #For dealing with conditions.
-        '''
+        """
         A whole separate interface for managing condition creation.
         :param rep: Basically whether we are recursing while editing conditions
         :type rep: bool
         :return:
         :rtype:
-        '''
+        """
         condHeader = visual.TextStim(self.win, text="Conditions",height=.1, bold=True,pos=[-.83,.9])
         divLinesV = [] #Vertical dividing lines (actually very thin rects)
         divLinesH = [] #Horizontal dividing lines
@@ -1106,7 +1257,7 @@ class pyHabBuilder():
                 
     
     def condSetter(self, cond='NEW', ex=False): #Modifying or making new condition information.
-        '''
+        """
         One dialog per trial type. Each dialog has a list of all the movies in that type
         This is not intuitive under the hood. The output of this is a dict with an array like this for each trial type: [1, 2, 3]
         Those numbers refer to the index of the movie in that trial's movieNames array.
@@ -1120,7 +1271,7 @@ class pyHabBuilder():
         :type ex: bool
         :return:
         :rtype:
-        '''
+        """
         condDlg2=gui.Dlg(title="Define condition")
         condDlg2.addField("Condition label:", cond)
         condDlg2.addText("You will have separate dialogs to set the order of movies in each trial type. Press OK to begin")
@@ -1198,9 +1349,9 @@ class pyHabBuilder():
                 self.settings['condList'].append(str(cond))
         
     def delCond(self):
-        '''
+        """
         Present list of existing conditions. Choose one to remove.
-        '''
+        """
         dCondDlg = gui.Dlg(title="Delete a condition")
         dCondDlg.addField('Choose a condition to delete', choices = self.settings['condList'])
         delCond = dCondDlg.show()
@@ -1211,7 +1362,7 @@ class pyHabBuilder():
    
    
     def habSettingsDlg(self): #Habituation criteria
-        '''
+        """
         Dialog for settings relating to habituation criteria:
         maxHabTrials (maximum possible hab trials if criterion not met)
         setCritWindow (# trials summed over when creating criterion)
@@ -1221,7 +1372,7 @@ class pyHabBuilder():
         metCritDivisor (denominator of sum calculated when determining if criterion has been met)
         :return:
         :rtype:
-        '''
+        """
         hDlg = gui.Dlg(title="Habituation block settings")
         hDlg.addField("Max number of habituation trials (if criterion not met)", self.settings['maxHabTrials'])
         hDlg.addField("Number of trials to sum looking time over when making hab criterion", self.settings['setCritWindow'])
@@ -1237,12 +1388,12 @@ class pyHabBuilder():
             self.settings['metCritDivisor'] = habDat[4]
     
     def saveDlg(self):
-        '''
+        """
         Opens a save dialog allowing you to choose where to save your project.
         Essentially sets self.folderPath
         :return:
         :rtype:
-        '''
+        """
         NoneType = type(None)
         sDlg = gui.fileSaveDlg(initFilePath=os.getcwd(), initFileName=self.settings['prefix'], prompt="Name a folder to save study into")
         if type(sDlg) is not NoneType:
@@ -1261,11 +1412,11 @@ class pyHabBuilder():
             self.saveEverything()
     
     def saveEverything(self):
-        '''
+        """
         Saves a PyHab project to a set of folders dictated by self.folderPath
         :return:
         :rtype:
-        '''
+        """
         if not os.path.exists(self.folderPath):
             os.makedirs(self.folderPath) #creates the initial folder if it did not exist.
         success=True #Assume it's going to work.
