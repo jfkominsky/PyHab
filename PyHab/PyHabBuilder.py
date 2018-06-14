@@ -419,17 +419,13 @@ class pyHabBuilder():
                         del self.settings['playAttnGetter'][trialType]
                     elif trialType not in self.settings['playAttnGetter']: # If it did not have an attngetter before.
                         agname = typeInfo[len(typeInfo)-2]
-                        self.settings['playAttnGetter'][trialType] = {'agname': agname,
-                                                                      'stimType': self.settings['attnGetterList'][agname]['stimType'],
-                                                                      'stimName': self.settings['attnGetterList'][agname]['stimName'],
-                                                                      'stimDur': self.settings['attnGetterList'][agname]['stimDur']}
+                        self.settings['playAttnGetter'][trialType] = {'agname': agname}
+                        self.settings['playAttnGetter'][trialType].update(self.settings['attnGetterList'][agname])
                     elif typeInfo[len(typeInfo)-2] is not self.settings['playAttnGetter'][trialType]['agname']:
                         # If a different attention-getter has been selected
                         agname = typeInfo[len(typeInfo) - 2]
-                        self.settings['playAttnGetter'][trialType] = {'agname': agname,
-                                                                      'stimType': self.settings['attnGetterList'][agname]['stimType'],
-                                                                      'stimName': self.settings['attnGetterList'][agname]['stimName'],
-                                                                      'stimDur': self.settings['attnGetterList'][agname]['stimDur']}
+                        self.settings['playAttnGetter'][trialType] = {'agname': agname}
+                        self.settings['playAttnGetter'][trialType].update(self.settings['attnGetterList'][agname])
 
                     # End-trial-on-movie-end settings
                     if typeInfo[len(typeInfo)-1] in [False,0,'False','0'] and trialType in self.settings['movieEnd']:
