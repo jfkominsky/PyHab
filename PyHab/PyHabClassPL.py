@@ -343,7 +343,7 @@ class pyHabPL(pyHab):
                         offArray.append(tempGazeArray)
             elif not gazeOn and not gazeOn2: #if they are not looking as of the previous refresh, check if they have been looking away for too long
                 nowOff = core.getTime() - startTrial
-                if sumOn + sumOn2 > self.minOn and nowOff - startOff >= self.maxOff and self.playThrough[type] == 0 and not endFlag:
+                if sumOn + sumOn2 > self.minOn[type] and nowOff - startOff >= self.maxOff[type] and self.playThrough[type] == 0 and not endFlag:
                     #if they have previously looked for at least .5s and now looked away for 2 continuous sec
                     if type in self.movieEnd:
                         endFlag = True
@@ -383,7 +383,7 @@ class pyHabPL(pyHab):
                     tempOn = startOn
                 else:
                     tempOn = startOn2
-                if self.playThrough[type] == 1 and sumOn + sumOn2 + (nowOn - tempOn) >= self.minOn and not endFlag:
+                if self.playThrough[type] == 1 and sumOn + sumOn2 + (nowOn - tempOn) >= self.minOn[type] and not endFlag:
                     if type in self.movieEnd:
                         endFlag = True
                     else:

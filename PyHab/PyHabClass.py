@@ -31,9 +31,9 @@ class pyHab:
     On2 and Off2 (for the optional secondary coder
     Each coder's on and off are recorded in a separate dict with trial, gaze on/off, start, end, and duration.
 
-    TODO: Add background color customization
-    TODO: Customizable attention-getters
     TODO: Long-term, unit testing
+    TODO: TEST new hab crit
+    TODO: Non-movie stimuli (audio, image).
 
     """
 
@@ -61,8 +61,8 @@ class pyHab:
         self.maxDur = eval(settingsDict['maxDur'])  # maximum number of seconds in a trial - can be a constant or a dictionary with different times for EACH trial type (must include every type). {'A':20,'B':60} etc.
         self.playThrough = eval(settingsDict['playThrough'])  # A dict which informs what kind of gaze-contingency each trial type follows.
         self.movieEnd = eval(settingsDict['movieEnd'])  # A list of trial types that only end (in stim pres mode) on the end of the movie file associated with them.
-        self.maxOff = eval(settingsDict['maxOff'])  # maximum number of consecutive seconds of offtime to end trial
-        self.minOn = eval(settingsDict['minOn'])  # minimum on-time for a trial (seconds)
+        self.maxOff = eval(settingsDict['maxOff'])  # maximum number of consecutive seconds of offtime to end trial - by trial type
+        self.minOn = eval(settingsDict['minOn'])  # minimum on-time for a trial (seconds) - by trial type
         self.blindPres = eval(settingsDict['blindPres'])  # 0, 1, or 2. 0 = show everything. 1 = show trial number + status squares. 2 = no trial #, status squares do not indicate on/off
         self.autoAdvance = eval(settingsDict['autoAdvance'])  # For creating studies where you don't want a lag between trials, just automatic advancement to the next.
         self.randPres = eval(settingsDict['randPres'])  # controls whether the program will look for an external randomization file to determine presentation order
@@ -83,8 +83,10 @@ class pyHab:
         self.maxHabTrials = eval(settingsDict['maxHabTrials'])  # number of habituation trials in a HAB design
         self.setCritWindow = eval(settingsDict['setCritWindow'])  # Number of trials to use when setting the habituation window, e.g., 3 = first three hab trials
         self.setCritDivisor = eval(settingsDict['setCritDivisor'])  # Divide sum of looking time over first setHabWindow trials by this value. for average, set equal to setHabWindow. For sum, set to 1.
+        self.setCritType = settingsDict['setCritType']  # Criterion set by dynamic window or first set of trials
         self.metCritWindow = eval(settingsDict['metCritWindow'])  # size of moving window of trials to sum looking times and compare to habituation criterion.
         self.metCritDivisor = eval(settingsDict['metCritDivisor'])  # If you want to compare, e.g., average rather than sum of looking times of last metCritWindow trials, change this accordingly.
+        self.metCritStatic = settingsDict['metCritStatic']  # Criterion evaluated over moving or static windows
         self.habTrialList = eval(settingsDict['habTrialList'])  # A new "meta-hab" trial type consisting of several sub-trial-types.
 
         # STIMULUS PRESENTATION SETTINGS
@@ -92,21 +94,23 @@ class pyHab:
         if not self.stimPres:
             self.movieEnd = []  # So we don't run into trouble with trials not ending waiting for movies that don't exist.
         self.moviePath = settingsDict['moviePath']  # Folder where movie files can be located (if not in same folder as script)
-        # A list of trial types. One is special: 'Hab' (only plays first entry), which should only be used for a habituation block in which you have a variable number of trials depending on a habituation criterion
         self.movieNames = eval(settingsDict['movieNames'])
+        # ^ A list of trial types. One is special: 'Hab' (only plays first entry), which should only be used for a habituation block in which you have a variable number of trials depending on a habituation criterion
         self.movieExt = settingsDict['movieExt']
-        # File extension/movie type. Multiple types? No problem, just make this '' and put the extensions in the movienames.
+        # ^ File extension/movie type. Multiple types? No problem, just make this '' and put the extensions in the movienames.
         self.screenWidth = eval(settingsDict['screenWidth'])  # Display window width, in pixels
         self.screenHeight = eval(settingsDict['screenHeight'])  # Display window height, in pixels
+        self.screenColor = settingsDict['screenColor']  #Background color of stim window.
         self.movieWidth = eval(settingsDict['movieWidth'])  # movie width
         self.movieHeight = eval(settingsDict['movieHeight'])  # movie height
         self.screenIndex = eval(settingsDict['screenIndex'])  # which monitor stimuli are presented on. 1 for secondary monitor, 0 for primary monitor.
         self.ISI = eval(settingsDict['ISI'])  # time between loops (in seconds, if desired)
         self.freezeFrame = eval(settingsDict['freezeFrame'])  # time that movie remains on first frame at start of trial.
         self.playAttnGetter = eval(settingsDict['playAttnGetter'])  # Trial-by-trial marker of which attngetter goes with which trial (if applicable).
-        if len(self.moviePath) > 0 and self.moviePath[-1] is not self.dirMarker:
+        if len(self.moviePath) > 0 and self.moviePath[-1] is not self.dirMarker:  # If it was made in one OS and running in another
             self.moviePath = [self.dirMarker if x == otherOS else x for x in self.moviePath]
             self.moviePath = ''.join(self.moviePath)
+
         '''
         END SETTINGS
         '''
@@ -139,7 +143,7 @@ class pyHab:
         self.frameCount = 0  # the frame counter for the movement of A and B, based on the refresh rate.
         self.pauseCount = 0  # used for ISI calculations
         self.stimName = ''  # used for adding the name of the stimulus file to the output.
-        self.key = pyglet.window.key # This initiates the keyhandler. Here so we can then set the relevant keys.
+        self.key = pyglet.window.key  # This initiates the keyhandler. Here so we can then set the relevant keys.
         self.secondKey = self.key.L
 
     '''
@@ -310,7 +314,7 @@ class pyHab:
         :rtype:
         """
 
-        if numHab == self.setCritWindow:  # time to set the hab criterion.
+        if numHab == self.setCritWindow:  # time to set the hab criterion. This will be true for both dynamic and first
             sumOnTimes = 0
             # find first hab trial
             x = 0
@@ -324,30 +328,43 @@ class pyHab:
                     # add up total looking time for first three (good) trials
                     sumOnTimes = sumOnTimes + self.dataMatrix[k]['sumOnA']
             self.habCrit = sumOnTimes / self.setCritDivisor
-        elif self.habCount == self.maxHabTrials:
+        elif self.setCritType == 'Peak':  # Checks if we need to update the hab criterion
+            sumOnTimes = 0
+            habs = [i for i, x in enumerate(self.actualTrialOrder) if x == 'Hab']  # list of all habs
+            habs.sort()
+            index = habs[numHab - self.setCritWindow] #How far back should we look?
+            for n in range(index, len(self.dataMatrix)):  # now, starting with that trial, go through and add up the good trial looking times
+                if self.dataMatrix[n]['GNG'] == 1 and self.dataMatrix[n]['trialType'] == 'Hab':  # only good trials!
+                    sumOnTimes = sumOnTimes + self.dataMatrix[n]['sumOnA']  # add up total looking time
+            sumOnTimes = sumOnTimes / self.setCritDivisor
+            if sumOnTimes > self.habCrit:
+                self.habCrit = sumOnTimes
+        # Now we separate out the set and met business.
+        if self.habCount == self.maxHabTrials:
             # end habituation and goto test
             return True
         elif numHab >= self.setCritWindow + self.metCritWindow:  # if we're far enough in that we can plausibly meet the hab criterion
             sumOnTimes = 0
             habs = [i for i, x in enumerate(self.actualTrialOrder) if x == 'Hab']  # list of all habs
             habs.sort()
-            index = habs[len(habs) - self.metCritWindow - 1]
-            for n in range(index, len(
-                    self.dataMatrix)):  # now, starting with that trial, go through and add up the good trial looking times
-                if self.dataMatrix[n]['GNG'] == 1 and self.dataMatrix[n]['trialType'] == 'Hab':  # only good trials!
-                    sumOnTimes = sumOnTimes + self.dataMatrix[n]['sumOnA']  # add up total looking time
+            index = habs[numHab - self.metCritWindow]
+            if (self.metCritStatic == 'Moving') or (numHab-self.setCritWindow) % self.metCritWindow == 0:
+                for n in range(index, len(self.dataMatrix)):  # now, starting with that trial, go through and add up the good trial looking times
+                    if self.dataMatrix[n]['GNG'] == 1 and self.dataMatrix[n]['trialType'] == 'Hab':  # only good trials!
+                        sumOnTimes = sumOnTimes + self.dataMatrix[n]['sumOnA']  # add up total looking time
                 sumOnTimes = sumOnTimes / self.metCritDivisor
-            if sumOnTimes < self.habCrit:
-                # end habituation and go to test
-                if not self.stimPres:
-                    for i in [0, 1, 2]:
-                        core.wait(.25)  # an inadvertent side effect of playing the sound is a short pause before the test trial can begin
-                        self.endHabSound.play()
-                return True
+                if sumOnTimes < self.habCrit:
+                    # end habituation and go to test
+                    if not self.stimPres:
+                        for i in [0, 1, 2]:
+                            core.wait(.25)  # an inadvertent side effect of playing the sound is a short pause before the test trial can begin
+                            self.endHabSound.play()
+                    return True
             else:
                 return False
         else:
             return False
+
 
     def attnGetter(self, trialType):
         """
@@ -627,6 +644,7 @@ class pyHab:
                 # print(framerate)               #just some debug code.
                 if trialType not in AA and self.blindPres < 2:
                     self.readyText.text = "Trial active"
+                self.dispCoderWindow(0)
                 if self.stimPres:
                     if trialType in self.playAttnGetter: #Shockingly, this will work.
                         self.attnGetter(trialType)  # plays the attention-getter
@@ -644,11 +662,11 @@ class pyHab:
                         waitStart = True
                     else:
                         waitStart = False
-                self.dispCoderWindow(0)
                 while waitStart and trialType not in AA and not end:  # Wait for first gaze-on
                     if self.keyboard[self.key.Y]:  # End experiment right there and then.
                         end = True
                     elif self.keyboard[self.key.A]:
+                        self.dispCoderWindow(0)
                         if self.stimPres:
                             if trialType in self.playAttnGetter:
                                 self.attnGetter(trialType)
@@ -867,7 +885,7 @@ class pyHab:
                         offArray.append(tempGazeArray)
             elif not gazeOn:  # if they are not looking as of the previous refresh, check if they have been looking away for too long
                 nowOff = core.getTime() - startTrial
-                if sumOn > self.minOn and nowOff - startOff >= self.maxOff and self.playThrough[type] == 0 and not endFlag:
+                if sumOn > self.minOn[type] and nowOff - startOff >= self.maxOff[type] and self.playThrough[type] == 0 and not endFlag:
                     # if they have previously looked for at least .5s and now looked away for 2 continuous sec
                     if type in self.movieEnd:
                         endFlag = True
@@ -891,7 +909,7 @@ class pyHab:
                     offArray.append(tempGazeArray)
             elif gazeOn:
                 nowOn = core.getTime() - startTrial
-                if self.playThrough[type] == 1 and sumOn + (nowOn - startOn) >= self.minOn and not endFlag:  # For trial types where the only crit is min-on.
+                if self.playThrough[type] == 1 and sumOn + (nowOn - startOn) >= self.minOn[type] and not endFlag:  # For trial types where the only crit is min-on.
                     if type in self.movieEnd:
                         endFlag = True
                     else:
@@ -1365,7 +1383,7 @@ class pyHab:
         if startDlg.OK:
             if self.stimPres:
                 # Stimulus presentation window
-                self.win = visual.Window((self.screenWidth, self.screenHeight), fullscr=False, screen=1, allowGUI=False, units='pix', rgb=[-1, -1, -1])
+                self.win = visual.Window((self.screenWidth, self.screenHeight), fullscr=False, screen=1, allowGUI=False, units='pix', color=self.screenColor)
             # Coder window
             self.win2 = visual.Window((400, 400), fullscr=False, screen=0, allowGUI=True, units='pix', waitBlanking=False, rgb=[-1, -1, -1])
             thisInfo = startDlg.data
@@ -1428,11 +1446,11 @@ class pyHab:
                 tempText = visual.TextStim(self.win2, text="Loading Movies", pos=[0, 0], color='white', bold=True, height=40)
                 tempText.draw()
                 self.win2.flip()
-                self.movieDict = {x: [] for x in self.movieNames.keys()}  # This will hold the loaded movies.
+                self.movieDict = {x: [] for x in self.movieNames.keys()}  # This holds all the loaded movies.
                 self.counters = {x: 0 for x in self.movieNames.keys()}  # list of counters, one per index of the dict, so it knows which movie to play
                 tempCtr = {x: 0 for x in self.movieNames.keys()}
                 for i in self.actualTrialOrder:
-                    if i is not 'Hab':
+                    if i is not 'Hab': # TODO: Loading non-movie stimuli
                         tempMovie = visual.MovieStim3(self.win, self.moviePath + self.movieNames[i][tempCtr[i]] + self.movieExt,
                                                       size=[self.movieWidth, self.movieHeight], flipHoriz=False,
                                                       flipVert=False, loop=False)
