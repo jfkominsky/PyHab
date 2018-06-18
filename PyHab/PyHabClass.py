@@ -1,6 +1,7 @@
 import os, sys
 from psychopy import visual, event, core, data, gui, monitors, tools, prefs, logging
-
+from psychopy.constants import (STARTED, PLAYING, PAUSED, FINISHED, STOPPED,
+                                NOT_STARTED, FOREVER)  #Added for new stimulus types
 if os.name is 'posix':
     prefs.general['audioLib'] = ['pyo']
     prefs.general['audioDevice'] = ['Built-in Output']
@@ -105,7 +106,7 @@ class pyHab:
         self.ISI = eval(settingsDict['ISI'])  # time between loops (in seconds, if desired)
         self.freezeFrame = eval(settingsDict['freezeFrame'])  # time that movie remains on first frame at start of trial.
         self.playAttnGetter = eval(settingsDict['playAttnGetter'])  # Trial-by-trial marker of which attngetter goes with which trial (if applicable).
-        self.attnGetterList = eval(settingsDict['attnGetterList'])
+        self.attnGetterList = eval(settingsDict['attnGetterList'])  # List of all attention-getters
         if len(self.stimPath) > 0 and self.stimPath[-1] is not self.dirMarker:  # If it was made in one OS and running in another
             self.stimPath = [self.dirMarker if x == otherOS else x for x in self.stimPath]
             self.stimPath = ''.join(self.stimPath)
@@ -463,7 +464,7 @@ class pyHab:
 
     def dispMovieStim(self, trialType, dispMovie):
         """
-        Draws the stimulus display, including for movie-based attn-getters!
+        Draws movie stimuli to the stimulus display, including movie-based attention-getters.
 
         :param trialType: 0 for paused, otherwise a string
         :type trialType: int or str
@@ -510,6 +511,43 @@ class pyHab:
             self.win.flip()
             return 0
 
+    def dispImageStim(self, dispImage):
+        """
+        Very simple. Draws still-image stimuli and flips window
+        :param dispImage: the visual.ImageStim object
+        :type dispImage: visual.ImageStim object
+        :return: constant, 1
+        :rtype: int
+        """
+        dispImage.draw()
+        self.win.flip()
+        return 1  # This essentially allows it to end at any time if this is set to "movieend"
+
+    def dispAudioStim(self, dispAudio):
+        """
+        For playing audio stimuli. A little more complicated than most because it needs to track whether the audio
+        is playing or not. Audio plays separately from main thread.
+        :param dispAudio: the stimuli as a sound.Sound object
+        :type dispAudio: sound.Sound object
+        :return: an int specifying whether the audio is in progress (0), we are in an ISI (1),
+            or the audio is looping (2)
+        :rtype: int
+        """
+        if self.frameCount == 0:  # We're going to use this as a mask for the status of the audio file
+            dispAudio.play()
+            self.frameCount = 1
+            return 0
+        elif self.frameCount == 1:
+            if dispAudio.status not in [STARTED, PLAYING] and self.pauseCount < self.ISI * 60:
+                self.pauseCount += 1
+                return 1
+            elif dispAudio.status not in [STARTED, PLAYING] and self.pauseCount >= self.ISI * 60:
+                self.frameCount = 0
+                return 2
+            else:
+                return 0
+
+
     def dispTrial(self, trialType, dispMovie = False): #If no stim, dispMovie defaults to false.
         """
         Draws each frame of the trial. For stimPres, returns a movie-status value for determining when the movie has
@@ -517,15 +555,28 @@ class pyHab:
 
         :param trialType: Current trial type
         :type trialType: string
-        :param dispMovie: Movie file for stimulus presentation (if applicable)
-        :type dispMovie: bool or movieStim3 object.
+        :param dispMovie: A dictionary containing both the stimulus type and the object with the stimulus file(s) (if applicable)
+        :type dispMovie: bool or dict
         :return: 1 or 0. 1 = end of movie for trials that end on that.
         :rtype: int
         """
         self.dispCoderWindow(trialType)
-        # now for the test trial display TODO: can we use this for attngetter? Yes...
+        # now for the test trial display
         if self.stimPres:
-            t = self.dispMovieStim(trialType, dispMovie)
+            if dispMovie['stimType'] == 'Movie':
+                t = self.dispMovieStim(trialType, dispMovie['stim'])
+            elif dispMovie['stimType'] == 'Image':
+                t = self.dispImageStim(dispMovie['stim'])
+            elif dispMovie['stimType'] == 'Audio' and trialType != 0:  # No still-frame equivalent
+                t = self.dispAudioStim(dispMovie['stim'])
+            elif dispMovie['stimType'] == 'Image with audio': # Audio and image together
+                if trialType != 0:  # No still-frame equivalent
+                    t = self.dispAudioStim(dispMovie['stim']['Audio'])
+                else:
+                    t = 0
+                p = self.dispImageStim(dispMovie['stim']['Image'])
+            else:
+                t = 0
         else:
             t = 0  # Totally irrelevant.
         return t
@@ -558,11 +609,11 @@ class pyHab:
             self.statusSquareB.fillColor = 'black'
             # select movie for trial
             if self.stimPres:
-                disMovie = self.movieDict[self.actualTrialOrder[trialNum - 1]][self.counters[self.actualTrialOrder[trialNum - 1]]]
+                disMovie = self.stimDict[self.actualTrialOrder[trialNum - 1]][self.counters[self.actualTrialOrder[trialNum - 1]]]
                 self.counters[self.actualTrialOrder[trialNum - 1]] += 1
-                if self.counters[self.actualTrialOrder[trialNum - 1]] >= len(self.movieDict[self.actualTrialOrder[trialNum - 1]]):
+                if self.counters[self.actualTrialOrder[trialNum - 1]] >= len(self.stimDict[self.actualTrialOrder[trialNum - 1]]):
                     self.counters[self.actualTrialOrder[trialNum - 1]] = 0
-                self.stimName = disMovie.filename[len(self.stimPath):len(disMovie.filename)]
+                self.stimName = self.stimNames[trialType][self.counters[self.actualTrialOrder[trialNum - 1]]]
 
             else:
                 disMovie = 0
@@ -580,12 +631,11 @@ class pyHab:
                         if self.blindPres < 1:
                             self.rdyTextAppend = " NEXT: " + trialType + " TRIAL"
                         if self.stimPres:
-                            disMovie = self.movieDict[self.actualTrialOrder[trialNum - 1]][
-                                self.counters[self.actualTrialOrder[trialNum - 1]]]
+                            disMovie = self.stimDict[self.actualTrialOrder[trialNum - 1]][self.counters[self.actualTrialOrder[trialNum - 1]]]
                             self.counters[self.actualTrialOrder[trialNum - 1]] += 1
-                            if self.counters[self.actualTrialOrder[trialNum - 1]] >= len(self.movieDict[self.actualTrialOrder[trialNum - 1]]):
+                            if self.counters[self.actualTrialOrder[trialNum - 1]] >= len(self.stimDict[self.actualTrialOrder[trialNum - 1]]):
                                 self.counters[self.actualTrialOrder[trialNum - 1]] = 0
-                            self.stimName = disMovie.filename[len(self.stimPath):len(disMovie.filename)]
+                            self.stimName = self.stimNames[trialType][self.counters[self.actualTrialOrder[trialNum - 1]]]
                         else:
                             disMovie = 0
                     self.redoTrial(trialNum)
@@ -598,11 +648,11 @@ class pyHab:
                     del self.actualTrialOrder[trialNum - 1:tempNum]
                     trialType = self.actualTrialOrder[trialNum - 1]
                     if self.stimPres:
-                        disMovie = self.movieDict[self.actualTrialOrder[trialNum - 1]][self.counters[self.actualTrialOrder[trialNum - 1]]]
+                        disMovie = self.stimDict[self.actualTrialOrder[trialNum - 1]][self.counters[self.actualTrialOrder[trialNum - 1]]]
                         self.counters[self.actualTrialOrder[trialNum - 1]] += 1
-                        if self.counters[self.actualTrialOrder[trialNum - 1]] >= len(self.movieDict[self.actualTrialOrder[trialNum - 1]]):
+                        if self.counters[self.actualTrialOrder[trialNum - 1]] >= len(self.stimDict[self.actualTrialOrder[trialNum - 1]]):
                             self.counters[self.actualTrialOrder[trialNum - 1]] = 0
-                        self.stimName = disMovie.filename[len(self.stimPath):len(disMovie.filename)]
+                        self.stimName = self.stimNames[trialType][self.counters[self.actualTrialOrder[trialNum - 1]]]
                     else:
                         disMovie = 0
                     if self.blindPres < 1:
@@ -616,11 +666,11 @@ class pyHab:
                         self.actualTrialOrder.insert(trialNum - 1, 'Hab')
                     trialType = self.actualTrialOrder[trialNum - 1]
                     if self.stimPres:
-                        disMovie = self.movieDict[self.actualTrialOrder[trialNum - 1]][self.counters[self.actualTrialOrder[trialNum - 1]]]
+                        disMovie = self.stimDict[self.actualTrialOrder[trialNum - 1]][self.counters[self.actualTrialOrder[trialNum - 1]]]
                         self.counters[self.actualTrialOrder[trialNum - 1]] += 1
-                        if self.counters[self.actualTrialOrder[trialNum - 1]] >= len(self.movieDict[self.actualTrialOrder[trialNum - 1]]):
+                        if self.counters[self.actualTrialOrder[trialNum - 1]] >= len(self.stimDict[self.actualTrialOrder[trialNum - 1]]):
                             self.counters[self.actualTrialOrder[trialNum - 1]] = 0
-                            self.stimName = disMovie.filename[len(self.stimPath):len(disMovie.filename)]
+                            self.stimName = self.stimNames[trialType][self.counters[self.actualTrialOrder[trialNum - 1]]]
                     else:
                         disMovie = 0
                     if self.blindPres < 1:
@@ -688,13 +738,11 @@ class pyHab:
                             if self.blindPres < 1:
                                 self.rdyTextAppend = " NEXT: " + trialType + " TRIAL"
                             if self.stimPres:
-                                disMovie = self.movieDict[self.actualTrialOrder[trialNum - 1]][
-                                    self.counters[self.actualTrialOrder[trialNum - 1]]]
+                                disMovie = self.stimDict[self.actualTrialOrder[trialNum - 1]][self.counters[self.actualTrialOrder[trialNum - 1]]]
                                 self.counters[self.actualTrialOrder[trialNum - 1]] += 1
-                                if self.counters[self.actualTrialOrder[trialNum - 1]] >= len(
-                                        self.movieDict[self.actualTrialOrder[trialNum - 1]]):
+                                if self.counters[self.actualTrialOrder[trialNum - 1]] >= len(self.stimDict[self.actualTrialOrder[trialNum - 1]]):
                                     self.counters[self.actualTrialOrder[trialNum - 1]] = 0
-                                self.stimName = disMovie.filename[len(self.stimPath):len(disMovie.filename)]
+                                self.stimName = self.stimNames[trialType][self.counters[self.actualTrialOrder[trialNum - 1]]]
                             else:
                                 disMovie = 0
                         self.redoTrial(trialNum)
@@ -707,11 +755,11 @@ class pyHab:
                         del self.actualTrialOrder[trialNum - 1:tempNum]
                         trialType = self.actualTrialOrder[trialNum - 1]
                         if self.stimPres:
-                            disMovie = self.movieDict[self.actualTrialOrder[trialNum - 1]][self.counters[self.actualTrialOrder[trialNum - 1]]]
+                            disMovie = self.stimDict[self.actualTrialOrder[trialNum - 1]][self.counters[self.actualTrialOrder[trialNum - 1]]]
                             self.counters[self.actualTrialOrder[trialNum - 1]] += 1
-                            if self.counters[self.actualTrialOrder[trialNum - 1]] >= len(self.movieDict[self.actualTrialOrder[trialNum - 1]]):
+                            if self.counters[self.actualTrialOrder[trialNum - 1]] >= len(self.stimDict[self.actualTrialOrder[trialNum - 1]]):
                                 self.counters[self.actualTrialOrder[trialNum - 1]] = 0
-                            self.stimName = disMovie.filename[len(self.stimPath):len(disMovie.filename)]
+                            self.stimName = self.stimNames[trialType][self.counters[self.actualTrialOrder[trialNum - 1]]]
                         else:
                             disMovie = 0
                         if self.blindPres < 1:
@@ -725,11 +773,11 @@ class pyHab:
                             self.actualTrialOrder.insert(trialNum - 1, 'Hab')
                         trialType = self.actualTrialOrder[trialNum - 1]
                         if self.stimPres:  # Here we change the movie file of the current trial only. fine as is.
-                            disMovie = self.movieDict[self.actualTrialOrder[trialNum - 1]][self.counters[self.actualTrialOrder[trialNum - 1]]]
+                            disMovie = self.stimDict[self.actualTrialOrder[trialNum - 1]][self.counters[self.actualTrialOrder[trialNum - 1]]]
                             self.counters[self.actualTrialOrder[trialNum - 1]] += 1
-                            if self.counters[self.actualTrialOrder[trialNum - 1]] >= len(self.movieDict[self.actualTrialOrder[trialNum - 1]]):
+                            if self.counters[self.actualTrialOrder[trialNum - 1]] >= len(self.stimDict[self.actualTrialOrder[trialNum - 1]]):
                                 self.counters[self.actualTrialOrder[trialNum - 1]] = 0
-                            self.stimName = disMovie.filename[len(self.stimPath):len(disMovie.filename)]
+                            self.stimName = self.stimNames[trialType][self.counters[self.actualTrialOrder[trialNum - 1]]]
                         else:
                             disMovie = 0
                         if self.blindPres < 1:
@@ -800,8 +848,8 @@ class pyHab:
         self.frameCount = 0  # reset display
         self.pauseCount = 0  # needed for ISI
         # returns 0 if do next trial, 1 if end hab, 2 if end experiment, 3 if abort/redo
-        if self.stimPres:
-            disMovie.seek(0)
+        if self.stimPres and disMovie['stimType'] == 'Movie':
+            disMovie['stim'].seek(0)
         startTrial = core.getTime()
         startTrial2 = core.getTime()
         onArray = []
@@ -974,8 +1022,14 @@ class pyHab:
         # print onArray2
         # print offArray2
         if self.stimPres:
-            disMovie.seek(0)  # this is the reset, we hope.
-            disMovie.pause()
+            # Reset everything, stop playing sounds and movies.
+            if disMovie['stimType'] == 'Movie':
+                disMovie['stim'].seek(0)  # this is the reset, we hope.
+                disMovie['stim'].pause()
+            elif disMovie['stimType'] == 'Audio':
+                disMovie['stim'].stop()
+            elif disMovie['stimType'] == 'Image with audio':
+                disMovie['stim']['Audio'].stop()
         self.dispCoderWindow()
         if self.stimPres:
             self.win.flip()  # blanks the screen outright.
@@ -992,8 +1046,7 @@ class pyHab:
             else:
                 return 0
         elif number >= len(self.actualTrialOrder) or type == 4:
-            #End experiment
-            #self.endExperiment()
+            # End experiment
             return 2
         else:
             #Proceed as normal
@@ -1444,18 +1497,33 @@ class pyHab:
                 self.cond = thisInfo[6]
                 self.condLabel = self.cond
             if self.stimPres:
-                tempText = visual.TextStim(self.win2, text="Loading Movies", pos=[0, 0], color='white', bold=True, height=40)
+                # Todo: Time for a major revamp.
+                tempText = visual.TextStim(self.win2, text="Loading Stimuli", pos=[0, 0], color='white', bold=True, height=40)
                 tempText.draw()
                 self.win2.flip()
-                self.movieDict = {x: [] for x in self.stimNames.keys()}  # This holds all the loaded movies.
+                self.stimDict = {x: [] for x in self.stimNames.keys()}  # This holds all the loaded movies.
                 self.counters = {x: 0 for x in self.stimNames.keys()}  # list of counters, one per index of the dict, so it knows which movie to play
                 tempCtr = {x: 0 for x in self.stimNames.keys()}
                 for i in self.actualTrialOrder:
                     if i is not 'Hab': # TODO: Loading non-movie stimuli
-                        tempMovie = visual.MovieStim3(self.win, self.stimPath + self.stimNames[i][tempCtr[i]],
-                                                      size=[self.movieWidth, self.movieHeight], flipHoriz=False,
-                                                      flipVert=False, loop=False)
-                        self.movieDict[i].append(tempMovie)
+                        tempStim = self.stimList[self.stimNames[i][tempCtr[i]]]
+                        if tempStim['stimType'] == 'Movie':
+                            tempStimObj = visual.MovieStim3(self.win, tempStim['stimLoc'],
+                                                          size=[self.movieWidth, self.movieHeight], flipHoriz=False,
+                                                          flipVert=False, loop=False)
+                        elif tempStim['stimType'] == 'Image':
+                            tempStimObj = visual.ImageStim(self.win, tempStim['stimLoc'],
+                                                           size=[self.movieWidth, self.movieHeight])
+                        elif tempStim['stimType'] == 'Audio':
+                            tempStimObj = sound.Sound(tempStim['stimLoc'])
+                        else: # The eternal problem of audio/image pair. Just creates an object that's a dict of audio and image.
+                            audioObj = sound.Sound(tempStim['audioLoc'])
+                            imageObj = visual.ImageStim(self.win, tempStim['imageLoc'],
+                                                           size=[self.movieWidth, self.movieHeight])
+                            tempStimObj = {'Audio': audioObj, 'Image': imageObj}
+                            #pass # TODO: MAKE THIS WORK.
+                        tempAdd = {'stimType':tempStim['stimType'], 'stim':tempStimObj}
+                        self.stimDict[i].append(tempAdd)  # TODO: But this does not say what kind of thing it is...
                         tempCtr[i] += 1
                         if tempCtr[i] >= len(self.stimNames[i]):
                             tempCtr[i] = 0
@@ -1464,14 +1532,13 @@ class pyHab:
                         tempMovie = visual.MovieStim3(self.win, self.stimPath + self.stimNames[i][0],
                                                       size=[self.movieWidth, self.movieHeight], flipHoriz=False,
                                                       flipVert=False, loop=False)
-                        self.movieDict[i].append(tempMovie)
+                        self.stimDict[i].append(tempMovie)
                 if len(list(self.playAttnGetter.keys())) > 0:
                     for i in list(self.attnGetterList.keys()):
                         if self.attnGetterList[i]['stimType'] == 'Audio':
-                            self.attnGetterList[i]['file'] = sound.Sound(self.stimPath + 'attnGetters' + self.dirMarker + self.attnGetterList[i]['stimName'])
+                            self.attnGetterList[i]['file'] = sound.Sound(self.attnGetterList[i]['stimLoc'])
                         else:
-                            tempStimPath = self.stimPath + 'attnGetters' + self.dirMarker + self.attnGetterList[i]['stimName']
-                            self.attnGetterList[i]['file'] = visual.MovieStim3(self.win, tempStimPath,
+                            self.attnGetterList[i]['file'] = visual.MovieStim3(self.win, self.attnGetterList[i]['stimLoc'],
                                                                                size=[self.movieWidth, self.movieHeight],
                                                                                flipHoriz=False, flipVert=False, loop=False)
 

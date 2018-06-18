@@ -15,7 +15,7 @@ class pyHabBuilder():
     .aac, .aiff, .flac, .m4a, .m4b, .m4p, .mp3, .ogg, .raw, .wav
     Video file formats:
     .mov, .avi, .wmv, .mp4, .mpeg, .ogv, .mkv, .mpe, .mpg, .dv, .3gp
-    Image file formats (uuuuuugh):
+    Image file formats:
     .jpg, .jpeg, .png, .gif, .bmp, .tiff
 
 
@@ -113,8 +113,8 @@ class pyHabBuilder():
             self.trialTypesArray={'shapes':[],'text':[],'labels':[]}
         else:
             self.settings = settingsDict
-            evalList = ['dataColumns','maxDur','condList','movieEnd','playThrough','trialOrder','stimNames',
-                        'autoAdvance','playAttnGetter','attnGetterList','trialTypes','habTrialList'] #eval all the things that need eval.
+            evalList = ['dataColumns','maxDur','condList','movieEnd','playThrough','trialOrder','stimNames', 'stimList',
+                        'maxOff','minOn','autoAdvance','playAttnGetter','attnGetterList','trialTypes','habTrialList']
             for i in evalList:
                 self.settings[i] = eval(self.settings[i])
             self.trialTypesArray = self.loadTypes()
@@ -179,42 +179,52 @@ class pyHabBuilder():
         self.buttonList['shapes'].append(quitButton)
         self.buttonList['text'].append(quitText)
         self.buttonList['functions'].append(self.quitFunc)
-        USetButton = visual.Rect(self.win, width=.4, height=.5*(.2/self.aspect),pos=[-.57,-.2], fillColor="white")
+        USetButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect),pos=[-.75,-.2], fillColor="white")
         USetText = visual.TextStim(self.win, text="Universal \nsettings",color="black",height=USetButton.height*.3, alignHoriz='center', pos=USetButton.pos)
         self.buttonList['shapes'].append(USetButton)
         self.buttonList['text'].append(USetText)
         self.buttonList['functions'].append(self.univSettingsDlg)
-        dataSetButton = visual.Rect(self.win, width=.4, height=.5*(.2/self.aspect),pos=[-.57,-.6], fillColor="white")
+        dataSetButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect),pos=[-.75,-.6], fillColor="white")
         dataSetText = visual.TextStim(self.win, text="Data \nsettings",color="black",height=dataSetButton.height*.3, alignHoriz='center', pos=dataSetButton.pos)
         self.buttonList['shapes'].append(dataSetButton)
         self.buttonList['text'].append(dataSetText)
         self.buttonList['functions'].append(self.dataSettingsDlg)
-        stimSetButton = visual.Rect(self.win, width=.4, height=.5*(.2/self.aspect),pos=[-.02,-.2], fillColor="white")
+        stimSetButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect),pos=[-.25,-.2], fillColor="white")
         stimSetText = visual.TextStim(self.win, text="Stimuli \nsettings",color="black",height=stimSetButton.height*.3, alignHoriz='center', pos=stimSetButton.pos)
         self.buttonList['shapes'].append(stimSetButton)
         self.buttonList['text'].append(stimSetText)
         self.buttonList['functions'].append(self.stimSettingsDlg)
-        condSetButton = visual.Rect(self.win, width=.4, height=.5*(.2/self.aspect),pos=[-.02,-.6], fillColor="white")
+        condSetButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect),pos=[-.25,-.6], fillColor="white")
         condSetText = visual.TextStim(self.win, text="Condition \nsettings",color="black",height=condSetButton.height*.3, alignHoriz='center', pos=condSetButton.pos)
         self.buttonList['shapes'].append(condSetButton)
         self.buttonList['text'].append(condSetText)
         self.buttonList['functions'].append(self.condSettingsDlg)
-        habSetButton = visual.Rect(self.win, width=.4, height=.5*(.2/self.aspect),pos=[.55,-.2], fillColor="white")
+        habSetButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect),pos=[.25,-.2], fillColor="white")
         habSetText = visual.TextStim(self.win, text="Habituation \nsettings",color="black",height=habSetButton.height*.3, alignHoriz='center', pos=habSetButton.pos)
         self.buttonList['shapes'].append(habSetButton)
         self.buttonList['text'].append(habSetText)
         self.buttonList['functions'].append(self.habSettingsDlg)
-        addMovButton = visual.Rect(self.win, width=.4, height=.5*(.2/self.aspect),pos=[.55,-.6], fillColor="white")
-        addMovText = visual.TextStim(self.win, text="Add movie files \nto trial types",color="black",height=addMovButton.height*.3, alignHoriz='center', pos=addMovButton.pos)
-        self.buttonList['shapes'].append(addMovButton)
-        self.buttonList['text'].append(addMovText)
-        self.buttonList['functions'].append(self.addStimToTypesDlg)
 
-        attnGetterButton = visual.Rect(self.win, width=.4, height=.5*(.2/self.aspect), pos=[.5, -.8], fillColor = "white")
+        attnGetterButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect), pos=[.75, -.2], fillColor = "white")
         attnGetterText = visual.TextStim(self.win, text="Customize \nattention-getters",color="black",height=attnGetterButton.height*.3,alignHoriz='center', pos=attnGetterButton.pos)
         self.buttonList['shapes'].append(attnGetterButton)
         self.buttonList['text'].append(attnGetterText)
         self.buttonList['functions'].append(self.attnGetterDlg)
+
+        stimLibraryButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect), pos=[.25, -.6], fillColor = "white")
+        stimLibraryText = visual.TextStim(self.win, text="Add stimuli \nto experiment library",color="black",height=stimLibraryButton.height*.3,alignHoriz='center', pos=stimLibraryButton.pos)
+        self.buttonList['shapes'].append(stimLibraryButton)
+        self.buttonList['text'].append(stimLibraryText)
+        self.buttonList['functions'].append(self.addStimToLibraryDlg)
+
+        if len(list(self.settings['stimList'].keys())) > 0:
+            addMovButton = visual.Rect(self.win, width=.3, height=.5 * (.2 / self.aspect), pos=[.75, -.6],
+                                       fillColor="white")
+            addMovText = visual.TextStim(self.win, text="Add stimulus files \nto trial types", color="black",
+                                         height=addMovButton.height * .3, alignHoriz='center', pos=addMovButton.pos)
+            self.buttonList['shapes'].append(addMovButton)
+            self.buttonList['text'].append(addMovText)
+            self.buttonList['functions'].append(self.addStimToTypesDlg)
         
         self.workingRect = visual.Rect(self.win, width=1, height=.5, pos=[0,0], fillColor = 'green') #Because there are certain things that take a while.
         self.workingText = visual.TextStim(self.win, text="Working...", height= .3, bold=True, alignHoriz='center', pos=[0,0])
@@ -404,9 +414,9 @@ class pyHabBuilder():
                 chz3.insert(0, 'None')
                 chz3.insert(0, 'PyHabDefault')  # Defaults to...well, the default
             elif trialType in self.settings['playAttnGetter']:
-                chz3 = [x for x in list(self.settings['attnGetterList'].keys()) if x is not self.settings['playAttnGetter'][trialType]['agname']]
+                chz3 = [x for x in list(self.settings['attnGetterList'].keys()) if x is not self.settings['playAttnGetter'][trialType]]
                 chz3.insert(0, 'None')
-                chz3.insert(0, self.settings['playAttnGetter'][trialType]['agname'])
+                chz3.insert(0, self.settings['playAttnGetter'][trialType])
             typeDlg.addField("Attention-getter for this trial type (Stim presentation mode only)", choices = chz3)
             if trialType in self.settings['movieEnd']:
                 chz4 = True
@@ -470,13 +480,15 @@ class pyHabBuilder():
                     # Attention-getter settings
                     if typeInfo[len(typeInfo)-2] is 'None' and trialType in self.settings['playAttnGetter']:
                         del self.settings['playAttnGetter'][trialType]
+                    elif typeInfo[len(typeInfo)-2] is 'None':
+                        pass
                     elif trialType not in self.settings['playAttnGetter']:  # If it did not have an attngetter before.
                         agname = typeInfo[len(typeInfo)-2]
                         self.settings['playAttnGetter'][trialType] = agname
                     elif typeInfo[len(typeInfo)-2] is not self.settings['playAttnGetter'][trialType]:
                         # If a different attention-getter has been selected
                         agname = typeInfo[len(typeInfo) - 2]
-                        self.settings['playAttnGetter'][trialType] = agnameg
+                        self.settings['playAttnGetter'][trialType] = agname
 
                     # End-trial-on-movie-end settings
                     if typeInfo[len(typeInfo)-1] in [False,0,'False','0'] and trialType in self.settings['movieEnd']:
@@ -552,9 +564,9 @@ class pyHabBuilder():
             chz3.insert(0, 'PyHabDefault')  # Defaults to...well, the default
         elif 'Hab' in self.settings['playAttnGetter']:
             chz3 = [x for x in list(self.settings['attnGetterList'].keys()) if
-                    x is not self.settings['playAttnGetter']['Hab']['agname']]
+                    x is not self.settings['playAttnGetter']['Hab']]
             chz3.insert(0, 'None')
-            chz3.insert(0, self.settings['playAttnGetter']['Hab']['agname'])
+            chz3.insert(0, self.settings['playAttnGetter']['Hab'])
         typeDlg.addField("Attention-getter for this trial type (Stim presentation mode only)", choices=chz3)
         typeDlg.addText("Hab block sub-trials")
         if not makeNew:
@@ -589,13 +601,11 @@ class pyHabBuilder():
                 del self.settings['playAttnGetter']['Hab']
             elif 'Hab' not in self.settings['playAttnGetter']:  # If it did not have an attngetter before.
                 agname = habInfo[len(habInfo) - 3]
-                self.settings['playAttnGetter']['Hab'] = {'agname': agname}
-                self.settings['playAttnGetter']['Hab'].update(self.settings['attnGetterList'][agname])
-            elif habInfo[len(habInfo) - 3] is not self.settings['playAttnGetter'][trialType]['agname']:
+                self.settings['playAttnGetter']['Hab'] = agname
+            elif habInfo[len(habInfo) - 3] is not self.settings['playAttnGetter']['Hab']:
                 # If a different attention-getter has been selected
                 agname = habInfo[len(habInfo) - 3]
-                self.settings['playAttnGetter']['Hab'] = {'agname': agname}
-                self.settings['playAttnGetter']['Hab'].update(self.settings['attnGetterList'][agname])
+                self.settings['playAttnGetter']['Hab'] = agname
 
 
             if makeNew:
@@ -953,12 +963,88 @@ class pyHabBuilder():
 
 
 
-        
+    def addStimToLibraryDlg(self):
+        """
+        A series of dialog boxes which allows you to build a "library" of stimulus files for your experiment, which you
+        can then assign to trial types in a separate dialog.
+        Works a bit like the attention-getter construction dialogs, but different in that it allows audio or images alone.
+        The image/audio pairs are complicated, but not worth splitting into their own function at this time.
+
+
+        :return:
+        :rtype:
+        """
+        cz = ['Movie', 'Image', 'Audio', 'Image with audio']
+        sDlg1 = gui.Dlg(title="Add stimuli to library, step 1")
+        sDlg1.addField("What kind of stimuli would you like to add? (Please add each type separately)", choices=cz)
+        sDlg1.addField("How many? (For image with audio, how many pairs?) You will select them one at a time.", 1)
+        sd1 = sDlg1.show()
+        allowedStrings = {'Audio': "Audio (*.aac, *.aiff, *.flac, *.m4a, *.mp3, *.ogg, *.raw, *.wav, *.m4b, *.m4p)",
+                          'Movie': "Movies (*.mov, *.avi, *.ogv, *.mkv, *.mp4, *.mpeg, *.mpe, *.mpg, *.dv, *.wmv, *.3gp)",
+                          'Image': "Images (*.jpg, *.jpeg, *.png, *.gif, *.bmp, *.tif, *.tiff)"}
+        if sDlg1.OK:
+            stType = sd1[0]
+            stNum = sd1[1]
+            NoneType = type(None)
+            if stType != 'Image with audio':  # Image w/ audio is complicated, so we will take care of that separately.
+                for i in range(0, stNum):
+                    stimDlg = gui.fileOpenDlg(prompt="Select stimulus file (only one!)")
+                    if type(stimDlg) is not NoneType:
+                        fileIndex = stimDlg[0].rfind(self.dirMarker) + 1  # Finds last instance of / or \
+                        fileName = stimDlg[0][fileIndex:]  # Gets the file name in isolation.
+                        self.stimSource[fileName] = stimDlg[0]  # Creates a "Find this file" path for the save function.
+                        self.settings['stimList'][fileName] = {'stimType': stType, 'stimLoc': stimDlg[0]}
+            else:  # Creating image/audio pairs is more complicated.
+                for i in range(0, stNum):
+                    stimDlg1 = gui.Dlg(title="Pair number " + str(i+1))
+                    stimDlg1.addField("Unique name for this stimulus pair (you will use this to add it to trials later)", 'pairName')
+                    stimDlg1.addText("Click OK to select the AUDIO file for this pair")
+                    sd2 = stimDlg1.show()
+                    if stimDlg1.OK:
+                        a = True
+                        if sd2[0] in list(self.settings['stimList'].keys()):  # If the pair name exists already
+                            a = False
+                            errDlg = gui.Dlg("Change existing pair?")
+                            errDlg.addText("Warning: Pair name already in use! Press OK to overwrite existing pair, or cancel to skip to next pair.")
+                            ea = errDlg.show()
+                            if errDlg.OK:
+                                a = True
+                        if a:
+                            stimDlg = gui.fileOpenDlg(prompt="Select AUDIO file (only one!)")
+                            if type(stimDlg) is not NoneType:
+                                fileIndex = stimDlg[0].rfind(self.dirMarker) + 1  # Finds last instance of / or \
+                                fileName = stimDlg[0][fileIndex:]  # Gets the file name in isolation.
+                                self.stimSource[fileName] = stimDlg[0]  # Creates a "Find this file" path for the save function.
+                                self.settings['stimList'][sd2[0]] = {'stimType': stType, 'audioLoc': stimDlg[0]}
+                                tempDlg = gui.Dlg(title="Now select image")
+                                tempDlg.addText("Now, select the IMAGE file for this pair (cancel to erase audio and skip pair)")
+                                t = tempDlg.show()
+                                if tempDlg.OK:
+                                    stimDlg2 = gui.fileOpenDlg(prompt="Select IMAGE file (only one!)")
+                                    if type(stimDlg2) is not NoneType:
+                                        fileIndex2 = stimDlg2[0].rfind(self.dirMarker) + 1  # Finds last instance of / or \
+                                        fileName2 = stimDlg2[0][fileIndex2:]  # Gets the file name in isolation.
+                                        self.stimSource[fileName2] = stimDlg2[0]
+                                        self.settings['stimList'][sd2[0]].update({'imageLoc': stimDlg2[0]})
+                                else:
+                                    del self.settings['stimList'][sd2[0]]
+
+        # When we are done with this dialog, if we have actually added anything, create the "add to types" dlg.
+        if len(list(self.settings['stimList'].keys())) > 0 and self.addStimToTypesDlg not in self.buttonList['functions']:
+            addMovButton = visual.Rect(self.win, width=.3, height=.5 * (.2 / self.aspect), pos=[.75, -.6],
+                                       fillColor="white")
+            addMovText = visual.TextStim(self.win, text="Add stimulus files \nto trial types", color="black",
+                                         height=addMovButton.height * .3, alignHoriz='center', pos=addMovButton.pos)
+            self.buttonList['shapes'].append(addMovButton)
+            self.buttonList['text'].append(addMovText)
+            self.buttonList['functions'].append(self.addStimToTypesDlg)
+
+
+
     def addStimToTypesDlg(self):
         """
-        A series dialog boxes, the first selecting a trial type and the number and type of files to add,
-        then one file open dialog for each file, which is in turn added to the stimNames list
-        for that trial type.
+        A series dialog boxes, the first selecting a trial type and the number of stimuli to add to it,
+        a second allowing you to add stimuli from the stimulus library that is stimList in the settings
         :return:
         :rtype:
         """
@@ -966,14 +1052,13 @@ class pyHabBuilder():
         self.workingRect.draw()
         self.workingText.draw()
         self.win.flip()
-        # Two-stage, select type then movies? Or "add movie to trial type". Annoying repetition....but for now maybe best?
+
         if len(self.trialTypesArray['labels']) > 0:
-            cz = ['Movie', 'Image', 'Image with audio', 'Audio']
             d1 = gui.Dlg(title="Select trial type to add stimuli to")
             d1.addField("Trial type to add stimulus file to", choices=self.trialTypesArray['labels'])
-            d1.addField("Type of stimuli to add", choices=cz)
-            d1.addField("Number of stimuli to add (or number of image/audio pairs)",1)
-            d1.addText("You will add each file one at a time. For image/audio, you will select each pair in image-audio order")
+            d1.addField("Number of stimuli to add (you will select them in the next window)",1)
+            d1.addText("Note: You can only select stimuli you have already added to the experiment library")
+            d1.addText("Note: You can only REMOVE stimuli from a trial type in the trial type's own settings, this will add to whatever is already there")
             d = d1.show()
             if d1.OK:
                 self.showMainUI()
@@ -981,17 +1066,17 @@ class pyHabBuilder():
                 self.workingText.draw()
                 self.win.flip()
                 tType = d[0]
-                sType = d[1]
-                numAdd = d[2]
-                NoneType = type(None)
-                if sType != cz[2]:  # Everything but image w/audio, which has special behavior.
-                    for i in range(0, numAdd):
-                        stimDlg = gui.fileOpenDlg(prompt="Select stimulus file (only one)")
-                        if type(stimDlg) is not NoneType:
-                            fileIndex = stimDlg[0].rfind(self.dirMarker) + 1  # Finds last instance of / or \
-                            movName = stimDlg[0][fileIndex:]  # Gets the file name in isolation.
-                            self.stimSource[movName] = stimDlg[0]  # Creates a "Find this file" path for the save function.
-                            self.settings['stimNames'][tType].append(movName)
+                numAdd = d[1]
+                d2 = gui.Dlg(title="Select stimuli")
+                stimKeyList = list(self.settings['stimList'].keys())
+                stimKeyList.sort()
+                for i in range(0, numAdd):
+                    d2.addField("Stimulus no. " + str(i), choices=stimKeyList)
+                newList = d2.show()
+                if d2.OK:
+                    for z in range(0, len(newList)):
+                        self.settings['stimNames'][tType].append(newList[z])
+
         else:
             errDlg = gui.Dlg(title="No trial types!")
             errDlg.addText("No trial types to add movies to! Please create trial types first.")
@@ -1011,8 +1096,7 @@ class pyHabBuilder():
         ans3 = aDlg3.show()
         if aDlg3.OK:
             shape = ans3[0].split()  # Pulls out rectangle, cross, or star.
-            fileSelectDlg = gui.fileOpenDlg(prompt="Select attention-getter audio file",
-                                            allowed="Audio (*.aac, *.aiff, *.flac, *.m4a, *.mp3, *.ogg, *.raw, *.wav, *.m4b, *.m4p)")
+            fileSelectDlg = gui.fileOpenDlg(prompt="Select attention-getter audio file")
             if type(fileSelectDlg) is not NoneType:
                 path, namething = os.path.split(fileSelectDlg[0])
                 # Again an ugly but necessary solution for getting the duration.
@@ -1034,8 +1118,7 @@ class pyHabBuilder():
         :rtype: dict
         """
         NoneType = type(None)
-        fileSelectDlg = gui.fileOpenDlg(prompt="Select attention-getter movie file",
-                                        allowed="Movies (*.mov, *.avi, *.ogv, *.mkv, *.mp4, *.mpeg, *.mpe, *.mpg, *.dv, *.wmv, *.3gp)")
+        fileSelectDlg = gui.fileOpenDlg(prompt="Select attention-getter movie file")
         if type(fileSelectDlg) is not NoneType:
             path, namething = os.path.split(fileSelectDlg[0])
             # Suboptimal solution for getting duration, but possibly only available.
@@ -1498,9 +1581,9 @@ class pyHabBuilder():
         :rtype:
         """
         if not os.path.exists(self.folderPath):
-            os.makedirs(self.folderPath) #creates the initial folder if it did not exist.
-        success=True #Assume it's going to work.
-        #Structure: Top-level folder contains script, then you have data and stimuli.
+            os.makedirs(self.folderPath) # creates the initial folder if it did not exist.
+        success = True  # Assume it's going to work.
+        # Structure: Top-level folder contains script, then you have data and stimuli.
         dataPath = self.folderPath+'data'+self.dirMarker
         if not os.path.exists(dataPath):
             os.makedirs(dataPath)
@@ -1511,7 +1594,7 @@ class pyHabBuilder():
         if not os.path.exists(codePath):
             os.makedirs(codePath)
         srcDir = 'PyHab'+self.dirMarker
-        #Condition file!
+        # Condition file!
         if len(self.condDict)>0:
             tempArray = []
             for j in range(0, len(self.settings['condList'])):
@@ -1521,12 +1604,21 @@ class pyHabBuilder():
             for k in range(0, len(tempArray)):
                 secretWriter.writerow(tempArray[k])
             co.close()
-        #copy stimuli if there are stimuli.
+        # copy stimuli if there are stimuli.
         if len(self.stimSource) > 0:
-            for i, j in self.stimSource.items(): #Find each file, copy it over
+            for i, j in self.stimSource.items():  # Find each file, copy it over
                 try:
                     targPath = stimPath + i
                     shutil.copyfile(j, targPath)
+                    for q, r in self.settings['stimList'].items():
+                        if r['stimType'] != 'Image with audio':
+                            if q == i:  # For movies, images, or audio in isolation, the keys match.
+                                r['stimLoc'] = 'stimuli' + self.dirMarker + q
+                        else:  # Here we have to look at the file paths themselves
+                            if r['audioLoc'] == j:
+                                r['audioLoc'] = 'stimuli' + self.dirMarker + i
+                            elif r['imageLoc'] == j:
+                                r['imageLoc'] = 'stimuli' + self.dirMarker + i
                 except:
                     success = False
                     print('Could not copy file ' + j + '. Make sure it exists!')
@@ -1536,8 +1628,9 @@ class pyHabBuilder():
                     targPath = stimPath + 'attnGetters' + self.dirMarker
                     if not os.path.exists(targPath):
                         os.makedirs(targPath)
-                    shutil.copyfile(j['stimLoc'], targPath + j['stimName'])
-                    j['stimLoc'] = targPath + j['stimName']
+                    if not os.path.exists(targPath + j['stimName']):
+                        shutil.copyfile(j['stimLoc'], targPath + j['stimName'])
+                        j['stimLoc'] = 'stimuli' + self.dirMarker + 'attnGetters' + self.dirMarker + j['stimName']
                 except:
                     success = False
                     print('Could not copy file ' + j['stimLoc'] + '. Make sure it exists!')
@@ -1546,15 +1639,15 @@ class pyHabBuilder():
             errDlg = gui.Dlg(title="Could not copy stimuli!")
             errDlg.addText("Some stimuli could not be copied successfully. See the output of the coder window for details.")
             errDlg.show()
-        #create/overwrite the settings csv.
+        # create/overwrite the settings csv.
         settingsPath = self.folderPath+self.settings['prefix']+'Settings.csv'
         so = open(settingsPath,'w')
         settingsOutput = csv.writer(so, lineterminator='\n')
         for i, j in self.settings.items():#this is how you write key/value pairs
             settingsOutput.writerow([i, j])
-        #close the settings file, to allow it to be read immediately (in theory)
+        # close the settings file, to allow it to be read immediately (in theory)
         so.close()
-        #Copy over the class and such. Since these aren't modiied, make sure they don't exist first.
+        # Copy over the class and such. Since these aren't modiied, make sure they don't exist first.
         classPath = 'PyHabClass.py'
         classTarg = codePath+classPath
         classPLPath = 'PyHabClassPL.py'
@@ -1573,25 +1666,25 @@ class pyHabBuilder():
             if not os.path.exists(initTarg):
                 shutil.copyfile(srcDir+initPath, initTarg)
         except:
-            #error dialog
+            # error dialog
             errDlg = gui.Dlg(title="Could not copy PyHab and builder!")
             errDlg.addText("Failed to copy PyHab class scripts and builder script. These can be copied manually from the PyHab folder and will be needed!")
             errDlg.show()
             success=False
             print("Could not copy PyHab and builder!")
-        #copy/create the launcher script
+        # copy/create the launcher script
         launcherPath = self.folderPath+self.settings['prefix']+'Launcher.py'
         if not os.path.exists(launcherPath):
             try:
                 # the location of the pyHabLauncher template file
                 launcherSource = srcDir+'PyHab Launcher.py'
-                #Open file and find line 5, aka the path to the settings file, replace it appropriately
+                # Open file and find line 5, aka the path to the settings file, replace it appropriately
                 with open(launcherSource,'r') as file:
                     launcherFile = file.readlines()
-                newLine = 'setName = \"' + self.settings['prefix']+'Settings.csv\"\r\n' #Simplified, so it always runs the settings file in that folder.
+                newLine = 'setName = \"' + self.settings['prefix']+'Settings.csv\"\r\n'  # Simplified, so it always runs the settings file in that folder.
                 launcherFile[6] = newLine
                 launcherFile[7] = "#Created in PsychoPy version " + __version__ + "\r\n"
-                #now write the new file!
+                # now write the new file!
                 with open(launcherPath, 'w') as t:
                     t.writelines(launcherFile)
             except:

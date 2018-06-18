@@ -16,7 +16,7 @@ def run():
     launcherDlg.addText('Current settings file: ' + setName)
     launcherDlg.addField('Run study or open builder?', choices=['Run','Builder'])
     tempOrd = eval(setDict['trialOrder'])
-    tempMovs = eval(setDict['movieNames'])
+    tempMovs = eval(setDict['stimNames'])
     stPres = True
     if len(tempMovs) > 0:
         for i in tempOrd:
