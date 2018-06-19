@@ -607,14 +607,17 @@ class pyHab:
             self.trialText.text = "Trial no. " + str(trialNum)
             self.statusSquareA.fillColor = 'black'
             self.statusSquareB.fillColor = 'black'
+            trialType = self.actualTrialOrder[trialNum - 1]
             # select movie for trial
             if self.stimPres:
-                disMovie = self.stimDict[self.actualTrialOrder[trialNum - 1]][self.counters[self.actualTrialOrder[trialNum - 1]]]
-                self.counters[self.actualTrialOrder[trialNum - 1]] += 1
-                if self.counters[self.actualTrialOrder[trialNum - 1]] >= len(self.stimDict[self.actualTrialOrder[trialNum - 1]]):
-                    self.counters[self.actualTrialOrder[trialNum - 1]] = 0
-                self.stimName = self.stimNames[trialType][self.counters[self.actualTrialOrder[trialNum - 1]]]
-
+                if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
+                    self.stimName = self.stimNames[trialType][self.counters[trialType] - len(self.stimNames[trialType])]
+                else:
+                    self.stimName = self.stimNames[trialType][self.counters[trialType]]
+                disMovie = self.stimDict[trialType][self.counters[trialType]]
+                self.counters[trialType] += 1
+                if self.counters[trialType] >= len(self.stimDict[trialType]):
+                    self.counters[trialType] = 0
             else:
                 disMovie = 0
             if self.blindPres < 1:
@@ -631,11 +634,14 @@ class pyHab:
                         if self.blindPres < 1:
                             self.rdyTextAppend = " NEXT: " + trialType + " TRIAL"
                         if self.stimPres:
-                            disMovie = self.stimDict[self.actualTrialOrder[trialNum - 1]][self.counters[self.actualTrialOrder[trialNum - 1]]]
-                            self.counters[self.actualTrialOrder[trialNum - 1]] += 1
-                            if self.counters[self.actualTrialOrder[trialNum - 1]] >= len(self.stimDict[self.actualTrialOrder[trialNum - 1]]):
-                                self.counters[self.actualTrialOrder[trialNum - 1]] = 0
-                            self.stimName = self.stimNames[trialType][self.counters[self.actualTrialOrder[trialNum - 1]]]
+                            if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
+                                self.stimName = self.stimNames[trialType][self.counters[trialType] - len(self.stimNames[trialType])]
+                            else:
+                                self.stimName = self.stimNames[trialType][self.counters[trialType]]
+                            disMovie = self.stimDict[trialType][self.counters[trialType]]
+                            self.counters[trialType] += 1
+                            if self.counters[trialType] >= len(self.stimDict[trialType]):
+                                self.counters[trialType] = 0
                         else:
                             disMovie = 0
                     self.redoTrial(trialNum)
@@ -648,11 +654,14 @@ class pyHab:
                     del self.actualTrialOrder[trialNum - 1:tempNum]
                     trialType = self.actualTrialOrder[trialNum - 1]
                     if self.stimPres:
-                        disMovie = self.stimDict[self.actualTrialOrder[trialNum - 1]][self.counters[self.actualTrialOrder[trialNum - 1]]]
-                        self.counters[self.actualTrialOrder[trialNum - 1]] += 1
-                        if self.counters[self.actualTrialOrder[trialNum - 1]] >= len(self.stimDict[self.actualTrialOrder[trialNum - 1]]):
-                            self.counters[self.actualTrialOrder[trialNum - 1]] = 0
-                        self.stimName = self.stimNames[trialType][self.counters[self.actualTrialOrder[trialNum - 1]]]
+                        if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
+                            self.stimName = self.stimNames[trialType][self.counters[trialType] - len(self.stimNames[trialType])]
+                        else:
+                            self.stimName = self.stimNames[trialType][self.counters[trialType]]
+                        disMovie = self.stimDict[trialType][self.counters[trialType]]
+                        self.counters[trialType] += 1
+                        if self.counters[trialType] >= len(self.stimDict[trialType]):
+                            self.counters[trialType] = 0
                     else:
                         disMovie = 0
                     if self.blindPres < 1:
@@ -666,11 +675,15 @@ class pyHab:
                         self.actualTrialOrder.insert(trialNum - 1, 'Hab')
                     trialType = self.actualTrialOrder[trialNum - 1]
                     if self.stimPres:
-                        disMovie = self.stimDict[self.actualTrialOrder[trialNum - 1]][self.counters[self.actualTrialOrder[trialNum - 1]]]
-                        self.counters[self.actualTrialOrder[trialNum - 1]] += 1
-                        if self.counters[self.actualTrialOrder[trialNum - 1]] >= len(self.stimDict[self.actualTrialOrder[trialNum - 1]]):
-                            self.counters[self.actualTrialOrder[trialNum - 1]] = 0
-                            self.stimName = self.stimNames[trialType][self.counters[self.actualTrialOrder[trialNum - 1]]]
+                        if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
+                            self.stimName = self.stimNames[trialType][
+                                self.counters[trialType] - len(self.stimNames[trialType])]
+                        else:
+                            self.stimName = self.stimNames[trialType][self.counters[trialType]]
+                        disMovie = self.stimDict[trialType][self.counters[trialType]]
+                        self.counters[trialType] += 1
+                        if self.counters[trialType] >= len(self.stimDict[trialType]):
+                            self.counters[trialType] = 0
                     else:
                         disMovie = 0
                     if self.blindPres < 1:
@@ -738,11 +751,14 @@ class pyHab:
                             if self.blindPres < 1:
                                 self.rdyTextAppend = " NEXT: " + trialType + " TRIAL"
                             if self.stimPres:
-                                disMovie = self.stimDict[self.actualTrialOrder[trialNum - 1]][self.counters[self.actualTrialOrder[trialNum - 1]]]
-                                self.counters[self.actualTrialOrder[trialNum - 1]] += 1
-                                if self.counters[self.actualTrialOrder[trialNum - 1]] >= len(self.stimDict[self.actualTrialOrder[trialNum - 1]]):
-                                    self.counters[self.actualTrialOrder[trialNum - 1]] = 0
-                                self.stimName = self.stimNames[trialType][self.counters[self.actualTrialOrder[trialNum - 1]]]
+                                if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
+                                    self.stimName = self.stimNames[trialType][self.counters[trialType] - len(self.stimNames[trialType])]
+                                else:
+                                    self.stimName = self.stimNames[trialType][self.counters[trialType]]
+                                disMovie = self.stimDict[trialType][self.counters[trialType]]
+                                self.counters[trialType] += 1
+                                if self.counters[trialType] >= len(self.stimDict[trialType]):
+                                    self.counters[trialType] = 0
                             else:
                                 disMovie = 0
                         self.redoTrial(trialNum)
@@ -755,11 +771,14 @@ class pyHab:
                         del self.actualTrialOrder[trialNum - 1:tempNum]
                         trialType = self.actualTrialOrder[trialNum - 1]
                         if self.stimPres:
-                            disMovie = self.stimDict[self.actualTrialOrder[trialNum - 1]][self.counters[self.actualTrialOrder[trialNum - 1]]]
-                            self.counters[self.actualTrialOrder[trialNum - 1]] += 1
-                            if self.counters[self.actualTrialOrder[trialNum - 1]] >= len(self.stimDict[self.actualTrialOrder[trialNum - 1]]):
-                                self.counters[self.actualTrialOrder[trialNum - 1]] = 0
-                            self.stimName = self.stimNames[trialType][self.counters[self.actualTrialOrder[trialNum - 1]]]
+                            if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
+                                self.stimName = self.stimNames[trialType][self.counters[trialType] - len(self.stimNames[trialType])]
+                            else:
+                                self.stimName = self.stimNames[trialType][self.counters[trialType]]
+                            disMovie = self.stimDict[trialType][self.counters[trialType]]
+                            self.counters[trialType] += 1
+                            if self.counters[trialType] >= len(self.stimDict[trialType]):
+                                self.counters[trialType] = 0
                         else:
                             disMovie = 0
                         if self.blindPres < 1:
@@ -773,11 +792,14 @@ class pyHab:
                             self.actualTrialOrder.insert(trialNum - 1, 'Hab')
                         trialType = self.actualTrialOrder[trialNum - 1]
                         if self.stimPres:  # Here we change the movie file of the current trial only. fine as is.
-                            disMovie = self.stimDict[self.actualTrialOrder[trialNum - 1]][self.counters[self.actualTrialOrder[trialNum - 1]]]
-                            self.counters[self.actualTrialOrder[trialNum - 1]] += 1
-                            if self.counters[self.actualTrialOrder[trialNum - 1]] >= len(self.stimDict[self.actualTrialOrder[trialNum - 1]]):
-                                self.counters[self.actualTrialOrder[trialNum - 1]] = 0
-                            self.stimName = self.stimNames[trialType][self.counters[self.actualTrialOrder[trialNum - 1]]]
+                            disMovie = self.stimDict[trialType][self.counters[trialType]]
+                            self.counters[trialType] += 1
+                            if self.counters[trialType] >= len(self.stimDict[trialType]):
+                                self.counters[trialType] = 0
+                            if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
+                                self.stimName = self.stimNames[trialType][self.counters[trialType] - len(self.stimNames[trialType])]
+                            else:
+                                self.stimName = self.stimNames[trialType][self.counters[trialType]]
                         else:
                             disMovie = 0
                         if self.blindPres < 1:
