@@ -1,7 +1,6 @@
 import os, sys
 from psychopy import visual, event, core, data, gui, monitors, tools, prefs, logging
-from psychopy.constants import (STARTED, PLAYING, PAUSED, FINISHED, STOPPED,
-                                NOT_STARTED, FOREVER)  #Added for new stimulus types
+from psychopy.constants import (STARTED, PLAYING)  # Added for new stimulus types
 if os.name is 'posix':
     prefs.general['audioLib'] = ['pyo']
     prefs.general['audioDevice'] = ['Built-in Output']
@@ -33,7 +32,6 @@ class pyHab:
     Each coder's on and off are recorded in a separate dict with trial, gaze on/off, start, end, and duration.
 
     TODO: Long-term, unit testing
-    TODO: Non-movie stimuli (audio, image).
 
     """
 
@@ -1519,7 +1517,6 @@ class pyHab:
                 self.cond = thisInfo[6]
                 self.condLabel = self.cond
             if self.stimPres:
-                # Todo: Time for a major revamp.
                 tempText = visual.TextStim(self.win2, text="Loading Stimuli", pos=[0, 0], color='white', bold=True, height=40)
                 tempText.draw()
                 self.win2.flip()
@@ -1527,7 +1524,7 @@ class pyHab:
                 self.counters = {x: 0 for x in self.stimNames.keys()}  # list of counters, one per index of the dict, so it knows which movie to play
                 tempCtr = {x: 0 for x in self.stimNames.keys()}
                 for i in self.actualTrialOrder:
-                    if i is not 'Hab': # TODO: Loading non-movie stimuli
+                    if i is not 'Hab':
                         tempStim = self.stimList[self.stimNames[i][tempCtr[i]]]
                         if tempStim['stimType'] == 'Movie':
                             tempStimObj = visual.MovieStim3(self.win, tempStim['stimLoc'],
@@ -1543,9 +1540,8 @@ class pyHab:
                             imageObj = visual.ImageStim(self.win, tempStim['imageLoc'],
                                                            size=[self.movieWidth, self.movieHeight])
                             tempStimObj = {'Audio': audioObj, 'Image': imageObj}
-                            #pass # TODO: MAKE THIS WORK.
                         tempAdd = {'stimType':tempStim['stimType'], 'stim':tempStimObj}
-                        self.stimDict[i].append(tempAdd)  # TODO: But this does not say what kind of thing it is...
+                        self.stimDict[i].append(tempAdd)
                         tempCtr[i] += 1
                         if tempCtr[i] >= len(self.stimNames[i]):
                             tempCtr[i] = 0

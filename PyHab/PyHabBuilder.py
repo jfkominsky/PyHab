@@ -7,16 +7,13 @@ from math import *
 class pyHabBuilder():
     """
     Changelist from 0.4:
-    Alternative habituation calculations: Floating peak criterion, set window evaluation
     MaxOff and minOn are now trial-type-specific
     Now supports dynamic peak habituation criteiron and moving vs. fixed-window habituation evaluation.
-    TODO: Non-movie stimuli (images, sound, both). Autodetect?
-    Audio file formats:
-    .aac, .aiff, .flac, .m4a, .m4b, .m4p, .mp3, .ogg, .raw, .wav
-    Video file formats:
-    .mov, .avi, .wmv, .mp4, .mpeg, .ogv, .mkv, .mpe, .mpg, .dv, .3gp
-    Image file formats:
-    .jpg, .jpeg, .png, .gif, .bmp, .tiff
+    Now supports different types of stimuli: Movies, images, audio, and images with audio.
+    Changed how stimuli are added to experiment - you now create a "stim library" and separately associate items in it
+    with different trial types.
+
+    TODO: Add the ability to remove stimuli once added. Nonessential.
 
 
     """
@@ -983,8 +980,8 @@ class pyHabBuilder():
                           'Movie': "Movies (*.mov, *.avi, *.ogv, *.mkv, *.mp4, *.mpeg, *.mpe, *.mpg, *.dv, *.wmv, *.3gp)",
                           'Image': "Images (*.jpg, *.jpeg, *.png, *.gif, *.bmp, *.tif, *.tiff)"}
         if sDlg1.OK:
-            stType = sd1[0]
-            stNum = sd1[1]
+            stType = sd1[0]  # Type of stimuli (from drop-down).
+            stNum = sd1[1]  # Number to add.
             NoneType = type(None)
             if stType != 'Image with audio':  # Image w/ audio is complicated, so we will take care of that separately.
                 for i in range(0, stNum):
