@@ -3,8 +3,10 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to PyHab's code documentation!
-======================================
+PyHab Code Documentation
+========================
+
+This is documentation for the code of PyHab. Eventually this will contain all of the documentation for PyHab, but that work is in progress.
 
 .. toctree::
    :maxdepth: 2
