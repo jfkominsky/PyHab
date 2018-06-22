@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 Welcome to PyHab's code documentation!
-=================================
+======================================
 
 .. toctree::
    :maxdepth: 2
