@@ -11,15 +11,15 @@ import wx, random, csv
 from math import *
 from datetime import *
 from dateutil.relativedelta import *
-from PyHabClass import pyHab
+from PyHabClass import PyHab
 
-class pyHabPL(pyHab):
+class PyHabPL(PyHab):
     """
     A new preferential-looking version of PyHab that extends the base class rather than being a wholly separate class.
     There's still a lot of redundant code here, which will require significant restructuring of the base class to fix.
     """
     def __init__(self, settingsDict):
-        pyHab.__init__(self,settingsDict)
+        PyHab.__init__(self, settingsDict)
         self.secondKey = self.key.M #Variable that determines what the second key is. Overwrites what is set in the default init
 
     def abortTrial(self, onArray, offArray, trial, ttype, onArray2, stimName=''):

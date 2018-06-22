@@ -1,0 +1,6 @@
+=======
+Builder
+=======
+
+.. autoclass:: PyHab.PyHabBuilder.PyHabBuilder
+    :members:

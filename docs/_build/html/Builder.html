@@ -1,0 +1,622 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Builder &#8212; PyHab v0.5 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PyHab Class (base)" href="BasePyHabClass.html" />
+    <link rel="prev" title="Quickstart guide" href="Quickstart.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="builder">
+<h1>Builder<a class="headerlink" href="#builder" title="Permalink to this headline">¶</a></h1>
+<p>The builder code uses PsychoPy’s visual library to create a rudimentary GUI for creating PyHab studies. The GUI itself
+mostly consists of clickable shapes that open dialog boxes. The only notable exception is the system for creating
+conditions, which creates an entire new UI in the window.</p>
+<p>When the builder’s save functions are called, they create a complete, self-contained folder which includes the experiment
+setitngs file (a csv), a launcher script, the PyHab module folder with PyHabClass, PyHabClassPL, and PyHabBuilder, and
+copies of all of the stimuli and attention-getters to a stimuli folder.</p>
+<dl class="class">
+<dt id="PyHab.PyHabBuilder.PyHabBuilder">
+<em class="property">class </em><code class="descclassname">PyHab.PyHabBuilder.</code><code class="descname">PyHabBuilder</code><span class="sig-paren">(</span><em>loadedSaved=False</em>, <em>settingsDict={}</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Changelist from 0.4:</p>
+<p>MaxOff and minOn are now trial-type-specific</p>
+<p>Now supports dynamic peak habituation criteiron and moving vs. fixed-window habituation evaluation.</p>
+<p>Now supports different types of stimuli - Movies, images, audio, and images with audio.</p>
+<p>Changed how stimuli are added to experiment - you now create a “stim library” and separately associate items in it
+with different trial types.</p>
+<p>TODO: Add the ability to remove stimuli once added. Nonessential.</p>
+<dl class="method">
+<dt id="PyHab.PyHabBuilder.PyHabBuilder.addHabBlock">
+<code class="descname">addHabBlock</code><span class="sig-paren">(</span><em>makeNew=True</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.addHabBlock" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a hab trial type, which consists of a hab trial plus, now, some other number of trials
+It essentially needs to create a sub-flow.</p>
+<p>0 = Maximum duration</p>
+<p>1 = Maximum continuous off-time</p>
+<p>2 = Minimum on-time</p>
+<p>[If stimulus files associated with type, these occupy 3-N]</p>
+<p>3/-4 = Auto-advance into trial</p>
+<p>4/-3 = Select attention-getter</p>
+<p>5/-2 = Use sub-block structure?</p>
+<p>6/-1 = Number of trial types in sub-block, including hab</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabBuilder.PyHabBuilder.addStimToLibraryDlg">
+<code class="descname">addStimToLibraryDlg</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.addStimToLibraryDlg" title="Permalink to this definition">¶</a></dt>
+<dd><p>A series of dialog boxes which allows you to build a “library” of stimulus files for your experiment, which you
+can then assign to trial types in a separate dialog.</p>
+<p>Works a bit like the attention-getter construction dialogs, but different in that it allows audio or images alone.
+The image/audio pairs are complicated, but not worth splitting into their own function at this time.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabBuilder.PyHabBuilder.addStimToTypesDlg">
+<code class="descname">addStimToTypesDlg</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.addStimToTypesDlg" title="Permalink to this definition">¶</a></dt>
+<dd><p>A series dialog boxes, the first selecting a trial type and the number of stimuli to add to it,
+a second allowing you to add stimuli from the stimulus library that is stimList in the settings</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabBuilder.PyHabBuilder.attnGetterAudioDlg">
+<code class="descname">attnGetterAudioDlg</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.attnGetterAudioDlg" title="Permalink to this definition">¶</a></dt>
+<dd><p>A modular dialog for setting the options for an audio-based attention-getter</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">A dictionary containing all the info required for an audio attention-getter</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">dict</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabBuilder.PyHabBuilder.attnGetterDlg">
+<code class="descname">attnGetterDlg</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.attnGetterDlg" title="Permalink to this definition">¶</a></dt>
+<dd><p>The dialog window for customizing the attention-getters available to use for different trials.
+Two-stage: Modify existing attngetter or make new, then what do you do with ether of those.
+Allows audio with PsychoPy-produced looming shape or just a video file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabBuilder.PyHabBuilder.attnGetterVideoDlg">
+<code class="descname">attnGetterVideoDlg</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.attnGetterVideoDlg" title="Permalink to this definition">¶</a></dt>
+<dd><p>A modular dialog for setting the options for a video-based attention-getter</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">A dictionary containing all the info required for a video attention-getter</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">dict</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabBuilder.PyHabBuilder.condMaker">
+<code class="descname">condMaker</code><span class="sig-paren">(</span><em>rep=False</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.condMaker" title="Permalink to this definition">¶</a></dt>
+<dd><p>A whole separate interface for managing condition creation.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>rep</strong> (<em>bool</em>) – Basically whether we are recursing while editing conditions</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabBuilder.PyHabBuilder.condSetter">
+<code class="descname">condSetter</code><span class="sig-paren">(</span><em>cond='NEW'</em>, <em>ex=False</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.condSetter" title="Permalink to this definition">¶</a></dt>
+<dd><p>One dialog per trial type. Each dialog has a list of all the movies in that type
+This is not intuitive under the hood. The output of this is a dict with an array like this for each trial type: [1, 2, 3]
+Those numbers refer to the index of the movie in that trial’s stimNames array.
+But, in this dialog, users are inputting the point in the order in which they would like each one to appear.
+So if the third movie in the names gets the number 1 in this dialog, the output array starts [3, ]
+Also yes the ouput is using the index plus one. This is because originally you had to hand-code this condition file, and it makes it
+more intelligible to non-programmer users.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>cond</strong> (<em>str</em>) – Condition name</li>
+<li><strong>ex</strong> (<em>bool</em>) – Whether the condition already exists</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabBuilder.PyHabBuilder.condSettingsDlg">
+<code class="descname">condSettingsDlg</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.condSettingsDlg" title="Permalink to this definition">¶</a></dt>
+<dd><p>The dialog window for “condition settings”, not to be confused with the
+condition interface created by self.condMaker(). This determines whether
+condition randomization is used at all, a separate interface is used to
+define the conditions themselves.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabBuilder.PyHabBuilder.dataSettingsDlg">
+<code class="descname">dataSettingsDlg</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.dataSettingsDlg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Which columns of data are recorded.
+Resets if the experiment type is switched to or from preferential looking.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabBuilder.PyHabBuilder.delCond">
+<code class="descname">delCond</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.delCond" title="Permalink to this definition">¶</a></dt>
+<dd><p>Present list of existing conditions. Choose one to remove.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabBuilder.PyHabBuilder.delTrialTypeDlg">
+<code class="descname">delTrialTypeDlg</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.delTrialTypeDlg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dialog for deleting a trial type, and all instances of that trial type in the study flow</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabBuilder.PyHabBuilder.habSettingsDlg">
+<code class="descname">habSettingsDlg</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.habSettingsDlg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dialog for settings relating to habituation criteria:</p>
+<p>0 = maxHabTrials (maximum possible hab trials if criterion not met)</p>
+<p>1 = setCritWindow (# trials summed over when creating criterion)</p>
+<dl class="docutils">
+<dt>2 = setCritDivisor (denominator of criterion calculation . e.g., sum of first 3 trials</dt>
+<dd>divided by 2 would have 3 for setCritWindow and 2 for this.)</dd>
+</dl>
+<p>3 = setCritType (peak window or just first N)</p>
+<p>4 = metCritWindow (# trials summed over when evaluating whether criterion has been met)</p>
+<p>5 = metCritDivisor (denominator of sum calculated when determining if criterion has been met)</p>
+<p>6 = metCritStatic (static or moving window?)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabBuilder.PyHabBuilder.loadFlow">
+<code class="descname">loadFlow</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.loadFlow" title="Permalink to this definition">¶</a></dt>
+<dd><p>This creates the array of objects in the study flow display</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabBuilder.PyHabBuilder.loadTypes">
+<code class="descname">loadTypes</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.loadTypes" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function creates the trial types palette</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabBuilder.PyHabBuilder.mainLoop">
+<code class="descname">mainLoop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.mainLoop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main loop of the whole program.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabBuilder.PyHabBuilder.moveTrialInFlow">
+<code class="descname">moveTrialInFlow</code><span class="sig-paren">(</span><em>flowIndex</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.moveTrialInFlow" title="Permalink to this definition">¶</a></dt>
+<dd><p>A function for when a trial is clicked in the study flow, allowing you to either swap it or remove it.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>flowIndex</strong> (<em>int</em>) – The index in the flowArray of the trial being modified</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabBuilder.PyHabBuilder.quitFunc">
+<code class="descname">quitFunc</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.quitFunc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simple function for quitting, checks if you want to save first (if there’s anything to save).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabBuilder.PyHabBuilder.run">
+<code class="descname">run</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Exists exclusively to be called to start the main loop.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabBuilder.PyHabBuilder.saveDlg">
+<code class="descname">saveDlg</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.saveDlg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Opens a save dialog allowing you to choose where to save your project.
+Essentially sets self.folderPath</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabBuilder.PyHabBuilder.saveEverything">
+<code class="descname">saveEverything</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.saveEverything" title="Permalink to this definition">¶</a></dt>
+<dd><p>Saves a PyHab project to a set of folders dictated by self.folderPath</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabBuilder.PyHabBuilder.setHabSubTrials">
+<code class="descname">setHabSubTrials</code><span class="sig-paren">(</span><em>numHab</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.setHabSubTrials" title="Permalink to this definition">¶</a></dt>
+<dd><p>Groups trial types into hab blocks. Hab blocks can have multiple trial types, but one must always be Hab.
+This function doesn’t care if you’ve made a hab block before, it just overwrites whatever exists. This is under
+the assumption that hab blocks will have few trials.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>numHab</strong> (<em>int</em>) – Number of trials in a hab block</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabBuilder.PyHabBuilder.showMainUI">
+<code class="descname">showMainUI</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.showMainUI" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main draw loop of the primary builder interface</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabBuilder.PyHabBuilder.stimSettingsDlg">
+<code class="descname">stimSettingsDlg</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.stimSettingsDlg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Settings relating to stimulus presentation. Indexes from the dialog</p>
+<p>0 = screenWidth: Width of stim window</p>
+<p>1 = screenHeight: Height of stim window</p>
+<p>2 = Background color of stim window</p>
+<p>3 = movieWidth: Width of movieStim3 object inside stim window. Future: Allows for movie default resolution?</p>
+<p>4 = movieWidth: Height of movieStim3 object inside stim window</p>
+<p>5 = screenIndex: Which screen to display the stim window on.</p>
+<p>6 = freezeFrame: If the attention-getter is used (for this trial type), this is the minimum time the first frame
+of the movie will be displayed after the attention-getter finishes.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabBuilder.PyHabBuilder.trialTypeDlg">
+<code class="descname">trialTypeDlg</code><span class="sig-paren">(</span><em>trialType='TrialTypeNew'</em>, <em>makeNew=True</em>, <em>prevInfo=[]</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.trialTypeDlg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dialog for creating OR modifying a trial type. Allows you to set
+the maximum duration of that trial type as well as remove movies
+from it, and also set whether the trial type is gaze contingent.
+Now also sets whether the study should auto-advance into this
+trial and whether the built-in attention-getter should be used.</p>
+<p>The dialog by default outputs a list with 8 items in it.
+0 = trial type name</p>
+<p>1 = Maximum duration of trials of this type</p>
+<p>[if movies assigned to trial type already, they occupy 2 - N]</p>
+<p>2/-6 = Gaze-contingent trial type?</p>
+<p>3/-5 = Maximum continuous looking-away to end trial of type</p>
+<p>4/-4 = Minimum on-time to enable off-time criterion (not continuous)</p>
+<p>5/-3 = Auto-advance into trial?</p>
+<p>6/-2 = Attention-getter selection</p>
+<p>7/-1 = End trial on movie end or mid-movie</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>trialType</strong> (<em>str</em>) – Name of the trial type</li>
+<li><strong>makeNew</strong> (<em>bool</em>) – Making a new trial type or modifying an existing one?</li>
+<li><strong>prevInfo</strong> (<em>list</em>) – If user attempts to create an invalid trial type, the dialog is re-opened with the previously entered information stored and restored</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabBuilder.PyHabBuilder.univSettingsDlg">
+<code class="descname">univSettingsDlg</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.univSettingsDlg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Settings that apply to every PyHab study regardless of anything else.</p>
+<p>0 = prefix: The prefix of the launcher and all data files.</p>
+<p>1 = ISI: Minimum time between loops of stimuli.</p>
+<dl class="docutils">
+<dt>2 = blindPres: Level of experimenter blinding, 0 (none), 1 (no trial type info), or</dt>
+<dd>2 (only info is whether a trial is currently active.</dd>
+</dl>
+<p>3 = prefLook: Whether the study is preferential-looking or single-target.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">PyHab</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Quickstart.html">Quickstart guide</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Builder</a></li>
+<li class="toctree-l1"><a class="reference internal" href="BasePyHabClass.html">PyHab Class (base)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="PrefLook.html">Preferential Looking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Reliability.html">Standalone Reliability</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="Quickstart.html" title="previous chapter">Quickstart guide</a></li>
+      <li>Next: <a href="BasePyHabClass.html" title="next chapter">PyHab Class (base)</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Jonathan F. Kominsky.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.0+</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      
+      |
+      <a href="_sources/Builder.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

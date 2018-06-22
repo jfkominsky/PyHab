@@ -1,0 +1,270 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Preferential Looking &#8212; PyHab v0.5 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Standalone Reliability" href="Reliability.html" />
+    <link rel="prev" title="PyHab Class (base)" href="BasePyHabClass.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="preferential-looking">
+<h1>Preferential Looking<a class="headerlink" href="#preferential-looking" title="Permalink to this headline">¶</a></h1>
+<p>This class is an extension of the <a class="reference internal" href="BasePyHabClass.html"><span class="doc">PyHab Class (base)</span></a> base class.</p>
+<dl class="class">
+<dt id="PyHab.PyHabClassPL.PyHabPL">
+<em class="property">class </em><code class="descclassname">PyHab.PyHabClassPL.</code><code class="descname">PyHabPL</code><span class="sig-paren">(</span><em>settingsDict</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClassPL.PyHabPL" title="Permalink to this definition">¶</a></dt>
+<dd><p>A new preferential-looking version of PyHab that extends the base class rather than being a wholly separate class.
+There’s still a lot of redundant code here, which will require significant restructuring of the base class to fix.</p>
+<dl class="method">
+<dt id="PyHab.PyHabClassPL.PyHabPL.abortTrial">
+<code class="descname">abortTrial</code><span class="sig-paren">(</span><em>onArray</em>, <em>offArray</em>, <em>trial</em>, <em>ttype</em>, <em>onArray2</em>, <em>stimName=''</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClassPL.PyHabPL.abortTrial" title="Permalink to this definition">¶</a></dt>
+<dd><p>Aborts a trial in progress, saves any data recorded thus far to the bad-data structures</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>onArray</strong> (<em>list of dicts {trial</em><em>, </em><em>trialType</em><em>, </em><em>startTime</em><em>, </em><em>endTime</em><em>, </em><em>duration}</em>) – Gaze-on Left events</li>
+<li><strong>offArray</strong> (<em>list of dicts {trial</em><em>, </em><em>trialType</em><em>, </em><em>startTime</em><em>, </em><em>endTime</em><em>, </em><em>duration}</em>) – Gaze-off events</li>
+<li><strong>trial</strong> (<em>int</em>) – Trial number</li>
+<li><strong>ttype</strong> (<em>string</em>) – Trial type</li>
+<li><strong>onArray2</strong> (<em>list of dicts {trial</em><em>, </em><em>trialType</em><em>, </em><em>startTime</em><em>, </em><em>endTime</em><em>, </em><em>duration}</em>) – Gaze-on Right events</li>
+<li><strong>stimName</strong> (<em>string</em>) – If presenting stimuli, name of the stim file</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabClassPL.PyHabPL.checkStop">
+<code class="descname">checkStop</code><span class="sig-paren">(</span><em>trial</em>, <em>numHab</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClassPL.PyHabPL.checkStop" title="Permalink to this definition">¶</a></dt>
+<dd><p>After a hab trial, checks the habitution criteria and returns ‘true’ if any of them are met.
+Needs its own version because it has to get both timeOnL and timeOnR</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>trial</strong> (<em>int</em>) – Trial number</li>
+<li><strong>numHab</strong> (<em>int</em>) – The number of hab trials that have been presented</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">True if hab criteria have been met, False otherwise</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabClassPL.PyHabPL.dataRec">
+<code class="descname">dataRec</code><span class="sig-paren">(</span><em>onArray</em>, <em>offArray</em>, <em>trial</em>, <em>type</em>, <em>onArray2</em>, <em>stimName=''</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClassPL.PyHabPL.dataRec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Records the data for a trial that ended normally.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>onArray</strong> (<em>list of dicts {trial</em><em>, </em><em>trialType</em><em>, </em><em>startTime</em><em>, </em><em>endTime</em><em>, </em><em>duration}</em>) – Gaze-on Left events</li>
+<li><strong>offArray</strong> (<em>list of dicts {trial</em><em>, </em><em>trialType</em><em>, </em><em>startTime</em><em>, </em><em>endTime</em><em>, </em><em>duration}</em>) – Gaze-off events</li>
+<li><strong>trial</strong> (<em>int</em>) – Trial number</li>
+<li><strong>ttype</strong> (<em>string</em>) – Trial type</li>
+<li><strong>onArray2</strong> (<em>list of dicts {trial</em><em>, </em><em>trialType</em><em>, </em><em>startTime</em><em>, </em><em>endTime</em><em>, </em><em>duration}</em>) – Gaze-on Right events</li>
+<li><strong>stimName</strong> (<em>string</em>) – If presenting stimuli, name of the stim file</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabClassPL.PyHabPL.doTrial">
+<code class="descname">doTrial</code><span class="sig-paren">(</span><em>number</em>, <em>type</em>, <em>disMovie</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClassPL.PyHabPL.doTrial" title="Permalink to this definition">¶</a></dt>
+<dd><p>Control function for individual trials, to be called by doExperiment
+Returns a status value (int) that tells doExperiment what to do next</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>number</strong> (<em>int</em>) – Trial number</li>
+<li><strong>type</strong> (<em>string</em>) – Trial type</li>
+<li><strong>disMovie</strong> (<em>movieStim3 object</em>) – Movie object for stimulus presentation</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">int, 0 = proceed to next trial, 1 = hab crit met, 2 = end experiment, 3 = trial aborted</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabClassPL.PyHabPL.endExperiment">
+<code class="descname">endExperiment</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClassPL.PyHabPL.endExperiment" title="Permalink to this definition">¶</a></dt>
+<dd><p>End experiment, save all data, calculate reliability if needed, close up shop
+:return:
+:rtype:</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabClassPL.PyHabPL.lookKeysPressed">
+<code class="descname">lookKeysPressed</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClassPL.PyHabPL.lookKeysPressed" title="Permalink to this definition">¶</a></dt>
+<dd><p>A simple boolean function to allow for more modularity with preferential looking
+Basically, allows you to set an arbitrary set of keys to start a trial once the attngetter has played.
+In this case, only B or M are sufficient.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">True if the B or M key is pressed, False otherwise.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabClassPL.PyHabPL.redoTrial">
+<code class="descname">redoTrial</code><span class="sig-paren">(</span><em>trialNum</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClassPL.PyHabPL.redoTrial" title="Permalink to this definition">¶</a></dt>
+<dd><p>Allows you to redo a trial after it has ended. Similar to abort trial, but under
+the assumption that the data has already been recorded and needs to be replaced.
+Decrementing of trial numbers is handled in doExperiment when the relevant key is
+pressed.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>trialNum</strong> (<em>int</em>) – Trial number to redo</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">PyHab</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Quickstart.html">Quickstart guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Builder.html">Builder</a></li>
+<li class="toctree-l1"><a class="reference internal" href="BasePyHabClass.html">PyHab Class (base)</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Preferential Looking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Reliability.html">Standalone Reliability</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="BasePyHabClass.html" title="previous chapter">PyHab Class (base)</a></li>
+      <li>Next: <a href="Reliability.html" title="next chapter">Standalone Reliability</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Jonathan F. Kominsky.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.0+</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      
+      |
+      <a href="_sources/PrefLook.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

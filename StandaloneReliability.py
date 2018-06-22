@@ -5,6 +5,10 @@ import wx, random, csv, os
 from math import *
 from datetime import *
 
+"""
+Computes reliability statistics for two arbitrary verbose data files created by PyHab.
+"""
+
 
 def WPA(timewarp, timewarp2):
     """
@@ -80,6 +84,7 @@ def pearsonR(verboseMatrix, verboseMatrix2):
 def cohensKappa(timewarp, timewarp2):
     """
     Computes Cohen's Kappa
+
     :param timewarp: List of every individual frame's gaze-on/gaze-off code for coder A
     :type timewarp: list
     :param timewarp2: As above for coder B
@@ -102,6 +107,7 @@ def cohensKappa(timewarp, timewarp2):
 def avgObsAgree(timewarp, timewarp2):
     """
     Computes average observer agreement as agreement in each trial, divided by number of trials.
+
     :param timewarp: List of every individual frame's gaze-on/gaze-off code for coder A
     :type timewarp: list
     :param timewarp2: As above for coder B
