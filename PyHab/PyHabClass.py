@@ -13,12 +13,15 @@ from datetime import *
 from dateutil.relativedelta import *
 
 
-class pyHab:
+class PyHab:
     """
 
     PyHab looking time coding + stimulus control system
+
     Jonathan Kominsky, 2016-2018
+
     Keyboard coding: A = ready, B = coder 1 on, L = coder 2 on, R = abort trial, Y = end experiment (for fussouts)
+
     Between-trials: R = redo previous trial, J = jump to test trial, I = insert additional habituation trial (hab only)
 
     Throughout this script, win2 is the coder display, win is the stimulus presentation window.
@@ -405,7 +408,7 @@ class pyHab:
                 pass
 
         self.dispCoderWindow(0)
-        self.win.flip()  # clear screen (change?)
+        #self.win.flip()  # clear screen (change?)
 
     def dispCoderWindow(self, trialType = -1):
         """
@@ -468,8 +471,7 @@ class pyHab:
         :type trialType: int or str
         :param dispMovie: The moviestim3 object for the stimuli
         :type dispMovie: moviestim3 object
-        :return: an int specifying whether the movie is in progress (0), paused on its last frame (1), or ending and
-        looping (2)
+        :return: an int specifying whether the movie is in progress (0), paused on its last frame (1), or ending and looping (2)
         :rtype: int
         """
 
@@ -512,6 +514,7 @@ class pyHab:
     def dispImageStim(self, dispImage):
         """
         Very simple. Draws still-image stimuli and flips window
+
         :param dispImage: the visual.ImageStim object
         :type dispImage: visual.ImageStim object
         :return: constant, 1
@@ -525,6 +528,7 @@ class pyHab:
         """
         For playing audio stimuli. A little more complicated than most because it needs to track whether the audio
         is playing or not. Audio plays separately from main thread.
+
         :param dispAudio: the stimuli as a sound.Sound object
         :type dispAudio: sound.Sound object
         :return: an int specifying whether the audio is in progress (0), we are in an ISI (1),
@@ -593,7 +597,6 @@ class pyHab:
         self.trialText.text = "Trial no. " + str(trialNum)
         self.readyText.text = "Before first trial"
         self.rdyTextAppend = ""
-        # win.flip()
         trialType = self.actualTrialOrder[0]
         if self.blindPres < 1:
             self.rdyTextAppend = " NEXT: " + trialType + " TRIAL"
@@ -1051,8 +1054,9 @@ class pyHab:
             elif disMovie['stimType'] == 'Image with audio':
                 disMovie['stim']['Audio'].stop()
         self.dispCoderWindow()
-        if self.stimPres:
-            self.win.flip()  # blanks the screen outright.
+        if self.stimPres and number < len(self.actualTrialOrder):
+            if self.actualTrialOrder[number] not in self.autoAdvance:
+                self.win.flip()  # blanks the screen outright between trials if NOT auto-advancing into the next trial
         if redo:  # if the abort button was pressed
             self.abortTrial(onArray, offArray, number, type, onArray2, offArray2, self.stimName)
             return 3
@@ -1250,7 +1254,7 @@ class pyHab:
         if self.stimPres:
             self.win.close()
 
-    def WPA(self, timewarp, timewarp2):
+    def wPA(self, timewarp, timewarp2):
         """
         Calculates weighted percentage agreement, computed as number of agreement frames over total frames.
 
@@ -1324,6 +1328,7 @@ class pyHab:
     def cohensKappa(self, timewarp, timewarp2):
         """
         Computes Cohen's Kappa
+
         :param timewarp: List of every individual frame's gaze-on/gaze-off code for coder A
         :type timewarp: list
         :param timewarp2: As above for coder B
@@ -1331,7 +1336,7 @@ class pyHab:
         :return: Kappa
         :rtype: float
         """
-        wpa = self.WPA(timewarp, timewarp2)
+        wpa = self.wPA(timewarp, timewarp2)
         coderBon = 0
         coderAon = 0
         for i in range(0, len(timewarp)):  # are the 2 timewarps equal? - when can one be bigger?
@@ -1348,6 +1353,7 @@ class pyHab:
     def avgObsAgree(self, timewarp, timewarp2):
         """
         Computes average observer agreement as agreement in each trial, divided by number of trials.
+
         :param timewarp: List of every individual frame's gaze-on/gaze-off code for coder A
         :type timewarp: list
         :param timewarp2: As above for coder B
@@ -1409,7 +1415,7 @@ class pyHab:
             for s in range(0, diff):
                 timewarp.append([verboseMatrix[-1]['trial'], 0])
 
-        stats = {'WeightedPercentageAgreement': self.WPA(timewarp, timewarp2),
+        stats = {'WeightedPercentageAgreement': self.wPA(timewarp, timewarp2),
                  'CohensKappa': self.cohensKappa(timewarp, timewarp2),
                  'AverageObserverAgreement': self.avgObsAgree(timewarp, timewarp2),
                  'PearsonsR': self.pearsonR(verboseMatrix, verboseMatrix2)}

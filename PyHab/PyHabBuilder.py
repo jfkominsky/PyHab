@@ -4,12 +4,16 @@ import wx, random, csv, shutil, os, sys, threading
 from math import *
 
 
-class pyHabBuilder():
+class PyHabBuilder:
     """
     Changelist from 0.4:
+
     MaxOff and minOn are now trial-type-specific
+
     Now supports dynamic peak habituation criteiron and moving vs. fixed-window habituation evaluation.
-    Now supports different types of stimuli: Movies, images, audio, and images with audio.
+
+    Now supports different types of stimuli - Movies, images, audio, and images with audio.
+
     Changed how stimuli are added to experiment - you now create a "stim library" and separately associate items in it
     with different trial types.
 
@@ -94,8 +98,8 @@ class pyHabBuilder():
                                                         'movieWidth': 800, 
                                                         'movieHeight': 600, 
                                                         'screenIndex': '1', 
-                                                        'ISI': '0',
-                                                        'freezeFrame': '0.2',
+                                                        'ISI': '0.0',
+                                                        'freezeFrame': '0.0',
                                                         'playAttnGetter': {},
                                                         'attnGetterList':{'PyHabDefault':{'stimType':'Audio',
                                                                                           'stimName':'upchime1.wav',
@@ -230,6 +234,7 @@ class pyHabBuilder():
     def run(self):
         """
         Exists exclusively to be called to start the main loop.
+
         :return:
         :rtype:
         """
@@ -238,6 +243,7 @@ class pyHabBuilder():
     def mainLoop(self):
         """
         Main loop of the whole program.
+
         :return:
         :rtype:
         """
@@ -293,6 +299,7 @@ class pyHabBuilder():
     def showMainUI(self):
         """
         Main draw loop of the primary builder interface
+
         :return:
         :rtype:
         """
@@ -322,13 +329,21 @@ class pyHabBuilder():
 
         The dialog by default outputs a list with 8 items in it.
         0 = trial type name
+
         1 = Maximum duration of trials of this type
+
         [if movies assigned to trial type already, they occupy 2 - N]
+
         2/-6 = Gaze-contingent trial type?
+
         3/-5 = Maximum continuous looking-away to end trial of type
+
         4/-4 = Minimum on-time to enable off-time criterion (not continuous)
+
         5/-3 = Auto-advance into trial?
+
         6/-2 = Attention-getter selection
+
         7/-1 = End trial on movie end or mid-movie
 
         :param trialType: Name of the trial type
@@ -367,7 +382,7 @@ class pyHabBuilder():
                     maxOff = prevInfo[-5]
                     minOn = prevInfo[-4]
                     if len(prevInfo) > 8:  # If there were no movies to start with, this will have a length of 8.
-                        typeDlg.addText("Current movie files in trial type (uncheck to remove)")
+                        typeDlg.addText("Current stimuli in trial type (uncheck to remove)")
                         for i in range(0,len(self.settings['stimNames'][trialType])):
                             typeDlg.addField(self.settings['stimNames'][trialType][i], initial=prevInfo[i+2])
                 # Find the index of the existing trial type in the study flow and type pane.
@@ -519,13 +534,21 @@ class pyHabBuilder():
         """
         Creates a hab trial type, which consists of a hab trial plus, now, some other number of trials
         It essentially needs to create a sub-flow.
+
         0 = Maximum duration
+
         1 = Maximum continuous off-time
+
         2 = Minimum on-time
-        (If stimulus files associated with type, these occupy 3-N)
+
+        [If stimulus files associated with type, these occupy 3-N]
+
         3/-4 = Auto-advance into trial
+
         4/-3 = Select attention-getter
+
         5/-2 = Use sub-block structure?
+
         6/-1 = Number of trial types in sub-block, including hab
 
 
@@ -642,6 +665,7 @@ class pyHabBuilder():
         Groups trial types into hab blocks. Hab blocks can have multiple trial types, but one must always be Hab.
         This function doesn't care if you've made a hab block before, it just overwrites whatever exists. This is under
         the assumption that hab blocks will have few trials.
+
         :param numHab: Number of trials in a hab block
         :type numHab: int
         :return:
@@ -673,6 +697,7 @@ class pyHabBuilder():
     def delTrialTypeDlg(self):
         """
         Dialog for deleting a trial type, and all instances of that trial type in the study flow
+
         :return:
         :rtype:
         """
@@ -793,6 +818,7 @@ class pyHabBuilder():
     def loadTypes(self): #A "pallette" of trial types on one side, only needed when loading from save.
         """
         This function creates the trial types palette
+
         :return:
         :rtype:
         """
@@ -821,6 +847,7 @@ class pyHabBuilder():
     def quitFunc(self):
         """
         Simple function for quitting, checks if you want to save first (if there's anything to save).
+
         :return:
         :rtype:
         """
@@ -852,6 +879,7 @@ class pyHabBuilder():
             2 (only info is whether a trial is currently active.
 
         3 = prefLook: Whether the study is preferential-looking or single-target.
+
         :return:
         :rtype:
         """
@@ -923,15 +951,23 @@ class pyHabBuilder():
         
     def stimSettingsDlg(self):
         """
-        Settings relating to stimulus presentation
+        Settings relating to stimulus presentation. Indexes from the dialog
 
-        screenWidth: Width of stim window
-        screenHeight: Height of stim window
-        movieWidth: Width of movieStim3 object inside stim window. Future: Allows for movie default resolution?
-        movieWidth: Height of movieStim3 object inside stim window
-        screenIndex: Which screen to display the stim window on.
-        freezeFrame: If playAttnGetter == True (for a given trial type), this is the minimum time the first frame
-            of the movie will be displayed after the attention-getter finishes.
+        0 = screenWidth: Width of stim window
+
+        1 = screenHeight: Height of stim window
+
+        2 = Background color of stim window
+
+        3 = movieWidth: Width of movieStim3 object inside stim window. Future: Allows for movie default resolution?
+
+        4 = movieWidth: Height of movieStim3 object inside stim window
+
+        5 = screenIndex: Which screen to display the stim window on.
+
+        6 = freezeFrame: If the attention-getter is used (for this trial type), this is the minimum time the first frame
+        of the movie will be displayed after the attention-getter finishes.
+
         :return:
         :rtype:
         """
@@ -939,7 +975,7 @@ class pyHabBuilder():
         self.workingRect.draw()
         self.workingText.draw()
         self.win.flip()
-        sDlg = gui.Dlg(title="Movie stimuli settings")
+        sDlg = gui.Dlg(title="Stimulus presentation settings")
         sDlg.addField("Stimulus display width in pixels", self.settings['screenWidth'])
         sDlg.addField("Stimulus display height in pixels", self.settings['screenHeight'])
         colorchz = ['black','white','gray']
@@ -964,6 +1000,7 @@ class pyHabBuilder():
         """
         A series of dialog boxes which allows you to build a "library" of stimulus files for your experiment, which you
         can then assign to trial types in a separate dialog.
+
         Works a bit like the attention-getter construction dialogs, but different in that it allows audio or images alone.
         The image/audio pairs are complicated, but not worth splitting into their own function at this time.
 
@@ -1042,6 +1079,7 @@ class pyHabBuilder():
         """
         A series dialog boxes, the first selecting a trial type and the number of stimuli to add to it,
         a second allowing you to add stimuli from the stimulus library that is stimList in the settings
+
         :return:
         :rtype:
         """
@@ -1068,7 +1106,7 @@ class pyHabBuilder():
                 stimKeyList = list(self.settings['stimList'].keys())
                 stimKeyList.sort()
                 for i in range(0, numAdd):
-                    d2.addField("Stimulus no. " + str(i), choices=stimKeyList)
+                    d2.addField("Stimulus no. " + str(i+1), choices=stimKeyList)
                 newList = d2.show()
                 if d2.OK:
                     for z in range(0, len(newList)):
@@ -1083,6 +1121,7 @@ class pyHabBuilder():
     def attnGetterAudioDlg(self):
         """
         A modular dialog for setting the options for an audio-based attention-getter
+
         :return: A dictionary containing all the info required for an audio attention-getter
         :rtype: dict
         """
@@ -1111,6 +1150,7 @@ class pyHabBuilder():
     def attnGetterVideoDlg(self):
         """
         A modular dialog for setting the options for a video-based attention-getter
+
         :return: A dictionary containing all the info required for a video attention-getter
         :rtype: dict
         """
@@ -1132,6 +1172,7 @@ class pyHabBuilder():
         The dialog window for customizing the attention-getters available to use for different trials.
         Two-stage: Modify existing attngetter or make new, then what do you do with ether of those.
         Allows audio with PsychoPy-produced looming shape or just a video file.
+
         :return:
         :rtype:
         """
@@ -1219,6 +1260,7 @@ class pyHabBuilder():
         condition interface created by self.condMaker(). This determines whether
         condition randomization is used at all, a separate interface is used to
         define the conditions themselves.
+
         :return:
         :rtype:
         """
@@ -1269,6 +1311,7 @@ class pyHabBuilder():
     def condMaker(self, rep=False): #For dealing with conditions.
         """
         A whole separate interface for managing condition creation.
+
         :param rep: Basically whether we are recursing while editing conditions
         :type rep: bool
         :return:
@@ -1420,6 +1463,7 @@ class pyHabBuilder():
         So if the third movie in the names gets the number 1 in this dialog, the output array starts [3, ]
         Also yes the ouput is using the index plus one. This is because originally you had to hand-code this condition file, and it makes it
         more intelligible to non-programmer users.
+
         :param cond: Condition name
         :type cond: str
         :param ex: Whether the condition already exists
@@ -1519,14 +1563,22 @@ class pyHabBuilder():
     def habSettingsDlg(self): #Habituation criteria
         """
         Dialog for settings relating to habituation criteria:
+
         0 = maxHabTrials (maximum possible hab trials if criterion not met)
+
         1 = setCritWindow (# trials summed over when creating criterion)
+
         2 = setCritDivisor (denominator of criterion calculation . e.g., sum of first 3 trials
             divided by 2 would have 3 for setCritWindow and 2 for this.)
+
         3 = setCritType (peak window or just first N)
+
         4 = metCritWindow (# trials summed over when evaluating whether criterion has been met)
+
         5 = metCritDivisor (denominator of sum calculated when determining if criterion has been met)
+
         6 = metCritStatic (static or moving window?)
+
         :return:
         :rtype:
         """
@@ -1547,10 +1599,12 @@ class pyHabBuilder():
             self.settings['metCritWindow'] = habDat[4]
             self.settings['metCritDivisor'] = habDat[5]
             self.settings['metCritStatic'] = habDat[6]
+
     def saveDlg(self):
         """
         Opens a save dialog allowing you to choose where to save your project.
         Essentially sets self.folderPath
+
         :return:
         :rtype:
         """
@@ -1574,6 +1628,7 @@ class pyHabBuilder():
     def saveEverything(self):
         """
         Saves a PyHab project to a set of folders dictated by self.folderPath
+
         :return:
         :rtype:
         """

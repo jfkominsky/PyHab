@@ -35,12 +35,12 @@ def run():
                 else:
                     setDict['stimPres'] = '0'
             if setDict['prefLook'] in['0',0,'False',False]:
-                experiment = PH.pyHab(setDict)
+                experiment = PH.PyHab(setDict)
             else:
-                experiment = PHL.pyHabPL(setDict)
+                experiment = PHL.PyHabPL(setDict)
             experiment.run()
         else:
-            builder = PB.pyHabBuilder(loadedSaved = True, settingsDict=setDict)
+            builder = PB.PyHabBuilder(loadedSaved = True, settingsDict=setDict)
             builder.run()
         #After you're done: Relaunch launcher!
         run()

@@ -5,7 +5,7 @@ from PyHab import PyHabBuilder as PB
 import csv, os
 
 setName = "PyHabDemoSettings.csv"
-
+#Created in PsychoPy version 1.90.2
 def run():
     setFile=csv.reader(open(setName,'rU'))
     setArr=[]
@@ -16,7 +16,7 @@ def run():
     launcherDlg.addText('Current settings file: ' + setName)
     launcherDlg.addField('Run study or open builder?', choices=['Run','Builder'])
     tempOrd = eval(setDict['trialOrder'])
-    tempMovs = eval(setDict['movieNames'])
+    tempMovs = eval(setDict['stimNames'])
     stPres = True
     if len(tempMovs) > 0:
         for i in tempOrd:
@@ -35,12 +35,13 @@ def run():
                 else:
                     setDict['stimPres'] = '0'
             if setDict['prefLook'] in['0',0,'False',False]:
-                experiment = PH.pyHab(setDict)
+                experiment = PH.PyHab(setDict)
             else:
-                experiment=PHL.pyHabPL(setDict)
+                experiment = PHL.PyHabPL(setDict)
             experiment.run()
         else:
-            builder = PB.pyHabBuilder(loadedSaved = True, settingsDict=setDict)
+            builder = PB.PyHabBuilder(loadedSaved = True, settingsDict=setDict)
+            builder.run()
         #After you're done: Relaunch launcher!
         run()
     else:

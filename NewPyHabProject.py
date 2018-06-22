@@ -3,5 +3,5 @@
 #(You can also press CTRL-R or Command-R)
 from PyHab import PyHabBuilder as PB
 
-builder = PB.pyHabBuilder()
+builder = PB.PyHabBuilder()
 builder.run()
