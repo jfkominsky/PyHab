@@ -174,29 +174,54 @@ class PyHabPL(PyHab):
                 if self.dataMatrix[k]['GNG'] == 1 and self.dataMatrix[k]['trialType'] == 'Hab':  # just in case there are any bad trials, we don't want to incorporate them into setting the criterion
                     sumOnTimes = sumOnTimes + self.dataMatrix[k]['sumOnL'] + self.dataMatrix[k]['sumOnR']  # add up total looking time for first three (good) trials
             self.habCrit = sumOnTimes / self.setCritDivisor
-        elif self.habCount == self.maxHabTrials:
+        elif self.setCritType == 'Peak':  # Checks if we need to update the hab criterion
+            sumOnTimes = 0
+            habs = [i for i, x in enumerate(self.actualTrialOrder) if x == 'Hab']  # list of all habs
+            habs.sort()
+            index = habs[numHab - self.setCritWindow] #How far back should we look?
+            for n in range(index, len(self.dataMatrix)):  # now, starting with that trial, go through and add up the good trial looking times
+                if self.dataMatrix[n]['GNG'] == 1 and self.dataMatrix[n]['trialType'] == 'Hab':  # only good trials!
+                    sumOnTimes = sumOnTimes + self.dataMatrix[n]['sumOnL'] + self.dataMatrix[n]['sumOnR']  # add up total looking time
+            sumOnTimes = sumOnTimes / self.setCritDivisor
+            if sumOnTimes > self.habCrit:
+                self.habCrit = sumOnTimes
+        elif self.setCritType == 'Max' and numHab > self.setCritWindow:  # Absolute max looking time among hab trials, regardless of order.
+            habOns = []
+            for n in range(0, len(self.dataMatrix)):
+                if self.dataMatrix[n]['GNG'] == 1 and self.dataMatrix[n]['trialType'] == 'Hab':
+                    habOns.append(self.dataMatrix[n]['sumOnL']+self.dataMatrix[n]['sumOnR'])
+            habOns.sort()
+            sumOnTimes = habOns[-1] + habOns[-2] + habOns[-3]
+            sumOnTimes = sumOnTimes / self.setCritDivisor
+            if sumOnTimes > self.habCrit:
+                self.habCrit = sumOnTimes
+
+        # Now we separate out the set and met business.
+        if self.habCount == self.maxHabTrials:
             # end habituation and goto test
             return True
         elif numHab >= self.setCritWindow + self.metCritWindow:  # if we're far enough in that we can plausibly meet the hab criterion
             sumOnTimes = 0
             habs = [i for i, x in enumerate(self.actualTrialOrder) if x == 'Hab']  # list of all habs
             habs.sort()
-            index = habs[len(habs) - self.metCritWindow - 1]  # The first hab from which we should be comparing
-            for n in range(index, len(self.dataMatrix)):  # now, starting with that trial, go through and add up the good trial looking times
-                if self.dataMatrix[n]['GNG'] == 1 and self.dataMatrix[n]['trialType'] == 'Hab':  # only good trials!
-                    sumOnTimes = sumOnTimes + self.dataMatrix[n]['sumOnL'] + self.dataMatrix[n]['sumOnR']  # add up total looking time
+            index = habs[numHab - self.metCritWindow]
+            if (self.metCritStatic == 'Moving') or (numHab-self.setCritWindow) % self.metCritWindow == 0:
+                for n in range(index, len(self.dataMatrix)):  # now, starting with that trial, go through and add up the good trial looking times
+                    if self.dataMatrix[n]['GNG'] == 1 and self.dataMatrix[n]['trialType'] == 'Hab':  # only good trials!
+                        sumOnTimes = sumOnTimes + self.dataMatrix[n]['sumOnL'] + self.dataMatrix[n]['sumOnR'] # add up total looking time
                 sumOnTimes = sumOnTimes / self.metCritDivisor
-            if sumOnTimes < self.habCrit:
-                # end habituation and go to test
-                if not self.stimPres:
-                    for i in [0, 1, 2]:
-                        core.wait(.25)  # an inadvertent side effect of this is a short pause before the test trial can begin
-                        self.endHabSound.play()
-                return True
+                if sumOnTimes < self.habCrit:
+                    # end habituation and go to test
+                    if not self.stimPres:
+                        for i in [0, 1, 2]:
+                            core.wait(.25)  # an inadvertent side effect of playing the sound is a short pause before the test trial can begin
+                            self.endHabSound.play()
+                    return True
             else:
                 return False
         else:
             return False
+
 
     def lookKeysPressed(self):
         """
@@ -251,14 +276,17 @@ class PyHabPL(PyHab):
         self.readyText.text="Trial running"
         if self.keyboard[self.key.B]:
             gazeOn = True
+            gazeOn2 = False
             startOn = 0 #we want these to be 0 because every other time is put in reference to the startTrial timestamp so it's not some absurd number
             numOn = 1
         elif self.keyboard[self.secondKey]:
             gazeOn2 = True
+            gazeOn = False
             startOn2 = 0
             numOn2 = 1
         else:
             gazeOn = False
+            gazeOn2 = False
             numOff = 1
             startOff = 0
         while runTrial:
@@ -467,8 +495,9 @@ class PyHabPL(PyHab):
             if self.blindPres < 1:
                 self.readyText.draw()
         self.win2.flip()
-        if self.stimPres:
-            self.win.flip() #blanks the screen outright.
+        if self.stimPres and number < len(self.actualTrialOrder):
+            if self.actualTrialOrder[number] not in self.autoAdvance:
+                self.win.flip() #blanks the screen outright if not auto-advancing
         if redo: #if the abort button was pressed
             self.abortTrial(onArray, offArray, number, type, onArray2, self.stimName)
             return 3
