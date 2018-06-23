@@ -5,10 +5,10 @@ Quickstart guide
 1. Open PsychoPy
 
 2. Go to "View" and select "Coder View". (You can also hit cmd-L on Mac or ctrl-L on Windows.)
-    .. image:: ../../docsImages/CoderView.png
+    .. image:: CoderView.png
 
 3. Go to File > Open and find the PyHab folder. Select "NewPyHabProject.py"
-    .. image:: ../../docsImages/NewPyHabStudy.png
+    .. image:: NewPyHabStudy.png
 
 4. This should open a short text script in the coder window. Hit the big green "Run" button.
 
