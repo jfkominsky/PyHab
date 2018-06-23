@@ -490,17 +490,17 @@ class PyHabBuilder:
                         self.settings['autoAdvance'].append(trialType)
 
                     # Attention-getter settings
-                    if typeInfo[len(typeInfo)-2] is 'None' and trialType in self.settings['playAttnGetter']:
-                        del self.settings['playAttnGetter'][trialType]
-                    elif typeInfo[len(typeInfo)-2] is 'None':
-                        pass
-                    elif trialType not in self.settings['playAttnGetter']:  # If it did not have an attngetter before.
-                        agname = typeInfo[len(typeInfo)-2]
-                        self.settings['playAttnGetter'][trialType] = agname
-                    elif typeInfo[len(typeInfo)-2] is not self.settings['playAttnGetter'][trialType]:
-                        # If a different attention-getter has been selected
-                        agname = typeInfo[len(typeInfo) - 2]
-                        self.settings['playAttnGetter'][trialType] = agname
+                    if typeInfo[len(typeInfo)-2] == 'None':
+                        if trialType in self.settings['playAttnGetter']:
+                            del self.settings['playAttnGetter'][trialType]
+                    else:
+                        if trialType not in self.settings['playAttnGetter']:  # If it did not have an attngetter before.
+                            agname = typeInfo[len(typeInfo)-2]
+                            self.settings['playAttnGetter'][trialType] = agname
+                        elif typeInfo[len(typeInfo)-2] is not self.settings['playAttnGetter'][trialType]:
+                            # If a different attention-getter has been selected
+                            agname = typeInfo[len(typeInfo) - 2]
+                            self.settings['playAttnGetter'][trialType] = agname
 
                     # End-trial-on-movie-end settings
                     if typeInfo[len(typeInfo)-1] in [False,0,'False','0'] and trialType in self.settings['movieEnd']:
@@ -617,15 +617,17 @@ class PyHabBuilder:
             elif habInfo[len(habInfo) - 4] in [True, 1, 'True', '1'] and not 'Hab' in self.settings['autoAdvance']:
                 self.settings['autoAdvance'].append('Hab')
 
-            if habInfo[len(habInfo) - 3] is 'None' and 'Hab' in self.settings['playAttnGetter']:
-                del self.settings['playAttnGetter']['Hab']
-            elif 'Hab' not in self.settings['playAttnGetter']:  # If it did not have an attngetter before.
-                agname = habInfo[len(habInfo) - 3]
-                self.settings['playAttnGetter']['Hab'] = agname
-            elif habInfo[len(habInfo) - 3] is not self.settings['playAttnGetter']['Hab']:
-                # If a different attention-getter has been selected
-                agname = habInfo[len(habInfo) - 3]
-                self.settings['playAttnGetter']['Hab'] = agname
+            if habInfo[len(habInfo) - 3] == 'None':
+                if 'Hab' in self.settings['playAttnGetter']:
+                    del self.settings['playAttnGetter']['Hab']
+            else:
+                if 'Hab' not in self.settings['playAttnGetter']:  # If it did not have an attngetter before.
+                    agname = habInfo[len(habInfo) - 3]
+                    self.settings['playAttnGetter']['Hab'] = agname
+                elif habInfo[len(habInfo) - 3] is not self.settings['playAttnGetter']['Hab']:
+                    # If a different attention-getter has been selected
+                    agname = habInfo[len(habInfo) - 3]
+                    self.settings['playAttnGetter']['Hab'] = agname
 
 
             if makeNew:
@@ -1586,7 +1588,7 @@ class PyHabBuilder:
         hDlg.addField("Max number of habituation trials (if criterion not met)", self.settings['maxHabTrials'])
         hDlg.addField("Number of trials to sum looking time over when making hab criterion", self.settings['setCritWindow'])
         hDlg.addField("Number to divide sum of looking time by when computing criterion", self.settings['setCritDivisor'])
-        hDlg.addField("Criterion window first trials or dynamic peak looking time?", choices=['First', 'Peak'])
+        hDlg.addField("Criterion window First trials, dynamic Peak contiguous window, or the set of hab trials with Max looking time?", choices=['First', 'Peak', 'Max'])
         hDlg.addField("Number of trials to sum looking time over when determining whether criterion has been met", self.settings['metCritWindow'])
         hDlg.addField("Number to divide sum of looking time by when determining whether criterion has been met", self.settings['metCritDivisor'])
         hDlg.addField("Evaluate criterion over moving window or fixed windows?", choices=['Moving', 'Fixed'])
