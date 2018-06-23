@@ -340,6 +340,17 @@ class PyHab:
             sumOnTimes = sumOnTimes / self.setCritDivisor
             if sumOnTimes > self.habCrit:
                 self.habCrit = sumOnTimes
+        elif self.setCritType == 'Max' and numHab > self.setCritWindow:  # Absolute max looking time among hab trials, regardless of order.
+            habOns = []
+            for n in range(0, len(self.dataMatrix)):
+                if self.dataMatrix[n]['GNG'] == 1 and self.dataMatrix[n]['trialType'] == 'Hab':
+                    habOns.append(self.dataMatrix[n]['sumOnA'])
+            habOns.sort()
+            sumOnTimes = habOns[-1] + habOns[-2] + habOns[-3]
+            sumOnTimes = sumOnTimes / self.setCritDivisor
+            if sumOnTimes > self.habCrit:
+                self.habCrit = sumOnTimes
+
         # Now we separate out the set and met business.
         if self.habCount == self.maxHabTrials:
             # end habituation and goto test
@@ -723,7 +734,7 @@ class PyHab:
                         waitStart = False
                 else:
                     if trialType in self.playAttnGetter:
-                        core.wait(self.playAttnGetter[trialType]['stimDur'] + self.freezeFrame)  # an attempt to match the delay caused by the attention-getter playing.
+                        core.wait(self.attnGetterList[self.playAttnGetter[trialType]]['stimDur'] + self.freezeFrame)  # an attempt to match the delay caused by the attention-getter playing.
                         waitStart = True
                     else:
                         waitStart = False
@@ -740,7 +751,7 @@ class PyHab:
                             core.wait(self.freezeFrame)
                         else:
                             if trialType in self.playAttnGetter:
-                                core.wait(self.playAttnGetter[trialType]['stimDur'] + self.freezeFrame)  # an attempt to match the delay caused by the attention-getter playing.
+                                core.wait(self.attnGetterList[self.playAttnGetter[trialType]]['stimDur'] + self.freezeFrame)  # an attempt to match the delay caused by the attention-getter playing.
                     elif self.lookKeysPressed():
                         waitStart = False
                         self.dispCoderWindow(trialType)
