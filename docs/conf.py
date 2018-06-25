@@ -21,7 +21,7 @@ MOCK_MODULES = ['psychopy', 'psychopy.visual', 'psychopy.event', 'psychopy.core'
                 'psychopy.constants', 'psychopy.__version__']
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = mock.Mock()
-sys.modules['psychopy.prefs'] = {'audioLib':'','audioDevice':''}  # We only ref prefs to manip these settings.
+sys.modules['psychopy.prefs'] = mock.Mock(spec=['audioLib','audioDevice'])
 
 sys.path.insert(0, os.path.abspath('../'))
 
