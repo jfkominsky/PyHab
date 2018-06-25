@@ -16,12 +16,16 @@ import os
 import sys
 import mock
 
-MOCK_MODULES = ['psychopy', 'psychopy.visual', 'psychopy.event', 'psychopy.core', 'psychopy.data', 'psychopy.gui',
-                'psychopy.monitors', 'psychopy.tools', 'psychopy.logging', 'psychopy.sound',
-                'psychopy.constants', 'psychopy.__version__']
+psyMock = mock.MagicMock()  # Mocks allow RTD to bypass the need to import ACTUAL psychopy.
+psyMock.__version__ = '1.90.2'
+sys.modules['psychopy'] = psyMock  # Should enable the importing of version
+
+MOCK_MODULES = ['psychopy.visual', 'psychopy.event', 'psychopy.core', 'psychopy.data', 'psychopy.gui',
+                'psychopy.monitors', 'psychopy.tools', 'psychopy.prefs', 'psychopy.logging', 'psychopy.sound',
+                'psychopy.constants']
 for mod_name in MOCK_MODULES:
-    sys.modules[mod_name] = mock.Mock()
-sys.modules['psychopy.prefs'] = mock.Mock(spec=['audioLib','audioDevice'])
+    sys.modules[mod_name] = mock.MagicMock()  # Allows item assignment whereas a "mock" object does not, fixes prefs
+
 
 sys.path.insert(0, os.path.abspath('../'))
 
