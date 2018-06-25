@@ -22,7 +22,7 @@ sys.modules['psychopy'] = psyMock  # Should enable the importing of version
 
 MOCK_MODULES = ['psychopy.visual', 'psychopy.event', 'psychopy.core', 'psychopy.data', 'psychopy.gui',
                 'psychopy.monitors', 'psychopy.tools', 'psychopy.prefs', 'psychopy.logging', 'psychopy.sound',
-                'psychopy.constants','psychopy.app','pyglet']
+                'psychopy.constants','psychopy.app','pyglet','wx']
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = mock.MagicMock()  # Allows item assignment whereas a "mock" object does not, fixes prefs
 
