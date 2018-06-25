@@ -17,10 +17,12 @@ import sys
 import mock
 
 MOCK_MODULES = ['psychopy', 'psychopy.visual', 'psychopy.event', 'psychopy.core', 'psychopy.data', 'psychopy.gui',
-                'psychopy.monitors', 'psychopy.tools', 'psychopy.prefs', 'psychopy.logging', 'psychopy.sound',
+                'psychopy.monitors', 'psychopy.tools', 'psychopy.logging', 'psychopy.sound',
                 'psychopy.constants', 'psychopy.__version__']
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = mock.Mock()
+sys.modules['psychopy.prefs'] = {'audioLib':'','audioDevice':''}  # We only ref prefs to manip these settings.
+
 sys.path.insert(0, os.path.abspath('../'))
 
 
