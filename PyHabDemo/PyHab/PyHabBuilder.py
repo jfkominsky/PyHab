@@ -1307,8 +1307,9 @@ class PyHabBuilder:
                     if errDlg.OK:
                         self.settings['condList'] = e[0]
             else:
-                self.settings['condFile'] = '' #Erases one if it existed.
-                self.settings['condList'] = [] #Gets rid of existing condition list to save trouble.
+                self.settings['condFile'] = ''  # Erases one if it existed.
+                self.settings['condList'] = []  # Gets rid of existing condition list to save trouble.
+                self.condDict = {}  # Gets rid of conditions altogether.
 
     def condMaker(self, rep=False): #For dealing with conditions.
         """
