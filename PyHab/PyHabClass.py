@@ -664,7 +664,6 @@ class PyHab:
                     # trialNum is in fact the index after the current trial at this point
                     # so we can just erase everything between that and the first non-hab trial.
                     del self.actualTrialOrder[(trialNum - 1):(tempNum+1)]
-                    print(self.actualTrialOrder)
                     trialType = self.actualTrialOrder[trialNum - 1]
                     if self.stimPres:
                         if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
