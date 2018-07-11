@@ -256,8 +256,8 @@ class PyHabPL(PyHab):
             self.habCount += 1
         self.frameCount = 0 #reset display
         self.pauseCount = 0 #needed for ISI
-        if self.stimPres:
-            disMovie.seek(0)
+        if self.stimPres and disMovie['stimType'] == 'Movie':
+            disMovie['stim'].seek(0)
         startTrial = core.getTime()
         startTrial2=core.getTime()
         onArray = []
@@ -482,8 +482,14 @@ class PyHabPL(PyHab):
                                      'duration':offDur}
                     offArray.append(tempGazeArray)
         if self.stimPres:
-            disMovie.seek(0) #this is the reset, we hope.
-            disMovie.pause()
+            # Reset everything, stop playing sounds and movies.
+            if disMovie['stimType'] == 'Movie':
+                disMovie['stim'].seek(0)  # this is the reset, we hope.
+                disMovie['stim'].pause()
+            elif disMovie['stimType'] == 'Audio':
+                disMovie['stim'].stop()
+            elif disMovie['stimType'] == 'Image with audio':
+                disMovie['stim']['Audio'].stop()
         self.statusSquareA.fillColor='black'
         self.statusSquareB.fillColor='black'
         self.statusTextA.text=""
