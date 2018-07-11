@@ -520,7 +520,7 @@ class PyHabPL(PyHab):
             #self.endExperiment()
             return 2
         else:
-            self.dataRec(onArray, offArray, number, type, onArray2, self.stimName)
+            #Proceed as normal
             return 0
 
     def endExperiment(self):

@@ -18,6 +18,7 @@ class PyHabBuilder:
     with different trial types.
 
     TODO: Add the ability to remove stimuli once added. Nonessential.
+    TODO: Fix colors in study flow when a trial type is deleted.
 
 
     """
