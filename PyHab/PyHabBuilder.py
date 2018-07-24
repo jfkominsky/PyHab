@@ -724,7 +724,7 @@ class PyHabBuilder:
             if dType in self.settings['trialOrder']:
                 while dType in self.settings['trialOrder']:
                     self.settings['trialOrder'].remove(dType)
-                self.studyFlowArray=self.loadFlow()
+            self.studyFlowArray=self.loadFlow() #To update colors if needed.
 
     def moveTrialInFlow(self,flowIndex):
         """
@@ -949,7 +949,7 @@ class PyHabBuilder:
             tempCols = []
             for j in range(1, len(datInfo)):
                 if datInfo[j]:
-                    tempCols.append(self.allDataColumns[j]) 
+                    tempCols.append(tempDataCols[j])
             self.settings['dataColumns'] = tempCols
         
     def stimSettingsDlg(self):
