@@ -21,6 +21,8 @@ class PyHabPL(PyHab):
     def __init__(self, settingsDict):
         PyHab.__init__(self, settingsDict)
         self.secondKey = self.key.M #Variable that determines what the second key is. Overwrites what is set in the default init
+        self.verbDatList = {'verboseOn': [], 'verboseOn2': [], 'verboseOff': []}  # a dict of the verbose data arrays
+        self.verbBadList = {'verboseOn': [], 'verboseOn2': [],  'verboseOff': []}  # Corresponding for bad data
 
     def abortTrial(self, onArray, offArray, trial, ttype, onArray2, stimName=''):
         """
@@ -53,9 +55,9 @@ class PyHabPL(PyHab):
         for j in range(0, len(offArray)):
             sumOff = sumOff + offArray[j]['duration']
         # needs to be .extend or you get weird array-within-array-within-array issues that become problematic later
-        self.badVerboseOn.extend(onArray)
-        self.badVerboseOn2.extend(onArray2)
-        self.badVerboseOff.extend(offArray)
+        self.verbBadList['verboseOn'].extend(onArray)
+        self.verbBadList['verboseOn2'].extend(onArray2)
+        self.verbBadList['verboseOff'].extend(offArray)
         tempData = {'sNum': self.sNum, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex, 'cond': self.cond,
                     'condLabel': self.condLabel,
                     'trial': trial, 'GNG': 1, 'trialType': type, 'stimName': stimName, 'habCrit': self.habCrit,
@@ -93,62 +95,14 @@ class PyHabPL(PyHab):
         for k in range(0,len(onArray2)):
             sumOn2 = sumOn2 + onArray2[k]['duration']
         #add to verbose master gaze array
-        self.verboseOn.extend(onArray)
-        self.verboseOff.extend(offArray)
-        self.verboseOn2.extend(onArray2)
+        self.verbDatList['verboseOn'].extend(onArray)
+        self.verbDatList['verboseOff'].extend(offArray)
+        self.verbDatList['verboseOn2'].extend(onArray2)
         tempData={'sNum':self.sNum, 'months':self.ageMo, 'days':self.ageDay, 'sex':self.sex, 'cond':self.cond,'condLabel':self.condLabel,
                                 'trial':trial, 'GNG':1, 'trialType':type, 'stimName':stimName, 'habCrit':self.habCrit,
                                 'sumOnL':sumOn, 'numOnL':len(onArray),
                                 'sumOnR':sumOn2,'numOnR':len(onArray2),'sumOff':sumOff, 'numOff':len(offArray)}
         self.dataMatrix.append(tempData)
-
-    def redoTrial(self, trialNum):
-        """
-        Allows you to redo a trial after it has ended. Similar to abort trial, but under
-        the assumption that the data has already been recorded and needs to be replaced.
-        Decrementing of trial numbers is handled in doExperiment when the relevant key is
-        pressed.
-
-        :param trialNum: Trial number to redo
-        :type trialNum: int
-        :return:
-        :rtype:
-        """
-
-        newTempData = {}
-        i = 0
-        while i < len(self.dataMatrix):
-            if self.dataMatrix[i]['trial'] == trialNum:
-                trialIndex = i
-                newTempData = self.dataMatrix[i]
-                i += 1
-            else:
-                i += 1
-        # add the new 'bad' trial to badTrials
-        newTempData['GNG'] = 0
-        if newTempData['trialType'] == 'Hab':
-            self.habCount -= 1
-        self.badTrials.append(newTempData)
-        # remove it from dataMatrix
-        self.dataMatrix.remove(self.dataMatrix[trialIndex])
-        # now for the hard part: shifting the verbose data!
-        # basically need to read through the verbose matrices, add everything that references that trial to BadVerboseOn, and mark the relevant lines for later deletion
-        for i in range(0, len(self.verboseOn)):
-            if self.verboseOn[i]['trial'] == trialNum:
-                self.badVerboseOn.append(self.verboseOn[i])
-                self.verboseOn[i]['trial'] = 99
-        for k in range(0, len(self.verboseOn2)):
-            if self.verboseOn2[k]['trial'] == trialNum:
-                self.badVerboseOn2.append(self.verboseOn2[k])
-                self.verboseOn2[k]['trial'] = 99
-        for j in range(0, len(self.verboseOff)):
-            if self.verboseOff[j]['trial'] == trialNum:
-                self.badVerboseOff.append(self.verboseOff[j])
-                self.verboseOff[j]['trial'] = 99
-        # Elegantly removes the flagged lines from verboseOn, verboseOn2, and verboseOff
-        self.verboseOn = [vo for vo in self.verboseOn if vo['trial'] != 99]
-        self.verboseOn2 = [vo2 for vo2 in self.verboseOn2 if vo2['trial'] != 99]
-        self.verboseOff = [vo3 for vo3 in self.verboseOff if vo3['trial'] != 99]
 
     def checkStop(self, trial, numHab):
         """
@@ -548,27 +502,27 @@ class PyHabPL(PyHab):
         #first, verbose data is not as well organized. However, we should be able to alternate back and forth between
         #on and off until we reach the end of a given trial, to reconstruct it.
         #at the start of each line, add information: sNum, ageMo, ageDay, sex, cond, GNG, ON/OFF
-        for n in range(0, len(self.verboseOn)):
-            self.verboseOn[n].update({'snum': self.sNum, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex,
+        for n in range(0, len(self.verbDatList['verboseOn'])):
+            self.verbDatList['verboseOn'][n].update({'snum': self.sNum, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex,
                                       'cond': self.cond, 'GNG': 1, 'gazeOnOff': 1})
-        for m in range(0, len(self.verboseOff)):  # adding the details to the verbose array
-            self.verboseOff[m].update(
+        for m in range(0, len(self.verbDatList['verboseOff'])):  # adding the details to the verbose array
+            self.verbDatList['verboseOff'][m].update(
                 {'snum': self.sNum, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex,
                  'cond': self.cond, 'GNG': 1, 'gazeOnOff': 0})
-        for o in range(0, len(self.verboseOn2)):
-            self.verboseOn2[o].update({'snum': self.sNum, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex,
+        for o in range(0, len(self.verbDatList['verboseOn2'])):
+            self.verbDatList['verboseOn2'][o].update({'snum': self.sNum, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex,
                                       'cond': self.cond, 'GNG': 1, 'gazeOnOff': 2})
         if len(self.badTrials) > 0:
-            for p in range(0, len(self.badVerboseOn)):
-                self.badVerboseOn[p].update(
+            for p in range(0, len(self.verbBadList['verboseOn'])):
+                self.verbBadList['verboseOn'][p].update(
                     {'snum': self.sNum, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex,
                      'cond': self.cond, 'GNG': 0, 'gazeOnOff': 1})
-            for q in range(0, len(self.badVerboseOff)):  # same details for the bad trials
-                self.badVerboseOff[q].update(
+            for q in range(0, len(self.verbBadList['verboseOff'])):  # same details for the bad trials
+                self.verbBadList['verboseOff'][q].update(
                     {'snum': self.sNum, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex,
                      'cond': self.cond, 'GNG': 0, 'gazeOnOff': 0})
-            for r in range(0, len(self.badVerboseOn2)):
-                self.badVerboseOn2[r].update(
+            for r in range(0, len(self.verbBadList['verboseOn2'])):
+                self.verbBadList['verboseOn2'][r].update(
                     {'snum': self.sNum, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex,
                      'cond': self.cond, 'GNG': 0, 'gazeOnOff': 2})
         #read the final data matrix and go trial by trial.
@@ -579,30 +533,30 @@ class PyHabPL(PyHab):
             onIndex2 = -1
             offIndex = -1
             if self.dataMatrix[q]['GNG'] == 1: #separate for good and bad trials
-                for x in range(0, len(self.verboseOn)):
-                    if self.verboseOn[x]['trial'] == tnum and onIndex == -1: #find the right index in the verbose matrices
+                for x in range(0, len(self.verbDatList['verboseOn'])):
+                    if self.verbDatList['verboseOn'][x]['trial'] == tnum and onIndex == -1: #find the right index in the verbose matrices
                         onIndex = x
-                for y in range(0, len(self.verboseOff)):
-                    if self.verboseOff[y]['trial'] == tnum and offIndex == -1:
+                for y in range(0, len(self.verbDatList['verboseOff'])):
+                    if self.verbDatList['verboseOff'][y]['trial'] == tnum and offIndex == -1:
                         offIndex = y
-                for z in range(0, len(self.verboseOn2)):
-                    if self.verboseOn2[z]['trial'] == tnum and onIndex2 == -1: #find the right index in the verbose matrices
+                for z in range(0, len(self.verbDatList['verboseOn2'])):
+                    if self.verbDatList['verboseOn2'][z]['trial'] == tnum and onIndex2 == -1: #find the right index in the verbose matrices
                         onIndex2 = z
                 trialVerbose = []
                 if onIndex >= 0:
-                    while onIndex < len(self.verboseOn):
-                        if self.verboseOn[onIndex]['trial'] == tnum:
-                            trialVerbose.append(self.verboseOn[onIndex])
+                    while onIndex < len(self.verbDatList['verboseOn']):
+                        if self.verbDatList['verboseOn'][onIndex]['trial'] == tnum:
+                            trialVerbose.append(self.verbDatList['verboseOn'][onIndex])
                         onIndex += 1
                 if onIndex2 >= 0:
-                    while onIndex2 < len(self.verboseOn2):
-                        if self.verboseOn2[onIndex2]['trial'] == tnum:
-                            trialVerbose.append(self.verboseOn2[onIndex2])
+                    while onIndex2 < len(self.verbDatList['verboseOn2']):
+                        if self.verbDatList['verboseOn2'][onIndex2]['trial'] == tnum:
+                            trialVerbose.append(self.verbDatList['verboseOn2'][onIndex2])
                         onIndex2 += 1
                 if offIndex >= 0:
-                    while offIndex < len(self.verboseOff):
-                        if self.verboseOff[offIndex]['trial']==tnum:
-                            trialVerbose.append(self.verboseOff[offIndex])
+                    while offIndex < len(self.verbDatList['verboseOff']):
+                        if self.verbDatList['verboseOff'][offIndex]['trial']==tnum:
+                            trialVerbose.append(self.verbDatList['verboseOff'][offIndex])
                         offIndex += 1
                 trialVerbose2 = sorted(trialVerbose, key=lambda trialVerbose:trialVerbose['startTime']) #this is the magic bullet, in theory.
                 verboseMatrix.extend(trialVerbose2)
@@ -611,29 +565,29 @@ class PyHabPL(PyHab):
                     pass #stops it from doubling up. If there is more than one consecutive bad trial, it will get all of them in a row the first time,
                 else:
                     trialVerbose = []
-                    for x in range(0,len(self.badVerboseOn)):
-                        if self.badVerboseOn[x]['trial'] == tnum and onIndex == -1:
+                    for x in range(0,len(self.verbBadList['verboseOn'])):
+                        if self.verbBadList['verboseOn'][x]['trial'] == tnum and onIndex == -1:
                             onIndex = x
-                    for y in range(0, len(self.badVerboseOff)):
-                        if self.badVerboseOff[y]['trial'] == tnum and offIndex == -1:
+                    for y in range(0, len(self.verbBadList['verboseOff'])):
+                        if self.verbBadList['verboseOff'][y]['trial'] == tnum and offIndex == -1:
                             offIndex = y
-                    for z in range(0, len(self.verboseOn2)):
-                        if self.verboseOn2[z]['trial'] == tnum and onIndex2 == -1: #find the right index in the verbose matrices
+                    for z in range(0, len(self.verbDatList['verboseOn2'])):
+                        if self.verbDatList['verboseOn2'][z]['trial'] == tnum and onIndex2 == -1: #find the right index in the verbose matrices
                             onIndex2 = z
                     if onIndex >= 0:
-                        while onIndex < len(self.badVerboseOn):
-                            if self.badVerboseOn[onIndex]['trial'] == tnum:
-                                trialVerbose.append(self.badVerboseOn[onIndex])
+                        while onIndex < len(self.verbBadList['verboseOn']):
+                            if self.verbBadList['verboseOn'][onIndex]['trial'] == tnum:
+                                trialVerbose.append(self.verbBadList['verboseOn'][onIndex])
                             onIndex += 1
                     if onIndex2 >= 0:
-                        while onIndex2 < len(self.badVerboseOn2):
-                            if self.badVerboseOn2[onIndex2]['trial'] == tnum:
-                                trialVerbose.append(self.badVerboseOn2[onIndex2])
+                        while onIndex2 < len(self.verbBadList['verboseOn2']):
+                            if self.verbBadList['verboseOn2'][onIndex2]['trial'] == tnum:
+                                trialVerbose.append(self.verbBadList['verboseOn2'][onIndex2])
                             onIndex2 += 1
                     if offIndex >=0:
-                        while offIndex < len(self.badVerboseOff):
-                            if self.badVerboseOff[offIndex]['trial']==tnum:
-                                trialVerbose.append(self.badVerboseOff[offIndex])
+                        while offIndex < len(self.verbBadList['verboseOff']):
+                            if self.verbBadList['verboseOff'][offIndex]['trial']==tnum:
+                                trialVerbose.append(self.verbBadList['verboseOff'][offIndex])
                             offIndex += 1
                     trialVerbose2 = sorted(trialVerbose, key=lambda trialVerbose:trialVerbose['startTime']) #this is the magic bullet, in theory.
                     verboseMatrix.extend(trialVerbose2)

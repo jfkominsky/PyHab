@@ -783,29 +783,30 @@ class PyHabBuilder:
             if tOrd[i] == 'Hab':
                 numItems += 1 #Double-size for habs
         outputDict = {'lines':[],'shapes':[],'text':[],'labels':[]}  #Labels allows us to index the others while still keeping order.
-        j = 0 #This serves a purpose, trust me.
+        j = 0 # This serves a purpose, trust me. It's for rendering hab blocks.
         for i in range(0, len(tOrd)):
-            #Now, actually build the list of objects to render.
-            c=tTypes.index(tOrd[i])#find the trial type, get color index
-            if tOrd[i] == 'Hab': #The special category
-                if  j == 10:
-                    j += 1 #Just in case we're at the point where it would loop around to the second row. We don't want that.
-                lx1 = self.flowLocs[j][0]
+            if i < 20: # Past 20 we can't render it, but it won't crash. TODO: Make a better 20+ solution.
+                #Now, actually build the list of objects to render.
+                c=tTypes.index(tOrd[i]) # find the trial type, get color index
+                if tOrd[i] == 'Hab': # The special category
+                    if  j == 10:
+                        j += 1 # Just in case we're at the point where it would loop around to the second row. We don't want that.
+                    lx1 = self.flowLocs[j][0]
+                    j += 1
+                    lx2 = self.flowLocs[j][0]
+                    lx = (lx2+lx1)/2 # Ideally putting it square in between the two places.
+                    loc = [lx,self.flowLocs[j][1]]
+                    tempObj = visual.Rect(self.win,width=self.flowWidthObj*2, height=self.flowHeightObj, fillColor=self.colorsArray[c], pos=loc)
+                else:
+                    tempObj = visual.Rect(self.win,width=self.flowWidthObj, height=self.flowHeightObj, fillColor=self.colorsArray[c], pos=self.flowLocs[j])
+                numChar = len(tOrd[i])
+                if numChar <= 3:
+                    numChar = 4 #Maximum height
+                tempTxt = visual.TextStim(self.win, alignHoriz='center', bold=True, alignVert='center',height=self.flowHeightObj/(.42*numChar), text=tOrd[i], pos=tempObj.pos)
                 j += 1
-                lx2 = self.flowLocs[j][0]
-                lx = (lx2+lx1)/2 #Ideally putting it square in between the two places.
-                loc = [lx,self.flowLocs[j][1]]
-                tempObj = visual.Rect(self.win,width=self.flowWidthObj*2, height=self.flowHeightObj, fillColor=self.colorsArray[c], pos=loc)
-            else:
-                tempObj = visual.Rect(self.win,width=self.flowWidthObj, height=self.flowHeightObj, fillColor=self.colorsArray[c], pos=self.flowLocs[j])
-            numChar = len(tOrd[i])
-            if numChar <= 3:
-                numChar = 4 #Maximum height
-            tempTxt = visual.TextStim(self.win, alignHoriz='center', bold=True, alignVert='center',height=self.flowHeightObj/(.42*numChar), text=tOrd[i], pos=tempObj.pos)
-            j += 1
-            outputDict['shapes'].append(tempObj) 
-            outputDict['text'].append(tempTxt)
-            outputDict['labels'].append(tOrd[i])
+                outputDict['shapes'].append(tempObj)
+                outputDict['text'].append(tempTxt)
+                outputDict['labels'].append(tOrd[i])
         if numItems == 0:
             pass #So we do not add a line if there is no line to draw!
         elif numItems < 11:
