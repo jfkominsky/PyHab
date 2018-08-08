@@ -413,8 +413,8 @@ class PyHabPL(PyHab):
                     else:
                         numOff = numOff + 1
                         startOff = core.getTime() - startTrial
-            movieStatus = self.dispTrial(type,disMovie)
-            if type in self.movieEnd and endFlag and movieStatus == 1:
+            movieStatus = self.dispTrial(type, disMovie)
+            if type in self.movieEnd and endFlag and movieStatus >= 1:
                 runTrial = False
                 endTrial = core.getTime() - startTrial
                 if not self.stimPres:

@@ -11,6 +11,7 @@ import wx, random, csv
 from math import *
 from datetime import *
 from dateutil.relativedelta import *
+from copy import deepcopy # needed for exactly one usage in redotrial because it's the only reasonable way.
 
 
 class PyHab:
@@ -267,10 +268,10 @@ class PyHab:
         newTempData = {}
         i = 0
         while i < len(self.dataMatrix):
-            if self.dataMatrix[i]['trial'] == trialNum:
+            if self.dataMatrix[i]['trial'] == trialNum and self.dataMatrix[i]['GNG'] == 1:
                 trialIndex = i
                 newTempData = self.dataMatrix[i]
-                i += 1
+                break
             else:
                 i += 1
         # add the new 'bad' trial to badTrials
@@ -280,16 +281,18 @@ class PyHab:
         self.badTrials.append(newTempData)
         # remove it from dataMatrix
         self.dataMatrix.remove(self.dataMatrix[trialIndex])
-        # now for the hard part: shifting the verbose data!
-        # basically need to read through the verbose matrices, add everything that references that trial to BadVerboseOn, and mark the relevant lines for later deletion
+        # basically need to read through the verbose matrices, add everything that references that trial to the 'bad'
+        # verbose data matrices, and mark the relevant lines for later deletion
         for q,z in self.verbDatList.items():
-            if len(z)>0: # Avoid any blank arrays (e.g. if there is no coder 2)
+            if len(z) > 0: # Avoid any blank arrays (e.g. if there is no coder 2)
                 for i in range(0, len(self.verbDatList[q])):
                     if self.verbDatList[q][i]['trial'] == trialNum:
-                        self.verbBadList[q].append(self.verbDatList[q][i])
+                        # Deepcopy needed to stop it from tying the badlist entries to the regular entries and removing them.
+                        self.verbBadList[q].append(deepcopy(self.verbDatList[q][i]))
                         self.verbDatList[q][i]['trial'] = 99
-                #Elegantly removes all tagged lines of verbose data.
+                # Elegantly removes all tagged lines of verbose data
                 self.verbDatList[q] = [vo for vo in self.verbDatList[q] if vo['trial'] != 99]
+
 
 
     def checkStop(self, trial, numHab):
@@ -628,12 +631,23 @@ class PyHab:
                 if self.keyboard[self.key.Y]:
                     end = True
                 elif self.keyboard[self.key.R] and not didRedo:
-                    if trialNum > 1:
+                    numTrialsRedo = 0
+                    if trialNum > 1: # This stops it from trying to redo a trial before the experiment begins.
                         trialNum -= 1
-                        self.trialText.text = "Trial no. " + str(trialNum)
                         trialType = self.actualTrialOrder[trialNum - 1]
-                        if self.blindPres < 1:
-                            self.rdyTextAppend = " NEXT: " + trialType + " TRIAL"
+                        numTrialsRedo += 1
+                        if self.stimPres:
+                            self.counters[trialType] -= 1
+                            if self.counters[trialType] < 0:
+                                self.counters[trialType] = len(self.stimDict[trialType])-1
+                        while trialType in AA and trialNum > 1: # go find the last non-AA trial and redo from there
+                            trialNum -= 1
+                            trialType = self.actualTrialOrder[trialNum - 1]
+                            numTrialsRedo += 1
+                            if self.stimPres:
+                                self.counters[trialType] -= 1
+                                if self.counters[trialType] < 0: # In theory going to -1 would still work but it might get weird
+                                    self.counters[trialType] = len(self.stimDict[trialType]) - 1
                         if self.stimPres:
                             if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
                                 self.stimName = self.stimNames[trialType][self.counters[trialType] - len(self.stimNames[trialType])]
@@ -645,7 +659,11 @@ class PyHab:
                                 self.counters[trialType] = 0
                         else:
                             disMovie = 0
-                    self.redoTrial(trialNum)
+                        self.trialText.text = "Trial no. " + str(trialNum)
+                        if self.blindPres < 1:
+                            self.rdyTextAppend = " NEXT: " + trialType + " TRIAL"
+                    for i in range(trialNum, trialNum + numTrialsRedo): # Should now rewind all the way to the last non-AA trial.
+                        self.redoTrial(i)
                     didRedo = True
                 elif self.keyboard[self.key.J] and 'Hab' in self.actualTrialOrder[trialNum:]:  # jump to test in a hab design
                     habs = [i for i, x in enumerate(self.actualTrialOrder) if x == 'Hab']
