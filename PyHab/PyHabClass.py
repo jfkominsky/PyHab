@@ -36,7 +36,6 @@ class PyHab:
     Each coder's on and off are recorded in a separate dict with trial, gaze on/off, start, end, and duration.
 
     TODO: Long-term, unit testing
-    TODO: For modularity, replace current verboseOn/Off/2 with a dict that holds all of them.
 
     """
 
