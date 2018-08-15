@@ -1,5 +1,6 @@
 import pytest
-import os, sys, copy, time
+import os, sys, copy, time, mock
+from psychopy import event
 
 #parentdir = os.path.dirname(os.getcwd())
 #sys.path.insert(0,parentdir)
@@ -306,6 +307,8 @@ class TestRunSetup(object):
 
         self.trialInst = PH.PyHab(trial_settings)
 
+
+
     def teardown_class(self):
         del self.trialInst
 
@@ -339,5 +342,28 @@ class TestRunSetup(object):
         assert self.trialInst.ageMo == 24
         assert self.trialInst.ageDay == 30
 
+    def test_condition_files(self):
+        """
+        To test condition files requires a condition file. The demo is handy here.
+        :return:
+        :rtype:
+        """
+        self.trialInst.condFile = 'PyHabDemo/conditions.csv'
+        self.trialInst.stimNames = {'Intro':['Movie1','Movie2','Movie3','Movie4'], 'Fam':['Movie5', 'Movie6', 'Movie7', 'Movie8'],
+                                    'Test':['Movie1','Movie2','Movie3','Movie4']}
+        self.trialInst.trialOrder = ['Intro','Fam','Test']
+        self.trialInst.randPres = True
+        self.trialInst.stimPres = True
 
+        testTwo = [99, 'Test', 'NB', 7, 2, 16, 'A'] # corresponds to {Intro:[1,2], Fam:[1,2], Test:[1,2]}
+        self.trialInst.run(testMode=testTwo)
 
+        #First make sure it won't go without condlist
+        assert self.trialInst.stimNames['Intro'] == ['Movie1', 'Movie2', 'Movie3', 'Movie4']
+        self.trialInst.condList=['A','B','C','D']
+        self.trialInst.run(testMode=testTwo)
+
+        assert self.trialInst.stimNames['Intro'] == ['Movie1','Movie2']
+        assert self.trialInst.stimNames['Fam'] == ['Movie5', 'Movie6']
+        assert self.trialInst.stimNames['Test'] == ['Movie1','Movie2']
+        

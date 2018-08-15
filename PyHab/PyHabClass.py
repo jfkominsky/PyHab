@@ -1516,31 +1516,23 @@ class PyHab:
                 else:
                     self.actualTrialOrder.append(self.trialOrder[i])
             # build trial order
-            if self.randPres and len(self.condList) > 0:  # Extra check added.
+            if self.randPres and len(self.condList) > 0:  # Extra check: We WANT conditions and we HAVE them too.
                 self.condLabel = thisInfo[6]
                 testReader = csv.reader(open(self.condPath + self.condFile, 'rU'))
                 testStuff = []
                 for row in testReader:
                     testStuff.append(row)
                 testDict = dict(testStuff)
-                self.cond = testDict[
-                    self.condLabel]  # this will read as order of indeces in N groups, in a 2-dimensional array
+                self.cond = testDict[self.condLabel]  # this will read as order of indeces in N groups, in a 2-dimensional array
                 # type conversion required. Eval will read the string into a dictionary (now).
                 self.cond = eval(self.cond)
                 # now to rearrange the lists of each trial type.
                 finalDict = []
-                if sys.version_info[0] < 3:
-                    for i, j in self.cond.items():
-                        newTempTrials = []
-                        for q in range(0, len(j)):
-                            newTempTrials.append(self.stimNames[i][j[q] - 1])
-                        finalDict.append((i, newTempTrials))
-                else:
-                    for i, j in self.cond.items():
-                        newTempTrials = []
-                        for q in range(0, len(j)):
-                            newTempTrials.append(self.stimNames[i][j[q] - 1])
-                        finalDict.append((i, newTempTrials))
+                for i, j in self.cond.items():
+                    newTempTrials = []
+                    for q in range(0, len(j)):
+                        newTempTrials.append(self.stimNames[i][j[q] - 1])
+                    finalDict.append((i, newTempTrials))
                 self.stimNames = dict(finalDict)
             else:
                 self.cond = thisInfo[6]
