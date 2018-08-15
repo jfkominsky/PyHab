@@ -1,5 +1,5 @@
 
-# PyHab[![Build Status](https://travis-ci.org/jfkominsky/PyHab.svg?branch=master)](https://travis-ci.org/jfkominsky/PyHab)
+# PyHab
 <a href='https://pyhab.readthedocs.io/en/latest/?badge=latest'>
     <img src='https://readthedocs.org/projects/pyhab/badge/?version=latest' alt='Documentation Status' />
 </a>
