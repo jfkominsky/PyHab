@@ -1,8 +1,9 @@
 import pytest
 import os, sys, copy
 
-parentdir = os.path.dirname(os.getcwd())
-sys.path.insert(0,parentdir)
+#parentdir = os.path.dirname(os.getcwd())
+#sys.path.insert(0,parentdir)
+sys.path.insert(0,os.getcwd())
 
 from PyHab import PyHabClass as PH
 
