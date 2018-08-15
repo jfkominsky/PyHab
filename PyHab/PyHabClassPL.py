@@ -104,19 +104,17 @@ class PyHabPL(PyHab):
                                 'sumOnR':sumOn2,'numOnR':len(onArray2),'sumOff':sumOff, 'numOff':len(offArray)}
         self.dataMatrix.append(tempData)
 
-    def checkStop(self, trial, numHab):
+    def checkStop(self):
         """
         After a hab trial, checks the habitution criteria and returns 'true' if any of them are met.
         Needs its own version because it has to get both timeOnL and timeOnR
 
         :param trial: Trial number
         :type trial: int
-        :param numHab: The number of hab trials that have been presented
-        :type numHab: int
         :return: True if hab criteria have been met, False otherwise
         :rtype:
         """
-        if numHab == self.setCritWindow:  # time to set the hab criterion.
+        if self.habCount == self.setCritWindow:  # time to set the hab criterion.
             sumOnTimes = 0
             # find first hab trial
             x = 0
@@ -132,14 +130,14 @@ class PyHabPL(PyHab):
             sumOnTimes = 0
             habs = [i for i, x in enumerate(self.actualTrialOrder) if x == 'Hab']  # list of all habs
             habs.sort()
-            index = habs[numHab - self.setCritWindow] #How far back should we look?
+            index = habs[self.habCount - self.setCritWindow] #How far back should we look?
             for n in range(index, len(self.dataMatrix)):  # now, starting with that trial, go through and add up the good trial looking times
                 if self.dataMatrix[n]['GNG'] == 1 and self.dataMatrix[n]['trialType'] == 'Hab':  # only good trials!
                     sumOnTimes = sumOnTimes + self.dataMatrix[n]['sumOnL'] + self.dataMatrix[n]['sumOnR']  # add up total looking time
             sumOnTimes = sumOnTimes / self.setCritDivisor
             if sumOnTimes > self.habCrit:
                 self.habCrit = sumOnTimes
-        elif self.setCritType == 'Max' and numHab > self.setCritWindow:  # Absolute max looking time among hab trials, regardless of order.
+        elif self.setCritType == 'Max' and self.habCount > self.setCritWindow:  # Absolute max looking time among hab trials, regardless of order.
             habOns = []
             for n in range(0, len(self.dataMatrix)):
                 if self.dataMatrix[n]['GNG'] == 1 and self.dataMatrix[n]['trialType'] == 'Hab':
@@ -154,12 +152,12 @@ class PyHabPL(PyHab):
         if self.habCount == self.maxHabTrials:
             # end habituation and goto test
             return True
-        elif numHab >= self.setCritWindow + self.metCritWindow:  # if we're far enough in that we can plausibly meet the hab criterion
+        elif self.habCount >= self.setCritWindow + self.metCritWindow:  # if we're far enough in that we can plausibly meet the hab criterion
             sumOnTimes = 0
             habs = [i for i, x in enumerate(self.actualTrialOrder) if x == 'Hab']  # list of all habs
             habs.sort()
-            index = habs[numHab - self.metCritWindow]
-            if (self.metCritStatic == 'Moving') or (numHab-self.setCritWindow) % self.metCritWindow == 0:
+            index = habs[self.habCount - self.metCritWindow]
+            if (self.metCritStatic == 'Moving') or (self.habCount-self.setCritWindow) % self.metCritWindow == 0:
                 for n in range(index, len(self.dataMatrix)):  # now, starting with that trial, go through and add up the good trial looking times
                     if self.dataMatrix[n]['GNG'] == 1 and self.dataMatrix[n]['trialType'] == 'Hab':  # only good trials!
                         sumOnTimes = sumOnTimes + self.dataMatrix[n]['sumOnL'] + self.dataMatrix[n]['sumOnR'] # add up total looking time
@@ -171,6 +169,8 @@ class PyHabPL(PyHab):
                             core.wait(.25)  # an inadvertent side effect of playing the sound is a short pause before the test trial can begin
                             self.endHabSound.play()
                     return True
+                else:
+                    return False
             else:
                 return False
         else:
@@ -466,7 +466,7 @@ class PyHabPL(PyHab):
 
         if type == 'Hab': #if still during habituation
             #need to check based on number of HAB trial specifically
-            if self.checkStop(number, self.habCount):
+            if self.checkStop():
                 return 1
             else:
                 return 0

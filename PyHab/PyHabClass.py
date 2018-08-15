@@ -1,5 +1,5 @@
 import os, sys
-from psychopy import visual, event, core, data, gui, monitors, tools, prefs, logging
+from psychopy import gui, visual, event, core, data, monitors, tools, prefs, logging
 from psychopy.constants import (STARTED, PLAYING)  # Added for new stimulus types
 if os.name is 'posix':
     prefs.general['audioLib'] = ['pyo']
@@ -35,7 +35,7 @@ class PyHab:
     On2 and Off2 (for the optional secondary coder)
     Each coder's on and off are recorded in a separate dict with trial, gaze on/off, start, end, and duration.
 
-    TODO: Long-term, unit testing
+    TODO: Long-term, unit testing. that may require fake windows and an extra thing for dealing with that...
 
     """
 
@@ -294,19 +294,15 @@ class PyHab:
 
 
 
-    def checkStop(self, trial, numHab):
+    def checkStop(self):
         """
         After a hab trial, checks the habitution criteria and returns 'true' if any of them are met.
 
-        :param trial: Trial number
-        :type trial: int
-        :param numHab: The number of hab trials that have been presented
-        :type numHab: int
         :return: True if hab criteria have been met, False otherwise
         :rtype:
         """
 
-        if numHab == self.setCritWindow:  # time to set the hab criterion. This will be true for both dynamic and first
+        if self.habCount == self.setCritWindow:  # time to set the hab criterion. This will be true for both dynamic and first
             sumOnTimes = 0
             # find first hab trial
             x = 0
@@ -324,14 +320,14 @@ class PyHab:
             sumOnTimes = 0
             habs = [i for i, x in enumerate(self.actualTrialOrder) if x == 'Hab']  # list of all habs
             habs.sort()
-            index = habs[numHab - self.setCritWindow] #How far back should we look?
+            index = habs[self.habCount - self.setCritWindow] #How far back should we look?
             for n in range(index, len(self.dataMatrix)):  # now, starting with that trial, go through and add up the good trial looking times
                 if self.dataMatrix[n]['GNG'] == 1 and self.dataMatrix[n]['trialType'] == 'Hab':  # only good trials!
                     sumOnTimes = sumOnTimes + self.dataMatrix[n]['sumOnA']  # add up total looking time
             sumOnTimes = sumOnTimes / self.setCritDivisor
             if sumOnTimes > self.habCrit:
                 self.habCrit = sumOnTimes
-        elif self.setCritType == 'Max' and numHab > self.setCritWindow:  # Absolute max looking time among hab trials, regardless of order.
+        elif self.setCritType == 'Max' and self.habCount > self.setCritWindow:  # Absolute max looking time among hab trials, regardless of order.
             habOns = []
             for n in range(0, len(self.dataMatrix)):
                 if self.dataMatrix[n]['GNG'] == 1 and self.dataMatrix[n]['trialType'] == 'Hab':
@@ -345,13 +341,17 @@ class PyHab:
         # Now we separate out the set and met business.
         if self.habCount == self.maxHabTrials:
             # end habituation and goto test
+            if not self.stimPres:
+                for i in [0, 1, 2]:
+                    core.wait(.25)  # an inadvertent side effect of playing the sound is a short pause before the test trial can begin
+                    self.endHabSound.play()
             return True
-        elif numHab >= self.setCritWindow + self.metCritWindow:  # if we're far enough in that we can plausibly meet the hab criterion
+        elif self.habCount >= self.setCritWindow + self.metCritWindow:  # if we're far enough in that we can plausibly meet the hab criterion
             sumOnTimes = 0
             habs = [i for i, x in enumerate(self.actualTrialOrder) if x == 'Hab']  # list of all habs
             habs.sort()
-            index = habs[numHab - self.metCritWindow]
-            if (self.metCritStatic == 'Moving') or (numHab-self.setCritWindow) % self.metCritWindow == 0:
+            index = habs[self.habCount - self.metCritWindow]
+            if (self.metCritStatic == 'Moving') or (self.habCount-self.setCritWindow) % self.metCritWindow == 0:
                 for n in range(index, len(self.dataMatrix)):  # now, starting with that trial, go through and add up the good trial looking times
                     if self.dataMatrix[n]['GNG'] == 1 and self.dataMatrix[n]['trialType'] == 'Hab':  # only good trials!
                         sumOnTimes = sumOnTimes + self.dataMatrix[n]['sumOnA']  # add up total looking time
@@ -363,6 +363,8 @@ class PyHab:
                             core.wait(.25)  # an inadvertent side effect of playing the sound is a short pause before the test trial can begin
                             self.endHabSound.play()
                     return True
+                else:
+                    return False
             else:
                 return False
         else:
@@ -1082,7 +1084,7 @@ class PyHab:
 
         if type == 'Hab':  # if still during habituation
             # Check if criteria need to be set or have been met
-            if self.checkStop(number, self.habCount): # If criteria met
+            if self.checkStop(): # If criteria met
                 return 1
             else:
                 return 0
