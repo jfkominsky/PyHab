@@ -1453,38 +1453,42 @@ class PyHab:
         except ValueError:
             return False
 
-    def run(self):
+    def run(self, testMode = []):
         """
-        Startup function. Presents subject information to researcher, creates relevant windows,
-        reads and follows settings and condition files and loads stimuli (if applicable), and then
-        calls doExperiment.
+        Startup function. Presents subject information dialog to researcher, reads and follows settings and condition
+        files. Now with a testing mode to allow us to skip the dialog and ensure the actualTrialOrder structure is being
+        put together properly in unit testing.
 
+        :param testMode: Optional and primarily only used for unit testing. Will not launch the window and start the
+        experiment. Contains all the info that would appear in the subject info dialog.
+        :type testMode: list
         :return:
         :rtype:
         """
-        startDlg = gui.Dlg(title=self.prefix + ' Experiment')
-        startDlg.addText('Subject info')
-        startDlg.addField('Subject Number: ')
-        startDlg.addField('Subject ID: ')
-        startDlg.addField('sex: ')
-        startDlg.addField('DOB(month): ')
-        startDlg.addField('DOB(day): ')
-        startDlg.addField('DOB(year): ')
-        if self.randPres and len(self.condList) > 0:
-            startDlg.addField('Cond: ', choices=self.condList)
+        if len(testMode) > 0: # This is for testing purposes, to make sure we can automatically test most of the features of PyHab
+            import mock
+            startDlg = mock.MagicMock()
+            startDlg.data = testMode
+            startDlg.OK = True
         else:
-            startDlg.addField('Cond: ')
-        if not self.stimPres:
-            startDlg.addField('DOT(month): ')
-            startDlg.addField('DOT(day): ')
-            startDlg.addField('DOT(year): ')
-        startDlg.show()
+            startDlg = gui.Dlg(title=self.prefix + ' Experiment')
+            startDlg.addText('Subject info')
+            startDlg.addField('Subject Number: ')
+            startDlg.addField('Subject ID: ')
+            startDlg.addField('sex: ')
+            startDlg.addField('DOB(month): ')
+            startDlg.addField('DOB(day): ')
+            startDlg.addField('DOB(year): ')
+            if self.randPres and len(self.condList) > 0:
+                startDlg.addField('Cond: ', choices=self.condList)
+            else:
+                startDlg.addField('Cond: ')
+            if not self.stimPres:
+                startDlg.addField('DOT(month): ')
+                startDlg.addField('DOT(day): ')
+                startDlg.addField('DOT(year): ')
+            startDlg.show()
         if startDlg.OK:
-            if self.stimPres:
-                # Stimulus presentation window
-                self.win = visual.Window((self.screenWidth, self.screenHeight), fullscr=False, screen=1, allowGUI=False, units='pix', color=self.screenColor)
-            # Coder window
-            self.win2 = visual.Window((400, 400), fullscr=False, screen=0, allowGUI=True, units='pix', waitBlanking=False, rgb=[-1, -1, -1])
             thisInfo = startDlg.data
             self.sNum = thisInfo[0]
             self.sID = thisInfo[1]
@@ -1541,79 +1545,98 @@ class PyHab:
             else:
                 self.cond = thisInfo[6]
                 self.condLabel = self.cond
-            if self.stimPres:
-                tempText = visual.TextStim(self.win2, text="Loading Stimuli", pos=[0, 0], color='white', bold=True, height=40)
-                tempText.draw()
-                self.win2.flip()
-                self.stimDict = {x: [] for x in self.stimNames.keys()}  # This holds all the loaded movies.
-                self.counters = {x: 0 for x in self.stimNames.keys()}  # list of counters, one per index of the dict, so it knows which movie to play
-                tempCtr = {x: 0 for x in self.stimNames.keys()}
-                for i in self.actualTrialOrder:
-                    if not i == 'Hab':
-                        x = tempCtr[i]
+            if len(testMode) == 0: # If we're in test mode, skip setting up the window and launching the experiment.
+                self.SetupWindow()
+
+    def SetupWindow(self):
+        """
+        Sets up the stimulus presentation and coder windows, loads all the stimuli, then starts the experiment
+        with doExperiment()
+
+        :return:
+        :rtype:
+        """
+        # Important to do this first because it gets the windows in the correct order for focus etc.
+        if self.stimPres:
+            # Stimulus presentation window
+            self.win = visual.Window((self.screenWidth, self.screenHeight), fullscr=False, screen=1, allowGUI=False,
+                                     units='pix', color=self.screenColor)
+        # Coder window
+        self.win2 = visual.Window((400, 400), fullscr=False, screen=0, allowGUI=True, units='pix', waitBlanking=False,
+                                  rgb=[-1, -1, -1])
+        if self.stimPres:
+            tempText = visual.TextStim(self.win2, text="Loading Stimuli", pos=[0, 0], color='white', bold=True, height=40)
+            tempText.draw()
+            self.win2.flip()
+            self.stimDict = {x: [] for x in self.stimNames.keys()}  # This holds all the loaded movies.
+            self.counters = {x: 0 for x in self.stimNames.keys()}  # list of counters, one per index of the dict, so it knows which movie to play
+            tempCtr = {x: 0 for x in self.stimNames.keys()}
+            for i in self.actualTrialOrder:
+                if not i == 'Hab':
+                    x = tempCtr[i]
+                else:
+                    x = 0  # For hab trials, only load the first thing. After randomization, so between-subjects works.
+                tempStim = self.stimList[self.stimNames[i][x]]
+                if tempStim['stimType'] == 'Movie':
+                    tempStimObj = visual.MovieStim3(self.win, tempStim['stimLoc'],
+                                                  size=[self.movieWidth, self.movieHeight], flipHoriz=False,
+                                                  flipVert=False, loop=False)
+                elif tempStim['stimType'] == 'Image':
+                    tempStimObj = visual.ImageStim(self.win, tempStim['stimLoc'],
+                                                   size=[self.movieWidth, self.movieHeight])
+                elif tempStim['stimType'] == 'Audio':
+                    tempStimObj = sound.Sound(tempStim['stimLoc'])
+                else: # The eternal problem of audio/image pair. Just creates an object that's a dict of audio and image.
+                    audioObj = sound.Sound(tempStim['audioLoc'])
+                    imageObj = visual.ImageStim(self.win, tempStim['imageLoc'],
+                                                   size=[self.movieWidth, self.movieHeight])
+                    tempStimObj = {'Audio': audioObj, 'Image': imageObj}
+                tempAdd = {'stimType':tempStim['stimType'], 'stim':tempStimObj}
+                self.stimDict[i].append(tempAdd)
+                if not i == 'Hab':
+                    tempCtr[i] += 1
+                    if tempCtr[i] >= len(self.stimNames[i]):
+                        tempCtr[i] = 0
+
+            if len(list(self.playAttnGetter.keys())) > 0:
+                for i in list(self.attnGetterList.keys()):
+                    if self.attnGetterList[i]['stimType'] == 'Audio':
+                        self.attnGetterList[i]['file'] = sound.Sound(self.attnGetterList[i]['stimLoc'])
                     else:
-                        x = 0  # For hab trials, only load the first thing. After randomization, so between-subjects works.
-                    tempStim = self.stimList[self.stimNames[i][x]]
-                    if tempStim['stimType'] == 'Movie':
-                        tempStimObj = visual.MovieStim3(self.win, tempStim['stimLoc'],
-                                                      size=[self.movieWidth, self.movieHeight], flipHoriz=False,
-                                                      flipVert=False, loop=False)
-                    elif tempStim['stimType'] == 'Image':
-                        tempStimObj = visual.ImageStim(self.win, tempStim['stimLoc'],
-                                                       size=[self.movieWidth, self.movieHeight])
-                    elif tempStim['stimType'] == 'Audio':
-                        tempStimObj = sound.Sound(tempStim['stimLoc'])
-                    else: # The eternal problem of audio/image pair. Just creates an object that's a dict of audio and image.
-                        audioObj = sound.Sound(tempStim['audioLoc'])
-                        imageObj = visual.ImageStim(self.win, tempStim['imageLoc'],
-                                                       size=[self.movieWidth, self.movieHeight])
-                        tempStimObj = {'Audio': audioObj, 'Image': imageObj}
-                    tempAdd = {'stimType':tempStim['stimType'], 'stim':tempStimObj}
-                    self.stimDict[i].append(tempAdd)
-                    if not i == 'Hab':
-                        tempCtr[i] += 1
-                        if tempCtr[i] >= len(self.stimNames[i]):
-                            tempCtr[i] = 0
+                        self.attnGetterList[i]['file'] = visual.MovieStim3(self.win, self.attnGetterList[i]['stimLoc'],
+                                                                           size=[self.movieWidth, self.movieHeight],
+                                                                           flipHoriz=False, flipVert=False, loop=False)
 
-                if len(list(self.playAttnGetter.keys())) > 0:
-                    for i in list(self.attnGetterList.keys()):
-                        if self.attnGetterList[i]['stimType'] == 'Audio':
-                            self.attnGetterList[i]['file'] = sound.Sound(self.attnGetterList[i]['stimLoc'])
-                        else:
-                            self.attnGetterList[i]['file'] = visual.MovieStim3(self.win, self.attnGetterList[i]['stimLoc'],
-                                                                               size=[self.movieWidth, self.movieHeight],
-                                                                               flipHoriz=False, flipVert=False, loop=False)
+        self.keyboard = self.key.KeyStateHandler()
+        self.win2.winHandle.push_handlers(self.keyboard)
+        if self.stimPres:
+            self.win.winHandle.push_handlers(self.keyboard)
+            self.baseSize = 40 # Base size of all attention-getters, in pixels
+            self.attnGetterSquare = visual.Rect(self.win, height=self.baseSize, width=self.baseSize, pos=[self.testOffset + 0, 0], fillColor='black')
+            self.attnGetterCross = visual.ShapeStim(self.win, vertices='cross', size=self.baseSize, pos=[self.testOffset + 0, 0], fillColor='black')
 
-            self.keyboard = self.key.KeyStateHandler()
-            self.win2.winHandle.push_handlers(self.keyboard)
-            if self.stimPres:
-                self.win.winHandle.push_handlers(self.keyboard)
-                self.baseSize = 40 # Base size of all attention-getters, in pixels
-                self.attnGetterSquare = visual.Rect(self.win, height=self.baseSize, width=self.baseSize, pos=[self.testOffset + 0, 0], fillColor='black')
-                self.attnGetterCross = visual.ShapeStim(self.win, vertices='cross', size=self.baseSize, pos=[self.testOffset + 0, 0], fillColor='black')
+            numVertices = 10
+            starRad = self.baseSize #This creates a large but static rotating star. It does not loom.
+            starVerts = []
+            for x in range(0,numVertices):
+                if x % 2 == 1:
+                    tempRad = starRad*.55  # How much to draw in between the "points"
+                else:
+                    tempRad = starRad
+                tempVert = [tempRad*sin((2*pi)/numVertices * x), tempRad*cos((2*pi)/numVertices * x)]
+                starVerts.append(tempVert)
 
-                numVertices = 10
-                starRad = self.baseSize #This creates a large but static rotating star. It does not loom.
-                starVerts = []
-                for x in range(0,numVertices):
-                    if x % 2 == 1:
-                        tempRad = starRad*.55  # How much to draw in between the "points"
-                    else:
-                        tempRad = starRad
-                    tempVert = [tempRad*sin((2*pi)/numVertices * x), tempRad*cos((2*pi)/numVertices * x)]
-                    starVerts.append(tempVert)
+            self.attnGetterStar = visual.ShapeStim(self.win, vertices=starVerts, pos=[self.testOffset + 0, 0], fillColor='black')
 
-                self.attnGetterStar = visual.ShapeStim(self.win, vertices=starVerts, pos=[self.testOffset + 0, 0], fillColor='black')
-
-            self.statusSquareA = visual.Rect(self.win2, height=80, width=80,
-                                             pos=[self.statusOffset - 60, self.statusOffsetY + 0],
-                                             fillColor='black')  # These two appear on the status screen window.
-            self.statusSquareB = visual.Rect(self.win2, height=80, width=80,
-                                             pos=[self.statusOffset + 60, self.statusOffsetY + 0], fillColor='black')
-            self.statusTextA = visual.TextStim(self.win2, text="", pos=[self.statusOffset - 60, self.statusOffsetY + 0],
-                                               color='white', bold=True, height=30)
-            self.statusTextB = visual.TextStim(self.win2, text="", pos=[self.statusOffset + 60, self.statusOffsetY + 0],
-                                               color='white', bold=True, height=30)
-            self.trialText = visual.TextStim(self.win2, text="Trial no: ", pos=[-150, 150], color='white')
-            self.readyText = visual.TextStim(self.win2, text="Trial not active", pos=[-25, 100], color='white')
-            self.doExperiment()  # Get this show on the road!
+        self.statusSquareA = visual.Rect(self.win2, height=80, width=80,
+                                         pos=[self.statusOffset - 60, self.statusOffsetY + 0],
+                                         fillColor='black')  # These two appear on the status screen window.
+        self.statusSquareB = visual.Rect(self.win2, height=80, width=80,
+                                         pos=[self.statusOffset + 60, self.statusOffsetY + 0], fillColor='black')
+        self.statusTextA = visual.TextStim(self.win2, text="", pos=[self.statusOffset - 60, self.statusOffsetY + 0],
+                                           color='white', bold=True, height=30)
+        self.statusTextB = visual.TextStim(self.win2, text="", pos=[self.statusOffset + 60, self.statusOffsetY + 0],
+                                           color='white', bold=True, height=30)
+        self.trialText = visual.TextStim(self.win2, text="Trial no: ", pos=[-150, 150], color='white')
+        self.readyText = visual.TextStim(self.win2, text="Trial not active", pos=[-25, 100], color='white')
+        self.doExperiment()  # Get this show on the road!

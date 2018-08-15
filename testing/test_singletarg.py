@@ -1,5 +1,5 @@
-import pytest
-import os, sys, copy
+import pytest, pyautogui
+import os, sys, copy, time
 
 #parentdir = os.path.dirname(os.getcwd())
 #sys.path.insert(0,parentdir)
@@ -295,6 +295,49 @@ class TestDataFunc(object):
         assert self.dataInst.checkStop() == True
         assert self.dataInst.habCrit == 55.0  # should not have changed.
 
+
+class TestRunSetup(object):
+    """
+    Tests initialization functions that build the trial order and read participant info, calculate age, etc.
+    """
+    def setup_class(self):
+        trial_settings = copy.deepcopy(base_settings)
+        trial_settings['trialOrder'] = "['A','A','B','B','C','C','D']"
+
+        self.trialInst = PH.PyHab(trial_settings)
+
+    def teardown_class(self):
+        del self.trialInst
+
+    def test_setup(self):
+        testOne = [99, 'Test', 'NB', 7, 2, 18, 'testcond', 8, 2, 18]
+
+        self.trialInst.run(testMode=testOne)
+
+        assert self.trialInst.actualTrialOrder == ['A','A','B','B','C','C','D']
+        assert self.trialInst.ageMo == 1
+        assert self.trialInst.ageDay == 0
+
+
+    def test_hab_expansion(self):
+        testOne = [99, 'Test', 'NB', 7, 2, 18, 'testcond', 8, 2, 18]
+        self.trialInst.trialOrder = ['A','A','B','B','Hab','D']
+        self.trialInst.run(testMode=testOne)
+        assert len(self.trialInst.actualTrialOrder) == 19
+        assert len([x for x in self.trialInst.actualTrialOrder if x == 'Hab']) == 14
+
+    def test_multiyear_age(self):
+        testOne = [99, 'Test', 'NB', 7, 2, 16, 'testcond', 8, 2, 18]
+        self.trialInst.run(testMode=testOne)
+
+        assert self.trialInst.ageMo == 25
+        assert self.trialInst.ageDay == 0
+
+        testTwo = [99, 'Test', 'NB', 7, 2, 16, 'testcond', 8, 1, 18]
+        self.trialInst.run(testMode=testTwo)
+
+        assert self.trialInst.ageMo == 24
+        assert self.trialInst.ageDay == 30
 
 
 

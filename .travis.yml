@@ -55,54 +55,13 @@ before_install:
   - sudo modprobe snd-dummy
   - sudo lsmod
 
-  # upgrade pip to 9.0.x because 10.0.x says cannot uninstall distutils so --upgrade fails
-#  - if [ -z $ANACONDA ]; then travis_retry sudo pip install --upgrade -qq pip==9.0.3; fi
-#  - if [ -z $ANACONDA ]; then
-#      echo "Installing PsychoPy dependencies via apt...";
-#      travis_retry sudo apt-get install -qq python-xlib python-pygame python-opengl;
-#      travis_retry sudo apt-get install -qq python-numpy python-scipy python-matplotlib python-pandas;
-#      travis_retry sudo apt-get install -qq python-yaml python-lxml python-configobj;
-#      travis_retry sudo apt-get install -qq python-imaging python-mock;
-#      travis_retry sudo apt-get install -qq python-qt4 python-wxgtk3.0;
-#      travis_retry sudo apt-get install -qq python-pyo python-opencv;
-#      travis_retry sudo apt-get install -qq python-mock;
-#      echo "Installing PsychoPy dependencies via pip...";
-#      sudo pip install requests[security];
-#
-#      travis_retry sudo pip install --upgrade -qq -r requirements_travis.txt;
-#    fi
-#  - if [ -n "$ANACONDA" ]; then
-#      echo "Installing Miniconda environment...";
-#      wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-#      bash miniconda.sh -b -p $HOME/miniconda;
-#      export PATH="$HOME/miniconda/bin:$PATH";
-#      hash -r;
-#      conda config --set always_yes yes --set changeps1 no;
-#    fi
-#
-#  - if [ -n "$ANACONDA" ]; then conda update -q conda; fi
-#  - if [ -n "$ANACONDA" ]; then conda info -a; fi
-#  - if [ -n "$ANACONDA" ]; then ls -la ./conda/environment-$TRAVIS_PYTHON_VERSION.yml; fi
-#  - if [ -n "$ANACONDA" ]; then conda env create -n psychopy-conda -f ./conda/environment-$TRAVIS_PYTHON_VERSION.yml; fi
-#  - if [ -n "$ANACONDA" ]; then conda env list; fi
-#  - if [ -n "$ANACONDA" ]; then source activate psychopy-conda; fi
-#  - if [ -n "$ANACONDA" ]; then if [ -n "$WXPYTHON" ]; then conda install wxpython=$WXPYTHON; fi; fi
-#  - if [ -n "$ANACONDA" ]; then if [ -n "$OPENPYXL" ]; then conda install openpyxl=$OPENPYXL; fi; fi
-#
-#  - echo $PATH
-#  - which python
-#  - python --version
-#  - python -c 'import pyglet; print(pyglet.version)'
-#  - python -c 'import matplotlib; print(matplotlib.__version__)'
-#  - python -c 'import PIL; print(PIL.__version__)'
-#  - python -c 'import wx; print(wx.__version__)'
-#  - python -c 'import openpyxl; print(openpyxl.__version__)'
-#  - python -c 'import tables; print(tables.__version__)'
 
 install:
+  - pip install pyautogui
   - pip install -U -f https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-14.04 wxPython
   - pip install -r requirements.txt
 
+# Creates a fake monitor
 before_script:
   - if [ "${TRAVIS_OS_NAME}" == "linux" ]; then
        /sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_99.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :99 -screen 0 1024x768x24 -ac +extension GLX +extension RANDR +render -noreset;
