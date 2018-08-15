@@ -57,7 +57,6 @@ before_install:
 
 
 install:
-  - pip install pyautogui
   - pip install -U -f https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-14.04 wxPython
   - pip install -r requirements.txt
 

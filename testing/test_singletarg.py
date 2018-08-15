@@ -1,4 +1,4 @@
-import pytest, pyautogui
+import pytest
 import os, sys, copy, time
 
 #parentdir = os.path.dirname(os.getcwd())

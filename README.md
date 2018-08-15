@@ -1,7 +1,10 @@
 
-# PyHab
+# PyHab[![Build Status](https://travis-ci.org/jfkominsky/PyHab.svg?branch=master)](https://travis-ci.org/jfkominsky/PyHab)
 <a href='https://pyhab.readthedocs.io/en/latest/?badge=latest'>
     <img src='https://readthedocs.org/projects/pyhab/badge/?version=latest' alt='Documentation Status' />
+</a>
+<a href='https://travis-ci.org/jfkominsky/PyHab'>
+    <img src='https://travis-ci.org/jfkominsky/PyHab.svg?branch=master'>
 </a><br />
 Looking time and stimulus presentation system for PsychoPy.
 <h2>What is PyHab?</h2>
