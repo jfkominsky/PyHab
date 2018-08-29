@@ -1564,10 +1564,7 @@ class PyHab:
             self.counters = {x: 0 for x in self.stimNames.keys()}  # list of counters, one per index of the dict, so it knows which movie to play
             tempCtr = {x: 0 for x in self.stimNames.keys()}
             for i in self.actualTrialOrder:
-                if not i == 'Hab':
-                    x = tempCtr[i]
-                else:
-                    x = 0  # For hab trials, only load the first thing. After randomization, so between-subjects works.
+                x = tempCtr[i] # Changed so hab trials get the same treatment as everything else.
                 tempStim = self.stimList[self.stimNames[i][x]]
                 if tempStim['stimType'] == 'Movie':
                     tempStimObj = visual.MovieStim3(self.win, tempStim['stimLoc'],
@@ -1585,10 +1582,9 @@ class PyHab:
                     tempStimObj = {'Audio': audioObj, 'Image': imageObj}
                 tempAdd = {'stimType':tempStim['stimType'], 'stim':tempStimObj}
                 self.stimDict[i].append(tempAdd)
-                if not i == 'Hab':
-                    tempCtr[i] += 1
-                    if tempCtr[i] >= len(self.stimNames[i]):
-                        tempCtr[i] = 0
+                tempCtr[i] += 1
+                if tempCtr[i] >= len(self.stimNames[i]):
+                    tempCtr[i] = 0
 
             if len(list(self.playAttnGetter.keys())) > 0:
                 for i in list(self.attnGetterList.keys()):

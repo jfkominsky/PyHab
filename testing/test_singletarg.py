@@ -2,11 +2,14 @@ import pytest
 import os, sys, copy, time, mock
 from psychopy import event
 
-#parentdir = os.path.dirname(os.getcwd())
-#sys.path.insert(0,parentdir)
 sys.path.insert(0,os.getcwd())
 
 from PyHab import PyHabClass as PH
+"""
+TODO: FIGURE OUT HOW TO TEST SCREEN AND STUDY FLOW ISSUES. Loops that wait for input may be unstoppable.
+That may entail rewriting certain things so that they are modularized functions tripped by key-presses rather than
+the big honkers that make up doExperiment and doTrial right now.
+"""
 
 base_settings = {'dataColumns': "['sNum', 'months', 'days', 'sex', 'cond','condLabel', 'trial','GNG','trialType','stimName','habCrit','sumOnA','numOnA','sumOffA','numOffA','sumOnB','numOnB','sumOffB','numOffB']",
                                                         'prefix': 'PyHabExperiment',
@@ -51,7 +54,8 @@ base_settings = {'dataColumns': "['sNum', 'months', 'days', 'sex', 'cond','condL
 
 def test_init():
     """
-    Tests initialization, makes sure everything is being read in as the correct types
+    Tests initialization, makes sure everything is being read in as the correct types.
+
     :return:
     :rtype:
     """
@@ -366,4 +370,5 @@ class TestRunSetup(object):
         assert self.trialInst.stimNames['Intro'] == ['Movie1','Movie2']
         assert self.trialInst.stimNames['Fam'] == ['Movie5', 'Movie6']
         assert self.trialInst.stimNames['Test'] == ['Movie1','Movie2']
-        
+
+
