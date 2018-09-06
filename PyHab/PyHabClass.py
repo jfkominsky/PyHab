@@ -621,8 +621,6 @@ class PyHab:
                     self.stimName = self.stimNames[trialType][self.counters[trialType]]
                 disMovie = self.stimDict[trialType][self.counters[trialType]]
                 self.counters[trialType] += 1
-                if self.counters[trialType] >= len(self.stimNames[trialType]):
-                    self.counters[trialType] = 0
             else:
                 disMovie = 0
             if self.blindPres < 1:
@@ -640,15 +638,15 @@ class PyHab:
                         if self.stimPres:
                             self.counters[trialType] -= 1
                             if self.counters[trialType] < 0:
-                                self.counters[trialType] = len(self.stimDict[trialType])-1
+                                self.counters[trialType] = 0
                         while trialType in AA and trialNum > 1: # go find the last non-AA trial and redo from there
                             trialNum -= 1
                             trialType = self.actualTrialOrder[trialNum - 1]
                             numTrialsRedo += 1
                             if self.stimPres:
                                 self.counters[trialType] -= 1
-                                if self.counters[trialType] < 0: # In theory going to -1 would still work but it might get weird
-                                    self.counters[trialType] = len(self.stimDict[trialType]) - 1
+                                if self.counters[trialType] < 0: # b/c counters operates over something that is like actualTrialOrder, it should never go beneath 0
+                                    self.counters[trialType] = 0
                         if self.stimPres:
                             if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
                                 self.stimName = self.stimNames[trialType][self.counters[trialType] - len(self.stimNames[trialType])]
@@ -838,6 +836,9 @@ class PyHab:
             elif x == 3:  # bad trial, redo!
                 trialNum = trialNum
                 didRedo = True
+                self.counters[trialType] -= 1
+                if self.counters[trialType] < 0:
+                    self.counters[trialType] = 0
             elif x == 1:  # end hab block!
                 habs = [i for i, z in enumerate(self.actualTrialOrder) if z == 'Hab']
                 tempNum = max(habs)

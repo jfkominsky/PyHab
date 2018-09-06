@@ -8,7 +8,7 @@ from PyHab import PyHabClass as PH
 """
 TODO: FIGURE OUT HOW TO TEST SCREEN AND STUDY FLOW ISSUES. Loops that wait for input may be unstoppable.
 That may entail rewriting certain things so that they are modularized functions tripped by key-presses rather than
-the big honkers that make up doExperiment and doTrial right now.
+the big honkers that make up doExperiment and doTrial right now.    
 """
 
 base_settings = {'dataColumns': "['sNum', 'months', 'days', 'sex', 'cond','condLabel', 'trial','GNG','trialType','stimName','habCrit','sumOnA','numOnA','sumOffA','numOffA','sumOnB','numOnB','sumOffB','numOffB']",
