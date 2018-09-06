@@ -723,9 +723,10 @@ class PyHab:
                 self.frameCount = 0
                 # framerate = win.getActualFrameRate()
                 # print(framerate)               #just some debug code.
-                if trialType not in AA and self.blindPres < 2:
+                if self.blindPres < 2:
                     self.readyText.text = "Trial active"
-                self.dispCoderWindow(0)
+                if trialType not in AA:
+                    self.dispCoderWindow(0)
                 if self.stimPres:
                     if trialType in self.playAttnGetter: #Shockingly, this will work.
                         self.attnGetter(trialType)  # plays the attention-getter
@@ -1073,7 +1074,6 @@ class PyHab:
                 disMovie['stim'].stop()
             elif disMovie['stimType'] == 'Image with audio':
                 disMovie['stim']['Audio'].stop()
-        self.dispCoderWindow()
         if self.stimPres and number < len(self.actualTrialOrder):
             if self.actualTrialOrder[number] not in self.autoAdvance:
                 self.win.flip()  # blanks the screen outright between trials if NOT auto-advancing into the next trial
