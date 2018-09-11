@@ -594,7 +594,7 @@ class PyHab:
         :type tn: int
         :param autoAdv: The current auto-advance trial type list (different on first trial for Reasons)
         :type autoAdv: list
-        :return: list, [disMovie, trialNum], the former being the movie file to play if relevant, and the latter being what it sounds like
+        :return: list, [disMovie, trialNum], the former being the movie file to play if relevant, and the latter being the new trial number
         :rtype:
         """
         numTrialsRedo = 0
@@ -638,7 +638,7 @@ class PyHab:
         Jumps out of a hab block into whatever the first trial is that is not a hab trial or in a hab meta-trial-type
         :param tn: trial number
         :type tn: int
-        :return: [disMovie, trialType] as setupRedo, but trial number does not change, so instead we just return the new type of the current trial.
+        :return: [disMovie, trialType] as insertHab, the former being the movie file to play if relevant, and the latter being the new trial type
         :rtype: list
         """
         trialNum = tn
@@ -667,11 +667,81 @@ class PyHab:
             self.rdyTextAppend = " NEXT: " + trialType + " TRIAL"
         return [disMovie, trialType]
 
+    def insertHab(self,tn):
+        """
+        Literally insert a new hab trial or meta-trial into actualTrialOrder, get the right movie, etc.
+
+        :param tn: trialNum
+        :type tn: int
+        :return: [disMovie, trialType], the former being the movie file to play if relevant, and the latter being the new trial type
+        :rtype: list
+        """
+        trialNum = tn
+        if len(self.habTrialList) > 0:
+            for z in range(0, len(self.habTrialList)):
+                self.actualTrialOrder.insert(trialNum - 1 + z, self.habTrialList[z])
+        else:
+            self.actualTrialOrder.insert(trialNum - 1, 'Hab')
+        trialType = self.actualTrialOrder[trialNum - 1]
+        if self.stimPres: #This will get screwy with habs that have multiple movies associated with them. Redo is the option for going back one...
+            if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
+                self.stimName = self.stimNames[trialType][self.counters[trialType] % len(self.stimNames[trialType])]
+            else:
+                self.stimName = self.stimNames[trialType][self.counters[trialType]]
+            # Insert movies into stimDict! This is difficult.
+            # Stimdict is basically actualTrialOrder, but each index is a dict, {'stimType': , 'stimObject'}
+            if len(self.habTrialList) > 0:
+                for z in range(0, len(self.habTrialList)):
+                    #Figure out what the next counter would be for each thing.
+                    tempStim = self.stimList[self.stimNames[self.habTrialList[z]][self.counters[self.habTrialList[z]] % len(self.stimNames[self.habTrialList[z]])]]
+                    if tempStim['stimType'] == 'Movie':
+                        tempStimObj = visual.MovieStim3(self.win, tempStim['stimLoc'],
+                                                        size=[self.movieWidth, self.movieHeight], flipHoriz=False,
+                                                        flipVert=False, loop=False)
+                    elif tempStim['stimType'] == 'Image':
+                        tempStimObj = visual.ImageStim(self.win, tempStim['stimLoc'],
+                                                       size=[self.movieWidth, self.movieHeight])
+                    elif tempStim['stimType'] == 'Audio':
+                        tempStimObj = sound.Sound(tempStim['stimLoc'])
+                    else:  # The eternal problem of audio/image pair. Just creates an object that's a dict of audio and image.
+                        audioObj = sound.Sound(tempStim['audioLoc'])
+                        imageObj = visual.ImageStim(self.win, tempStim['imageLoc'],
+                                                    size=[self.movieWidth, self.movieHeight])
+                        tempStimObj = {'Audio': audioObj, 'Image': imageObj}
+                    tempAdd = {'stimType': tempStim['stimType'], 'stim': tempStimObj}
+
+                    self.stimDict.insert(trialNum - 1 + z, tempAdd)
+            else:
+                tempStim = self.stimList[self.stimNames[trialType][self.counters[trialType] % len(self.stimNames[trialType])]]
+                if tempStim['stimType'] == 'Movie':
+                    tempStimObj = visual.MovieStim3(self.win, tempStim['stimLoc'],
+                                                    size=[self.movieWidth, self.movieHeight], flipHoriz=False,
+                                                    flipVert=False, loop=False)
+                elif tempStim['stimType'] == 'Image':
+                    tempStimObj = visual.ImageStim(self.win, tempStim['stimLoc'],
+                                                   size=[self.movieWidth, self.movieHeight])
+                elif tempStim['stimType'] == 'Audio':
+                    tempStimObj = sound.Sound(tempStim['stimLoc'])
+                else:  # The eternal problem of audio/image pair. Just creates an object that's a dict of audio and image.
+                    audioObj = sound.Sound(tempStim['audioLoc'])
+                    imageObj = visual.ImageStim(self.win, tempStim['imageLoc'],
+                                                size=[self.movieWidth, self.movieHeight])
+                    tempStimObj = {'Audio': audioObj, 'Image': imageObj}
+                tempAdd = {'stimType': tempStim['stimType'], 'stim': tempStimObj}
+                self.stimDict.insert(trialNum - 1, tempAdd)
+            disMovie = self.stimDict[trialType][self.counters[trialType]]
+            self.counters[trialType] += 1
+            if self.counters[trialType] >= len(self.stimDict[trialType]):
+                self.counters[trialType] = 0
+        else:
+            disMovie = 0
+        if self.blindPres < 1:
+            self.rdyTextAppend = " NEXT: " + trialType + " TRIAL"
+        return [disMovie,trialType]
 
     def doExperiment(self):
         """
         The primary control function and main trial loop.
-        TODO: Modularize setup that is currently repeated in here for inserts.
 
         :return:
         :rtype:
@@ -718,26 +788,7 @@ class PyHab:
                 elif self.keyboard[self.key.J] and 'Hab' in self.actualTrialOrder[trialNum:]:  # jump to test in a hab design
                     [disMovie, trialType] = self.jumpToTest(trialNum)
                 elif trialType != 'Hab' and self.keyboard[self.key.I] and 'Hab' in self.trialOrder:  # insert additional hab trial
-                    # literally insert a new trial into actualTrialOrder, get the right movie, etc.
-                    if len(self.habTrialList) > 0:
-                        for z in range(0, len(self.habTrialList)):
-                            self.actualTrialOrder.insert(trialNum - 1 + z, self.habTrialList[z])
-                    else:
-                        self.actualTrialOrder.insert(trialNum - 1, 'Hab')
-                    trialType = self.actualTrialOrder[trialNum - 1]
-                    if self.stimPres:
-                        if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
-                            self.stimName = self.stimNames[trialType][self.counters[trialType] % len(self.stimNames[trialType])]
-                        else:
-                            self.stimName = self.stimNames[trialType][self.counters[trialType]]
-                        disMovie = self.stimDict[trialType][self.counters[trialType]]
-                        self.counters[trialType] += 1
-                        if self.counters[trialType] >= len(self.stimDict[trialType]):
-                            self.counters[trialType] = 0
-                    else:
-                        disMovie = 0
-                    if self.blindPres < 1:
-                        self.rdyTextAppend = " NEXT: " + trialType + " TRIAL"
+                    [disMovie, trialType] = self.insertHab(trialNum)
 
                 elif trialNum > 1 and not self.stimPres and self.keyboard[self.key.P] and not reviewed:  # Print data so far, as xHab. Non-stimulus version only. Only between trials.
                     reviewed = True
@@ -801,26 +852,7 @@ class PyHab:
                     elif self.keyboard[self.key.J] and trialType == 'Hab':  # jump to test in a hab design
                         [disMovie,trialType] = self.jumpToTest(trialNum)
                     elif trialType != 'Hab' and self.keyboard[self.key.I] and 'Hab' in self.trialOrder:  # insert additional hab trial
-                        # literally insert a new trial into actualTrialOrder, get the right movie, etc.
-                        if len(self.habTrialList) > 0:
-                            for z in range(0, len(self.habTrialList)):
-                                self.actualTrialOrder.insert(trialNum - 1 + z, self.habTrialList[z])
-                        else:
-                            self.actualTrialOrder.insert(trialNum - 1, 'Hab')
-                        trialType = self.actualTrialOrder[trialNum - 1]
-                        if self.stimPres:  # Here we change the movie file of the current trial only. fine as is.
-                            disMovie = self.stimDict[trialType][self.counters[trialType]]
-                            self.counters[trialType] += 1
-                            if self.counters[trialType] >= len(self.stimDict[trialType]):
-                                self.counters[trialType] = 0
-                            if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
-                                self.stimName = self.stimNames[trialType][self.counters[trialType] % len(self.stimNames[trialType])]
-                            else:
-                                self.stimName = self.stimNames[trialType][self.counters[trialType]]
-                        else:
-                            disMovie = 0
-                        if self.blindPres < 1:
-                            self.rdyTextAppend = " NEXT: " + trialType + " TRIAL"
+                        [disMovie,trialType] = self.insertHab(trialNum)
                     else:
                         self.dispCoderWindow(0)
             if not end: #If Y has not been pressed, do the trial! Otherwise, end the experiment.
@@ -840,7 +872,10 @@ class PyHab:
                 if self.counters[trialType] < 0:
                     self.counters[trialType] = 0
             elif x == 1:  # end hab block!
-                habs = [i for i, z in enumerate(self.actualTrialOrder) if z == 'Hab']
+                if len(self.habTrialList) > 0: # Now accounts for meta-trials in which hab is not the last one.
+                    habs = [i for i, z in enumerate(self.actualTrialOrder) if z in self.habTrialList]
+                else:
+                    habs = [i for i, z in enumerate(self.actualTrialOrder) if z == 'Hab']
                 tempNum = max(habs)
                 # trialNum is in fact the index after the current trial at this point
                 # so we can just erase everything between that and the first non-hab trial.

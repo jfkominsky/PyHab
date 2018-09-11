@@ -515,24 +515,48 @@ class TestCommands(object):
         assert y == 2
         assert x == "Movie2"
 
-    def test_jump(self):
+    def test_jump_and_insert(self):
         self.commandInst.trialText = mock.MagicMock()
-        self.commandInst.stimPres = False
+        self.commandInst.stimPres = True
         testOne = [99, 'Test', 'NB', 7, 2, 18, 'testcond', 8, 2, 18]
+        self.commandInst.stimNames = {'A': ['Movie1', 'Movie2', 'Movie3', 'Movie4'],
+                                      'B': ['Movie5', 'Movie6', 'Movie7', 'Movie8'],
+                                      'C': ['Movie1', 'Movie2', 'Movie3', 'Movie4'],
+                                      'D': ['Movie9', 'Movie10'],
+                                      'Hab': ['Movie12']}
+        self.commandInst.stimDict = {'A': ['Movie1', 'Movie2'],
+                                     'B': ['Movie5', 'Movie6'],
+                                     'C': ['Movie1', 'Movie2'],
+                                     'D': ['Movie9', 'Movie10'],
+                                     'Hab': ['Movie12']}
         self.commandInst.trialOrder = ['A', 'A', 'B', 'B', 'Hab', 'D']
+        self.commandInst.counters = {'A': 2, 'B': 2, 'C': 0, 'D': 0,'Hab':2}
         self.commandInst.run(testMode=testOne)
 
         [x, y] = self.commandInst.jumpToTest(7)
-        assert x == 0
+        assert x == 'Movie9'
         assert y == 'D'
         assert self.commandInst.actualTrialOrder ==['A', 'A', 'B', 'B', 'Hab', 'Hab','D']
 
+        self.commandInst.stimPres = False # Insert would require loading movies otherwise. Requires manual testing.
+        [x,y] = self.commandInst.insertHab(7)
+        assert x == 0
+        assert y == 'Hab'
+
+        self.commandInst.stimPres = True
         self.commandInst.habTrialList = ['Hab','C']
         self.commandInst.trialOrder = ['A', 'A', 'B', 'B', 'Hab', 'D']
+        self.commandInst.counters = {'A': 2, 'B': 2, 'C': 1, 'D': 0,'Hab':1}
         self.commandInst.run(testMode=testOne)
         [x, y] = self.commandInst.jumpToTest(7)
-        assert x == 0
+        assert x == 'Movie9'
         assert y == 'D'
         assert self.commandInst.actualTrialOrder == ['A', 'A', 'B', 'B', 'Hab', 'C', 'D']
+
+        self.commandInst.stimPres = False
+        [x, y] = self.commandInst.insertHab(7)
+        assert x == 0
+        assert y == 'Hab'
+        assert self.commandInst.actualTrialOrder == ['A', 'A', 'B', 'B', 'Hab', 'C','Hab','C','D']
 
 
