@@ -173,7 +173,23 @@ On (for gaze-on events)
 Off (for gaze-off events)
 On2 and Off2 (for the optional secondary coder)
 Each coder’s on and off are recorded in a separate dict with trial, gaze on/off, start, end, and duration.</p>
-<p>TODO: Long-term, unit testing</p>
+<dl class="method">
+<dt id="PyHab.PyHabClass.PyHab.SetupWindow">
+<code class="descname">SetupWindow</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab.SetupWindow" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets up the stimulus presentation and coder windows, loads all the stimuli, then starts the experiment
+with doExperiment()</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 <dl class="method">
 <dt id="PyHab.PyHabClass.PyHab.abortTrial">
 <code class="descname">abortTrial</code><span class="sig-paren">(</span><em>onArray</em>, <em>offArray</em>, <em>trial</em>, <em>ttype</em>, <em>onArray2</em>, <em>offArray2</em>, <em>stimName=''</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab.abortTrial" title="Permalink to this definition">¶</a></dt>
@@ -247,23 +263,15 @@ Separate settings for audio w/shape and video file attention-getters.</p>
 
 <dl class="method">
 <dt id="PyHab.PyHabClass.PyHab.checkStop">
-<code class="descname">checkStop</code><span class="sig-paren">(</span><em>trial</em>, <em>numHab</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab.checkStop" title="Permalink to this definition">¶</a></dt>
+<code class="descname">checkStop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab.checkStop" title="Permalink to this definition">¶</a></dt>
 <dd><p>After a hab trial, checks the habitution criteria and returns ‘true’ if any of them are met.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>trial</strong> (<em>int</em>) – Trial number</li>
-<li><strong>numHab</strong> (<em>int</em>) – The number of hab trials that have been presented</li>
-</ul>
-</td>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">True if hab criteria have been met, False otherwise</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">True if hab criteria have been met, False otherwise</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"></p>
-</td>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -478,6 +486,24 @@ Returns a status value (int) that tells doExperiment what to do next</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="PyHab.PyHabClass.PyHab.insertHab">
+<code class="descname">insertHab</code><span class="sig-paren">(</span><em>tn</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab.insertHab" title="Permalink to this definition">¶</a></dt>
+<dd><p>Literally insert a new hab trial or meta-trial into actualTrialOrder, get the right movie, etc.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>tn</strong> (<em>int</em>) – trialNum</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">[disMovie, trialType], the former being the movie file to play if relevant, and the latter being the new trial type</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">list</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="PyHab.PyHabClass.PyHab.isInt">
 <code class="descname">isInt</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab.isInt" title="Permalink to this definition">¶</a></dt>
 <dd><p>silly little function for validating a very narrow usage of “cond” field</p>
@@ -491,6 +517,16 @@ Returns a status value (int) that tells doExperiment what to do next</p>
 </tr>
 </tbody>
 </table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabClass.PyHab.jumpToTest">
+<code class="descname">jumpToTest</code><span class="sig-paren">(</span><em>tn</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab.jumpToTest" title="Permalink to this definition">¶</a></dt>
+<dd><p>Jumps out of a hab block into whatever the first trial is that is not a hab trial or in a hab meta-trial-type
+:param tn: trial number
+:type tn: int
+:return: [disMovie, trialType] as insertHab, the former being the movie file to play if relevant, and the latter being the new trial type
+:rtype: list</p>
 </dd></dl>
 
 <dl class="method">
@@ -533,6 +569,18 @@ In this case, only B (coder A on) is sufficient.</p>
 </tr>
 </tbody>
 </table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabClass.PyHab.redoSetup">
+<code class="descname">redoSetup</code><span class="sig-paren">(</span><em>tn</em>, <em>autoAdv</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab.redoSetup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Lays the groundwork for redoTrial, including correcting the trial order, selecting the right stim, etc.
+:param tn: Trial number (trialNum)
+:type tn: int
+:param autoAdv: The current auto-advance trial type list (different on first trial for Reasons)
+:type autoAdv: list
+:return: list, [disMovie, trialNum], the former being the movie file to play if relevant, and the latter being the new trial number
+:rtype:</p>
 </dd></dl>
 
 <dl class="method">
@@ -583,17 +631,19 @@ modified by Jonathan Kominsky.</p>
 
 <dl class="method">
 <dt id="PyHab.PyHabClass.PyHab.run">
-<code class="descname">run</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab.run" title="Permalink to this definition">¶</a></dt>
-<dd><p>Startup function. Presents subject information to researcher, creates relevant windows,
-reads and follows settings and condition files and loads stimuli (if applicable), and then
-calls doExperiment.</p>
+<code class="descname">run</code><span class="sig-paren">(</span><em>testMode=[]</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Startup function. Presents subject information dialog to researcher, reads and follows settings and condition
+files. Now with a testing mode to allow us to skip the dialog and ensure the actualTrialOrder structure is being
+put together properly in unit testing.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>testMode</strong> (<em>list</em>) – Optional and primarily only used for unit testing. Will not launch the window and start the experiment. Contains all the info that would appear in the subject info dialog.</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"></td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>

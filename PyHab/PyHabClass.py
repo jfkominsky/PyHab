@@ -1499,8 +1499,7 @@ class PyHab:
         files. Now with a testing mode to allow us to skip the dialog and ensure the actualTrialOrder structure is being
         put together properly in unit testing.
 
-        :param testMode: Optional and primarily only used for unit testing. Will not launch the window and start the
-        experiment. Contains all the info that would appear in the subject info dialog.
+        :param testMode: Optional and primarily only used for unit testing. Will not launch the window and start the experiment. Contains all the info that would appear in the subject info dialog.
         :type testMode: list
         :return:
         :rtype:
