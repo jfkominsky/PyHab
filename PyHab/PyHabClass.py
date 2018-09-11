@@ -35,8 +35,6 @@ class PyHab:
     On2 and Off2 (for the optional secondary coder)
     Each coder's on and off are recorded in a separate dict with trial, gaze on/off, start, end, and duration.
 
-    TODO: Long-term, unit testing. that may require fake windows and an extra thing for dealing with that...
-
     """
 
     def __init__(self, settingsDict):
@@ -1145,10 +1143,17 @@ class PyHab:
                 while self.dataMatrix[x]['GNG'] == 0:  # this is to get around the possibility that the same trial had multiple 'false starts'
                     x += 1
                 self.dataMatrix.insert(x, self.badTrials[i])  # python makes this stupid easy
-        # TODO: Check for existing data to prevent overwrites?
-        outputWriter = csv.DictWriter(open(
-            self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + '_' + str(self.today.month) + str(
-                self.today.day) + str(self.today.year) + '.csv', 'w'), fieldnames=self.dataColumns,
+        n = '' # This infrastructure eliminates the risk of overwriting existing data
+        o = 1
+        filename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + n +'_' + str(self.today.month) + str(
+                self.today.day) + str(self.today.year) + '.csv'
+        while os.path.exists(filename):
+            o += 1
+            n = str(o)
+            filename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + n + '_' + str(
+                self.today.month) + str(
+                self.today.day) + str(self.today.year) + '.csv'
+        outputWriter = csv.DictWriter(open(filename, 'w'), fieldnames=self.dataColumns,
                                       extrasaction='ignore', lineterminator='\n')  # careful! this OVERWRITES the existing file. Fills from snum.
         outputWriter.writeheader()
         for r in range(0, len(self.dataMatrix)):
@@ -1223,7 +1228,7 @@ class PyHab:
                     verboseMatrix.extend(trialVerbose2)
         headers2 = ['snum', 'months', 'days', 'sex', 'cond', 'GNG', 'gazeOnOff', 'trial', 'trialType', 'startTime', 'endTime', 'duration']
         outputWriter2 = csv.DictWriter(open(
-            self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '_VERBOSE.csv', 'w'),
+            self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + n + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '_VERBOSE.csv', 'w'),
                                    fieldnames=headers2, extrasaction='ignore', lineterminator='\n')  # careful! this OVERWRITES the existing file. Fills from snum.
         outputWriter2.writeheader()
         for z in range(0, len(verboseMatrix)):
@@ -1291,7 +1296,7 @@ class PyHab:
                         trialVerbose2 = sorted(trialVerbose, key=lambda trialVerbose: trialVerbose['startTime'])
                         verboseMatrix2.extend(trialVerbose2)
             outputWriter3 = csv.DictWriter(open(
-                self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '_VERBOSEb.csv', 'w'),
+                self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + n + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '_VERBOSEb.csv', 'w'),
                                     fieldnames=headers2, extrasaction='ignore', lineterminator='\n')
             outputWriter3.writeheader()
             for k in range(0, len(verboseMatrix2)):
@@ -1299,7 +1304,7 @@ class PyHab:
             rel = self.reliability(verboseMatrix, verboseMatrix2)
             headers3 = ['WeightedPercentageAgreement', 'CohensKappa', 'AverageObserverAgreement', 'PearsonsR']
             outputWriter4 = csv.DictWriter(open(
-                self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '_Stats.csv', 'w'),
+                self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + n + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '_Stats.csv', 'w'),
                                       fieldnames=headers3, extrasaction='ignore', lineterminator='\n')
             outputWriter4.writeheader()
             outputWriter4.writerow(rel)

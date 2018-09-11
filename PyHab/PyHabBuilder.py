@@ -54,14 +54,21 @@ class PyHabBuilder:
         self.typeHeightObj = (self.typeWidthObj/self.aspect)*.6
         self.typeLocs =[]
         self.flowLocs =[]
+        self.overFlowLocs = [] # For >20 trials, go up to 40
         self.condDict = {} #For creating conditions
         self.mouse = event.Mouse()
         for x in [.25,.75]: #Two columns of trial types
             for z in range(1,5):
-                self.typeLocs.append([self.paletteArea[0]+x*(self.paletteArea[1]-self.paletteArea[0]), self.paletteArea[2]+.2*(self.paletteArea[3]-self.paletteArea[2])+z*.15*(self.paletteArea[3]-self.paletteArea[2])])
+                self.typeLocs.append([self.paletteArea[0]+x*(self.paletteArea[1]-self.paletteArea[0]),
+                                      self.paletteArea[2]+.2*(self.paletteArea[3]-self.paletteArea[2])+z*.15*(self.paletteArea[3]-self.paletteArea[2])])
         for y in [.25,.75]: #two rows for the study flow.
             for z in range(1,11):
-                    self.flowLocs.append([self.flowArea[0]+z*(self.flowArea[1]-self.flowArea[0])*.09, self.flowArea[2]+y*(self.flowArea[3]-self.flowArea[2])])
+                    self.flowLocs.append([self.flowArea[0]+z*(self.flowArea[1]-self.flowArea[0])*.09,
+                                          self.flowArea[2]+y*(self.flowArea[3]-self.flowArea[2])])
+        for y in [.2, .4, .6, .8]:  # two rows for the study flow.
+            for z in range(1, 11):
+                self.overFlowLocs.append([self.flowArea[0] + z * (self.flowArea[1] - self.flowArea[0]) * .09,
+                                      self.flowArea[2] + y * (self.flowArea[3] - self.flowArea[2])])
         # loadedSaved is "is this a new experiment or are we operating inside an existing experiment's folder?"
         if not loadedSaved:  # A new blank experiment
             # Load some defaults to start with.
@@ -713,11 +720,18 @@ class PyHabBuilder:
         delInfo=delTypeDlg.show()
         if delTypeDlg.OK:
             dType=delInfo[0]
+            #Reassign colors if neccessary.
+            if self.settings['trialTypes'].index(dType) < len(self.settings['trialTypes']):
+                nowColor = self.colorsArray.pop(self.settings['trialTypes'].index(dType))
+                self.colorsArray.insert(len(self.settings['trialTypes'])-1, nowColor)
             self.settings['trialTypes'].remove(dType)  # remove the type from the list of trial types.
             del self.settings['stimNames'][dType]  # remove from stimNames
             del self.settings['maxDur'][dType]  # remove from maxdur
             if dType in self.settings['playThrough']:  # if it was in playThrough, remove it from there too.
                 self.settings['playThrough'].pop(dType, None)
+            if dType in self.settings['habTrialList']: #If it was in a hab meta-trial.
+                while dType in self.settings['habTrialList']:
+                    self.settings['habTrialList'].remove(dType)
             self.trialTypesArray=self.loadTypes()  # easiest to just reload the trial types.
             # For the study flow, it's easiest just to remove it from the trial order and reload the study flow.
             if dType in self.settings['trialOrder']:
@@ -783,21 +797,25 @@ class PyHabBuilder:
                 numItems += 1 #Double-size for habs
         outputDict = {'lines':[],'shapes':[],'text':[],'labels':[]}  #Labels allows us to index the others while still keeping order.
         j = 0 # This serves a purpose, trust me. It's for rendering hab blocks.
+        if len(tOrd) < 21:  # Past 20 we can't render it, but it won't crash.
+            flowSpace = self.flowLocs
+        else:
+            flowSpace = self.overFlowLocs
         for i in range(0, len(tOrd)):
-            if i < 20: # Past 20 we can't render it, but it won't crash. TODO: Make a better 20+ solution.
-                #Now, actually build the list of objects to render.
+            #Now, actually build the list of objects to render.
+            if i < 39 or (i == 39 and len(tOrd) == 40):
                 c=tTypes.index(tOrd[i]) # find the trial type, get color index
                 if tOrd[i] == 'Hab': # The special category
-                    if  j == 10:
+                    if j+1 % 10 == 0 and j < 40:
                         j += 1 # Just in case we're at the point where it would loop around to the second row. We don't want that.
-                    lx1 = self.flowLocs[j][0]
+                    lx1 = flowSpace[j][0]
                     j += 1
-                    lx2 = self.flowLocs[j][0]
+                    lx2 = flowSpace[j][0]
                     lx = (lx2+lx1)/2 # Ideally putting it square in between the two places.
-                    loc = [lx,self.flowLocs[j][1]]
+                    loc = [lx,flowSpace[j][1]]
                     tempObj = visual.Rect(self.win,width=self.flowWidthObj*2, height=self.flowHeightObj, fillColor=self.colorsArray[c], pos=loc)
                 else:
-                    tempObj = visual.Rect(self.win,width=self.flowWidthObj, height=self.flowHeightObj, fillColor=self.colorsArray[c], pos=self.flowLocs[j])
+                    tempObj = visual.Rect(self.win,width=self.flowWidthObj, height=self.flowHeightObj, fillColor=self.colorsArray[c], pos=flowSpace[j])
                 numChar = len(tOrd[i])
                 if numChar <= 3:
                     numChar = 4 #Maximum height
@@ -816,6 +834,33 @@ class PyHabBuilder:
             tempLine2 = visual.Line(self.win, start=self.flowLocs[10], end=self.flowLocs[len(tOrd)-1])
             outputDict['lines'].append(tempLine)
             outputDict['lines'].append(tempLine2)
+        elif numItems < 31:
+            tempLine = visual.Line(self.win, start=self.overFlowLocs[0], end=self.overFlowLocs[9])
+            tempLine2 = visual.Line(self.win, start=self.overFlowLocs[10], end=self.overFlowLocs[19])
+            tempLine3 = visual.Line(self.win, start=self.overFlowLocs[20], end=self.overFlowLocs[len(tOrd) - 1])
+            outputDict['lines'].append(tempLine)
+            outputDict['lines'].append(tempLine2)
+            outputDict['lines'].append(tempLine3)
+        elif numItems < 41:
+            tempLine = visual.Line(self.win, start=self.overFlowLocs[0], end=self.overFlowLocs[9])
+            tempLine2 = visual.Line(self.win, start=self.overFlowLocs[10], end=self.overFlowLocs[19])
+            tempLine3 = visual.Line(self.win, start=self.overFlowLocs[20], end=self.overFlowLocs[29])
+            tempLine4 = visual.Line(self.win, start=self.overFlowLocs[30], end=self.overFlowLocs[len(tOrd) - 1])
+            outputDict['lines'].append(tempLine)
+            outputDict['lines'].append(tempLine2)
+            outputDict['lines'].append(tempLine3)
+            outputDict['lines'].append(tempLine4)
+        else:
+            tempLine = visual.Line(self.win, start=self.overFlowLocs[0], end=self.overFlowLocs[9])
+            tempLine2 = visual.Line(self.win, start=self.overFlowLocs[10], end=self.overFlowLocs[19])
+            tempLine3 = visual.Line(self.win, start=self.overFlowLocs[20], end=self.overFlowLocs[29])
+            tempLine4 = visual.Line(self.win, start=self.overFlowLocs[30], end=self.overFlowLocs[38])
+            outputDict['lines'].append(tempLine)
+            outputDict['lines'].append(tempLine2)
+            outputDict['lines'].append(tempLine3)
+            outputDict['lines'].append(tempLine4)
+            tempText = visual.TextStim(self.win, text="+" + str(numItems-39) + " more", pos=self.overFlowLocs[39])
+            outputDict['lines'].append(tempText)
         return outputDict
     
     def loadTypes(self): #A "pallette" of trial types on one side, only needed when loading from save.
