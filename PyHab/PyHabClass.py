@@ -787,7 +787,7 @@ class PyHab:
                     didRedo = True
                 elif self.keyboard[self.key.J] and 'Hab' in self.actualTrialOrder[trialNum:]:  # jump to test in a hab design
                     [disMovie, trialType] = self.jumpToTest(trialNum)
-                elif trialType != 'Hab' and self.keyboard[self.key.I] and 'Hab' in self.trialOrder:  # insert additional hab trial
+                elif trialType != 'Hab' and self.keyboard[self.key.I] and 'Hab' in self.trialOrder and trialType not in self.habTrialList:  # insert additional hab trial
                     [disMovie, trialType] = self.insertHab(trialNum)
 
                 elif trialNum > 1 and not self.stimPres and self.keyboard[self.key.P] and not reviewed:  # Print data so far, as xHab. Non-stimulus version only. Only between trials.
@@ -851,7 +851,7 @@ class PyHab:
                         didRedo = True
                     elif self.keyboard[self.key.J] and trialType == 'Hab':  # jump to test in a hab design
                         [disMovie,trialType] = self.jumpToTest(trialNum)
-                    elif trialType != 'Hab' and self.keyboard[self.key.I] and 'Hab' in self.trialOrder:  # insert additional hab trial
+                    elif trialType != 'Hab' and self.keyboard[self.key.I] and 'Hab' in self.trialOrder and trialType not in self.habTrialList:  # insert additional hab trial
                         [disMovie,trialType] = self.insertHab(trialNum)
                     else:
                         self.dispCoderWindow(0)
