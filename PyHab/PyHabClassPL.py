@@ -492,13 +492,13 @@ class PyHabPL(PyHab):
                 while self.dataMatrix[x]['GNG'] == 0: #this is to get around the possibility that the same trial had multiple 'false starts'
                     x += 1
                 self.dataMatrix.insert(x, self.badTrials[i]) #python makes this stupid easy
-        n = ''  # This infrastructure eliminates the risk of overwriting existing data
+        nDupe = ''  # This infrastructure eliminates the risk of overwriting existing data
         o = 1
-        filename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + n + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '.csv'
+        filename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '.csv'
         while os.path.exists(filename):
             o += 1
-            n = str(o)
-            filename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + n + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '.csv'
+            nDupe = str(o)
+            filename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '.csv'
         outputWriter = csv.DictWriter(open(filename,'w'),
                                       fieldnames = self.dataColumns, extrasaction='ignore', lineterminator ='\n') #careful! this OVERWRITES the existing file. Fills from snum.
         outputWriter.writeheader()
@@ -600,7 +600,7 @@ class PyHabPL(PyHab):
                     verboseMatrix.extend(trialVerbose2)
         headers2 = ['snum', 'months', 'days', 'sex', 'cond', 'GNG', 'gazeOnOff', 'trial', 'trialType',
                                 'startTime', 'endTime', 'duration']
-        outputWriter2 = csv.DictWriter(open(self.dataFolder+self.prefix+str(self.sNum)+'_'+str(self.sID)+n+'_'+str(self.today.month)+str(self.today.day)+str(self.today.year)+'_VERBOSE.csv','w'),
+        outputWriter2 = csv.DictWriter(open(self.dataFolder+self.prefix+str(self.sNum)+'_'+str(self.sID)+nDupe+'_'+str(self.today.month)+str(self.today.day)+str(self.today.year)+'_VERBOSE.csv','w'),
                                        fieldnames = headers2, extrasaction = 'ignore', lineterminator ='\n') #careful! this OVERWRITES the existing file. Fills from snum.
         outputWriter2.writeheader()
         for z in range(0,len(verboseMatrix)):

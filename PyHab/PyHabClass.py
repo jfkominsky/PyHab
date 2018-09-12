@@ -646,6 +646,8 @@ class PyHab:
             types = ['Hab']
         habs = [i for i, x in enumerate(self.actualTrialOrder) if x in types] #Find last hab trial or meta-trial
         tempNum = max(habs)
+        # It's actually necessary to decrement the counter for the current trial type to deal with jump/insert!
+        self.counters[self.actualTrialOrder[trialNum - 1]] -= 1
         # trialNum is in fact the index after the current trial at this point
         # so we can just erase everything between that and the first non-hab trial.
         del self.actualTrialOrder[(trialNum - 1):(tempNum + 1)]
@@ -681,13 +683,14 @@ class PyHab:
         else:
             self.actualTrialOrder.insert(trialNum - 1, 'Hab')
         trialType = self.actualTrialOrder[trialNum - 1]
-        if self.stimPres: #This will get screwy with habs that have multiple movies associated with them. Redo is the option for going back one...
+        if self.stimPres:
             if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
                 self.stimName = self.stimNames[trialType][self.counters[trialType] % len(self.stimNames[trialType])]
             else:
                 self.stimName = self.stimNames[trialType][self.counters[trialType]]
             # Insert movies into stimDict! This is difficult.
-            # Stimdict is basically actualTrialOrder, but each index is a dict, {'stimType': , 'stimObject'}
+            # stimDict is basically actualTrialOrder, but each key is a trial type, and each value a list of dicts
+            # with one entry per number of that trial type, of the form {'stimType': , 'stimObject'}
             if len(self.habTrialList) > 0:
                 for z in range(0, len(self.habTrialList)):
                     #Figure out what the next counter would be for each thing.
@@ -708,7 +711,7 @@ class PyHab:
                         tempStimObj = {'Audio': audioObj, 'Image': imageObj}
                     tempAdd = {'stimType': tempStim['stimType'], 'stim': tempStimObj}
 
-                    self.stimDict.insert(trialNum - 1 + z, tempAdd)
+                    self.stimDict[self.habTrialList[z]].insert(self.counters[self.habTrialList[z]], tempAdd)
             else:
                 tempStim = self.stimList[self.stimNames[trialType][self.counters[trialType] % len(self.stimNames[trialType])]]
                 if tempStim['stimType'] == 'Movie':
@@ -726,7 +729,7 @@ class PyHab:
                                                 size=[self.movieWidth, self.movieHeight])
                     tempStimObj = {'Audio': audioObj, 'Image': imageObj}
                 tempAdd = {'stimType': tempStim['stimType'], 'stim': tempStimObj}
-                self.stimDict.insert(trialNum - 1, tempAdd)
+                self.stimDict['Hab'].insert(self.habCount, tempAdd)
             disMovie = self.stimDict[trialType][self.counters[trialType]]
             self.counters[trialType] += 1
             if self.counters[trialType] >= len(self.stimDict[trialType]):
@@ -1143,14 +1146,14 @@ class PyHab:
                 while self.dataMatrix[x]['GNG'] == 0:  # this is to get around the possibility that the same trial had multiple 'false starts'
                     x += 1
                 self.dataMatrix.insert(x, self.badTrials[i])  # python makes this stupid easy
-        n = '' # This infrastructure eliminates the risk of overwriting existing data
+        nDupe = '' # This infrastructure eliminates the risk of overwriting existing data
         o = 1
-        filename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + n +'_' + str(self.today.month) + str(
+        filename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe +'_' + str(self.today.month) + str(
                 self.today.day) + str(self.today.year) + '.csv'
         while os.path.exists(filename):
             o += 1
-            n = str(o)
-            filename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + n + '_' + str(
+            nDupe = str(o)
+            filename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(
                 self.today.month) + str(
                 self.today.day) + str(self.today.year) + '.csv'
         outputWriter = csv.DictWriter(open(filename, 'w'), fieldnames=self.dataColumns,
@@ -1228,7 +1231,7 @@ class PyHab:
                     verboseMatrix.extend(trialVerbose2)
         headers2 = ['snum', 'months', 'days', 'sex', 'cond', 'GNG', 'gazeOnOff', 'trial', 'trialType', 'startTime', 'endTime', 'duration']
         outputWriter2 = csv.DictWriter(open(
-            self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + n + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '_VERBOSE.csv', 'w'),
+            self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '_VERBOSE.csv', 'w'),
                                    fieldnames=headers2, extrasaction='ignore', lineterminator='\n')  # careful! this OVERWRITES the existing file. Fills from snum.
         outputWriter2.writeheader()
         for z in range(0, len(verboseMatrix)):
@@ -1296,7 +1299,7 @@ class PyHab:
                         trialVerbose2 = sorted(trialVerbose, key=lambda trialVerbose: trialVerbose['startTime'])
                         verboseMatrix2.extend(trialVerbose2)
             outputWriter3 = csv.DictWriter(open(
-                self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + n + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '_VERBOSEb.csv', 'w'),
+                self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '_VERBOSEb.csv', 'w'),
                                     fieldnames=headers2, extrasaction='ignore', lineterminator='\n')
             outputWriter3.writeheader()
             for k in range(0, len(verboseMatrix2)):
@@ -1304,7 +1307,7 @@ class PyHab:
             rel = self.reliability(verboseMatrix, verboseMatrix2)
             headers3 = ['WeightedPercentageAgreement', 'CohensKappa', 'AverageObserverAgreement', 'PearsonsR']
             outputWriter4 = csv.DictWriter(open(
-                self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + n + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '_Stats.csv', 'w'),
+                self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '_Stats.csv', 'w'),
                                       fieldnames=headers3, extrasaction='ignore', lineterminator='\n')
             outputWriter4.writeheader()
             outputWriter4.writerow(rel)
