@@ -192,24 +192,18 @@ There’s still a lot of redundant code here, which will require significant res
 
 <dl class="method">
 <dt id="PyHab.PyHabClassPL.PyHabPL.checkStop">
-<code class="descname">checkStop</code><span class="sig-paren">(</span><em>trial</em>, <em>numHab</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClassPL.PyHabPL.checkStop" title="Permalink to this definition">¶</a></dt>
+<code class="descname">checkStop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClassPL.PyHabPL.checkStop" title="Permalink to this definition">¶</a></dt>
 <dd><p>After a hab trial, checks the habitution criteria and returns ‘true’ if any of them are met.
 Needs its own version because it has to get both timeOnL and timeOnR</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>trial</strong> (<em>int</em>) – Trial number</li>
-<li><strong>numHab</strong> (<em>int</em>) – The number of hab trials that have been presented</li>
-</ul>
-</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>trial</strong> (<em>int</em>) – Trial number</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">True if hab criteria have been met, False otherwise</p>
-</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">True if hab criteria have been met, False otherwise</td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"></p>
-</td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -290,27 +284,6 @@ In this case, only B or M are sufficient.</p>
 <tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">True if the B or M key is pressed, False otherwise.</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="PyHab.PyHabClassPL.PyHabPL.redoTrial">
-<code class="descname">redoTrial</code><span class="sig-paren">(</span><em>trialNum</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClassPL.PyHabPL.redoTrial" title="Permalink to this definition">¶</a></dt>
-<dd><p>Allows you to redo a trial after it has ended. Similar to abort trial, but under
-the assumption that the data has already been recorded and needs to be replaced.
-Decrementing of trial numbers is handled in doExperiment when the relevant key is
-pressed.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>trialNum</strong> (<em>int</em>) – Trial number to redo</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"></td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>

@@ -1,5 +1,5 @@
 import os, sys
-from psychopy import visual, event, core, data, gui, monitors, tools, prefs, logging
+from psychopy import gui, visual, event, core, data, monitors, tools, prefs, logging
 from psychopy.constants import (STARTED, PLAYING)  # Added for new stimulus types
 if os.name is 'posix':
     prefs.general['audioLib'] = ['pyo']
@@ -11,6 +11,7 @@ import wx, random, csv
 from math import *
 from datetime import *
 from dateutil.relativedelta import *
+from copy import deepcopy # needed for exactly one usage in redotrial because it's the only reasonable way.
 
 
 class PyHab:
@@ -33,8 +34,6 @@ class PyHab:
     Off (for gaze-off events)
     On2 and Off2 (for the optional secondary coder)
     Each coder's on and off are recorded in a separate dict with trial, gaze on/off, start, end, and duration.
-
-    TODO: Long-term, unit testing
 
     """
 
@@ -146,6 +145,8 @@ class PyHab:
         self.stimName = ''  # used for adding the name of the stimulus file to the output.
         self.key = pyglet.window.key  # This initiates the keyhandler. Here so we can then set the relevant keys.
         self.secondKey = self.key.L
+        self.verbDatList = {'verboseOn':[], 'verboseOff':[], 'verboseOn2':[], 'verboseOff2':[]} # a dict of the verbose data arrays
+        self.verbBadList = {'verboseOn':[], 'verboseOff':[], 'verboseOn2':[], 'verboseOff2':[]} # Corresponding for bad data
 
     '''
     FUNCTIONS
@@ -183,8 +184,8 @@ class PyHab:
         for j in range(0, len(offArray)):
             sumOff = sumOff + offArray[j]['duration']
         # needs to be .extend or you get weird array-within-array-within-array issues that become problematic later
-        self.badVerboseOn.extend(onArray)
-        self.badVerboseOff.extend(offArray)
+        self.verbBadList['verboseOn'].extend(onArray)
+        self.verbBadList['verboseOff'].extend(offArray)
         sumOn2 = 0
         sumOff2 = 0
         if len(onArray2) > 0 or len(offArray2) > 0:
@@ -192,8 +193,8 @@ class PyHab:
                 sumOn2 = sumOn2 + onArray2[i]['duration']
             for j in range(0, len(offArray2)):
                 sumOff2 = sumOff2 + offArray2[j]['duration']
-            self.badVerboseOn2.extend(onArray2)
-            self.badVerboseOff2.extend(offArray2)
+            self.verbBadList['verboseOn2'].extend(onArray2)
+            self.verbBadList['verboseOff2'].extend(offArray2)
         tempData = {'sNum': self.sNum, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex, 'cond': self.cond,
                     'condLabel': self.condLabel,'trial': trial, 'GNG': 0, 'trialType': ttype, 'stimName': stimName,
                     'habCrit': self.habCrit, 'sumOnA': sumOn, 'numOnA': len(onArray), 'sumOffA': sumOff,
@@ -236,11 +237,11 @@ class PyHab:
                 sumOn2 = sumOn2 + onArray2[i]['duration']
             for j in range(0, len(offArray2)):
                 sumOff2 = sumOff2 + offArray2[j]['duration']
-            self.verboseOn2.extend(onArray2)
-            self.verboseOff2.extend(offArray2)
+            self.verbDatList['verboseOn2'].extend(onArray2)
+            self.verbDatList['verboseOff2'].extend(offArray2)
         # add to verbose master gaze array
-        self.verboseOn.extend(onArray)
-        self.verboseOff.extend(offArray)
+        self.verbDatList['verboseOn'].extend(onArray)
+        self.verbDatList['verboseOff'].extend(offArray)
         tempData = {'sNum': self.sNum, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex, 'cond': self.cond,
                     'condLabel': self.condLabel, 'trial': trial, 'GNG': 1, 'trialType': type, 'stimName': stimName,
                     'habCrit': self.habCrit, 'sumOnA': sumOn, 'numOnA': len(onArray), 'sumOffA': sumOff,
@@ -264,10 +265,10 @@ class PyHab:
         newTempData = {}
         i = 0
         while i < len(self.dataMatrix):
-            if self.dataMatrix[i]['trial'] == trialNum:
+            if self.dataMatrix[i]['trial'] == trialNum and self.dataMatrix[i]['GNG'] == 1:
                 trialIndex = i
                 newTempData = self.dataMatrix[i]
-                i += 1
+                break
             else:
                 i += 1
         # add the new 'bad' trial to badTrials
@@ -277,45 +278,29 @@ class PyHab:
         self.badTrials.append(newTempData)
         # remove it from dataMatrix
         self.dataMatrix.remove(self.dataMatrix[trialIndex])
-        # now for the hard part: shifting the verbose data!
-        # basically need to read through the verbose matrices, add everything that references that trial to BadVerboseOn, and mark the relevant lines for later deletion
-        for i in range(0, len(self.verboseOn)):
-            if self.verboseOn[i]['trial'] == trialNum:
-                self.badVerboseOn.append(self.verboseOn[i])
-                self.verboseOn[i]['trial'] = 99
-        for j in range(0, len(self.verboseOff)):
-            if self.verboseOff[j]['trial'] == trialNum:
-                self.badVerboseOff.append(self.verboseOff[j])
-                self.verboseOff[j]['trial'] = 99
-        # Elegantly removes the flagged lines from verboseOn and verboseOff
-        self.verboseOn = [vo for vo in self.verboseOn if vo['trial'] != 99]
-        self.verboseOff = [vo for vo in self.verboseOff if vo['trial'] != 99]
-        # and then we need to look at the second coder too...
-        if len(self.verboseOn2) > 0:
-            for i in range(0, len(self.verboseOn2)):
-                if self.verboseOn2[i]['trial'] == trialNum:
-                    self.badVerboseOn2.append(self.verboseOn2[i])
-                    self.verboseOn2[i]['trial'] = 99
-            for j in range(0, len(self.verboseOff2)):
-                if self.verboseOff2[j]['trial'] == trialNum:
-                    self.badVerboseOff2.append(self.verboseOff2[j])
-                    self.verboseOff2[j]['trial'] = 99
-            self.verboseOn2 = [vo2 for vo2 in self.verboseOn2 if vo2['trial'] != 99]
-            self.verboseOff2 = [vo2 for vo2 in self.verboseOff2 if vo2['trial'] != 99]
+        # basically need to read through the verbose matrices, add everything that references that trial to the 'bad'
+        # verbose data matrices, and mark the relevant lines for later deletion
+        for q,z in self.verbDatList.items():
+            if len(z) > 0: # Avoid any blank arrays (e.g. if there is no coder 2)
+                for i in range(0, len(self.verbDatList[q])):
+                    if self.verbDatList[q][i]['trial'] == trialNum:
+                        # Deepcopy needed to stop it from tying the badlist entries to the regular entries and removing them.
+                        self.verbBadList[q].append(deepcopy(self.verbDatList[q][i]))
+                        self.verbDatList[q][i]['trial'] = 99
+                # Elegantly removes all tagged lines of verbose data
+                self.verbDatList[q] = [vo for vo in self.verbDatList[q] if vo['trial'] != 99]
 
-    def checkStop(self, trial, numHab):
+
+
+    def checkStop(self):
         """
         After a hab trial, checks the habitution criteria and returns 'true' if any of them are met.
 
-        :param trial: Trial number
-        :type trial: int
-        :param numHab: The number of hab trials that have been presented
-        :type numHab: int
         :return: True if hab criteria have been met, False otherwise
         :rtype:
         """
 
-        if numHab == self.setCritWindow:  # time to set the hab criterion. This will be true for both dynamic and first
+        if self.habCount == self.setCritWindow:  # time to set the hab criterion. This will be true for both dynamic and first
             sumOnTimes = 0
             # find first hab trial
             x = 0
@@ -333,14 +318,14 @@ class PyHab:
             sumOnTimes = 0
             habs = [i for i, x in enumerate(self.actualTrialOrder) if x == 'Hab']  # list of all habs
             habs.sort()
-            index = habs[numHab - self.setCritWindow] #How far back should we look?
+            index = habs[self.habCount - self.setCritWindow] #How far back should we look?
             for n in range(index, len(self.dataMatrix)):  # now, starting with that trial, go through and add up the good trial looking times
                 if self.dataMatrix[n]['GNG'] == 1 and self.dataMatrix[n]['trialType'] == 'Hab':  # only good trials!
                     sumOnTimes = sumOnTimes + self.dataMatrix[n]['sumOnA']  # add up total looking time
             sumOnTimes = sumOnTimes / self.setCritDivisor
             if sumOnTimes > self.habCrit:
                 self.habCrit = sumOnTimes
-        elif self.setCritType == 'Max' and numHab > self.setCritWindow:  # Absolute max looking time among hab trials, regardless of order.
+        elif self.setCritType == 'Max' and self.habCount > self.setCritWindow:  # Absolute max looking time among hab trials, regardless of order.
             habOns = []
             for n in range(0, len(self.dataMatrix)):
                 if self.dataMatrix[n]['GNG'] == 1 and self.dataMatrix[n]['trialType'] == 'Hab':
@@ -354,13 +339,17 @@ class PyHab:
         # Now we separate out the set and met business.
         if self.habCount == self.maxHabTrials:
             # end habituation and goto test
+            if not self.stimPres:
+                for i in [0, 1, 2]:
+                    core.wait(.25)  # an inadvertent side effect of playing the sound is a short pause before the test trial can begin
+                    self.endHabSound.play()
             return True
-        elif numHab >= self.setCritWindow + self.metCritWindow:  # if we're far enough in that we can plausibly meet the hab criterion
+        elif self.habCount >= self.setCritWindow + self.metCritWindow:  # if we're far enough in that we can plausibly meet the hab criterion
             sumOnTimes = 0
             habs = [i for i, x in enumerate(self.actualTrialOrder) if x == 'Hab']  # list of all habs
             habs.sort()
-            index = habs[numHab - self.metCritWindow]
-            if (self.metCritStatic == 'Moving') or (numHab-self.setCritWindow) % self.metCritWindow == 0:
+            index = habs[self.habCount - self.metCritWindow]
+            if (self.metCritStatic == 'Moving') or (self.habCount-self.setCritWindow) % self.metCritWindow == 0:
                 for n in range(index, len(self.dataMatrix)):  # now, starting with that trial, go through and add up the good trial looking times
                     if self.dataMatrix[n]['GNG'] == 1 and self.dataMatrix[n]['trialType'] == 'Hab':  # only good trials!
                         sumOnTimes = sumOnTimes + self.dataMatrix[n]['sumOnA']  # add up total looking time
@@ -372,6 +361,8 @@ class PyHab:
                             core.wait(.25)  # an inadvertent side effect of playing the sound is a short pause before the test trial can begin
                             self.endHabSound.play()
                     return True
+                else:
+                    return False
             else:
                 return False
         else:
@@ -594,6 +585,161 @@ class PyHab:
             t = 0  # Totally irrelevant.
         return t
 
+    def redoSetup(self, tn, autoAdv):
+        """
+        Lays the groundwork for redoTrial, including correcting the trial order, selecting the right stim, etc.
+        :param tn: Trial number (trialNum)
+        :type tn: int
+        :param autoAdv: The current auto-advance trial type list (different on first trial for Reasons)
+        :type autoAdv: list
+        :return: list, [disMovie, trialNum], the former being the movie file to play if relevant, and the latter being the new trial number
+        :rtype:
+        """
+        numTrialsRedo = 0
+        trialNum = tn
+        if trialNum > 1:  # This stops it from trying to redo a trial before the experiment begins.
+            trialNum -= 1
+            trialType = self.actualTrialOrder[trialNum - 1]
+            numTrialsRedo += 1
+            if self.stimPres:
+                self.counters[trialType] -= 1
+                if self.counters[trialType] < 0:
+                    self.counters[trialType] = 0
+            while trialType in autoAdv and trialNum > 1:  # go find the last non-AA trial and redo from there
+                trialNum -= 1
+                trialType = self.actualTrialOrder[trialNum - 1]
+                numTrialsRedo += 1
+                if self.stimPres:
+                    self.counters[trialType] -= 1
+                    if self.counters[trialType] < 0:  # b/c counters operates over something that is like actualTrialOrder, it should never go beneath 0
+                        self.counters[trialType] = 0
+            if self.stimPres:
+                if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
+                    self.stimName = self.stimNames[trialType][self.counters[trialType] % len(self.stimNames[trialType])]
+                else:
+                    self.stimName = self.stimNames[trialType][self.counters[trialType]]
+                disMovie = self.stimDict[trialType][self.counters[trialType]]
+                self.counters[trialType] += 1
+                if self.counters[trialType] >= len(self.stimDict[trialType]):
+                    self.counters[trialType] = 0
+            else:
+                disMovie = 0
+            self.trialText.text = "Trial no. " + str(trialNum)
+            if self.blindPres < 1:
+                self.rdyTextAppend = " NEXT: " + trialType + " TRIAL"
+        for i in range(trialNum, trialNum + numTrialsRedo):  # Should now rewind all the way to the last non-AA trial.
+            self.redoTrial(i)
+        return [disMovie, trialNum]
+
+    def jumpToTest(self, tn):
+        """
+        Jumps out of a hab block into whatever the first trial is that is not a hab trial or in a hab meta-trial-type
+        :param tn: trial number
+        :type tn: int
+        :return: [disMovie, trialType] as insertHab, the former being the movie file to play if relevant, and the latter being the new trial type
+        :rtype: list
+        """
+        trialNum = tn
+        if len(self.habTrialList) > 0:
+            types = self.habTrialList
+        else:
+            types = ['Hab']
+        habs = [i for i, x in enumerate(self.actualTrialOrder) if x in types] #Find last hab trial or meta-trial
+        tempNum = max(habs)
+        # It's actually necessary to decrement the counter for the current trial type to deal with jump/insert!
+        self.counters[self.actualTrialOrder[trialNum - 1]] -= 1
+        # trialNum is in fact the index after the current trial at this point
+        # so we can just erase everything between that and the first non-hab trial.
+        del self.actualTrialOrder[(trialNum - 1):(tempNum + 1)]
+        trialType = self.actualTrialOrder[trialNum - 1]
+        if self.stimPres:
+            if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
+                self.stimName = self.stimNames[trialType][self.counters[trialType] % len(self.stimNames[trialType])]
+            else:
+                self.stimName = self.stimNames[trialType][self.counters[trialType]]
+            disMovie = self.stimDict[trialType][self.counters[trialType]]
+            self.counters[trialType] += 1
+            if self.counters[trialType] >= len(self.stimDict[trialType]):
+                self.counters[trialType] = 0
+        else:
+            disMovie = 0
+        if self.blindPres < 1:
+            self.rdyTextAppend = " NEXT: " + trialType + " TRIAL"
+        return [disMovie, trialType]
+
+    def insertHab(self,tn):
+        """
+        Literally insert a new hab trial or meta-trial into actualTrialOrder, get the right movie, etc.
+
+        :param tn: trialNum
+        :type tn: int
+        :return: [disMovie, trialType], the former being the movie file to play if relevant, and the latter being the new trial type
+        :rtype: list
+        """
+        trialNum = tn
+        if len(self.habTrialList) > 0:
+            for z in range(0, len(self.habTrialList)):
+                self.actualTrialOrder.insert(trialNum - 1 + z, self.habTrialList[z])
+        else:
+            self.actualTrialOrder.insert(trialNum - 1, 'Hab')
+        trialType = self.actualTrialOrder[trialNum - 1]
+        if self.stimPres:
+            if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
+                self.stimName = self.stimNames[trialType][self.counters[trialType] % len(self.stimNames[trialType])]
+            else:
+                self.stimName = self.stimNames[trialType][self.counters[trialType]]
+            # Insert movies into stimDict! This is difficult.
+            # stimDict is basically actualTrialOrder, but each key is a trial type, and each value a list of dicts
+            # with one entry per number of that trial type, of the form {'stimType': , 'stimObject'}
+            if len(self.habTrialList) > 0:
+                for z in range(0, len(self.habTrialList)):
+                    #Figure out what the next counter would be for each thing.
+                    tempStim = self.stimList[self.stimNames[self.habTrialList[z]][self.counters[self.habTrialList[z]] % len(self.stimNames[self.habTrialList[z]])]]
+                    if tempStim['stimType'] == 'Movie':
+                        tempStimObj = visual.MovieStim3(self.win, tempStim['stimLoc'],
+                                                        size=[self.movieWidth, self.movieHeight], flipHoriz=False,
+                                                        flipVert=False, loop=False)
+                    elif tempStim['stimType'] == 'Image':
+                        tempStimObj = visual.ImageStim(self.win, tempStim['stimLoc'],
+                                                       size=[self.movieWidth, self.movieHeight])
+                    elif tempStim['stimType'] == 'Audio':
+                        tempStimObj = sound.Sound(tempStim['stimLoc'])
+                    else:  # The eternal problem of audio/image pair. Just creates an object that's a dict of audio and image.
+                        audioObj = sound.Sound(tempStim['audioLoc'])
+                        imageObj = visual.ImageStim(self.win, tempStim['imageLoc'],
+                                                    size=[self.movieWidth, self.movieHeight])
+                        tempStimObj = {'Audio': audioObj, 'Image': imageObj}
+                    tempAdd = {'stimType': tempStim['stimType'], 'stim': tempStimObj}
+
+                    self.stimDict[self.habTrialList[z]].insert(self.counters[self.habTrialList[z]], tempAdd)
+            else:
+                tempStim = self.stimList[self.stimNames[trialType][self.counters[trialType] % len(self.stimNames[trialType])]]
+                if tempStim['stimType'] == 'Movie':
+                    tempStimObj = visual.MovieStim3(self.win, tempStim['stimLoc'],
+                                                    size=[self.movieWidth, self.movieHeight], flipHoriz=False,
+                                                    flipVert=False, loop=False)
+                elif tempStim['stimType'] == 'Image':
+                    tempStimObj = visual.ImageStim(self.win, tempStim['stimLoc'],
+                                                   size=[self.movieWidth, self.movieHeight])
+                elif tempStim['stimType'] == 'Audio':
+                    tempStimObj = sound.Sound(tempStim['stimLoc'])
+                else:  # The eternal problem of audio/image pair. Just creates an object that's a dict of audio and image.
+                    audioObj = sound.Sound(tempStim['audioLoc'])
+                    imageObj = visual.ImageStim(self.win, tempStim['imageLoc'],
+                                                size=[self.movieWidth, self.movieHeight])
+                    tempStimObj = {'Audio': audioObj, 'Image': imageObj}
+                tempAdd = {'stimType': tempStim['stimType'], 'stim': tempStimObj}
+                self.stimDict['Hab'].insert(self.habCount, tempAdd)
+            disMovie = self.stimDict[trialType][self.counters[trialType]]
+            self.counters[trialType] += 1
+            if self.counters[trialType] >= len(self.stimDict[trialType]):
+                self.counters[trialType] = 0
+        else:
+            disMovie = 0
+        if self.blindPres < 1:
+            self.rdyTextAppend = " NEXT: " + trialType + " TRIAL"
+        return [disMovie,trialType]
+
     def doExperiment(self):
         """
         The primary control function and main trial loop.
@@ -623,13 +769,11 @@ class PyHab:
             # select movie for trial
             if self.stimPres:
                 if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
-                    self.stimName = self.stimNames[trialType][self.counters[trialType] - len(self.stimNames[trialType])]
+                    self.stimName = self.stimNames[trialType][self.counters[trialType] % len(self.stimNames[trialType])]
                 else:
                     self.stimName = self.stimNames[trialType][self.counters[trialType]]
                 disMovie = self.stimDict[trialType][self.counters[trialType]]
                 self.counters[trialType] += 1
-                if self.counters[trialType] >= len(self.stimNames[trialType]):
-                    self.counters[trialType] = 0
             else:
                 disMovie = 0
             if self.blindPres < 1:
@@ -639,67 +783,13 @@ class PyHab:
                 if self.keyboard[self.key.Y]:
                     end = True
                 elif self.keyboard[self.key.R] and not didRedo:
-                    if trialNum > 1:
-                        trialNum -= 1
-                        self.trialText.text = "Trial no. " + str(trialNum)
-                        trialType = self.actualTrialOrder[trialNum - 1]
-                        if self.blindPres < 1:
-                            self.rdyTextAppend = " NEXT: " + trialType + " TRIAL"
-                        if self.stimPres:
-                            if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
-                                self.stimName = self.stimNames[trialType][self.counters[trialType] - len(self.stimNames[trialType])]
-                            else:
-                                self.stimName = self.stimNames[trialType][self.counters[trialType]]
-                            disMovie = self.stimDict[trialType][self.counters[trialType]]
-                            self.counters[trialType] += 1
-                            if self.counters[trialType] >= len(self.stimDict[trialType]):
-                                self.counters[trialType] = 0
-                        else:
-                            disMovie = 0
-                    self.redoTrial(trialNum)
+                    [disMovie,trialNum] = self.redoSetup(trialNum, AA) #This returns a new value for DisMovie and trialNum
+                    trialType = self.actualTrialOrder[trialNum - 1]
                     didRedo = True
                 elif self.keyboard[self.key.J] and 'Hab' in self.actualTrialOrder[trialNum:]:  # jump to test in a hab design
-                    habs = [i for i, x in enumerate(self.actualTrialOrder) if x == 'Hab']
-                    tempNum = max(habs)
-                    # trialNum is in fact the index after the current trial at this point
-                    # so we can just erase everything between that and the first non-hab trial.
-                    del self.actualTrialOrder[(trialNum - 1):(tempNum+1)]
-                    trialType = self.actualTrialOrder[trialNum - 1]
-                    if self.stimPres:
-                        if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
-                            self.stimName = self.stimNames[trialType][self.counters[trialType] - len(self.stimNames[trialType])]
-                        else:
-                            self.stimName = self.stimNames[trialType][self.counters[trialType]]
-                        disMovie = self.stimDict[trialType][self.counters[trialType]]
-                        self.counters[trialType] += 1
-                        if self.counters[trialType] >= len(self.stimDict[trialType]):
-                            self.counters[trialType] = 0
-                    else:
-                        disMovie = 0
-                    if self.blindPres < 1:
-                        self.rdyTextAppend = " NEXT: " + trialType + " TRIAL"
-                elif trialType != 'Hab' and self.keyboard[self.key.I] and 'Hab' in self.trialOrder:  # insert additional hab trial
-                    # literally insert a new trial into actualTrialOrder, get the right movie, etc.
-                    if len(self.habTrialList) > 0:
-                        for z in range(0, len(self.habTrialList)):
-                            self.actualTrialOrder.insert(trialNum - 1 + z, self.habTrialList[z])
-                    else:
-                        self.actualTrialOrder.insert(trialNum - 1, 'Hab')
-                    trialType = self.actualTrialOrder[trialNum - 1]
-                    if self.stimPres:
-                        if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
-                            self.stimName = self.stimNames[trialType][
-                                self.counters[trialType] - len(self.stimNames[trialType])]
-                        else:
-                            self.stimName = self.stimNames[trialType][self.counters[trialType]]
-                        disMovie = self.stimDict[trialType][self.counters[trialType]]
-                        self.counters[trialType] += 1
-                        if self.counters[trialType] >= len(self.stimDict[trialType]):
-                            self.counters[trialType] = 0
-                    else:
-                        disMovie = 0
-                    if self.blindPres < 1:
-                        self.rdyTextAppend = " NEXT: " + trialType + " TRIAL"
+                    [disMovie, trialType] = self.jumpToTest(trialNum)
+                elif trialType != 'Hab' and self.keyboard[self.key.I] and 'Hab' in self.trialOrder and trialType not in self.habTrialList:  # insert additional hab trial
+                    [disMovie, trialType] = self.insertHab(trialNum)
 
                 elif trialNum > 1 and not self.stimPres and self.keyboard[self.key.P] and not reviewed:  # Print data so far, as xHab. Non-stimulus version only. Only between trials.
                     reviewed = True
@@ -718,9 +808,10 @@ class PyHab:
                 self.frameCount = 0
                 # framerate = win.getActualFrameRate()
                 # print(framerate)               #just some debug code.
-                if trialType not in AA and self.blindPres < 2:
+                if self.blindPres < 2:
                     self.readyText.text = "Trial active"
-                self.dispCoderWindow(0)
+                if trialType not in AA: # Blank coder window if not auto-advancing
+                    self.dispCoderWindow(0)
                 if self.stimPres:
                     if trialType in self.playAttnGetter: #Shockingly, this will work.
                         self.attnGetter(trialType)  # plays the attention-getter
@@ -756,66 +847,13 @@ class PyHab:
                         waitStart = False
                         self.dispCoderWindow(trialType)
                     elif self.keyboard[self.key.R] and not didRedo:  # Redo last trial, mark last trial as bad
-                        if trialNum > 1:
-                            trialNum -= 1
-                            self.trialText.text = "Trial no. " + str(trialNum)
-                            trialType = self.actualTrialOrder[trialNum - 1]
-                            if self.blindPres < 1:
-                                self.rdyTextAppend = " NEXT: " + trialType + " TRIAL"
-                            if self.stimPres:
-                                if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
-                                    self.stimName = self.stimNames[trialType][self.counters[trialType] - len(self.stimNames[trialType])]
-                                else:
-                                    self.stimName = self.stimNames[trialType][self.counters[trialType]]
-                                disMovie = self.stimDict[trialType][self.counters[trialType]]
-                                self.counters[trialType] += 1
-                                if self.counters[trialType] >= len(self.stimDict[trialType]):
-                                    self.counters[trialType] = 0
-                            else:
-                                disMovie = 0
-                        self.redoTrial(trialNum)
+                        [disMovie, trialNum] = self.redoSetup(trialNum, AA)  # This returns a new value for DisMovie and trialNum
+                        trialType = self.actualTrialOrder[trialNum - 1]
                         didRedo = True
                     elif self.keyboard[self.key.J] and trialType == 'Hab':  # jump to test in a hab design
-                        habs = [i for i, x in enumerate(self.actualTrialOrder) if x == 'Hab']
-                        tempNum = max(habs)
-                        # trialNum is in fact the index after the current trial at this point
-                        # so we can just erase everything between that and the first non-hab trial.
-                        del self.actualTrialOrder[trialNum - 1:tempNum]
-                        trialType = self.actualTrialOrder[trialNum - 1]
-                        if self.stimPres:
-                            if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
-                                self.stimName = self.stimNames[trialType][self.counters[trialType] - len(self.stimNames[trialType])]
-                            else:
-                                self.stimName = self.stimNames[trialType][self.counters[trialType]]
-                            disMovie = self.stimDict[trialType][self.counters[trialType]]
-                            self.counters[trialType] += 1
-                            if self.counters[trialType] >= len(self.stimDict[trialType]):
-                                self.counters[trialType] = 0
-                        else:
-                            disMovie = 0
-                        if self.blindPres < 1:
-                            self.rdyTextAppend = " NEXT: " + trialType + " TRIAL"
-                    elif trialType != 'Hab' and self.keyboard[self.key.I] and 'Hab' in self.trialOrder:  # insert additional hab trial
-                        # literally insert a new trial into actualTrialOrder, get the right movie, etc.
-                        if len(self.habTrialList) > 0:
-                            for z in range(0, len(self.habTrialList)):
-                                self.actualTrialOrder.insert(trialNum - 1 + z, self.habTrialList[z])
-                        else:
-                            self.actualTrialOrder.insert(trialNum - 1, 'Hab')
-                        trialType = self.actualTrialOrder[trialNum - 1]
-                        if self.stimPres:  # Here we change the movie file of the current trial only. fine as is.
-                            disMovie = self.stimDict[trialType][self.counters[trialType]]
-                            self.counters[trialType] += 1
-                            if self.counters[trialType] >= len(self.stimDict[trialType]):
-                                self.counters[trialType] = 0
-                            if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
-                                self.stimName = self.stimNames[trialType][self.counters[trialType] - len(self.stimNames[trialType])]
-                            else:
-                                self.stimName = self.stimNames[trialType][self.counters[trialType]]
-                        else:
-                            disMovie = 0
-                        if self.blindPres < 1:
-                            self.rdyTextAppend = " NEXT: " + trialType + " TRIAL"
+                        [disMovie,trialType] = self.jumpToTest(trialNum)
+                    elif trialType != 'Hab' and self.keyboard[self.key.I] and 'Hab' in self.trialOrder and trialType not in self.habTrialList:  # insert additional hab trial
+                        [disMovie,trialType] = self.insertHab(trialNum)
                     else:
                         self.dispCoderWindow(0)
             if not end: #If Y has not been pressed, do the trial! Otherwise, end the experiment.
@@ -830,8 +868,15 @@ class PyHab:
             elif x == 3:  # bad trial, redo!
                 trialNum = trialNum
                 didRedo = True
+                self.win.flip() #Blank the screen.
+                self.counters[trialType] -= 1
+                if self.counters[trialType] < 0:
+                    self.counters[trialType] = 0
             elif x == 1:  # end hab block!
-                habs = [i for i, z in enumerate(self.actualTrialOrder) if z == 'Hab']
+                if len(self.habTrialList) > 0: # Now accounts for meta-trials in which hab is not the last one.
+                    habs = [i for i, z in enumerate(self.actualTrialOrder) if z in self.habTrialList]
+                else:
+                    habs = [i for i, z in enumerate(self.actualTrialOrder) if z == 'Hab']
                 tempNum = max(habs)
                 # trialNum is in fact the index after the current trial at this point
                 # so we can just erase everything between that and the first non-hab trial.
@@ -1064,7 +1109,6 @@ class PyHab:
                 disMovie['stim'].stop()
             elif disMovie['stimType'] == 'Image with audio':
                 disMovie['stim']['Audio'].stop()
-        self.dispCoderWindow()
         if self.stimPres and number < len(self.actualTrialOrder):
             if self.actualTrialOrder[number] not in self.autoAdvance:
                 self.win.flip()  # blanks the screen outright between trials if NOT auto-advancing into the next trial
@@ -1076,7 +1120,7 @@ class PyHab:
 
         if type == 'Hab':  # if still during habituation
             # Check if criteria need to be set or have been met
-            if self.checkStop(number, self.habCount): # If criteria met
+            if self.checkStop(): # If criteria met
                 return 1
             else:
                 return 0
@@ -1102,10 +1146,17 @@ class PyHab:
                 while self.dataMatrix[x]['GNG'] == 0:  # this is to get around the possibility that the same trial had multiple 'false starts'
                     x += 1
                 self.dataMatrix.insert(x, self.badTrials[i])  # python makes this stupid easy
-        # TODO: Check for existing data to prevent overwrites?
-        outputWriter = csv.DictWriter(open(
-            self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + '_' + str(self.today.month) + str(
-                self.today.day) + str(self.today.year) + '.csv', 'w'), fieldnames=self.dataColumns,
+        nDupe = '' # This infrastructure eliminates the risk of overwriting existing data
+        o = 1
+        filename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe +'_' + str(self.today.month) + str(
+                self.today.day) + str(self.today.year) + '.csv'
+        while os.path.exists(filename):
+            o += 1
+            nDupe = str(o)
+            filename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(
+                self.today.month) + str(
+                self.today.day) + str(self.today.year) + '.csv'
+        outputWriter = csv.DictWriter(open(filename, 'w'), fieldnames=self.dataColumns,
                                       extrasaction='ignore', lineterminator='\n')  # careful! this OVERWRITES the existing file. Fills from snum.
         outputWriter.writeheader()
         for r in range(0, len(self.dataMatrix)):
@@ -1116,18 +1167,18 @@ class PyHab:
         # first, verbose data is not as well organized. However, we should be able to alternate back and forth between
         # on and off until we reach the end of a given trial, to reconstruct it.
         # at the start of each line, add information: sNum, ageMo, ageDay, sex, cond, GNG, ON/OFF
-        for n in range(0, len(self.verboseOn)):
-            self.verboseOn[n].update({'snum':self.sNum, 'months':self.ageMo, 'days':self.ageDay, 'sex':self.sex,
+        for n in range(0, len(self.verbDatList['verboseOn'])):
+            self.verbDatList['verboseOn'][n].update({'snum':self.sNum, 'months':self.ageMo, 'days':self.ageDay, 'sex':self.sex,
                                       'cond':self.cond, 'GNG':1, 'gazeOnOff':1})
-        for m in range(0, len(self.verboseOff)):  # adding the details to the verbose array
-            self.verboseOff[m].update({'snum':self.sNum, 'months':self.ageMo, 'days':self.ageDay, 'sex':self.sex,
+        for m in range(0, len(self.verbDatList['verboseOff'])):  # adding the details to the verbose array
+            self.verbDatList['verboseOff'][m].update({'snum':self.sNum, 'months':self.ageMo, 'days':self.ageDay, 'sex':self.sex,
                                       'cond':self.cond, 'GNG':1, 'gazeOnOff':0})
         if len(self.badTrials) > 0:
-            for o in range(0, len(self.badVerboseOn)):
-                self.badVerboseOn[o].update({'snum':self.sNum, 'months':self.ageMo, 'days':self.ageDay, 'sex':self.sex,
+            for o in range(0, len(self.verbBadList['verboseOn'])):
+                self.verbBadList['verboseOn'][o].update({'snum':self.sNum, 'months':self.ageMo, 'days':self.ageDay, 'sex':self.sex,
                                       'cond':self.cond, 'GNG':0, 'gazeOnOff':1})
-            for p in range(0, len(self.badVerboseOff)):  # same details for the bad trials
-                self.badVerboseOff[p].update({'snum':self.sNum, 'months':self.ageMo, 'days':self.ageDay, 'sex':self.sex,
+            for p in range(0, len(self.verbBadList['verboseOff'])):  # same details for the bad trials
+                self.verbBadList['verboseOff'][p].update({'snum':self.sNum, 'months':self.ageMo, 'days':self.ageDay, 'sex':self.sex,
                                       'cond':self.cond, 'GNG':0, 'gazeOnOff':0})
         # read the final data matrix and go trial by trial.
         # print(verboseOn) #debug, to make sure verboseOn is being constructed correctly
@@ -1136,22 +1187,22 @@ class PyHab:
             onIndex = -1
             offIndex = -1
             if self.dataMatrix[q]['GNG'] == 1:  # separate for good and bad trials
-                for x in range(0, len(self.verboseOn)):
-                    if self.verboseOn[x]['trial'] == tnum and onIndex == -1:  # find the right index in the verbose matrices
+                for x in range(0, len(self.verbDatList['verboseOn'])):
+                    if self.verbDatList['verboseOn'][x]['trial'] == tnum and onIndex == -1:  # find the right index in the verbose matrices
                         onIndex = x
-                for y in range(0, len(self.verboseOff)):
-                    if self.verboseOff[y]['trial'] == tnum and offIndex == -1:
+                for y in range(0, len(self.verbDatList['verboseOff'])):
+                    if self.verbDatList['verboseOff'][y]['trial'] == tnum and offIndex == -1:
                         offIndex = y
                 trialVerbose = []
                 if onIndex >= 0:
-                    while onIndex < len(self.verboseOn):
-                        if self.verboseOn[onIndex]['trial'] == tnum:
-                            trialVerbose.append(self.verboseOn[onIndex])
+                    while onIndex < len(self.verbDatList['verboseOn']):
+                        if self.verbDatList['verboseOn'][onIndex]['trial'] == tnum:
+                            trialVerbose.append(self.verbDatList['verboseOn'][onIndex])
                         onIndex += 1
                 if offIndex >= 0:
-                    while offIndex < len(self.verboseOff):
-                        if self.verboseOff[offIndex]['trial'] == tnum:
-                            trialVerbose.append(self.verboseOff[offIndex])
+                    while offIndex < len(self.verbDatList['verboseOff']):
+                        if self.verbDatList['verboseOff'][offIndex]['trial'] == tnum:
+                            trialVerbose.append(self.verbDatList['verboseOff'][offIndex])
                         offIndex += 1
                 trialVerbose2 = sorted(trialVerbose, key=lambda trialVerbose: trialVerbose['startTime'])  #Sorts by "startTime" of each gaze event
                 verboseMatrix.extend(trialVerbose2)
@@ -1160,67 +1211,67 @@ class PyHab:
                     pass  # stops it from doubling up. If there is more than one consecutive bad trial, it will get all of them in a row the first time,
                 else:
                     trialVerbose = []
-                    for x in range(0, len(self.badVerboseOn)):
-                        if self.badVerboseOn[x]['trial'] == tnum and onIndex == -1:
+                    for x in range(0, len(self.verbBadList['verboseOn'])):
+                        if self.verbBadList['verboseOn'][x]['trial'] == tnum and onIndex == -1:
                             onIndex = x
-                    for y in range(0, len(self.badVerboseOff)):
-                        if self.badVerboseOff[y]['trial'] == tnum and offIndex == -1:
+                    for y in range(0, len(self.verbBadList['verboseOff'])):
+                        if self.verbBadList['verboseOff'][y]['trial'] == tnum and offIndex == -1:
                             offIndex = y
                     if onIndex >= 0:
-                        while onIndex < len(self.badVerboseOn):
-                            if self.badVerboseOn[onIndex]['trial'] == tnum:
-                                trialVerbose.append(self.badVerboseOn[onIndex])
+                        while onIndex < len(self.verbBadList['verboseOn']):
+                            if self.verbBadList['verboseOn'][onIndex]['trial'] == tnum:
+                                trialVerbose.append(self.verbBadList['verboseOn'][onIndex])
                             onIndex += 1
                     if offIndex >= 0:
-                        while offIndex < len(self.badVerboseOff):
-                            if self.badVerboseOff[offIndex]['trial'] == tnum:
-                                trialVerbose.append(self.badVerboseOff[offIndex])
+                        while offIndex < len(self.verbBadList['verboseOff']):
+                            if self.verbBadList['verboseOff'][offIndex]['trial'] == tnum:
+                                trialVerbose.append(self.verbBadList['verboseOff'][offIndex])
                             offIndex += 1
                     trialVerbose2 = sorted(trialVerbose, key=lambda trialVerbose: trialVerbose['startTime'])  # this is the magic bullet, in theory.
                     verboseMatrix.extend(trialVerbose2)
         headers2 = ['snum', 'months', 'days', 'sex', 'cond', 'GNG', 'gazeOnOff', 'trial', 'trialType', 'startTime', 'endTime', 'duration']
         outputWriter2 = csv.DictWriter(open(
-            self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '_VERBOSE.csv', 'w'),
+            self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '_VERBOSE.csv', 'w'),
                                    fieldnames=headers2, extrasaction='ignore', lineterminator='\n')  # careful! this OVERWRITES the existing file. Fills from snum.
         outputWriter2.writeheader()
         for z in range(0, len(verboseMatrix)):
             outputWriter2.writerow(verboseMatrix[z])
-        if len(self.verboseOn2) > 0: # If there is even a single gaze-on event from coder B, save coder B data.
+        if len(self.verbDatList['verboseOn2']) > 0: # If there is even a single gaze-on event from coder B, save coder B data.
             verboseMatrix2 = []
-            for n in range(0, len(self.verboseOn2)):
-                self.verboseOn2[n].update({'snum':self.sNum, 'months':self.ageMo, 'days':self.ageDay, 'sex':self.sex,
+            for n in range(0, len(self.verbDatList['verboseOn2'])):
+                self.verbDatList['verboseOn2'][n].update({'snum':self.sNum, 'months':self.ageMo, 'days':self.ageDay, 'sex':self.sex,
                                       'cond':self.cond, 'GNG':1, 'gazeOnOff':1})
-            for m in range(0, len(self.verboseOff2)):
-                self.verboseOff2[m].update({'snum':self.sNum, 'months':self.ageMo, 'days':self.ageDay, 'sex':self.sex,
+            for m in range(0, len(self.verbDatList['verboseOff2'])):
+                self.verbDatList['verboseOff2'][m].update({'snum':self.sNum, 'months':self.ageMo, 'days':self.ageDay, 'sex':self.sex,
                                       'cond':self.cond, 'GNG':1, 'gazeOnOff':0})
             if len(self.badTrials) > 0:
-                for o in range(0, len(self.badVerboseOn2)):
-                    self.badVerboseOn2[o].update({'snum':self.sNum, 'months':self.ageMo, 'days':self.ageDay, 'sex':self.sex,
+                for o in range(0, len(self.verbBadList['verboseOn2'])):
+                    self.verbBadList['verboseOn2'][o].update({'snum':self.sNum, 'months':self.ageMo, 'days':self.ageDay, 'sex':self.sex,
                                       'cond':self.cond, 'GNG':0, 'gazeOnOff':1})
-                for p in range(0, len(self.badVerboseOff2)):
-                    self.badVerboseOff2[p].update({'snum':self.sNum, 'months':self.ageMo, 'days':self.ageDay, 'sex':self.sex,
+                for p in range(0, len(self.verbBadList['verboseOff2'])):
+                    self.verbBadList['verboseOff2'][p].update({'snum':self.sNum, 'months':self.ageMo, 'days':self.ageDay, 'sex':self.sex,
                                       'cond':self.cond, 'GNG':0, 'gazeOnOff':0})
             for q in range(0, len(self.dataMatrix)):
                 tnum = self.dataMatrix[q]['trial']
                 onIndex2 = -1
                 offIndex2 = -1
                 if self.dataMatrix[q]['GNG'] == 1:  # separate for good and bad trials
-                    for x in range(0, len(self.verboseOn2)):
-                        if self.verboseOn2[x]['trial'] == tnum and onIndex2 == -1:  # find the right index in the verbose matrices
+                    for x in range(0, len(self.verbDatList['verboseOn2'])):
+                        if self.verbDatList['verboseOn2'][x]['trial'] == tnum and onIndex2 == -1:  # find the right index in the verbose matrices
                             onIndex2 = x
-                    for y in range(0, len(self.verboseOff2)):
-                        if self.verboseOff2[y]['trial'] == tnum and offIndex2 == -1:
+                    for y in range(0, len(self.verbDatList['verboseOff2'])):
+                        if self.verbDatList['verboseOff2'][y]['trial'] == tnum and offIndex2 == -1:
                             offIndex2 = y
                     trialVerbose = []
                     if onIndex2 >= 0:
-                        while onIndex2 < len(self.verboseOn2):
-                            if self.verboseOn2[onIndex2]['trial'] == tnum:
-                                trialVerbose.append(self.verboseOn2[onIndex2])
+                        while onIndex2 < len(self.verbDatList['verboseOn2']):
+                            if self.verbDatList['verboseOn2'][onIndex2]['trial'] == tnum:
+                                trialVerbose.append(self.verbDatList['verboseOn2'][onIndex2])
                             onIndex2 += 1
                     if offIndex2 >= 0:
-                        while offIndex2 < len(self.verboseOff2):
-                            if self.verboseOff2[offIndex2]['trial'] == tnum:
-                                trialVerbose.append(self.verboseOff2[offIndex2])
+                        while offIndex2 < len(self.verbDatList['verboseOff2']):
+                            if self.verbDatList['verboseOff2'][offIndex2]['trial'] == tnum:
+                                trialVerbose.append(self.verbDatList['verboseOff2'][offIndex2])
                             offIndex2 += 1
                     trialVerbose2 = sorted(trialVerbose, key=lambda trialVerbose: trialVerbose['startTime'])
                     verboseMatrix2.extend(trialVerbose2)
@@ -1228,27 +1279,27 @@ class PyHab:
                     if q > 0 and self.dataMatrix[q - 1]['GNG'] == 0:
                         pass  # stops it from doubling up. If there is more than one consecutive bad trial, it will get all of them in a row the first time,
                     else:
-                        for x in range(0, len(self.badVerboseOn2)):
-                            if self.badVerboseOn2[x]['trial'] == tnum and onIndex2 == -1:
+                        for x in range(0, len(self.verbBadList['verboseOn2'])):
+                            if self.verbBadList['verboseOn2'][x]['trial'] == tnum and onIndex2 == -1:
                                 onIndex2 = x
-                        for y in range(0, len(self.badVerboseOff2)):
-                            if self.badVerboseOff2[y]['trial'] == tnum and offIndex2 == -1:
+                        for y in range(0, len(self.verbBadList['verboseOff2'])):
+                            if self.verbBadList['verboseOff2'][y]['trial'] == tnum and offIndex2 == -1:
                                 offIndex2 = y
                         trialVerbose = []
                         if onIndex2 >= 0:
-                            while onIndex2 < len(self.badVerboseOn2):
-                                if self.badVerboseOn2[onIndex2]['trial'] == tnum:
-                                    trialVerbose.append(self.badVerboseOn2[onIndex2])
+                            while onIndex2 < len(self.verbBadList['verboseOn2']):
+                                if self.verbBadList['verboseOn2'][onIndex2]['trial'] == tnum:
+                                    trialVerbose.append(self.verbBadList['verboseOn2'][onIndex2])
                                 onIndex2 += 1
                         if offIndex2 >= 0:
-                            while offIndex2 < len(self.badVerboseOff2):
-                                if self.badVerboseOff2[offIndex2]['trial'] == tnum:
-                                    trialVerbose.append(self.badVerboseOff2[offIndex2])
+                            while offIndex2 < len(self.verbBadList['verboseOff2']):
+                                if self.verbBadList['verboseOff2'][offIndex2]['trial'] == tnum:
+                                    trialVerbose.append(self.verbBadList['verboseOff2'][offIndex2])
                                 offIndex2 += 1
                         trialVerbose2 = sorted(trialVerbose, key=lambda trialVerbose: trialVerbose['startTime'])
                         verboseMatrix2.extend(trialVerbose2)
             outputWriter3 = csv.DictWriter(open(
-                self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '_VERBOSEb.csv', 'w'),
+                self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '_VERBOSEb.csv', 'w'),
                                     fieldnames=headers2, extrasaction='ignore', lineterminator='\n')
             outputWriter3.writeheader()
             for k in range(0, len(verboseMatrix2)):
@@ -1256,7 +1307,7 @@ class PyHab:
             rel = self.reliability(verboseMatrix, verboseMatrix2)
             headers3 = ['WeightedPercentageAgreement', 'CohensKappa', 'AverageObserverAgreement', 'PearsonsR']
             outputWriter4 = csv.DictWriter(open(
-                self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '_Stats.csv', 'w'),
+                self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '_Stats.csv', 'w'),
                                       fieldnames=headers3, extrasaction='ignore', lineterminator='\n')
             outputWriter4.writeheader()
             outputWriter4.writerow(rel)
@@ -1445,38 +1496,41 @@ class PyHab:
         except ValueError:
             return False
 
-    def run(self):
+    def run(self, testMode = []):
         """
-        Startup function. Presents subject information to researcher, creates relevant windows,
-        reads and follows settings and condition files and loads stimuli (if applicable), and then
-        calls doExperiment.
+        Startup function. Presents subject information dialog to researcher, reads and follows settings and condition
+        files. Now with a testing mode to allow us to skip the dialog and ensure the actualTrialOrder structure is being
+        put together properly in unit testing.
 
+        :param testMode: Optional and primarily only used for unit testing. Will not launch the window and start the experiment. Contains all the info that would appear in the subject info dialog.
+        :type testMode: list
         :return:
         :rtype:
         """
-        startDlg = gui.Dlg(title=self.prefix + ' Experiment')
-        startDlg.addText('Subject info')
-        startDlg.addField('Subject Number: ')
-        startDlg.addField('Subject ID: ')
-        startDlg.addField('sex: ')
-        startDlg.addField('DOB(month): ')
-        startDlg.addField('DOB(day): ')
-        startDlg.addField('DOB(year): ')
-        if self.randPres and len(self.condList) > 0:
-            startDlg.addField('Cond: ', choices=self.condList)
+        if len(testMode) > 0: # This is for testing purposes, to make sure we can automatically test most of the features of PyHab
+            import mock
+            startDlg = mock.MagicMock()
+            startDlg.data = testMode
+            startDlg.OK = True
         else:
-            startDlg.addField('Cond: ')
-        if not self.stimPres:
-            startDlg.addField('DOT(month): ')
-            startDlg.addField('DOT(day): ')
-            startDlg.addField('DOT(year): ')
-        startDlg.show()
+            startDlg = gui.Dlg(title=self.prefix + ' Experiment')
+            startDlg.addText('Subject info')
+            startDlg.addField('Subject Number: ')
+            startDlg.addField('Subject ID: ')
+            startDlg.addField('sex: ')
+            startDlg.addField('DOB(month): ')
+            startDlg.addField('DOB(day): ')
+            startDlg.addField('DOB(year): ')
+            if self.randPres and len(self.condList) > 0:
+                startDlg.addField('Cond: ', choices=self.condList)
+            else:
+                startDlg.addField('Cond: ')
+            if not self.stimPres:
+                startDlg.addField('DOT(month): ')
+                startDlg.addField('DOT(day): ')
+                startDlg.addField('DOT(year): ')
+            startDlg.show()
         if startDlg.OK:
-            if self.stimPres:
-                # Stimulus presentation window
-                self.win = visual.Window((self.screenWidth, self.screenHeight), fullscr=False, screen=1, allowGUI=False, units='pix', color=self.screenColor)
-            # Coder window
-            self.win2 = visual.Window((400, 400), fullscr=False, screen=0, allowGUI=True, units='pix', waitBlanking=False, rgb=[-1, -1, -1])
             thisInfo = startDlg.data
             self.sNum = thisInfo[0]
             self.sID = thisInfo[1]
@@ -1504,108 +1558,115 @@ class PyHab:
                 else:
                     self.actualTrialOrder.append(self.trialOrder[i])
             # build trial order
-            if self.randPres and len(self.condList) > 0:  # Extra check added.
+            if self.randPres and len(self.condList) > 0:  # Extra check: We WANT conditions and we HAVE them too.
                 self.condLabel = thisInfo[6]
                 testReader = csv.reader(open(self.condPath + self.condFile, 'rU'))
                 testStuff = []
                 for row in testReader:
                     testStuff.append(row)
                 testDict = dict(testStuff)
-                self.cond = testDict[
-                    self.condLabel]  # this will read as order of indeces in N groups, in a 2-dimensional array
+                self.cond = testDict[self.condLabel]  # this will read as order of indeces in N groups, in a 2-dimensional array
                 # type conversion required. Eval will read the string into a dictionary (now).
                 self.cond = eval(self.cond)
                 # now to rearrange the lists of each trial type.
                 finalDict = []
-                if sys.version_info[0] < 3:
-                    for i, j in self.cond.items():
-                        newTempTrials = []
-                        for q in range(0, len(j)):
-                            newTempTrials.append(self.stimNames[i][j[q] - 1])
-                        finalDict.append((i, newTempTrials))
-                else:
-                    for i, j in self.cond.items():
-                        newTempTrials = []
-                        for q in range(0, len(j)):
-                            newTempTrials.append(self.stimNames[i][j[q] - 1])
-                        finalDict.append((i, newTempTrials))
+                for i, j in self.cond.items():
+                    newTempTrials = []
+                    for q in range(0, len(j)):
+                        newTempTrials.append(self.stimNames[i][j[q] - 1])
+                    finalDict.append((i, newTempTrials))
                 self.stimNames = dict(finalDict)
             else:
                 self.cond = thisInfo[6]
                 self.condLabel = self.cond
-            if self.stimPres:
-                tempText = visual.TextStim(self.win2, text="Loading Stimuli", pos=[0, 0], color='white', bold=True, height=40)
-                tempText.draw()
-                self.win2.flip()
-                self.stimDict = {x: [] for x in self.stimNames.keys()}  # This holds all the loaded movies.
-                self.counters = {x: 0 for x in self.stimNames.keys()}  # list of counters, one per index of the dict, so it knows which movie to play
-                tempCtr = {x: 0 for x in self.stimNames.keys()}
-                for i in self.actualTrialOrder:
-                    if not i == 'Hab':
-                        x = tempCtr[i]
+            if len(testMode) == 0: # If we're in test mode, skip setting up the window and launching the experiment.
+                self.SetupWindow()
+
+    def SetupWindow(self):
+        """
+        Sets up the stimulus presentation and coder windows, loads all the stimuli, then starts the experiment
+        with doExperiment()
+
+        :return:
+        :rtype:
+        """
+        # Important to do this first because it gets the windows in the correct order for focus etc.
+        if self.stimPres:
+            # Stimulus presentation window
+            self.win = visual.Window((self.screenWidth, self.screenHeight), fullscr=False, screen=1, allowGUI=False,
+                                     units='pix', color=self.screenColor)
+        # Coder window
+        self.win2 = visual.Window((400, 400), fullscr=False, screen=0, allowGUI=True, units='pix', waitBlanking=False,
+                                  rgb=[-1, -1, -1])
+        if self.stimPres:
+            tempText = visual.TextStim(self.win2, text="Loading Stimuli", pos=[0, 0], color='white', bold=True, height=40)
+            tempText.draw()
+            self.win2.flip()
+            self.stimDict = {x: [] for x in self.stimNames.keys()}  # This holds all the loaded movies.
+            self.counters = {x: 0 for x in self.stimNames.keys()}  # list of counters, one per index of the dict, so it knows which movie to play
+            tempCtr = {x: 0 for x in self.stimNames.keys()}
+            for i in self.actualTrialOrder:
+                x = tempCtr[i] # Changed so hab trials get the same treatment as everything else.
+                tempStim = self.stimList[self.stimNames[i][x]]
+                if tempStim['stimType'] == 'Movie':
+                    tempStimObj = visual.MovieStim3(self.win, tempStim['stimLoc'],
+                                                  size=[self.movieWidth, self.movieHeight], flipHoriz=False,
+                                                  flipVert=False, loop=False)
+                elif tempStim['stimType'] == 'Image':
+                    tempStimObj = visual.ImageStim(self.win, tempStim['stimLoc'],
+                                                   size=[self.movieWidth, self.movieHeight])
+                elif tempStim['stimType'] == 'Audio':
+                    tempStimObj = sound.Sound(tempStim['stimLoc'])
+                else: # The eternal problem of audio/image pair. Just creates an object that's a dict of audio and image.
+                    audioObj = sound.Sound(tempStim['audioLoc'])
+                    imageObj = visual.ImageStim(self.win, tempStim['imageLoc'],
+                                                   size=[self.movieWidth, self.movieHeight])
+                    tempStimObj = {'Audio': audioObj, 'Image': imageObj}
+                tempAdd = {'stimType':tempStim['stimType'], 'stim':tempStimObj}
+                self.stimDict[i].append(tempAdd)
+                tempCtr[i] += 1
+                if tempCtr[i] >= len(self.stimNames[i]):
+                    tempCtr[i] = 0
+
+            if len(list(self.playAttnGetter.keys())) > 0:
+                for i in list(self.attnGetterList.keys()):
+                    if self.attnGetterList[i]['stimType'] == 'Audio':
+                        self.attnGetterList[i]['file'] = sound.Sound(self.attnGetterList[i]['stimLoc'])
                     else:
-                        x = 0  # For hab trials, only load the first thing. After randomization, so between-subjects works.
-                    tempStim = self.stimList[self.stimNames[i][x]]
-                    if tempStim['stimType'] == 'Movie':
-                        tempStimObj = visual.MovieStim3(self.win, tempStim['stimLoc'],
-                                                      size=[self.movieWidth, self.movieHeight], flipHoriz=False,
-                                                      flipVert=False, loop=False)
-                    elif tempStim['stimType'] == 'Image':
-                        tempStimObj = visual.ImageStim(self.win, tempStim['stimLoc'],
-                                                       size=[self.movieWidth, self.movieHeight])
-                    elif tempStim['stimType'] == 'Audio':
-                        tempStimObj = sound.Sound(tempStim['stimLoc'])
-                    else: # The eternal problem of audio/image pair. Just creates an object that's a dict of audio and image.
-                        audioObj = sound.Sound(tempStim['audioLoc'])
-                        imageObj = visual.ImageStim(self.win, tempStim['imageLoc'],
-                                                       size=[self.movieWidth, self.movieHeight])
-                        tempStimObj = {'Audio': audioObj, 'Image': imageObj}
-                    tempAdd = {'stimType':tempStim['stimType'], 'stim':tempStimObj}
-                    self.stimDict[i].append(tempAdd)
-                    if not i == 'Hab':
-                        tempCtr[i] += 1
-                        if tempCtr[i] >= len(self.stimNames[i]):
-                            tempCtr[i] = 0
+                        self.attnGetterList[i]['file'] = visual.MovieStim3(self.win, self.attnGetterList[i]['stimLoc'],
+                                                                           size=[self.movieWidth, self.movieHeight],
+                                                                           flipHoriz=False, flipVert=False, loop=False)
 
-                if len(list(self.playAttnGetter.keys())) > 0:
-                    for i in list(self.attnGetterList.keys()):
-                        if self.attnGetterList[i]['stimType'] == 'Audio':
-                            self.attnGetterList[i]['file'] = sound.Sound(self.attnGetterList[i]['stimLoc'])
-                        else:
-                            self.attnGetterList[i]['file'] = visual.MovieStim3(self.win, self.attnGetterList[i]['stimLoc'],
-                                                                               size=[self.movieWidth, self.movieHeight],
-                                                                               flipHoriz=False, flipVert=False, loop=False)
+        self.keyboard = self.key.KeyStateHandler()
+        self.win2.winHandle.push_handlers(self.keyboard)
+        if self.stimPres:
+            self.win.winHandle.push_handlers(self.keyboard)
+            self.baseSize = 40 # Base size of all attention-getters, in pixels
+            self.attnGetterSquare = visual.Rect(self.win, height=self.baseSize, width=self.baseSize, pos=[self.testOffset + 0, 0], fillColor='black')
+            self.attnGetterCross = visual.ShapeStim(self.win, vertices='cross', size=self.baseSize, pos=[self.testOffset + 0, 0], fillColor='black')
 
-            self.keyboard = self.key.KeyStateHandler()
-            self.win2.winHandle.push_handlers(self.keyboard)
-            if self.stimPres:
-                self.win.winHandle.push_handlers(self.keyboard)
-                self.baseSize = 40 # Base size of all attention-getters, in pixels
-                self.attnGetterSquare = visual.Rect(self.win, height=self.baseSize, width=self.baseSize, pos=[self.testOffset + 0, 0], fillColor='black')
-                self.attnGetterCross = visual.ShapeStim(self.win, vertices='cross', size=self.baseSize, pos=[self.testOffset + 0, 0], fillColor='black')
+            numVertices = 10
+            starRad = self.baseSize #This creates a large but static rotating star. It does not loom.
+            starVerts = []
+            for x in range(0,numVertices):
+                if x % 2 == 1:
+                    tempRad = starRad*.55  # How much to draw in between the "points"
+                else:
+                    tempRad = starRad
+                tempVert = [tempRad*sin((2*pi)/numVertices * x), tempRad*cos((2*pi)/numVertices * x)]
+                starVerts.append(tempVert)
 
-                numVertices = 10
-                starRad = self.baseSize #This creates a large but static rotating star. It does not loom.
-                starVerts = []
-                for x in range(0,numVertices):
-                    if x % 2 == 1:
-                        tempRad = starRad*.55  # How much to draw in between the "points"
-                    else:
-                        tempRad = starRad
-                    tempVert = [tempRad*sin((2*pi)/numVertices * x), tempRad*cos((2*pi)/numVertices * x)]
-                    starVerts.append(tempVert)
+            self.attnGetterStar = visual.ShapeStim(self.win, vertices=starVerts, pos=[self.testOffset + 0, 0], fillColor='black')
 
-                self.attnGetterStar = visual.ShapeStim(self.win, vertices=starVerts, pos=[self.testOffset + 0, 0], fillColor='black')
-
-            self.statusSquareA = visual.Rect(self.win2, height=80, width=80,
-                                             pos=[self.statusOffset - 60, self.statusOffsetY + 0],
-                                             fillColor='black')  # These two appear on the status screen window.
-            self.statusSquareB = visual.Rect(self.win2, height=80, width=80,
-                                             pos=[self.statusOffset + 60, self.statusOffsetY + 0], fillColor='black')
-            self.statusTextA = visual.TextStim(self.win2, text="", pos=[self.statusOffset - 60, self.statusOffsetY + 0],
-                                               color='white', bold=True, height=30)
-            self.statusTextB = visual.TextStim(self.win2, text="", pos=[self.statusOffset + 60, self.statusOffsetY + 0],
-                                               color='white', bold=True, height=30)
-            self.trialText = visual.TextStim(self.win2, text="Trial no: ", pos=[-150, 150], color='white')
-            self.readyText = visual.TextStim(self.win2, text="Trial not active", pos=[-25, 100], color='white')
-            self.doExperiment()  # Get this show on the road!
+        self.statusSquareA = visual.Rect(self.win2, height=80, width=80,
+                                         pos=[self.statusOffset - 60, self.statusOffsetY + 0],
+                                         fillColor='black')  # These two appear on the status screen window.
+        self.statusSquareB = visual.Rect(self.win2, height=80, width=80,
+                                         pos=[self.statusOffset + 60, self.statusOffsetY + 0], fillColor='black')
+        self.statusTextA = visual.TextStim(self.win2, text="", pos=[self.statusOffset - 60, self.statusOffsetY + 0],
+                                           color='white', bold=True, height=30)
+        self.statusTextB = visual.TextStim(self.win2, text="", pos=[self.statusOffset + 60, self.statusOffsetY + 0],
+                                           color='white', bold=True, height=30)
+        self.trialText = visual.TextStim(self.win2, text="Trial no: ", pos=[-150, 150], color='white')
+        self.readyText = visual.TextStim(self.win2, text="Trial not active", pos=[-25, 100], color='white')
+        self.doExperiment()  # Get this show on the road!
