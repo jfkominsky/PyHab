@@ -60,7 +60,7 @@ class PyHabPL(PyHab):
         self.verbBadList['verboseOff'].extend(offArray)
         tempData = {'sNum': self.sNum, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex, 'cond': self.cond,
                     'condLabel': self.condLabel,
-                    'trial': trial, 'GNG': 1, 'trialType': ttype, 'stimName': stimName, 'habCrit': self.habCrit,
+                    'trial': trial, 'GNG': 0, 'trialType': ttype, 'stimName': stimName, 'habCrit': self.habCrit,
                     'sumOnL': sumOn, 'numOnL': len(onArray),
                     'sumOnR': sumOn2, 'numOnR': len(onArray2), 'sumOff': sumOff, 'numOff': len(offArray)}
         self.badTrials.append(tempData)
