@@ -167,6 +167,11 @@ class TestDataFunc(object):
         assert self.dataInst.badTrials[0]['numOffB'] == len(self.trialVOff2)
 
     def test_redo(self):
+        """
+        Test that redo properly updates the data file and structures.
+        :return:
+        :rtype:
+        """
         tempMatrix = copy.deepcopy(self.testMatrix)
         tempDat = copy.deepcopy(self.testDatList)
         self.dataInst.dataMatrix = copy.deepcopy(self.testMatrix)
