@@ -11,7 +11,7 @@ import wx, random, csv
 from math import *
 from datetime import *
 from dateutil.relativedelta import *
-from PyHabClass import PyHab
+from .PyHabClass import PyHab
 
 class PyHabPL(PyHab):
     """
