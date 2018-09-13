@@ -18,7 +18,6 @@ class PyHabBuilder:
     with different trial types.
 
     TODO: Add the ability to remove stimuli once added. Nonessential.
-    TODO: Fix colors in study flow when a trial type is deleted.
 
     """
     def __init__(self, loadedSaved=False, settingsDict={}):
@@ -48,13 +47,15 @@ class PyHabBuilder:
         self.aspect = float(height)/float(width) #Determine aspect ratio width/height. Impt. for using norm.
         #A bunch of useful stuff for drawing the interface
         self.colorsArray= ['red','blue','green','purple','brown','LightSeaGreen','gold','Magenta'] #colors for dif trial types. Will eventually need an arbitrary number...
-        self.flowWidthObj = .06*float(abs(self.flowArea[1]-self.flowArea[0])) #Width of one item in the flow, though this will possibly have to change...
+        self.flowWidMult = .07
+        self.flowWidthObj = self.flowWidMult*float(abs(self.flowArea[1]-self.flowArea[0])) #Width of one item in the flow, though this will possibly have to change...
         self.flowHeightObj = (self.flowWidthObj/self.aspect)*.8
         self.typeWidthObj = .4*float(abs(self.paletteArea[1]-self.paletteArea[0])) #Width of one item in the flow, though this will possibly have to change...
         self.typeHeightObj = (self.typeWidthObj/self.aspect)*.6
         self.typeLocs =[]
         self.flowLocs =[]
         self.overFlowLocs = [] # For >20 trials, go up to 40
+        self.flowGap = .09 # A easy reference for the horizontal spacing of items in the flow
         self.condDict = {} #For creating conditions
         self.mouse = event.Mouse()
         for x in [.25,.75]: #Two columns of trial types
@@ -63,11 +64,11 @@ class PyHabBuilder:
                                       self.paletteArea[2]+.2*(self.paletteArea[3]-self.paletteArea[2])+z*.15*(self.paletteArea[3]-self.paletteArea[2])])
         for y in [.25,.75]: #two rows for the study flow.
             for z in range(1,11):
-                    self.flowLocs.append([self.flowArea[0]+z*(self.flowArea[1]-self.flowArea[0])*.09,
+                    self.flowLocs.append([self.flowArea[0]+z*(self.flowArea[1]-self.flowArea[0])*self.flowGap,
                                           self.flowArea[2]+y*(self.flowArea[3]-self.flowArea[2])])
         for y in [.2, .4, .6, .8]:  # two rows for the study flow.
             for z in range(1, 11):
-                self.overFlowLocs.append([self.flowArea[0] + z * (self.flowArea[1] - self.flowArea[0]) * .09,
+                self.overFlowLocs.append([self.flowArea[0] + z * (self.flowArea[1] - self.flowArea[0]) * self.flowGap,
                                       self.flowArea[2] + y * (self.flowArea[3] - self.flowArea[2])])
         # loadedSaved is "is this a new experiment or are we operating inside an existing experiment's folder?"
         if not loadedSaved:  # A new blank experiment
@@ -469,7 +470,7 @@ class PyHabBuilder:
                         self.settings['trialOrder'] = [typeInfo[0] if x == trialType else x for x in self.settings['trialOrder']]
                     elif typeInfo[0] in self.trialTypesArray['labels']:
                         #warning dialog, start over with all info entered so far.
-                        warnDlg = gui.dlg(title="Warning!")
+                        warnDlg = gui.Dlg(title="Warning!")
                         warnDlg.addText("New trial type label matches an existing trial type! Please choose a different name for this trial type.")
                         warnDlg.show()
                         skip = True
@@ -536,6 +537,9 @@ class PyHabBuilder:
                         self.trialTypesArray['text'].append(tempTxt)
                         self.settings['trialTypes'].append(typeInfo[0])
                         self.settings['stimNames'][typeInfo[0]] = []
+                self.studyFlowArray = self.loadFlow()
+                self.showMainUI()
+                self.win.flip()
     
     def addHabBlock(self, makeNew = True):
         """
@@ -814,12 +818,16 @@ class PyHabBuilder:
                     lx = (lx2+lx1)/2 # Ideally putting it square in between the two places.
                     loc = [lx,flowSpace[j][1]]
                     tempObj = visual.Rect(self.win,width=self.flowWidthObj*2, height=self.flowHeightObj, fillColor=self.colorsArray[c], pos=loc)
+                elif tOrd[i] in self.settings['autoAdvance'] and j not in [0, 10, 20, 30]:
+                    # Make it adjacent to the last one, unless it would start a row, in which case leave it.
+                    loc = [flowSpace[j][0]-abs(self.flowArea[1]-self.flowArea[0])*((self.flowGap-self.flowWidMult)/2), flowSpace[j][1]]
+                    tempObj = visual.Rect(self.win, width=abs(self.flowArea[1]-self.flowArea[0])*(self.flowWidMult + (self.flowGap-self.flowWidMult)), height=self.flowHeightObj, fillColor=self.colorsArray[c], pos=loc)
                 else:
-                    tempObj = visual.Rect(self.win,width=self.flowWidthObj, height=self.flowHeightObj, fillColor=self.colorsArray[c], pos=flowSpace[j])
+                    tempObj = visual.Rect(self.win, width=self.flowWidthObj, height=self.flowHeightObj, fillColor=self.colorsArray[c], pos=flowSpace[j])
                 numChar = len(tOrd[i])
                 if numChar <= 3:
                     numChar = 4 #Maximum height
-                tempTxt = visual.TextStim(self.win, alignHoriz='center', bold=True, alignVert='center',height=self.flowHeightObj/(.42*numChar), text=tOrd[i], pos=tempObj.pos)
+                tempTxt = visual.TextStim(self.win, alignHoriz='center', bold=True, alignVert='center',height=self.flowHeightObj/(.48*numChar), text=tOrd[i], pos=tempObj.pos)
                 j += 1
                 outputDict['shapes'].append(tempObj)
                 outputDict['text'].append(tempTxt)
@@ -827,17 +835,17 @@ class PyHabBuilder:
         if numItems == 0:
             pass #So we do not add a line if there is no line to draw!
         elif numItems < 11:
-            tempLine = visual.Line(self.win, start=self.flowLocs[0], end=self.flowLocs[numItems-1])
+            tempLine = visual.Line(self.win, start=self.flowLocs[0], end=outputDict['shapes'][-1].pos)
             outputDict['lines'].append(tempLine)
         elif numItems < 21:
             tempLine = visual.Line(self.win, start=self.flowLocs[0], end=self.flowLocs[9])
-            tempLine2 = visual.Line(self.win, start=self.flowLocs[10], end=self.flowLocs[len(tOrd)-1])
+            tempLine2 = visual.Line(self.win, start=self.flowLocs[10], end=outputDict['shapes'][-1].pos)
             outputDict['lines'].append(tempLine)
             outputDict['lines'].append(tempLine2)
         elif numItems < 31:
             tempLine = visual.Line(self.win, start=self.overFlowLocs[0], end=self.overFlowLocs[9])
             tempLine2 = visual.Line(self.win, start=self.overFlowLocs[10], end=self.overFlowLocs[19])
-            tempLine3 = visual.Line(self.win, start=self.overFlowLocs[20], end=self.overFlowLocs[len(tOrd) - 1])
+            tempLine3 = visual.Line(self.win, start=self.overFlowLocs[20], end=outputDict['shapes'][-1].pos)
             outputDict['lines'].append(tempLine)
             outputDict['lines'].append(tempLine2)
             outputDict['lines'].append(tempLine3)
@@ -845,7 +853,7 @@ class PyHabBuilder:
             tempLine = visual.Line(self.win, start=self.overFlowLocs[0], end=self.overFlowLocs[9])
             tempLine2 = visual.Line(self.win, start=self.overFlowLocs[10], end=self.overFlowLocs[19])
             tempLine3 = visual.Line(self.win, start=self.overFlowLocs[20], end=self.overFlowLocs[29])
-            tempLine4 = visual.Line(self.win, start=self.overFlowLocs[30], end=self.overFlowLocs[len(tOrd) - 1])
+            tempLine4 = visual.Line(self.win, start=self.overFlowLocs[30], end=outputDict['shapes'][-1].pos)
             outputDict['lines'].append(tempLine)
             outputDict['lines'].append(tempLine2)
             outputDict['lines'].append(tempLine3)
@@ -854,7 +862,7 @@ class PyHabBuilder:
             tempLine = visual.Line(self.win, start=self.overFlowLocs[0], end=self.overFlowLocs[9])
             tempLine2 = visual.Line(self.win, start=self.overFlowLocs[10], end=self.overFlowLocs[19])
             tempLine3 = visual.Line(self.win, start=self.overFlowLocs[20], end=self.overFlowLocs[29])
-            tempLine4 = visual.Line(self.win, start=self.overFlowLocs[30], end=self.overFlowLocs[38])
+            tempLine4 = visual.Line(self.win, start=self.overFlowLocs[30], end=outputDict['shapes'][38].pos)
             outputDict['lines'].append(tempLine)
             outputDict['lines'].append(tempLine2)
             outputDict['lines'].append(tempLine3)
