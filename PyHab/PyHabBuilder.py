@@ -1369,6 +1369,9 @@ class PyHabBuilder:
         """
         A whole separate interface for managing condition creation.
 
+        Outputs settings condList (labels of each condition), condFile (save conditions to this file)
+        and makes new structure condDict (mapping of each label to actual condition it applies to)
+
         :param rep: Basically whether we are recursing while editing conditions
         :type rep: bool
         :return:
@@ -1407,7 +1410,9 @@ class PyHabBuilder:
         addCondText = visual.TextStim(self.win, text="Add condition", bold=True, height=addCondButton.height*.3, pos=addCondButton.pos)
         deleteCondButton = visual.Rect(self.win, width=.3, height=.67*(.15/self.aspect),fillColor="red",pos=[-.5,-.85])
         deleteCondText = visual.TextStim(self.win, text="Delete condition", bold=True, height=deleteCondButton.height*.3, pos=deleteCondButton.pos)
-        instrText = visual.TextStim(self.win, text="Click a condition row to modify it", pos=[0,-.9])
+        randomCondsButton = visual.Rect(self.win, width=.4, height=.67*(.15/self.aspect),fillColor="purple",pos=[-.13,-.85])
+        randomCondsText = visual.TextStim(self.win, text="Randomize over subjects", bold=True, height=randomCondsButton.height*.3, pos=randomCondsButton.pos)
+        instrText = visual.TextStim(self.win, text="Click a condition row to modify it", height=.05, pos=[.4,-.9])
         intervalHoriz = 1.5/(len(self.trialTypesArray['labels'])+1)
         intervalVert = 1.5/(len(self.settings['condList'])+1)
         startH = -.5
@@ -1416,10 +1421,11 @@ class PyHabBuilder:
         divLinesH.append(tempLineH)
         tempLineV = visual.Rect(self.win, width=.01, height=2, fillColor="white", pos=[-.65,.3])
         divLinesV.append(tempLineV)
-        clickRanges=[] #For making it easier ot detect if a line was clicked in. Y only (horizontal doesn't matter)
+        clickRanges=[] # For making it easier ot detect if a line was clicked in. Y only (horizontal doesn't matter)
         for i in range(0,len(self.trialTypesArray['labels'])):
-            #populate column headers and lines.
+            # populate column headers and lines.
             hpos = (i)*intervalHoriz + startH+intervalHoriz/3
+            # TODO: Change movtext to be less...awful
             movText = visual.TextStim(self.win, alignHoriz='center', text=self.settings['stimNames'][self.trialTypesArray['labels'][i]],height=(1-startV)*.2,pos=[hpos,.87])
             tempText = visual.TextStim(self.win, alignHoriz='center', text=self.trialTypesArray['labels'][i],height=(1-startV)*.3, pos=[hpos, .94])
             tTypeHeaders.append(movText)
@@ -1432,7 +1438,7 @@ class PyHabBuilder:
             drawConds.append(tempText)
             tempLineH = visual.Line(self.win, start=[-.99,vpos-intervalVert/2], end=[.99,vpos-intervalVert/2])
             divLinesH.append(tempLineH)
-            #And now, finally, we have to populate each of those damn things.
+            # And now, finally, we have to populate each of those damn things.
             for q in range(0,len(self.trialTypesArray['labels'])):
                 if self.trialTypesArray['labels'][q] in condContent[j].keys():
                     tempTxt = condContent[j][self.trialTypesArray['labels'][q]]
@@ -1442,7 +1448,7 @@ class PyHabBuilder:
                 drawConds.append(tempText)
             tempRange = [vpos+intervalVert/2,vpos-intervalVert/2]
             clickRanges.append(tempRange)
-        #Finally the main loop  of this new display.
+        # Finally the main loop  of this new display.
         done = False
         while 1 in self.mouse.getPressed():
             pass
@@ -1454,6 +1460,9 @@ class PyHabBuilder:
             addCondText.draw()
             deleteCondButton.draw()
             deleteCondText.draw()
+            randomCondsButton.draw()
+            randomCondsText.draw()
+            instrText.draw()
             for i in range(0, len(divLinesV)):
                 divLinesV[i].draw()
             for j in range(0, len(divLinesH)):
@@ -1477,7 +1486,7 @@ class PyHabBuilder:
                         while 1 in self.mouse.getPressed():
                             pass
                         done = True
-                        #Start this over...
+                        # Start this over...
                         self.condMaker(rep=True)
                 if self.mouse.isPressedIn(addCondButton):
                     if os.name is not 'posix':
@@ -1490,21 +1499,32 @@ class PyHabBuilder:
                     while 1 in self.mouse.getPressed():
                         pass
                     done = True
-                    #Start this over...
+                    # Start this over...
                     self.condMaker(rep=True)
                 if self.mouse.isPressedIn(deleteCondButton) and len(self.settings['condList'])>0:
                     if os.name is not 'posix':
                         while 1 in self.mouse.getPressed():
                             pass
-                        self.win.winHandle.set_visible(visible = False)
+                        self.win.winHandle.set_visible(visible=False)
                     self.delCond()
                     if os.name is not 'posix':
-                        self.win.winHandle.set_visible(visible = True)
+                        self.win.winHandle.set_visible(visible=True)
                     while len(self.mouse.getPressed()) < 0:
                         pass
                     done = True
-                    #Start this over...
+                    # Start this over...
                     self.condMaker(rep=True)
+                if self.mouse.isPressedIn(randomCondsButton) and len(self.settings['condList'])>0:
+                    if os.name is not 'posix':
+                        while 1 in self.mouse.getPressed():
+                            pass
+                        self.win.winHandle.set_visible(visible=False)
+                    self.condRandomizer()
+                    if os.name is not 'posix':
+                        self.win.winHandle.set_visible(visible=True)
+                    while len(self.mouse.getPressed()) < 0:
+                        pass
+                    done = True
                 if self.mouse.isPressedIn(doneButton):
                     done = True
                     while 1 in self.mouse.getPressed():
@@ -1614,7 +1634,46 @@ class PyHabBuilder:
         if dCondDlg.OK:
             self.settings['condList'].remove(str(delCond[0]))
             del self.condDict[delCond[0]]          
-            
+
+    def condRandomizer(self):
+        """
+        This is based on other scripts I've made. Basically, say you have four conditions, and you want four participants
+        to be assigned to each one, but you want to be totally blind to which condition a given participant is in. Here,
+        once you have made your four conditions, you can tell it to create a condition list that it never shows you that
+        has each condition X times, and that becomes the new condition file/list/etc.
+
+        :return:
+        :rtype:
+        """
+
+        rCondDlg = gui.Dlg(title="Create randomized condition list")
+        rCondDlg.addField('How many repetitions of each condition? (Length of list will be this X # conditions)',1)
+        rCondDlg.addField('Condition label prefix? (Will be followed by "01...N" in condition list)', self.settings['prefix'])
+        randCond = rCondDlg.show()
+        if rCondDlg.OK:
+            totalN = len(self.condDict.keys())*randCond[0]
+            newCondList = [] # Will replace condlist.
+            for i in range (1, totalN+1):
+                if i < 10:
+                    numStr = "0" + str(i)
+                else:
+                    numStr = str(i)
+                newCondList.append(randCond[1]+numStr)
+            listOfConds = [] # A list of the existing conditions that will be the items for the new condDict.
+            for j, k in self.condDict.items():
+                listOfConds.append(k)
+            mixer = [] # The list with all repetitions, which we then shuffle.
+            for q in range(0, len(listOfConds)):
+                for r in range(0, randCond[0]):
+                    mixer.append(listOfConds[q])
+            random.shuffle(mixer)
+
+            newCondDict={}
+            for s in range(0, len(newCondList)):
+                newCondDict[newCondList[s]] = mixer[s]
+
+            self.condDict = newCondDict
+            self.settings['condList'] = newCondList
    
    
     def habSettingsDlg(self): #Habituation criteria
