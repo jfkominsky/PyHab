@@ -431,8 +431,12 @@ class PyHabBuilder:
             if trialType not in self.settings['playAttnGetter']:
                 ags = list(self.settings['attnGetterList'].keys())
                 chz3 = [x for x in ags if x is not 'PyHabDefault']
-                chz3.insert(0, 'None')
-                chz3.insert(0, 'PyHabDefault')  # Defaults to...well, the default
+                if makeNew:
+                    chz3.insert(0, 'None')
+                    chz3.insert(0, 'PyHabDefault')  # Defaults to...well, the default
+                else:
+                    chz3.insert(0, 'PyHabDefault')
+                    chz3.insert(0, 'None') # Only default to default if this is a new trial type, not if "none" was selected before.
             elif trialType in self.settings['playAttnGetter']:
                 chz3 = [x for x in list(self.settings['attnGetterList'].keys()) if x is not self.settings['playAttnGetter'][trialType]]
                 chz3.insert(0, 'None')
