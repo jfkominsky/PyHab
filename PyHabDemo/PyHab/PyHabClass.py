@@ -505,7 +505,7 @@ class PyHab:
             self.pauseCount = 0
             dispMovie.draw()  # Comment this out as well to blank between loops.
             self.win.flip()
-            dispMovie.seek(0)
+            dispMovie.seek(0.0)
             return 2
         else:
             dispMovie.draw()
@@ -928,7 +928,7 @@ class PyHab:
         self.pauseCount = 0  # needed for ISI
         # returns 0 if do next trial, 1 if end hab, 2 if end experiment, 3 if abort/redo
         if self.stimPres and disMovie['stimType'] == 'Movie':
-            disMovie['stim'].seek(0)
+            disMovie['stim'].seek(0.0)
         startTrial = core.getTime()
         startTrial2 = core.getTime()
         onArray = []
@@ -1103,7 +1103,7 @@ class PyHab:
         if self.stimPres:
             # Reset everything, stop playing sounds and movies.
             if disMovie['stimType'] == 'Movie':
-                disMovie['stim'].seek(0)  # this is the reset, we hope.
+                disMovie['stim'].seek(0.0)  # this is the reset, we hope.
                 disMovie['stim'].pause()
             elif disMovie['stimType'] == 'Audio':
                 disMovie['stim'].stop()
@@ -1593,7 +1593,7 @@ class PyHab:
         # Important to do this first because it gets the windows in the correct order for focus etc.
         if self.stimPres:
             # Stimulus presentation window
-            self.win = visual.Window((self.screenWidth, self.screenHeight), fullscr=False, screen=1, allowGUI=False,
+            self.win = visual.Window((self.screenWidth, self.screenHeight), fullscr=False, screen=self.screenIndex, allowGUI=False,
                                      units='pix', color=self.screenColor)
         # Coder window
         self.win2 = visual.Window((400, 400), fullscr=False, screen=0, allowGUI=True, units='pix', waitBlanking=False,
