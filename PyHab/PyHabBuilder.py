@@ -953,12 +953,12 @@ class PyHabBuilder:
         uDlg.addField("Minimum ISI between loops, in seconds", self.settings['ISI'])
         ch = []
         if self.settings['blindPres'] == '1' or self.settings['blindPres'] == 1:
-            ch=[1,0,2]
+            ch=['do not display next trial type','none','only show trial active/inactive']
         elif self.settings['blindPres'] == '2' or self.settings['blindPres'] == 2:
-            ch=[2,0,1]
+            ch=['show trial active/not active only','none','do not display next trial type']
         else:
-            ch=[0,1,2]
-        uDlg.addField("Experimenter blinding: 0 = no blinding, 1 = Trial number and gaze on/off only, 2 = Trial active/not active only", choices=ch)
+            ch=['none','do not display next trial type','show trial active/not active only']
+        uDlg.addField("Experimenter blinding:", choices=ch)
         ch2 = []
         if self.settings['prefLook'] in ['1',1]:# so it does not reset everytime you load this dialog.
             ch2 = ["Preferential looking","Single-target"]
@@ -969,7 +969,12 @@ class PyHabBuilder:
         if uDlg.OK:
             self.settings['prefix'] = uInfo[0]
             self.settings['ISI'] = uInfo[1]
-            self.settings['blindPres'] = uInfo[2]
+            if uInfo[2] == 'none':
+                self.settings['blindPres'] = 0
+            elif uInfo[2] == 'do not display next trial type':
+                self.settings['blindPres'] = 1
+            else:
+                self.settings['blindPres'] = 2
             if uInfo[3] == "Preferential looking" and self.settings['prefLook'] in [0,'0','False',False]: #specifically switching, reactivate all data cols.
                 self.settings['prefLook'] = 1
                 self.settings['dataColumns'] = self.allDataColumnsPL
