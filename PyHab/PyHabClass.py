@@ -97,6 +97,10 @@ class PyHab:
         self.stimNames = eval(settingsDict['stimNames'])
         # ^ A list of trial types. One is special: 'Hab' (only plays first entry), which should only be used for a habituation block in which you have a variable number of trials depending on a habituation criterion
         self.stimList = eval(settingsDict['stimList'])  # List of all stimuli in the experiment.
+        # Go through each item in stimlist, find its stimloc parameter, and replace \\ with / or vise-versa
+        for [i,j] in self.stimList.items():
+            j['stimLoc'] =''.join([self.dirMarker if x == otherOS else x for x in j['stimLoc']])
+
         self.screenWidth = eval(settingsDict['screenWidth'])  # Display window width, in pixels
         self.screenHeight = eval(settingsDict['screenHeight'])  # Display window height, in pixels
         self.screenColor = settingsDict['screenColor']  #Background color of stim window.
@@ -107,6 +111,10 @@ class PyHab:
         self.freezeFrame = eval(settingsDict['freezeFrame'])  # time that movie remains on first frame at start of trial.
         self.playAttnGetter = eval(settingsDict['playAttnGetter'])  # Trial-by-trial marker of which attngetter goes with which trial (if applicable).
         self.attnGetterList = eval(settingsDict['attnGetterList'])  # List of all attention-getters
+        # Go through each item in attnGetterList, find its stimloc parameter, and replace \\ with / or vise-versa
+        for [i,j] in self.attnGetterList.items():
+            j['stimLoc'] = ''.join([self.dirMarker if x == otherOS else x for x in j['stimLoc']])
+
         if len(self.stimPath) > 0 and self.stimPath[-1] is not self.dirMarker:  # If it was made in one OS and running in another
             self.stimPath = [self.dirMarker if x == otherOS else x for x in self.stimPath]
             self.stimPath = ''.join(self.stimPath)
@@ -1134,6 +1142,7 @@ class PyHab:
     def endExperiment(self):
         """
         End experiment, save all data, calculate reliability if needed, close up shop
+
         :return:
         :rtype:
         """
@@ -1156,12 +1165,12 @@ class PyHab:
             filename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(
                 self.today.month) + str(
                 self.today.day) + str(self.today.year) + '.csv'
-        outputWriter = csv.DictWriter(open(filename, 'w'), fieldnames=self.dataColumns,
-                                      extrasaction='ignore', lineterminator='\n')  # careful! this OVERWRITES the existing file. Fills from snum.
-        outputWriter.writeheader()
-        for r in range(0, len(self.dataMatrix)):
-            # print('writing rows')
-            outputWriter.writerow(self.dataMatrix[r])
+        with open(filename, 'w') as f:
+            outputWriter = csv.DictWriter(f, fieldnames=self.dataColumns, extrasaction='ignore', lineterminator='\n')
+            outputWriter.writeheader()
+            for r in range(0, len(self.dataMatrix)):
+                # print('writing rows')
+                outputWriter.writerow(self.dataMatrix[r])
         #Verbose data saving.
         verboseMatrix = []
         # first, verbose data is not as well organized. However, we should be able to alternate back and forth between
@@ -1230,12 +1239,11 @@ class PyHab:
                     trialVerbose2 = sorted(trialVerbose, key=lambda trialVerbose: trialVerbose['startTime'])  # this is the magic bullet, in theory.
                     verboseMatrix.extend(trialVerbose2)
         headers2 = ['snum', 'months', 'days', 'sex', 'cond', 'GNG', 'gazeOnOff', 'trial', 'trialType', 'startTime', 'endTime', 'duration']
-        outputWriter2 = csv.DictWriter(open(
-            self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '_VERBOSE.csv', 'w'),
-                                   fieldnames=headers2, extrasaction='ignore', lineterminator='\n')  # careful! this OVERWRITES the existing file. Fills from snum.
-        outputWriter2.writeheader()
-        for z in range(0, len(verboseMatrix)):
-            outputWriter2.writerow(verboseMatrix[z])
+        with open(self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '_VERBOSE.csv', 'w') as f:
+            outputWriter2 = csv.DictWriter(f, fieldnames=headers2, extrasaction='ignore', lineterminator='\n')
+            outputWriter2.writeheader()
+            for z in range(0, len(verboseMatrix)):
+                outputWriter2.writerow(verboseMatrix[z])
         if len(self.verbDatList['verboseOn2']) > 0: # If there is even a single gaze-on event from coder B, save coder B data.
             verboseMatrix2 = []
             for n in range(0, len(self.verbDatList['verboseOn2'])):
@@ -1298,19 +1306,17 @@ class PyHab:
                                 offIndex2 += 1
                         trialVerbose2 = sorted(trialVerbose, key=lambda trialVerbose: trialVerbose['startTime'])
                         verboseMatrix2.extend(trialVerbose2)
-            outputWriter3 = csv.DictWriter(open(
-                self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '_VERBOSEb.csv', 'w'),
-                                    fieldnames=headers2, extrasaction='ignore', lineterminator='\n')
-            outputWriter3.writeheader()
-            for k in range(0, len(verboseMatrix2)):
-                outputWriter3.writerow(verboseMatrix2[k])
+            with open(self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '_VERBOSEb.csv', 'w') as f:
+                outputWriter3 = csv.DictWriter(f, fieldnames=headers2, extrasaction='ignore', lineterminator='\n')
+                outputWriter3.writeheader()
+                for k in range(0, len(verboseMatrix2)):
+                    outputWriter3.writerow(verboseMatrix2[k])
             rel = self.reliability(verboseMatrix, verboseMatrix2)
             headers3 = ['WeightedPercentageAgreement', 'CohensKappa', 'AverageObserverAgreement', 'PearsonsR']
-            outputWriter4 = csv.DictWriter(open(
-                self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '_Stats.csv', 'w'),
-                                      fieldnames=headers3, extrasaction='ignore', lineterminator='\n')
-            outputWriter4.writeheader()
-            outputWriter4.writerow(rel)
+            with open(self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '_Stats.csv', 'w') as f:
+                outputWriter4 = csv.DictWriter(f, fieldnames=headers3, extrasaction='ignore', lineterminator='\n')
+                outputWriter4.writeheader()
+                outputWriter4.writerow(rel)
         core.wait(.3)
         self.win2.close()
         if self.stimPres:
