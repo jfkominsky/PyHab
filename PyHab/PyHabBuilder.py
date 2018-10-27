@@ -32,8 +32,10 @@ class PyHabBuilder:
         self.loadSave = loadedSaved #For easy reference elsewhere
         if os.name is 'posix': #glorious simplicity of unix filesystem
             self.dirMarker = '/'
+            otherOS = '\\'
         elif os.name is 'nt': #Nonsensical Windows-based contrarianism
-            self.dirMarker='\\'
+            self.dirMarker = '\\'
+            otherOS = '/'
         #The base window
         width = 1080
         height = 600
@@ -126,6 +128,11 @@ class PyHabBuilder:
                         'maxOff','minOn','autoAdvance','playAttnGetter','attnGetterList','trialTypes','habTrialList']
             for i in evalList:
                 self.settings[i] = eval(self.settings[i])
+                if i in ['stimList','attnGetterList']:
+                    for [i,j] in self.settings[i].items():
+                        j['stimLoc'] = ''.join([self.dirMarker if x == otherOS else x for x in j['stimLoc']])
+            self.settings['dataloc'] = ''.join([self.dirMarker if x == otherOS else x for x in self.settings['dataloc']])
+            self.settings['stimPath'] = ''.join([self.dirMarker if x == otherOS else x for x in self.settings['stimPath']])
             self.trialTypesArray = self.loadTypes()
             self.studyFlowArray = self.loadFlow()
             # Get conditions!
@@ -1820,11 +1827,11 @@ class PyHabBuilder:
         settingsPath = self.folderPath+self.settings['prefix']+'Settings.csv'
         so = open(settingsPath,'w')
         settingsOutput = csv.writer(so, lineterminator='\n')
-        for i, j in self.settings.items():#this is how you write key/value pairs
+        for i, j in self.settings.items(): # this is how you write key/value pairs
             settingsOutput.writerow([i, j])
         # close the settings file, to allow it to be read immediately (in theory)
         so.close()
-        # Copy over the class and such. Since these aren't modiied, make sure they don't exist first.
+        # Copy over the class and such. Since these aren't modified, make sure they don't exist first.
         classPath = 'PyHabClass.py'
         classTarg = codePath+classPath
         classPLPath = 'PyHabClassPL.py'

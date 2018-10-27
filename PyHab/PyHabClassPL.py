@@ -499,11 +499,11 @@ class PyHabPL(PyHab):
             o += 1
             nDupe = str(o)
             filename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '.csv'
-        outputWriter = csv.DictWriter(open(filename,'w'),
-                                      fieldnames = self.dataColumns, extrasaction='ignore', lineterminator ='\n') #careful! this OVERWRITES the existing file. Fills from snum.
-        outputWriter.writeheader()
-        for r in range(0, len(self.dataMatrix)):
-            outputWriter.writerow(self.dataMatrix[r])
+        with open(filename, 'w') as f:
+            outputWriter = csv.DictWriter(f,fieldnames = self.dataColumns, extrasaction='ignore', lineterminator ='\n')
+            outputWriter.writeheader()
+            for r in range(0, len(self.dataMatrix)):
+                outputWriter.writerow(self.dataMatrix[r])
         #Now to construct and save verbose data
         verboseMatrix = []
         #first, verbose data is not as well organized. However, we should be able to alternate back and forth between
@@ -600,11 +600,11 @@ class PyHabPL(PyHab):
                     verboseMatrix.extend(trialVerbose2)
         headers2 = ['snum', 'months', 'days', 'sex', 'cond', 'GNG', 'gazeOnOff', 'trial', 'trialType',
                                 'startTime', 'endTime', 'duration']
-        outputWriter2 = csv.DictWriter(open(self.dataFolder+self.prefix+str(self.sNum)+'_'+str(self.sID)+nDupe+'_'+str(self.today.month)+str(self.today.day)+str(self.today.year)+'_VERBOSE.csv','w'),
-                                       fieldnames = headers2, extrasaction = 'ignore', lineterminator ='\n') #careful! this OVERWRITES the existing file. Fills from snum.
-        outputWriter2.writeheader()
-        for z in range(0,len(verboseMatrix)):
-            outputWriter2.writerow(verboseMatrix[z])
+        with open(self.dataFolder+self.prefix+str(self.sNum)+'_'+str(self.sID)+nDupe+'_'+str(self.today.month)+str(self.today.day)+str(self.today.year)+'_VERBOSE.csv','w') as f:
+            outputWriter2 = csv.DictWriter(f, fieldnames = headers2, extrasaction = 'ignore', lineterminator ='\n') #careful! this OVERWRITES the existing file. Fills from snum.
+            outputWriter2.writeheader()
+            for z in range(0,len(verboseMatrix)):
+                outputWriter2.writerow(verboseMatrix[z])
         core.wait(.3)
         self.win2.close()
         if self.stimPres:

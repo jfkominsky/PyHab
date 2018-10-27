@@ -97,6 +97,10 @@ class PyHab:
         self.stimNames = eval(settingsDict['stimNames'])
         # ^ A list of trial types. One is special: 'Hab' (only plays first entry), which should only be used for a habituation block in which you have a variable number of trials depending on a habituation criterion
         self.stimList = eval(settingsDict['stimList'])  # List of all stimuli in the experiment.
+        # Go through each item in stimlist, find its stimloc parameter, and replace \\ with / or vise-versa
+        for [i,j] in self.stimList.items():
+            j['stimLoc'] =''.join([self.dirMarker if x == otherOS else x for x in j['stimLoc']])
+
         self.screenWidth = eval(settingsDict['screenWidth'])  # Display window width, in pixels
         self.screenHeight = eval(settingsDict['screenHeight'])  # Display window height, in pixels
         self.screenColor = settingsDict['screenColor']  #Background color of stim window.
@@ -107,6 +111,10 @@ class PyHab:
         self.freezeFrame = eval(settingsDict['freezeFrame'])  # time that movie remains on first frame at start of trial.
         self.playAttnGetter = eval(settingsDict['playAttnGetter'])  # Trial-by-trial marker of which attngetter goes with which trial (if applicable).
         self.attnGetterList = eval(settingsDict['attnGetterList'])  # List of all attention-getters
+        # Go through each item in attnGetterList, find its stimloc parameter, and replace \\ with / or vise-versa
+        for [i,j] in self.attnGetterList.items():
+            j['stimLoc'] = ''.join([self.dirMarker if x == otherOS else x for x in j['stimLoc']])
+
         if len(self.stimPath) > 0 and self.stimPath[-1] is not self.dirMarker:  # If it was made in one OS and running in another
             self.stimPath = [self.dirMarker if x == otherOS else x for x in self.stimPath]
             self.stimPath = ''.join(self.stimPath)
@@ -404,6 +412,7 @@ class PyHab:
                 self.win.flip()
         else:
             dMovie = attnGetter['file']
+            dMovie.seek(0.0)
             self.frameCount = 0
             self.pauseCount = self.ISI*60 #To make it end instantly while ignoring ISI
             while self.dispMovieStim(1, dMovie) < 2:
@@ -478,8 +487,8 @@ class PyHab:
         """
 
         if self.frameCount == 0:  # initial setup
-            dispMovie.draw()
             self.frameCount += 1
+            dispMovie.draw()
             if trialType == 0:
                 self.frameCount = 0  # for post-attn-getter pause
                 dispMovie.pause()
@@ -505,7 +514,8 @@ class PyHab:
             self.pauseCount = 0
             dispMovie.draw()  # Comment this out as well to blank between loops.
             self.win.flip()
-            dispMovie.seek(0.0)
+            dispMovie.pause()
+            #dispMovie.seek(0.0) #This seek seems to cause the replays.
             return 2
         else:
             dispMovie.draw()
@@ -588,6 +598,7 @@ class PyHab:
     def redoSetup(self, tn, autoAdv):
         """
         Lays the groundwork for redoTrial, including correcting the trial order, selecting the right stim, etc.
+
         :param tn: Trial number (trialNum)
         :type tn: int
         :param autoAdv: The current auto-advance trial type list (different on first trial for Reasons)
@@ -620,7 +631,7 @@ class PyHab:
                     self.stimName = self.stimNames[trialType][self.counters[trialType]]
                 disMovie = self.stimDict[trialType][self.counters[trialType]]
                 self.counters[trialType] += 1
-                if self.counters[trialType] >= len(self.stimDict[trialType]):
+                if self.counters[trialType] < 0:
                     self.counters[trialType] = 0
             else:
                 disMovie = 0
@@ -732,7 +743,7 @@ class PyHab:
                 self.stimDict['Hab'].insert(self.habCount, tempAdd)
             disMovie = self.stimDict[trialType][self.counters[trialType]]
             self.counters[trialType] += 1
-            if self.counters[trialType] >= len(self.stimDict[trialType]):
+            if self.counters[trialType] < 0:
                 self.counters[trialType] = 0
         else:
             disMovie = 0
@@ -783,14 +794,17 @@ class PyHab:
                 if self.keyboard[self.key.Y]:
                     end = True
                 elif self.keyboard[self.key.R] and not didRedo:
+                    if self.counters[trialType] > 0:
+                        self.counters[trialType] -= 1
                     [disMovie,trialNum] = self.redoSetup(trialNum, AA) #This returns a new value for DisMovie and trialNum
+                    if disMovie['stimType'] == 'Movie':
+                        disMovie['stim'].loadMovie(disMovie['stim'].filename) # "Seek" causes audio bugs. This just reloads the movie. More memory load, but reliable.
                     trialType = self.actualTrialOrder[trialNum - 1]
                     didRedo = True
                 elif self.keyboard[self.key.J] and 'Hab' in self.actualTrialOrder[trialNum:]:  # jump to test in a hab design
                     [disMovie, trialType] = self.jumpToTest(trialNum)
                 elif trialType != 'Hab' and self.keyboard[self.key.I] and 'Hab' in self.trialOrder and trialType not in self.habTrialList:  # insert additional hab trial
                     [disMovie, trialType] = self.insertHab(trialNum)
-
                 elif trialNum > 1 and not self.stimPres and self.keyboard[self.key.P] and not reviewed:  # Print data so far, as xHab. Non-stimulus version only. Only between trials.
                     reviewed = True
                     print("hab crit, on-timeA, numOnA, offtimeA, numOffA, onTimeB, numOnB, offTimeB, numOffB")
@@ -847,7 +861,11 @@ class PyHab:
                         waitStart = False
                         self.dispCoderWindow(trialType)
                     elif self.keyboard[self.key.R] and not didRedo:  # Redo last trial, mark last trial as bad
+                        if self.counters[trialType] > 0:
+                            self.counters[trialtype] -= 1
                         [disMovie, trialNum] = self.redoSetup(trialNum, AA)  # This returns a new value for DisMovie and trialNum
+                        if disMovie['stimType'] == 'Movie':
+                            disMovie['stim'].loadMovie(disMovie['stim'].filename)
                         trialType = self.actualTrialOrder[trialNum - 1]
                         didRedo = True
                     elif self.keyboard[self.key.J] and trialType == 'Hab':  # jump to test in a hab design
@@ -929,6 +947,7 @@ class PyHab:
         # returns 0 if do next trial, 1 if end hab, 2 if end experiment, 3 if abort/redo
         if self.stimPres and disMovie['stimType'] == 'Movie':
             disMovie['stim'].seek(0.0)
+            disMovie['stim'].pause()
         startTrial = core.getTime()
         startTrial2 = core.getTime()
         onArray = []
@@ -1103,7 +1122,6 @@ class PyHab:
         if self.stimPres:
             # Reset everything, stop playing sounds and movies.
             if disMovie['stimType'] == 'Movie':
-                disMovie['stim'].seek(0.0)  # this is the reset, we hope.
                 disMovie['stim'].pause()
             elif disMovie['stimType'] == 'Audio':
                 disMovie['stim'].stop()
@@ -1113,6 +1131,9 @@ class PyHab:
             if self.actualTrialOrder[number] not in self.autoAdvance:
                 self.win.flip()  # blanks the screen outright between trials if NOT auto-advancing into the next trial
         if redo:  # if the abort button was pressed
+            if self.stimPres and disMovie['stimType'] == 'Movie':
+                disMovie['stim'].seek(0.0)
+                disMovie['stim'].pause()
             self.abortTrial(onArray, offArray, number, type, onArray2, offArray2, self.stimName)
             return 3
         else:
@@ -1134,6 +1155,7 @@ class PyHab:
     def endExperiment(self):
         """
         End experiment, save all data, calculate reliability if needed, close up shop
+
         :return:
         :rtype:
         """
@@ -1156,12 +1178,12 @@ class PyHab:
             filename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(
                 self.today.month) + str(
                 self.today.day) + str(self.today.year) + '.csv'
-        outputWriter = csv.DictWriter(open(filename, 'w'), fieldnames=self.dataColumns,
-                                      extrasaction='ignore', lineterminator='\n')  # careful! this OVERWRITES the existing file. Fills from snum.
-        outputWriter.writeheader()
-        for r in range(0, len(self.dataMatrix)):
-            # print('writing rows')
-            outputWriter.writerow(self.dataMatrix[r])
+        with open(filename, 'w') as f:
+            outputWriter = csv.DictWriter(f, fieldnames=self.dataColumns, extrasaction='ignore', lineterminator='\n')
+            outputWriter.writeheader()
+            for r in range(0, len(self.dataMatrix)):
+                # print('writing rows')
+                outputWriter.writerow(self.dataMatrix[r])
         #Verbose data saving.
         verboseMatrix = []
         # first, verbose data is not as well organized. However, we should be able to alternate back and forth between
@@ -1230,12 +1252,11 @@ class PyHab:
                     trialVerbose2 = sorted(trialVerbose, key=lambda trialVerbose: trialVerbose['startTime'])  # this is the magic bullet, in theory.
                     verboseMatrix.extend(trialVerbose2)
         headers2 = ['snum', 'months', 'days', 'sex', 'cond', 'GNG', 'gazeOnOff', 'trial', 'trialType', 'startTime', 'endTime', 'duration']
-        outputWriter2 = csv.DictWriter(open(
-            self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '_VERBOSE.csv', 'w'),
-                                   fieldnames=headers2, extrasaction='ignore', lineterminator='\n')  # careful! this OVERWRITES the existing file. Fills from snum.
-        outputWriter2.writeheader()
-        for z in range(0, len(verboseMatrix)):
-            outputWriter2.writerow(verboseMatrix[z])
+        with open(self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '_VERBOSE.csv', 'w') as f:
+            outputWriter2 = csv.DictWriter(f, fieldnames=headers2, extrasaction='ignore', lineterminator='\n')
+            outputWriter2.writeheader()
+            for z in range(0, len(verboseMatrix)):
+                outputWriter2.writerow(verboseMatrix[z])
         if len(self.verbDatList['verboseOn2']) > 0: # If there is even a single gaze-on event from coder B, save coder B data.
             verboseMatrix2 = []
             for n in range(0, len(self.verbDatList['verboseOn2'])):
@@ -1298,19 +1319,17 @@ class PyHab:
                                 offIndex2 += 1
                         trialVerbose2 = sorted(trialVerbose, key=lambda trialVerbose: trialVerbose['startTime'])
                         verboseMatrix2.extend(trialVerbose2)
-            outputWriter3 = csv.DictWriter(open(
-                self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '_VERBOSEb.csv', 'w'),
-                                    fieldnames=headers2, extrasaction='ignore', lineterminator='\n')
-            outputWriter3.writeheader()
-            for k in range(0, len(verboseMatrix2)):
-                outputWriter3.writerow(verboseMatrix2[k])
+            with open(self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '_VERBOSEb.csv', 'w') as f:
+                outputWriter3 = csv.DictWriter(f, fieldnames=headers2, extrasaction='ignore', lineterminator='\n')
+                outputWriter3.writeheader()
+                for k in range(0, len(verboseMatrix2)):
+                    outputWriter3.writerow(verboseMatrix2[k])
             rel = self.reliability(verboseMatrix, verboseMatrix2)
             headers3 = ['WeightedPercentageAgreement', 'CohensKappa', 'AverageObserverAgreement', 'PearsonsR']
-            outputWriter4 = csv.DictWriter(open(
-                self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '_Stats.csv', 'w'),
-                                      fieldnames=headers3, extrasaction='ignore', lineterminator='\n')
-            outputWriter4.writeheader()
-            outputWriter4.writerow(rel)
+            with open(self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '_Stats.csv', 'w') as f:
+                outputWriter4 = csv.DictWriter(f, fieldnames=headers3, extrasaction='ignore', lineterminator='\n')
+                outputWriter4.writeheader()
+                outputWriter4.writerow(rel)
         core.wait(.3)
         self.win2.close()
         if self.stimPres:
