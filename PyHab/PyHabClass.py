@@ -798,9 +798,7 @@ class PyHab:
                         self.counters[trialType] -= 1
                     [disMovie,trialNum] = self.redoSetup(trialNum, AA) #This returns a new value for DisMovie and trialNum
                     if disMovie['stimType'] == 'Movie':
-                        disMovie['stim'].pause() # Anything to try to get it to stop double-playing
-                        disMovie['stim'].seek(0.0)
-                        disMovie['stim'].pause()
+                        disMovie['stim'].loadMovie(disMovie['stim'].filename) # "Seek" causes audio bugs. This just reloads the movie. More memory load, but reliable.
                     trialType = self.actualTrialOrder[trialNum - 1]
                     didRedo = True
                 elif self.keyboard[self.key.J] and 'Hab' in self.actualTrialOrder[trialNum:]:  # jump to test in a hab design
@@ -867,8 +865,7 @@ class PyHab:
                             self.counters[trialtype] -= 1
                         [disMovie, trialNum] = self.redoSetup(trialNum, AA)  # This returns a new value for DisMovie and trialNum
                         if disMovie['stimType'] == 'Movie':
-                            disMovie['stim'].seek(0.0)
-                            disMovie['stim'].pause()
+                            disMovie['stim'].loadMovie(disMovie['stim'].filename)
                         trialType = self.actualTrialOrder[trialNum - 1]
                         didRedo = True
                     elif self.keyboard[self.key.J] and trialType == 'Hab':  # jump to test in a hab design
