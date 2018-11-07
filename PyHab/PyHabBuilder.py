@@ -1778,16 +1778,16 @@ class PyHabBuilder:
         if not os.path.exists(codePath):
             os.makedirs(codePath)
         srcDir = 'PyHab'+self.dirMarker
-        # Condition file!
+        # Condition file! Save if there are any conditions created.
+        # Convoluted mess because the dict won't necessarily be in order and we want the file to be.
         if len(self.condDict)>0:
             tempArray = []
             for j in range(0, len(self.settings['condList'])):
                 tempArray.append([self.settings['condList'][j],self.condDict[self.settings['condList'][j]]])
-            co = open(self.folderPath+self.settings['condFile'],'wb')
-            secretWriter = csv.writer(co)
-            for k in range(0, len(tempArray)):
-                secretWriter.writerow(tempArray[k])
-            co.close()
+            with open(self.folderPath+self.settings['condFile'],'w') as co:
+                secretWriter = csv.writer(co,lineterminator='\n')
+                for k in range(0, len(tempArray)):
+                    secretWriter.writerow(tempArray[k])
         # copy stimuli if there are stimuli.
         if len(self.stimSource) > 0:
             for i, j in self.stimSource.items():  # Find each file, copy it over
@@ -1825,12 +1825,11 @@ class PyHabBuilder:
             errDlg.show()
         # create/overwrite the settings csv.
         settingsPath = self.folderPath+self.settings['prefix']+'Settings.csv'
-        so = open(settingsPath,'w')
-        settingsOutput = csv.writer(so, lineterminator='\n')
-        for i, j in self.settings.items(): # this is how you write key/value pairs
-            settingsOutput.writerow([i, j])
-        # close the settings file, to allow it to be read immediately (in theory)
-        so.close()
+        with open(settingsPath,'w') as so: # this is theoretically safer than the "close" system.
+            settingsOutput = csv.writer(so, lineterminator='\n')
+            for i, j in self.settings.items(): # this is how you write key/value pairs
+                settingsOutput.writerow([i, j])
+
         # Copy over the class and such. Since these aren't modified, make sure they don't exist first.
         classPath = 'PyHabClass.py'
         classTarg = codePath+classPath
