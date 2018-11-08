@@ -1164,9 +1164,10 @@ class PyHabBuilder:
 
         if len(self.trialTypesArray['labels']) > 0:
             d1 = gui.Dlg(title="Select trial type to add stimuli to")
-            choiceList=['Start and end of experiment screens']
+            choiceList=[]
             for i in range(0, len(self.trialTypesArray['labels'])): # Not just copying list b/c it would add start/end to it
                 choiceList.append(self.trialTypesArray['labels'][i])
+            choiceList.append('Start and end of experiment screens')
             d1.addField("Trial type to add stimulus file to", choices=choiceList)
             d1.addField("Number of stimuli to add (you will select them in the next window)",1)
             d1.addText("Note: You can only select stimuli you have already added to the experiment library")
