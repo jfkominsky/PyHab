@@ -132,6 +132,10 @@ class PyHabBuilder:
                 if i in ['stimList','attnGetterList']:
                     for [i,j] in self.settings[i].items():
                         j['stimLoc'] = ''.join([self.dirMarker if x == otherOS else x for x in j['stimLoc']])
+            # Backwards compatibility for startImage and endImage
+            if 'startImage' not in self.settings.keys():
+                self.settings['startImage'] = ''
+                self.settings['endImage'] = ''
             self.settings['dataloc'] = ''.join([self.dirMarker if x == otherOS else x for x in self.settings['dataloc']])
             self.settings['stimPath'] = ''.join([self.dirMarker if x == otherOS else x for x in self.settings['stimPath']])
             self.trialTypesArray = self.loadTypes()
