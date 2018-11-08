@@ -18,7 +18,6 @@ class PyHabBuilder:
     with different trial types.
 
     TODO: Add the ability to remove stimuli once added. Nonessential.
-
     """
     def __init__(self, loadedSaved=False, settingsDict={}):
         """
@@ -78,8 +77,8 @@ class PyHabBuilder:
             self.settings = {'dataColumns': ['sNum', 'months', 'days', 'sex', 'cond','condLabel', 'trial','GNG','trialType','stimName','habCrit','sumOnA','numOnA','sumOffA','numOffA','sumOnB','numOnB','sumOffB','numOffB'],
                                                         'prefix': 'PyHabExperiment',
                                                         'dataloc':'data'+self.dirMarker,
-                                                        'maxDur': { }, 
-                                                        'playThrough': { },
+                                                        'maxDur': {},
+                                                        'playThrough': {},
                                                         'movieEnd': [],
                                                         'maxOff': {},
                                                         'minOn': {},
@@ -119,7 +118,9 @@ class PyHabBuilder:
                                                                                           'color':'yellow'}},
                                                         'folderPath':'',
                                                         'trialTypes':[],
-                                                        'prefLook':'0'}
+                                                        'prefLook':'0',
+                                                        'startImage':'',
+                                                        'endImage':''}
             self.studyFlowArray={'lines':[],'shapes':[],'text':[],'labels':[]} # an array of objects for the study flow.
             self.trialTypesArray={'shapes':[],'text':[],'labels':[]}
         else:
@@ -1150,7 +1151,8 @@ class PyHabBuilder:
     def addStimToTypesDlg(self):
         """
         A series dialog boxes, the first selecting a trial type and the number of stimuli to add to it,
-        a second allowing you to add stimuli from the stimulus library that is stimList in the settings
+        a second allowing you to add stimuli from the stimulus library that is stimList in the settings.
+        Also used for adding beginning and end of experiment images (?)
 
         :return:
         :rtype:
@@ -1162,7 +1164,10 @@ class PyHabBuilder:
 
         if len(self.trialTypesArray['labels']) > 0:
             d1 = gui.Dlg(title="Select trial type to add stimuli to")
-            d1.addField("Trial type to add stimulus file to", choices=self.trialTypesArray['labels'])
+            choiceList=['Start and end of experiment screens']
+            for i in range(0, len(self.trialTypesArray['labels'])): # Not just copying list b/c it would add start/end to it
+                choiceList.append(self.trialTypesArray['labels'][i])
+            d1.addField("Trial type to add stimulus file to", choices=choiceList)
             d1.addField("Number of stimuli to add (you will select them in the next window)",1)
             d1.addText("Note: You can only select stimuli you have already added to the experiment library")
             d1.addText("Note: You can only REMOVE stimuli from a trial type in the trial type's own settings, this will add to whatever is already there")
@@ -1174,15 +1179,44 @@ class PyHabBuilder:
                 self.win.flip()
                 tType = d[0]
                 numAdd = d[1]
-                d2 = gui.Dlg(title="Select stimuli")
-                stimKeyList = list(self.settings['stimList'].keys())
-                stimKeyList.sort()
-                for i in range(0, numAdd):
-                    d2.addField("Stimulus no. " + str(i+1), choices=stimKeyList)
-                newList = d2.show()
-                if d2.OK:
-                    for z in range(0, len(newList)):
-                        self.settings['stimNames'][tType].append(newList[z])
+                if tType != 'Start and end of experiment screens':
+                    d2 = gui.Dlg(title="Select stimuli")
+                    stimKeyList = list(self.settings['stimList'].keys())
+                    stimKeyList.sort()
+                    for i in range(0, numAdd):
+                        d2.addField("Stimulus no. " + str(i+1), choices=stimKeyList)
+                    newList = d2.show()
+                    if d2.OK:
+                        for z in range(0, len(newList)):
+                            self.settings['stimNames'][tType].append(newList[z])
+                else:
+                    d2 = gui.Dlg(title="Select image")
+                    # Create a list of just image stim
+                    startimgs = [x for x in list(self.settings['stimList'].keys()) if self.settings['stimList'][x]['stimType'] == 'Image']
+                    startimgs.sort()
+                    startimgs.insert(0,'None')
+                    if self.settings['startImage'] != '':
+                        startimgs = [x for x in startimgs if x != self.settings['startImage']]
+                        startimgs.insert(0,self.settings['startImage'])
+                    endimgs = [x for x in list(self.settings['stimList'].keys()) if self.settings['stimList'][x]['stimType'] == 'Image']
+                    endimgs.sort()
+                    endimgs.insert(0,'None')
+                    if self.settings['endImage'] != '':
+                        endimgs = [x for x in endimgs if x != self.settings['endImage']]
+                        endimgs.insert(0, self.settings['endImage'])
+                    d2.addField("Start of experiment image", choices=startimgs)
+                    d2.addField("End of experiment image", choices=endimgs)
+
+                    newList = d2.show()
+                    if d2.OK:
+                        if newList[0] is not 'None':
+                            self.settings['startImage'] = newList[0]
+                        else:
+                            self.settings['startImage'] = ''
+                        if newList[1] is not 'None':
+                            self.settings['endImage'] = newList[1]
+                        else:
+                            self.settings['endImage'] = ''
 
         else:
             errDlg = gui.Dlg(title="No trial types!")
