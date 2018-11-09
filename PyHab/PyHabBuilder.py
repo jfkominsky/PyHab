@@ -18,6 +18,7 @@ class PyHabBuilder:
     with different trial types.
 
     TODO: Add the ability to remove stimuli once added. Nonessential.
+    TODO: Major crashes when adding a new trial type to something with existing condition settings! Need to make it so it prompts user
     """
     def __init__(self, loadedSaved=False, settingsDict={}):
         """
