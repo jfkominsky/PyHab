@@ -35,8 +35,6 @@ class PyHab:
     On2 and Off2 (for the optional secondary coder)
     Each coder's on and off are recorded in a separate dict with trial, gaze on/off, start, end, and duration.
 
-    TODO: Beginning and end screens and corresponding settings for customization?
-
     """
 
     def __init__(self, settingsDict):
@@ -119,9 +117,11 @@ class PyHab:
         try: # To allow for better backwards compatibility, won't crash if this was made in a version that has no startImage or endImage lines
             self.startImage = settingsDict['startImage']
             self.endImage = settingsDict['endImage']
+            self.nextFlash = eval(settingsDict['nextFlash']) # 0 or 1, whether to flash when A is required for next trial.
         except:
             self.startImage = ''
             self.endImage = ''
+            self.nextFlash = 0
 
         if len(self.stimPath) > 0 and self.stimPath[-1] is not self.dirMarker:  # If it was made in one OS and running in another
             self.stimPath = [self.dirMarker if x == otherOS else x for x in self.stimPath]
@@ -428,6 +428,37 @@ class PyHab:
 
         self.dispCoderWindow(0)
         #self.win.flip()  # clear screen (change?)
+
+    def flashCoderWindow(self, rep=False):
+        """
+        Flash the background of the coder window to alert the experimenter they need to initiate the next trial.
+        .2 seconds of white and black, flashed twice. Can lengthen gap between trial but listens for 'A' on every flip.
+
+        :return:
+        :rtype:
+        """
+        flashing = True
+
+        # at 60fps, 200ms = 12 frames.
+        for i in range(0,12):
+            self.win2.color='white'
+            self.dispCoderWindow()
+            if self.keyboard[self.key.A]:
+                flashing = False
+                break
+        if flashing:
+            for i in range(0,12):
+                self.win2.color='black'
+                self.dispCoderWindow()
+                if self.keyboard[self.key.A]:
+                    flashing = False
+                    break
+            if flashing and not rep:
+                self.flashCoderWindow(rep=True)
+        self.win2.color='black'
+
+
+
 
     def dispCoderWindow(self, trialType = -1):
         """
@@ -798,6 +829,8 @@ class PyHab:
             if self.blindPres < 1:
                 self.rdyTextAppend = " NEXT: " + self.actualTrialOrder[trialNum - 1] + " TRIAL"
             end = False
+            if trialType not in AA and self.nextFlash in [1,'1',True,'True']: # The 'flasher' to alert the experimenter they need to start the next trial
+                self.flashCoderWindow()
             while not self.keyboard[self.key.A] and trialType not in AA and not end:  # wait for 'ready' key, check at frame intervals
                 if self.keyboard[self.key.Y]:
                     end = True
