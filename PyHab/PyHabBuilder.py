@@ -18,7 +18,6 @@ class PyHabBuilder:
     with different trial types.
 
     TODO: Add the ability to remove stimuli once added. Nonessential.
-    TODO: Major crashes when adding a new trial type to something with existing condition settings! Need to make it so it prompts user
     """
     def __init__(self, loadedSaved=False, settingsDict={}):
         """
@@ -121,13 +120,16 @@ class PyHabBuilder:
                                                         'trialTypes':[],
                                                         'prefLook':'0',
                                                         'startImage':'',
-                                                        'endImage':''}
+                                                        'endImage':'',
+                                                        'nextFlash':'0'}
             self.studyFlowArray={'lines':[],'shapes':[],'text':[],'labels':[]} # an array of objects for the study flow.
             self.trialTypesArray={'shapes':[],'text':[],'labels':[]}
         else:
             self.settings = settingsDict
+            if 'nextFlash' not in self.settings.keys():
+                self.settings['nextFlash'] = '0'
             evalList = ['dataColumns','maxDur','condList','movieEnd','playThrough','trialOrder','stimNames', 'stimList',
-                        'maxOff','minOn','autoAdvance','playAttnGetter','attnGetterList','trialTypes','habTrialList']
+                        'maxOff','minOn','autoAdvance','playAttnGetter','attnGetterList','trialTypes','habTrialList','nextFlash']
             for i in evalList:
                 self.settings[i] = eval(self.settings[i])
                 if i in ['stimList','attnGetterList']:
@@ -554,6 +556,11 @@ class PyHabBuilder:
                         self.trialTypesArray['text'].append(tempTxt)
                         self.settings['trialTypes'].append(typeInfo[0])
                         self.settings['stimNames'][typeInfo[0]] = []
+                        # If there exists a condition file or condition settings, warn the user that they will need to be updated!
+                        if self.settings['condFile'] is not '':
+                            warnDlg = gui.Dlg(title="Update conditions")
+                            warnDlg.addText("WARNING! UPDATE CONDITION SETTINGS AFTER ADDING STIMULI TO THIS TRIAL TYPE! \nIf you do not update conditions, the experiment will crash whenever it reaches this trial type.")
+                            warnDlg.show()
                 self.studyFlowArray = self.loadFlow()
                 self.showMainUI()
                 self.win.flip()
@@ -953,6 +960,9 @@ class PyHabBuilder:
 
         3 = prefLook: Whether the study is preferential-looking or single-target.
 
+        4 = nextFlash: Whether to have the coder window flash to alert the experimenter they need to manually trigger
+            the next trial
+
         :return:
         :rtype:
         """
@@ -978,6 +988,11 @@ class PyHabBuilder:
         else:
             ch2=["Single-target", "Preferential looking"]
         uDlg.addField("Single-target or preferential looking?",choices=ch2)
+        if self.settings['nextFlash'] in ['1',1,'True',True]:
+            ch3 = ["Yes","No"]
+        else:
+            ch3= ["No","Yes"]
+        uDlg.addField("Flash to alert experimenter to manually start next trial?", choices=ch3)
         uInfo = uDlg.show()
         if uDlg.OK:
             self.settings['prefix'] = uInfo[0]
@@ -994,6 +1009,10 @@ class PyHabBuilder:
             elif uInfo[3] == "Single-target" and self.settings['prefLook'] in [1,'1','True',True]:
                 self.settings['prefLook'] = 0
                 self.settings['dataColumns'] = self.allDataColumns
+            if uInfo[4] == "Yes":
+                self.settings['nextFlash'] = 1
+            else:
+                self.settings['nextFlash'] = 0
         
     def dataSettingsDlg(self):
         """
