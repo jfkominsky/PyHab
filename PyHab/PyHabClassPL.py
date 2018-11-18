@@ -483,6 +483,14 @@ class PyHabPL(PyHab):
         :return:
         :rtype:
         """
+        tempText = visual.TextStim(self.win2, text="Saving data...", pos=[0, 0], color='white', bold=True, height=40)
+        tempText.draw()
+        self.win2.flip()
+        if self.stimPres:
+            if self.endImageObject is not None:
+                self.endImageObject.draw()
+            self.win.flip()
+
         #sort the data matrices and shuffle them together.
         if len(self.badTrials) > 0: #if there are any redos, they need to be shuffled in appropriately.
             for i in range(0,len(self.badTrials)):
@@ -605,7 +613,19 @@ class PyHabPL(PyHab):
             outputWriter2.writeheader()
             for z in range(0,len(verboseMatrix)):
                 outputWriter2.writerow(verboseMatrix[z])
-        core.wait(.3)
+        # core.wait(.3) Replaced by end-of-experiment screen
+        # "end of experiment" screen. By default this will go to a black screen on the stim view
+        # and display "Experiment finished!" on the experimenter view
+        tempText.text = "Experiment finished! Press return to close."
+        tempText.height = 18
+        tempText.draw()
+        self.win2.flip()
+        if self.stimPres:
+            if self.endImageObject is not None:
+                self.endImageObject.draw()
+            self.win.flip()
+        event.waitKeys(keyList='return')
+
         self.win2.close()
         if self.stimPres:
             self.win.close()

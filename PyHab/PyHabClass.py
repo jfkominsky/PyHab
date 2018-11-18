@@ -114,6 +114,14 @@ class PyHab:
         # Go through each item in attnGetterList, find its stimloc parameter, and replace \\ with / or vise-versa
         for [i,j] in self.attnGetterList.items():
             j['stimLoc'] = ''.join([self.dirMarker if x == otherOS else x for x in j['stimLoc']])
+        try: # To allow for better backwards compatibility, won't crash if this was made in a version that has no startImage or endImage lines
+            self.startImage = settingsDict['startImage']
+            self.endImage = settingsDict['endImage']
+            self.nextFlash = eval(settingsDict['nextFlash']) # 0 or 1, whether to flash when A is required for next trial.
+        except:
+            self.startImage = ''
+            self.endImage = ''
+            self.nextFlash = 0
 
         if len(self.stimPath) > 0 and self.stimPath[-1] is not self.dirMarker:  # If it was made in one OS and running in another
             self.stimPath = [self.dirMarker if x == otherOS else x for x in self.stimPath]
@@ -420,6 +428,37 @@ class PyHab:
 
         self.dispCoderWindow(0)
         #self.win.flip()  # clear screen (change?)
+
+    def flashCoderWindow(self, rep=False):
+        """
+        Flash the background of the coder window to alert the experimenter they need to initiate the next trial.
+        .2 seconds of white and black, flashed twice. Can lengthen gap between trial but listens for 'A' on every flip.
+
+        :return:
+        :rtype:
+        """
+        flashing = True
+
+        # at 60fps, 200ms = 12 frames.
+        for i in range(0,12):
+            self.win2.color='white'
+            self.dispCoderWindow()
+            if self.keyboard[self.key.A]:
+                flashing = False
+                break
+        if flashing:
+            for i in range(0,12):
+                self.win2.color='black'
+                self.dispCoderWindow()
+                if self.keyboard[self.key.A]:
+                    flashing = False
+                    break
+            if flashing and not rep:
+                self.flashCoderWindow(rep=True)
+        self.win2.color='black'
+
+
+
 
     def dispCoderWindow(self, trialType = -1):
         """
@@ -790,6 +829,8 @@ class PyHab:
             if self.blindPres < 1:
                 self.rdyTextAppend = " NEXT: " + self.actualTrialOrder[trialNum - 1] + " TRIAL"
             end = False
+            if trialType not in AA and self.nextFlash in [1,'1',True,'True']: # The 'flasher' to alert the experimenter they need to start the next trial
+                self.flashCoderWindow()
             while not self.keyboard[self.key.A] and trialType not in AA and not end:  # wait for 'ready' key, check at frame intervals
                 if self.keyboard[self.key.Y]:
                     end = True
@@ -1154,11 +1195,20 @@ class PyHab:
 
     def endExperiment(self):
         """
-        End experiment, save all data, calculate reliability if needed, close up shop
+        End experiment, save all data, calculate reliability if needed, close up shop. Displays "saving data" and
+        end-of-experiment screen.
 
         :return:
         :rtype:
         """
+        tempText = visual.TextStim(self.win2, text="Saving data...", pos=[0, 0], color='white', bold=True, height=40)
+        tempText.draw()
+        self.win2.flip()
+        if self.stimPres:
+            if self.endImageObject is not None:
+                self.endImageObject.draw()
+            self.win.flip()
+
         # sort the data matrices and shuffle them together.
         if len(self.badTrials) > 0:  # if there are any redos, they need to be shuffled in appropriately.
             for i in range(0, len(self.badTrials)):
@@ -1330,7 +1380,19 @@ class PyHab:
                 outputWriter4 = csv.DictWriter(f, fieldnames=headers3, extrasaction='ignore', lineterminator='\n')
                 outputWriter4.writeheader()
                 outputWriter4.writerow(rel)
-        core.wait(.3)
+        # core.wait(.3) Replaced by end-of-experiment screen
+        # "end of experiment" screen. By default this will go to a black screen on the stim view
+        # and display "Experiment finished!" on the experimenter view
+        tempText.text = "Experiment finished! Press return to close."
+        tempText.height = 18
+        tempText.draw()
+        self.win2.flip()
+        if self.stimPres:
+            if self.endImageObject is not None:
+                self.endImageObject.draw()
+            self.win.flip()
+        event.waitKeys(keyList='return')
+
         self.win2.close()
         if self.stimPres:
             self.win.close()
@@ -1621,6 +1683,12 @@ class PyHab:
             tempText = visual.TextStim(self.win2, text="Loading Stimuli", pos=[0, 0], color='white', bold=True, height=40)
             tempText.draw()
             self.win2.flip()
+            # Step 1: Load and present "startImage"
+            if self.startImage is not '':
+                tempStim = self.stimList[self.startImage]
+                tempStimObj = visual.ImageStim(self.win, tempStim['stimLoc'], size=[self.movieWidth, self.movieHeight])
+                tempStimObj.draw()
+                self.win.flip() # This should now be on the screen until the first attngetter
             self.stimDict = {x: [] for x in self.stimNames.keys()}  # This holds all the loaded movies.
             self.counters = {x: 0 for x in self.stimNames.keys()}  # list of counters, one per index of the dict, so it knows which movie to play
             tempCtr = {x: 0 for x in self.stimNames.keys()}
@@ -1655,7 +1723,11 @@ class PyHab:
                         self.attnGetterList[i]['file'] = visual.MovieStim3(self.win, self.attnGetterList[i]['stimLoc'],
                                                                            size=[self.movieWidth, self.movieHeight],
                                                                            flipHoriz=False, flipVert=False, loop=False)
-
+            if self.endImage is not '': # Load image for end of experiment, if needed.
+                tempStim = self.stimList[self.endImage]
+                self.endImageObject = visual.ImageStim(self.win, tempStim['stimLoc'], size=[self.movieWidth, self.movieHeight])
+            else:
+                self.endImageObject = None
         self.keyboard = self.key.KeyStateHandler()
         self.win2.winHandle.push_handlers(self.keyboard)
         if self.stimPres:
