@@ -24,7 +24,7 @@ Looking time and stimulus presentation system for PsychoPy.
 <p>Then, just open PsychoPy, go to coder view (found in the 'view' dropwdown menu or with the shortcuts control-L or command-L), open "NewPyHabProject.py" from there, and hit the big green "Run" button.</p>
 <p>You will need VLC media player installed on your computer in order to use PsychoPy to present movie stimuli. VLC is free, and <a href="https://www.videolan.org/vlc/index.html">you can download it here</a>.</p>
 <h2>Citing PyHab and PsychoPy</h2>
-<p>Note that I do not have a formal article for PyHab yet (working on it). For the time being, please cite both of the following:</p>
+<p>If you use PyHab, please cite both of the following:</p>
 <ul>
 <li><b>Follow the guidelines for citing PsychoPy</b>: http://psychopy.org/about/index.html#citingpsychopy</li>
 <li>Kominsky, J. F. (in press) PyHab: Open-Source Real Time Infant Gaze Coding and Stimulus Presentation Software. <em>Infant Behavior & Development</em>.</li>
