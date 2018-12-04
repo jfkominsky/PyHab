@@ -531,6 +531,8 @@ class PyHab:
             if trialType == 0:
                 self.frameCount = 0  # for post-attn-getter pause
                 dispMovie.pause()
+            else:
+                dispMovie.seek(0.0) # Moved up here from below so that it CAN loop at all
             self.win.flip()
             return 0
         elif self.frameCount == 1:
