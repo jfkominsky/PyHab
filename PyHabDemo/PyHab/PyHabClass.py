@@ -531,6 +531,8 @@ class PyHab:
             if trialType == 0:
                 self.frameCount = 0  # for post-attn-getter pause
                 dispMovie.pause()
+            else:
+                dispMovie.seek(0.0) # Moved up here from below so that it CAN loop at all
             self.win.flip()
             return 0
         elif self.frameCount == 1:
@@ -975,8 +977,8 @@ class PyHab:
         :type number: int
         :param type: Trial type
         :type type: string
-        :param disMovie: Movie object for stimulus presentation
-        :type disMovie: movieStim3 object
+        :param  disMovie: A dictionary as follows {'stim':[psychopy object for stimulus presentation], 'stimType':[movie,image,audio, pair]}
+        :type disMovie: dictionary
         :return: int, 0 = proceed to next trial, 1 = hab crit met, 2 = end experiment, 3 = trial aborted
         :rtype:
         """
@@ -1073,7 +1075,7 @@ class PyHab:
                         offArray.append(tempGazeArray)
             elif not gazeOn:  # if they are not looking as of the previous refresh, check if they have been looking away for too long
                 nowOff = core.getTime() - startTrial
-                if sumOn > self.minOn[type] and nowOff - startOff >= self.maxOff[type] and self.playThrough[type] == 0 and not endFlag:
+                if sumOn >= self.minOn[type] and nowOff - startOff >= self.maxOff[type] and self.playThrough[type] == 0 and not endFlag:
                     # if they have previously looked for at least .5s and now looked away for 2 continuous sec
                     if type in self.movieEnd:
                         endFlag = True
