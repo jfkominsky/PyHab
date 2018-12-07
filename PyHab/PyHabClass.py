@@ -35,6 +35,7 @@ class PyHab:
     On2 and Off2 (for the optional secondary coder)
     Each coder's on and off are recorded in a separate dict with trial, gaze on/off, start, end, and duration.
 
+    TODO: make ISI trial type specific
     """
 
     def __init__(self, settingsDict):
