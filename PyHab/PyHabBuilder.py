@@ -18,6 +18,7 @@ class PyHabBuilder:
     with different trial types.
 
     TODO: Add the ability to remove stimuli once added. Nonessential.
+    TODO: Sanitizing input, checking numerical inputs are numerical, especially for maxDur, minOn, maxOff
     """
     def __init__(self, loadedSaved=False, settingsDict={}):
         """

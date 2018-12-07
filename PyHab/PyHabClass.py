@@ -74,6 +74,19 @@ class PyHab:
             self.condPath = [self.dirMarker if x == otherOS else x for x in self.condPath]
             self.condPath = ''.join(self.condPath)
 
+        # Secondary evals to make sure everything in the dictionaries that needs to be a number is one.
+        # maxDur, maxOff, minOn
+        for q in [self.maxDur, self.maxOff, self.minOn]:
+            for [i,j] in q.items():
+                if isinstance(j, str):
+                    try:
+                        q[i] = eval(j)
+                    except:
+                        errDlg = gui.Dlg(title="Settings error")
+                        errDlg.addText("A setting for trial type " + i + " contains text where number expected. Please update settings in builder!")
+                        errDlg.show()
+                        core.quit()
+
         # ORDER OF PRESENTATION
         # NOTE: a SINGLE instance of 'Hab' will insert a contiguous habituation BLOCK of up to maxHabTrials.
         # Recommend you make sure repetitions of each trial type is a multiple of the list length, if you want even presentation
