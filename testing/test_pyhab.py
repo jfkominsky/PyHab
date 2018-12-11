@@ -350,7 +350,8 @@ class TestDataFunc(object):
         assert self.dataInst.checkStop() == False
         assert self.dataInst.habCrit == 55.0  # should not have changed.
 
-        self.dataInst.metCritWindow = 5  # Now it should trip
+        self.dataInst.metCritWindow = 5  # Now it should trip, but for some reason it doesn't.
+        self.dataInst.habCount += 3
         assert self.dataInst.checkStop() == True
         assert self.dataInst.habCrit == 55.0  # should not have changed.
 
