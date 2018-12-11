@@ -340,9 +340,9 @@ class TestDataFunc(object):
 
         self.dataInst.metCritDivisor = 2
         assert self.dataInst.checkStop() == False
-        self.dataInst.habCount += 1
-        assert self.dataInst.checkStop() == True
-        self.dataInst.habCount -= 1
+        self.dataInst.habCount += 3
+        assert self.dataInst.checkStop() == True #Fails...
+        self.dataInst.habCount -= 3
         assert self.dataInst.habCrit == 55.0  # should not have changed.
 
         self.dataInst.metCritWindow = 4
