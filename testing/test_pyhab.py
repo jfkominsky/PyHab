@@ -306,7 +306,10 @@ class TestDataFunc(object):
                           'numOffB': 2})  # At this point, most recent 3 should be 25+10+5=40
 
         self.dataInst.habCount += 1  # 6
+        assert self.dataInst.checkStop() == False
+        self.dataInst.habCount += 3
         assert self.dataInst.checkStop() == True
+        self.dataInst.habCount -= 3
         assert self.dataInst.habCrit == 55.0  # should not have changed.
 
         habMatrix.append({'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
@@ -318,7 +321,10 @@ class TestDataFunc(object):
         self.dataInst.habCount += 1  # 7
 
         self.dataInst.metCritWindow = 4  # 25+10+5+10 = 50
+        assert self.dataInst.checkStop() == False
+        self.dataInst.habCount += 2
         assert self.dataInst.checkStop() == True
+        self.dataInst.habCount -= 2
         assert self.dataInst.habCrit == 55.0  # should not have changed.
 
         habMatrix.append({'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
@@ -333,7 +339,10 @@ class TestDataFunc(object):
         assert self.dataInst.checkStop() == False
 
         self.dataInst.metCritDivisor = 2
+        assert self.dataInst.checkStop() == False
+        self.dataInst.habCount += 1
         assert self.dataInst.checkStop() == True
+        self.dataInst.habCount -= 1
         assert self.dataInst.habCrit == 55.0  # should not have changed.
 
         self.dataInst.metCritWindow = 4
