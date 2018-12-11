@@ -18,8 +18,8 @@ class PyHabBuilder:
     with different trial types.
 
     TODO: Add the ability to remove stimuli once added. Nonessential.
-    TODO: Sanitizing input, checking numerical inputs are numerical, especially for maxDur, minOn, maxOff
     TODO: Make ISI trial-type specific
+    TODO: Option for habituation over whole meta-trials
     """
     def __init__(self, loadedSaved=False, settingsDict={}):
         """
@@ -95,6 +95,7 @@ class PyHabBuilder:
                                                         'setCritWindow': '3', 
                                                         'setCritDivisor': '2.0',
                                                         'setCritType': 'First',
+                                                        'habThresh': '5.0',
                                                         'metCritWindow': '3', 
                                                         'metCritDivisor': '1.0',
                                                         'metCritStatic': 'Moving',
@@ -130,6 +131,7 @@ class PyHabBuilder:
             self.settings = settingsDict
             if 'nextFlash' not in self.settings.keys():
                 self.settings['nextFlash'] = '0'
+            # Settings requiring evaluation to get sensible values. Mostly dicts.
             evalList = ['dataColumns','maxDur','condList','movieEnd','playThrough','trialOrder','stimNames', 'stimList',
                         'maxOff','minOn','autoAdvance','playAttnGetter','attnGetterList','trialTypes','habTrialList','nextFlash']
             for i in evalList:
@@ -141,6 +143,8 @@ class PyHabBuilder:
             if 'startImage' not in self.settings.keys():
                 self.settings['startImage'] = ''
                 self.settings['endImage'] = ''
+            if 'habThresh' not in self.settings.keys():
+                self.settings['habThresh'] = '1.0'
             self.settings['dataloc'] = ''.join([self.dirMarker if x == otherOS else x for x in self.settings['dataloc']])
             self.settings['stimPath'] = ''.join([self.dirMarker if x == otherOS else x for x in self.settings['stimPath']])
             self.trialTypesArray = self.loadTypes()
@@ -160,8 +164,8 @@ class PyHabBuilder:
                     self.condDict={}
             self.settings['folderPath'] = os.getcwd()+self.dirMarker  # On load, reset the folder path to wherever you are now.
         self.folderPath = self.settings['folderPath']  # The location where all the pieces are saved.
-        self.allDataColumns=['sNum', 'months', 'days', 'sex', 'cond','condLabel', 'trial','GNG','trialType','stimName','habCrit','sumOnA','numOnA','sumOffA','numOffA','sumOnB','numOnB','sumOffB','numOffB']
-        self.allDataColumnsPL =['sNum', 'months', 'days', 'sex', 'cond','condLabel','trial','GNG','trialType','stimName','habCrit', 'sumOnL','numOnL','sumOnR','numOnR','sumOff','numOff']
+        self.allDataColumns = ['sNum', 'months', 'days', 'sex', 'cond','condLabel', 'trial','GNG','trialType','stimName','habCrit','sumOnA','numOnA','sumOffA','numOffA','sumOnB','numOnB','sumOffB','numOffB']
+        self.allDataColumnsPL = ['sNum', 'months', 'days', 'sex', 'cond','condLabel','trial','GNG','trialType','stimName','habCrit', 'sumOnL','numOnL','sumOnR','numOnR','sumOff','numOff']
         self.stimSource={}  # A list of the source folder(s) for each stimulus file, a dict where each key is the filename in stimNames?
         self.allDone=False
         # Various main UI buttons, put into a dict of lists for easy looping through.
@@ -1854,13 +1858,17 @@ class PyHabBuilder:
         2 = setCritDivisor (denominator of criterion calculation . e.g., sum of first 3 trials
             divided by 2 would have 3 for setCritWindow and 2 for this.)
 
-        3 = setCritType (peak window or just first N)
+        3 = setCritType (peak window, max trials, first N, or first N above threshold)
 
-        4 = metCritWindow (# trials summed over when evaluating whether criterion has been met)
+        4 = habThresh (threshold for N above threshold)
 
-        5 = metCritDivisor (denominator of sum calculated when determining if criterion has been met)
+        5 = metCritWindow (# trials summed over when evaluating whether criterion has been met)
 
-        6 = metCritStatic (static or moving window?)
+        6 = metCritDivisor (denominator of sum calculated when determining if criterion has been met)
+
+        7 = metCritStatic (static or moving window?)
+
+
 
         :param lastSet: If information entered is invalid and the dialog needs to be shown again, this allows it to remember what was previously entered.
         :type lastSet: list
@@ -1875,12 +1883,13 @@ class PyHabBuilder:
             lastSet.append(self.settings['setCritWindow'])
             lastSet.append(self.settings['setCritDivisor'])
             lastSet.append(self.settings['setCritType'])
+            lastSet.append(self.settings['habThresh'])
             lastSet.append(self.settings['metCritWindow'])
             lastSet.append(self.settings['metCritDivisor'])
             lastSet.append(self.settings['metCritStatic'])
 
         hDlg = gui.Dlg(title="Habituation block settings")
-        windowtypes = ['First', 'Peak', 'Max']
+        windowtypes = ['First', 'Peak', 'Max', 'Threshold']
         winchz = [x for x in windowtypes if x != lastSet[3]]
         winchz.insert(0, lastSet[3])
         if lastSet[6] == 'Fixed':
@@ -1891,15 +1900,16 @@ class PyHabBuilder:
         hDlg.addField("Max number of habituation trials (if criterion not met)", self.settings['maxHabTrials'])
         hDlg.addField("Number of trials to sum looking time over when making hab criterion", self.settings['setCritWindow'])
         hDlg.addField("Number to divide sum of looking time by when computing criterion", self.settings['setCritDivisor'])
-        hDlg.addField("Criterion window First trials, dynamic Peak contiguous window, or the set of hab trials with Max looking time?", choices=winchz)
+        hDlg.addField("Criterion window First trials, first trials above Threshold, dynamic Peak contiguous window, or the set of hab trials with Max looking time?", choices=winchz)
+        hDlg.addField("Threshold value to use if 'Threshold' selected above (ignored otherwise)", self.settings['habThresh'])
         hDlg.addField("Number of trials to sum looking time over when determining whether criterion has been met", self.settings['metCritWindow'])
         hDlg.addField("Number to divide sum of looking time by when determining whether criterion has been met", self.settings['metCritDivisor'])
         hDlg.addField("Evaluate criterion over moving window or fixed windows?", choices=evalChz)
         habDat=hDlg.show()
         if hDlg.OK:
             skip = False
-            intevals = [0,1,4]
-            fevals = [2,5] # These can be floats
+            intevals = [0,1,5]
+            fevals = [2,4,6] # These can be floats
             for i in intevals:
                 if not isinstance(habDat[i], int):
                     if isinstance(habDat[i], str):
@@ -1923,9 +1933,10 @@ class PyHabBuilder:
                 self.settings['setCritWindow'] = habDat[1]
                 self.settings['setCritDivisor'] = habDat[2]
                 self.settings['setCritType'] = habDat[3]
-                self.settings['metCritWindow'] = habDat[4]
-                self.settings['metCritDivisor'] = habDat[5]
-                self.settings['metCritStatic'] = habDat[6]
+                self.settings['habThresh'] = habDat[4]
+                self.settings['metCritWindow'] = habDat[5]
+                self.settings['metCritDivisor'] = habDat[6]
+                self.settings['metCritStatic'] = habDat[7]
             else:
                 errDlg = gui.Dlg(title="Warning, invalid number!")
                 errDlg.addText(

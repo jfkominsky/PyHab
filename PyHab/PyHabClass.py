@@ -36,6 +36,7 @@ class PyHab:
     Each coder's on and off are recorded in a separate dict with trial, gaze on/off, start, end, and duration.
 
     TODO: make ISI trial type specific
+    TODO: Habituation calculated over whole meta-trial rather than just "Hab"
     """
 
     def __init__(self, settingsDict):
@@ -136,6 +137,10 @@ class PyHab:
             self.startImage = ''
             self.endImage = ''
             self.nextFlash = 0
+        try:
+            self.habThresh = eval(settingsDict['habThresh'])
+        except:
+            self.habThresh = 1.0
 
         if len(self.stimPath) > 0 and self.stimPath[-1] is not self.dirMarker:  # If it was made in one OS and running in another
             self.stimPath = [self.dirMarker if x == otherOS else x for x in self.stimPath]
@@ -146,6 +151,7 @@ class PyHab:
         '''
         self.habCount = 0  # For hab designs, checks the # of habituation trials completed
         self.habCrit = 0  # initial setting of habcrit at 0
+        self.habSetWhen = -1
         self.dataMatrix = []  # primary data array
         # data format: snum, age in months, age in days, sex, condition, trial, GNGtrial, trial type, hab crit, on-time, number of gazes, off-time, number of look-offs
         # then same again at the end for b-coder?
@@ -325,12 +331,14 @@ class PyHab:
     def checkStop(self):
         """
         After a hab trial, checks the habitution criteria and returns 'true' if any of them are met.
+        Also responsible for setting the habituation criteria according to settings.
+        Prior to any criteria being set, self.HabCrit is 0. We can use this as a check whether it has been set.
 
         :return: True if hab criteria have been met, False otherwise
         :rtype:
         """
 
-        if self.habCount == self.setCritWindow:  # time to set the hab criterion. This will be true for both dynamic and first
+        if self.habCount == self.setCritWindow and self.setCritType != 'Threshold':  # time to set the hab criterion. This will be true for both dynamic and first
             sumOnTimes = 0
             # find first hab trial
             x = 0
@@ -344,6 +352,7 @@ class PyHab:
                     # add up total looking time for first three (good) trials
                     sumOnTimes = sumOnTimes + self.dataMatrix[k]['sumOnA']
             self.habCrit = sumOnTimes / self.setCritDivisor
+            self.habSetWhen = deepcopy(self.habCount)
         elif self.setCritType == 'Peak':  # Checks if we need to update the hab criterion
             sumOnTimes = 0
             habs = [i for i, x in enumerate(self.actualTrialOrder) if x == 'Hab']  # list of all habs
@@ -355,6 +364,7 @@ class PyHab:
             sumOnTimes = sumOnTimes / self.setCritDivisor
             if sumOnTimes > self.habCrit:
                 self.habCrit = sumOnTimes
+                self.habSetWhen = deepcopy(self.habCount)
         elif self.setCritType == 'Max' and self.habCount > self.setCritWindow:  # Absolute max looking time among hab trials, regardless of order.
             habOns = []
             for n in range(0, len(self.dataMatrix)):
@@ -365,6 +375,19 @@ class PyHab:
             sumOnTimes = sumOnTimes / self.setCritDivisor
             if sumOnTimes > self.habCrit:
                 self.habCrit = sumOnTimes
+                self.habSetWhen = deepcopy(self.habCount)
+        elif self.setCritType == 'Threshold' and self.habCount >= self.setCritWindow and self.habCrit == 0:
+            sumOnTimes = 0
+            habs = [i for i, x in enumerate(self.actualTrialOrder) if x == 'Hab']  # list of all habs
+            habs.sort()
+            index = habs[self.habCount - self.setCritWindow]  # How far back should we look?
+            for n in range(index, len(
+                    self.dataMatrix)):  # now, starting with that trial, go through and add up the good trial looking times
+                if self.dataMatrix[n]['GNG'] == 1 and self.dataMatrix[n]['trialType'] == 'Hab':  # only good trials!
+                    sumOnTimes = sumOnTimes + self.dataMatrix[n]['sumOnA']  # add up total looking time
+            if sumOnTimes > self.habThresh:
+                self.habCrit = sumOnTimes / self.setCritDivisor
+                self.habSetWhen = deepcopy(self.habCount)
 
         # Now we separate out the set and met business.
         if self.habCount == self.maxHabTrials:
@@ -374,7 +397,7 @@ class PyHab:
                     core.wait(.25)  # an inadvertent side effect of playing the sound is a short pause before the test trial can begin
                     self.endHabSound.play()
             return True
-        elif self.habCount >= self.setCritWindow + self.metCritWindow:  # if we're far enough in that we can plausibly meet the hab criterion
+        elif self.habCount >= self.habSetWhen + self.metCritWindow and self.habSetWhen > -1:  # if we're far enough in that we can plausibly meet the hab criterion
             sumOnTimes = 0
             habs = [i for i, x in enumerate(self.actualTrialOrder) if x == 'Hab']  # list of all habs
             habs.sort()
