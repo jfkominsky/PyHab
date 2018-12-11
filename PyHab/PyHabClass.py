@@ -1052,6 +1052,26 @@ class PyHab:
                     offDur = endTrial - startOff
                     tempGazeArray = {'trial':number, 'trialType':type, 'startTime':startOff, 'endTime':endTrial, 'duration':offDur}
                     offArray.append(tempGazeArray)
+            elif core.getTime() - startTrial >= .5 and self.keyboard[self.key.J] and 'Hab' not in self.actualTrialOrder[(number-1):]:
+                # New feature: End trial and go forward manually. Disabled for hab experiments where habs are ongoing.
+                # Disabled for the first half-second to stop you from skipping through multiple auto-advancing trials
+                if type in self.movieEnd:
+                    endFlag = True
+                else:
+                    runTrial = False
+                    endTrial = core.getTime() - startTrial
+                    if not self.stimPres:
+                        self.endTrialSound.play()
+                    # determine if they were looking or not at end of trial and update appropriate array
+                    if gazeOn:
+                        onDur = endTrial - startOn
+                        tempGazeArray = {'trial':number, 'trialType':type, 'startTime':startOn, 'endTime':endTrial, 'duration':onDur}
+                        onArray.append(tempGazeArray)
+                    else:
+                        offDur = endTrial - startOff
+                        tempGazeArray = {'trial':number, 'trialType':type, 'startTime':startOff, 'endTime':endTrial, 'duration':offDur}
+                        offArray.append(tempGazeArray)
+
             elif self.keyboard[self.key.Y]:  # the 'end the study' button, for fuss-outs
                 runTrial = False
                 endTrial = core.getTime() - startTrial
