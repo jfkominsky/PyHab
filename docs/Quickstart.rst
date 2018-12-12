@@ -3,9 +3,9 @@ Quickstart guide
 ================
 
 
-====
+
 Creating a new PyHab project from scratch
-====
+-----------
 1. Open PsychoPy
 
 2. Go to "View" and select "Coder View". (You can also hit cmd-L on Mac or ctrl-L on Windows.)
@@ -24,9 +24,9 @@ Creating a new PyHab project from scratch
 
 8. Read the manual (https://github.com/jfkominsky/PyHab/raw/master/PyHab%20User%20Manual.pdf) for more information on how to build an experiment.
 
-===
+
 Running the demo or a pre-made PyHab experiment
-===
+-----------
 
 1. In coder view, open the experiment's launcher script. For the demo experiment, in the PyHab folder open "PyHabDemoLauncher.py" in the "PyHabDemo" folder.
 
