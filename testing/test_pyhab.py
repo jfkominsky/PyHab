@@ -700,6 +700,7 @@ class TestPrefLook(object):
         assert self.dataInstPL.habCrit == 0
         assert self.dataInstPL.checkStop() == False
         assert self.dataInstPL.habCrit == 15.0  # Check criteria set properly
+        assert self.dataInstPL.habSetWhen == 3
 
         self.dataInstPL.habCount = 14
         assert self.dataInstPL.checkStop() == True
@@ -709,15 +710,17 @@ class TestPrefLook(object):
         self.dataInstPL.setCritDivisor = 1
         assert self.dataInstPL.checkStop() == False
         assert self.dataInstPL.habCrit == 30.0
+        assert self.dataInstPL.habSetWhen == 3
         self.dataInstPL.habCrit = 0  # reset
         habMatrix.append({'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
                           'condLabel': 'dataTest', 'trial': 6, 'GNG': 1, 'trialType': 'Hab', 'stimName': 'movie1.mov',
                           'habCrit': 0, 'sumOnL': 7.0, 'numOnL': 2, 'sumOff': 3.5,
                           'numOff': 2, 'sumOnR': 3.0, 'numOnR': 2})
-        self.dataInstPL.habCount += 1
+        self.dataInstPL.habCount += 1 # 4
         self.dataInstPL.setCritWindow = 4
         assert self.dataInstPL.checkStop() == False
         assert self.dataInstPL.habCrit == 40.0
+        assert self.dataInstPL.habSetWhen == 4
 
         self.dataInstPL.setCritWindow = 3
         self.dataInstPL.setCritType = 'Peak'  # require actualTrialOrder
@@ -729,25 +732,29 @@ class TestPrefLook(object):
                           'condLabel': 'dataTest', 'trial': 7, 'GNG': 1, 'trialType': 'Hab', 'stimName': 'movie1.mov',
                           'habCrit': 0, 'sumOnL': 2.0, 'numOnL': 2, 'sumOff': 3.5,
                           'numOff': 2, 'sumOnR': 3.0, 'numOnR': 2})
-        self.dataInstPL.habCount += 1
+        self.dataInstPL.habCount += 1 # 5
         assert self.dataInstPL.checkStop() == False
         assert self.dataInstPL.habCrit == 40.0  # should not change yet
+        assert self.dataInstPL.habSetWhen == 4
 
         habMatrix[6]['sumOnL'] = 15.0
         habMatrix[6]['sumOnR'] = 10.0
         assert self.dataInstPL.checkStop() == False
         assert self.dataInstPL.habCrit == 45.0  # should change to peak now
+        assert self.dataInstPL.habSetWhen == 5
 
         self.dataInstPL.setCritType = 'Max'
         habMatrix[3]['sumOnL'] = 10.0  # 25+15+10=50
         habMatrix[3]['sumOnR'] = 5.0
         assert self.dataInstPL.checkStop() == False
         assert self.dataInstPL.habCrit == 50.0  # should change to max now
+        assert self.dataInstPL.habSetWhen == 5
 
         habMatrix[2]['sumOnL'] = 10.0  # 25+15+15=55
         habMatrix[2]['sumOnR'] = 5.0
         assert self.dataInstPL.checkStop() == False
         assert self.dataInstPL.habCrit == 55.0  # should change to max now
+        assert self.dataInstPL.habSetWhen == 5
 
         habMatrix.append({'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
                           'condLabel': 'dataTest', 'trial': 8, 'GNG': 1, 'trialType': 'Hab', 'stimName': 'movie1.mov',
@@ -755,7 +762,11 @@ class TestPrefLook(object):
                           'numOff': 2, 'sumOnR': 3.0, 'numOnR': 2})  # At this point, most recent 3 should be 25+10+5=40
 
         self.dataInstPL.habCount += 1  # 6
+        assert self.dataInstPL.habSetWhen == 5
+        assert self.dataInstPL.checkStop() == False
+        self.dataInstPL.habSetWhen = 3 # Change this for testing criteria
         assert self.dataInstPL.checkStop() == True
+        self.dataInstPL.habSetWhen = 5 # Change this for testing criteria
         assert self.dataInstPL.habCrit == 55.0  # should not have changed.
 
         habMatrix.append({'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
@@ -766,7 +777,10 @@ class TestPrefLook(object):
         self.dataInstPL.habCount += 1  # 7
 
         self.dataInstPL.metCritWindow = 4  # 25+10+5+10 = 50
+        assert self.dataInstPL.checkStop() == False
+        self.dataInstPL.habSetWhen = 3  # Change this for testing criteria
         assert self.dataInstPL.checkStop() == True
+        self.dataInstPL.habSetWhen = 5
         assert self.dataInstPL.habCrit == 55.0  # should not have changed.
 
         habMatrix.append({'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
@@ -778,8 +792,12 @@ class TestPrefLook(object):
         self.dataInstPL.metCritWindow = 5  # 25+10+5+10+5.1  = 55.1
         assert self.dataInstPL.habCrit == 55.0  # should not have changed.
         assert self.dataInstPL.checkStop() == False
+        self.dataInstPL.habSetWhen = 3  # Change this for testing criteria
+        assert self.dataInstPL.checkStop() == False
+        self.dataInstPL.habSetWhen = 5
 
         self.dataInstPL.metCritDivisor = 2
+        self.dataInstPL.habSetWhen = 3  # Changing this to 3 for remaining tests
         assert self.dataInstPL.checkStop() == True
         assert self.dataInstPL.habCrit == 55.0  # should not have changed.
 
