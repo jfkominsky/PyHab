@@ -39,8 +39,11 @@ Running the demo or a pre-made PyHab experiment
     .. image:: SubjInfo.png
 
     4a. The first two lines are the subject number and identifier. These are arbitrary, but you need to put something in at least one of them.
+
     4b. The subject sex is entirely optional and can be left blank.
+
     4c. The next three lines are the subject date of birth. These MUST be filled out. Each field takes ONLY two digits. So, for a date of birth of November 12, 2018, you would put 11 in the first box, 12 in the second, and 18 in the third.
+
     4d. The final line is a condition drop-down menu with a list of conditions. If the experiment you are running does not have conditions configured, this will be an arbitrary text box. Otherwise, select the appopriate condition.
 
 5. Hit OK, and the experiment will launch. You will be presented with the experimenter window. Press "A" to start the first trial and play the attention-getter. Hold "B" whenever the infant is looking at the screen and release it when they are not. Press Y at any time to end the experiment.
