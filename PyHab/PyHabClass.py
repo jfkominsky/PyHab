@@ -397,27 +397,32 @@ class PyHab:
                     core.wait(.25)  # an inadvertent side effect of playing the sound is a short pause before the test trial can begin
                     self.endHabSound.play()
             return True
-        elif self.habCount >= self.habSetWhen + self.metCritWindow and self.habSetWhen > -1:  # if we're far enough in that we can plausibly meet the hab criterion
-            sumOnTimes = 0
-            habs = [i for i, x in enumerate(self.actualTrialOrder) if x == 'Hab']  # list of all habs
-            habs.sort()
-            index = habs[self.habCount - self.metCritWindow]
-            if (self.metCritStatic == 'Moving') or (self.habCount-self.setCritWindow) % self.metCritWindow == 0:
-                for n in range(index, len(self.dataMatrix)):  # now, starting with that trial, go through and add up the good trial looking times
-                    if self.dataMatrix[n]['GNG'] == 1 and self.dataMatrix[n]['trialType'] == 'Hab':  # only good trials!
-                        sumOnTimes = sumOnTimes + self.dataMatrix[n]['sumOnA']  # add up total looking time
-                sumOnTimes = sumOnTimes / self.metCritDivisor
-                if sumOnTimes < self.habCrit:
-                    # end habituation and go to test
-                    if not self.stimPres:
-                        for i in [0, 1, 2]:
-                            core.wait(.25)  # an inadvertent side effect of playing the sound is a short pause before the test trial can begin
-                            self.endHabSound.play()
-                    return True
+        elif self.habCount >= self.setCritWindow + self.metCritWindow and self.habSetWhen > -1:  # if we're far enough in that we can plausibly meet the hab criterion
+            # Problem: Fixed window, peak, and max as relates to habsetwhen....
+            # Fixed window is probably the only thing that should ignore habsetwhen.
+            if self.habCount < self.habSetWhen + self.metCritWindow and self.metCritStatic == 'Moving': # Was the hab set "late" and are we too early as a result
+                return False
+            else:
+                sumOnTimes = 0
+                habs = [i for i, x in enumerate(self.actualTrialOrder) if x == 'Hab']  # list of all habs
+                habs.sort()
+                index = habs[self.habCount - self.metCritWindow]
+                if (self.metCritStatic == 'Moving') or (self.habCount-self.setCritWindow) % self.metCritWindow == 0:
+                    for n in range(index, len(self.dataMatrix)):  # now, starting with that trial, go through and add up the good trial looking times
+                        if self.dataMatrix[n]['GNG'] == 1 and self.dataMatrix[n]['trialType'] == 'Hab':  # only good trials!
+                            sumOnTimes = sumOnTimes + self.dataMatrix[n]['sumOnA']  # add up total looking time
+                    sumOnTimes = sumOnTimes / self.metCritDivisor
+                    if sumOnTimes < self.habCrit:
+                        # end habituation and go to test
+                        if not self.stimPres:
+                            for i in [0, 1, 2]:
+                                core.wait(.25)  # an inadvertent side effect of playing the sound is a short pause before the test trial can begin
+                                self.endHabSound.play()
+                        return True
+                    else:
+                        return False
                 else:
                     return False
-            else:
-                return False
         else:
             return False
 

@@ -266,10 +266,10 @@ class TestDataFunc(object):
                           'habCrit': 0, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
                           'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
                           'numOffB': 2})
-        self.dataInst.habCount += 1
+        self.dataInst.habCount += 1 # 4
         self.dataInst.setCritWindow = 4
         assert self.dataInst.checkStop() == False
-        assert self.dataInst.habCrit == 40.0
+        assert self.dataInst.habCrit == 40.0 # HabSetWhen = 4
 
         self.dataInst.setCritWindow = 3
         self.dataInst.setCritType = 'Peak'  # require actualTrialOrder
@@ -282,22 +282,28 @@ class TestDataFunc(object):
                           'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
                           'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
                           'numOffB': 2})
-        self.dataInst.habCount += 1
+        self.dataInst.habCount += 1 # 5
         assert self.dataInst.checkStop() == False
-        assert self.dataInst.habCrit == 40.0  # should not change yet
+        assert self.dataInst.habCrit == 40.0  # should not change yet. HabSetWhen = 4
+        assert self.dataInst.habSetWhen == 4
 
         habMatrix[6]['sumOnA'] = 25.0
         assert self.dataInst.checkStop() == False
-        assert self.dataInst.habCrit == 45.0  # should change to peak now
+        assert self.dataInst.habCrit == 45.0  # should change to peak now. HabSetWhen = 5
+        assert self.dataInst.habSetWhen == 5
+
 
         self.dataInst.setCritType = 'Max'
         habMatrix[3]['sumOnA'] = 15.0  # 25+15+10=50
         assert self.dataInst.checkStop() == False
         assert self.dataInst.habCrit == 50.0  # should change to max now
+        assert self.dataInst.habSetWhen == 5
+
 
         habMatrix[2]['sumOnA'] = 15.0  # 25+15+15=55
         assert self.dataInst.checkStop() == False
-        assert self.dataInst.habCrit == 55.0  # should change to max now
+        assert self.dataInst.habCrit == 55.0  # should change to max now. HabSetWhen=5
+        assert self.dataInst.habSetWhen == 5
 
         habMatrix.append({'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
                           'condLabel': 'dataTest', 'trial': 8, 'GNG': 1, 'trialType': 'Hab', 'stimName': 'movie1.mov',
@@ -306,10 +312,11 @@ class TestDataFunc(object):
                           'numOffB': 2})  # At this point, most recent 3 should be 25+10+5=40
 
         self.dataInst.habCount += 1  # 6
+        assert self.dataInst.habSetWhen == 5
         assert self.dataInst.checkStop() == False
-        self.dataInst.habCount += 3
+        self.dataInst.habSetWhen = 3
         assert self.dataInst.checkStop() == True
-        self.dataInst.habCount -= 3
+        self.dataInst.habSetWhen = 5
         assert self.dataInst.habCrit == 55.0  # should not have changed.
 
         habMatrix.append({'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
@@ -322,9 +329,9 @@ class TestDataFunc(object):
 
         self.dataInst.metCritWindow = 4  # 25+10+5+10 = 50
         assert self.dataInst.checkStop() == False
-        self.dataInst.habCount += 2
+        self.dataInst.habSetWhen = 3
         assert self.dataInst.checkStop() == True
-        self.dataInst.habCount -= 2
+        self.dataInst.habSetWhen = 5
         assert self.dataInst.habCrit == 55.0  # should not have changed.
 
         habMatrix.append({'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
@@ -337,12 +344,14 @@ class TestDataFunc(object):
         self.dataInst.metCritWindow = 5  # 25+10+5+10+5.1  = 55.1
         assert self.dataInst.habCrit == 55.0  # should not have changed.
         assert self.dataInst.checkStop() == False
+        self.dataInst.habSetWhen = 3
+        assert self.dataInst.checkStop() == False
+        self.dataInst.habSetWhen = 5
 
         self.dataInst.metCritDivisor = 2
         assert self.dataInst.checkStop() == False
-        self.dataInst.habCount += 3
-        assert self.dataInst.checkStop() == True #Fails...
-        self.dataInst.habCount -= 3
+        self.dataInst.habSetWhen = 3 # Keeping this at 3 for the remaining tests.
+        assert self.dataInst.checkStop() == True
         assert self.dataInst.habCrit == 55.0  # should not have changed.
 
         self.dataInst.metCritWindow = 4
@@ -350,8 +359,7 @@ class TestDataFunc(object):
         assert self.dataInst.checkStop() == False
         assert self.dataInst.habCrit == 55.0  # should not have changed.
 
-        self.dataInst.metCritWindow = 5  # Now it should trip, but for some reason it doesn't.
-        self.dataInst.habCount += 3
+        self.dataInst.metCritWindow = 5 # Should now trip because setcritwindow is 3 + 5 = 8
         assert self.dataInst.checkStop() == True
         assert self.dataInst.habCrit == 55.0  # should not have changed.
 
