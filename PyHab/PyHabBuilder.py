@@ -1086,7 +1086,7 @@ class PyHabBuilder:
         datInfo = dDlg.show()
         if dDlg.OK:
             tempCols = []
-            for j in range(1, len(datInfo)):
+            for j in range(0, len(datInfo)):
                 if datInfo[j]:
                     tempCols.append(tempDataCols[j])
             self.settings['dataColumns'] = tempCols
