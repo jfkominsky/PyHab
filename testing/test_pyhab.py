@@ -379,7 +379,7 @@ class TestRunSetup(object):
         del self.trialInst
 
     def test_setup(self):
-        testOne = [99, 'Test', 'NB', 7, 2, 18, 'testcond', 8, 2, 18]
+        testOne = [99, 'Test', 'NB', '7', '2', '18', 'testcond', '8', '2', '18']
 
         self.trialInst.run(testMode=testOne)
 
@@ -388,7 +388,7 @@ class TestRunSetup(object):
         assert self.trialInst.ageDay == 0
 
     def test_hab_expansion(self):
-        testOne = [99, 'Test', 'NB', 7, 2, 18, 'testcond', 8, 2, 18]
+        testOne = [99, 'Test', 'NB', '7', '2', '18', 'testcond', '8', '2', '18']
         self.trialInst.trialOrder = ['A', 'A', 'B', 'B', 'Hab', 'D']
         self.trialInst.run(testMode=testOne)
         assert len(self.trialInst.actualTrialOrder) == 19
@@ -401,17 +401,30 @@ class TestRunSetup(object):
 
 
     def test_multiyear_age(self):
-        testOne = [99, 'Test', 'NB', 7, 2, 16, 'testcond', 8, 2, 18]
+        testOne = [99, 'Test', 'NB', '7', '2', '16', 'testcond', '8', '2', '18']
         self.trialInst.run(testMode=testOne)
 
         assert self.trialInst.ageMo == 25
         assert self.trialInst.ageDay == 0
 
-        testTwo = [99, 'Test', 'NB', 7, 2, 16, 'testcond', 8, 1, 18]
+        testTwo = [99, 'Test', 'NB', '7', '2', '16', 'testcond', '8', '1', '18']
         self.trialInst.run(testMode=testTwo)
 
         assert self.trialInst.ageMo == 24
         assert self.trialInst.ageDay == 30
+
+    def test_four_digit_years(self):
+        testOne = [99, 'Test', 'NB', '7', '2', '2016', 'testcond', '8', '2', '18']
+        self.trialInst.run(testMode=testOne)
+
+        assert self.trialInst.ageMo == 25
+        assert self.trialInst.ageDay == 0
+
+        testTwo = [99, 'Test', 'NB', '7', '2', '16', 'testcond', '8', '2', '2018']
+        self.trialInst.run(testMode=testTwo)
+        assert self.trialInst.ageMo == 25
+        assert self.trialInst.ageDay == 0
+
 
     def test_condition_files(self):
         """
