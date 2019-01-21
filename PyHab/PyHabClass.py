@@ -745,21 +745,25 @@ class PyHab:
         # trialNum is in fact the index after the current trial at this point
         # so we can just erase everything between that and the first non-hab trial.
         del self.actualTrialOrder[(trialNum - 1):(tempNum + 1)]
-        trialType = self.actualTrialOrder[trialNum - 1]
-        if self.stimPres:
-            if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
-                self.stimName = self.stimNames[trialType][self.counters[trialType] % len(self.stimNames[trialType])]
+        try:
+            trialType = self.actualTrialOrder[trialNum - 1]
+            if self.stimPres:
+                if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
+                    self.stimName = self.stimNames[trialType][self.counters[trialType] % len(self.stimNames[trialType])]
+                else:
+                    self.stimName = self.stimNames[trialType][self.counters[trialType]]
+                disMovie = self.stimDict[trialType][self.counters[trialType]]
+                self.counters[trialType] += 1
+                if self.counters[trialType] >= len(self.stimDict[trialType]):
+                    self.counters[trialType] = 0
             else:
-                self.stimName = self.stimNames[trialType][self.counters[trialType]]
-            disMovie = self.stimDict[trialType][self.counters[trialType]]
-            self.counters[trialType] += 1
-            if self.counters[trialType] >= len(self.stimDict[trialType]):
-                self.counters[trialType] = 0
-        else:
-            disMovie = 0
-        if self.blindPres < 1:
-            self.rdyTextAppend = " NEXT: " + trialType + " TRIAL"
-        return [disMovie, trialType]
+                disMovie = 0
+            if self.blindPres < 1:
+                self.rdyTextAppend = " NEXT: " + trialType + " TRIAL"
+            return [disMovie, trialType]
+        except IndexError: # Comes up when there are no non-hab trials
+            self.endExperiment()
+            return[0,'4']
 
     def insertHab(self,tn):
         """
@@ -873,6 +877,7 @@ class PyHab:
             if self.blindPres < 1:
                 self.rdyTextAppend = " NEXT: " + self.actualTrialOrder[trialNum - 1] + " TRIAL"
             end = False
+            skip = False
             if trialType not in AA and self.nextFlash in [1,'1',True,'True']: # The 'flasher' to alert the experimenter they need to start the next trial
                 self.flashCoderWindow()
             while not self.keyboard[self.key.A] and trialType not in AA and not end:  # wait for 'ready' key, check at frame intervals
@@ -957,11 +962,15 @@ class PyHab:
                         [disMovie,trialType] = self.jumpToTest(trialNum)
                     elif trialType != 'Hab' and self.keyboard[self.key.I] and 'Hab' in self.trialOrder and trialType not in self.habTrialList:  # insert additional hab trial
                         [disMovie,trialType] = self.insertHab(trialNum)
+                    elif self.keyboard[self.key.S] and trialType != 'Hab': # Skip this trial
+                        skip = True
                     else:
                         self.dispCoderWindow(0)
-            if not end: #If Y has not been pressed, do the trial! Otherwise, end the experiment.
+            if not end or skip: #If Y has not been pressed, do the trial! Otherwise, end the experiment.
                 x = self.doTrial(trialNum, trialType, disMovie)  # the actual trial, returning one of four status values at the end
                 AA = self.autoAdvance  # After the very first trial AA will always be whatever it was set to at the top.
+            elif skip:
+                x = 0 # Simply proceed to next trial.
             else:
                 x = 2
             if x == 2:  # end experiment, either due to final trial ending or 'end experiment altogether' button.
@@ -1080,7 +1089,7 @@ class PyHab:
                     offDur = endTrial - startOff
                     tempGazeArray = {'trial':number, 'trialType':type, 'startTime':startOff, 'endTime':endTrial, 'duration':offDur}
                     offArray.append(tempGazeArray)
-            elif core.getTime() - startTrial >= .5 and self.keyboard[self.key.J] and 'Hab' not in self.actualTrialOrder[(number-1):]:
+            elif core.getTime() - startTrial >= .5 and self.keyboard[self.key.S] and 'Hab' not in self.actualTrialOrder[(number-1):]:
                 # New feature: End trial and go forward manually. Disabled for hab experiments where habs are ongoing.
                 # Disabled for the first half-second to stop you from skipping through multiple auto-advancing trials
                 if type in self.movieEnd:
@@ -1647,6 +1656,8 @@ class PyHab:
         files. Now with a testing mode to allow us to skip the dialog and ensure the actualTrialOrder structure is being
         put together properly in unit testing.
 
+        TODO: Make this smarter about input so it doesn't flip its shit if people enter a 4-digit year and such.
+
         :param testMode: Optional and primarily only used for unit testing. Will not launch the window and start the experiment. Contains all the info that would appear in the subject info dialog.
         :type testMode: list
         :return:
@@ -1671,61 +1682,89 @@ class PyHab:
             else:
                 startDlg.addField('Cond: ')
             if not self.stimPres:
+                startDlg.addText("Date of test (leave blank for today)")
                 startDlg.addField('DOT(month): ')
                 startDlg.addField('DOT(day): ')
                 startDlg.addField('DOT(year): ')
             startDlg.show()
         if startDlg.OK:
+            fail = False # A bool for detecting if we have to start over at any point.
             thisInfo = startDlg.data
             self.sNum = thisInfo[0]
             self.sID = thisInfo[1]
             self.sex = thisInfo[2]
             # now for the exciting bit: converting DOB into months/days.
             self.today = date.today()
-            DOB = date(2000 + int(thisInfo[5]), int(thisInfo[3]), int(thisInfo[4]))
-            if self.stimPres:
-                DOT = self.today
-            else:
-                DOT = date(2000 + int(thisInfo[9]), int(thisInfo[7]), int(thisInfo[8]))
-            # Dateutil's relativedelta is included in psychopy and just better than every other option!
-            ageDif = relativedelta(DOT, DOB)
-            self.ageMo = ageDif.years * 12 + ageDif.months
-            self.ageDay = ageDif.days  # Impossibly simple, but it works.
-            self.actualTrialOrder = []  # in this version, mostly a key for the hab trials.
-            for i in range(0, len(self.trialOrder)):
-                if self.trialOrder[i] == 'Hab':
-                    for j in range(0, self.maxHabTrials):
-                        if len(self.habTrialList) > 0:
-                            for q in range(0, len(self.habTrialList)):
-                                self.actualTrialOrder.append(self.habTrialList[q])
-                        else:
-                            self.actualTrialOrder.append('Hab')
+            # First, check valid entries
+            try:
+                for i in range(3,6):
+                    irrel = int(thisInfo[i])
+            except:
+                fail = True
+            if not fail:
+                # then, check if 4-digit or 2-digit year.
+                if len(thisInfo[5]) > 2:
+                    year = int(thisInfo[5])
                 else:
-                    self.actualTrialOrder.append(self.trialOrder[i])
-            # build trial order
-            if self.randPres and len(self.condList) > 0:  # Extra check: We WANT conditions and we HAVE them too.
-                self.condLabel = thisInfo[6]
-                testReader = csv.reader(open(self.condPath + self.condFile, 'rU'))
-                testStuff = []
-                for row in testReader:
-                    testStuff.append(row)
-                testDict = dict(testStuff)
-                self.cond = testDict[self.condLabel]  # this will read as order of indeces in N groups, in a 2-dimensional array
-                # type conversion required. Eval will read the string into a dictionary (now).
-                self.cond = eval(self.cond)
-                # now to rearrange the lists of each trial type.
-                finalDict = []
-                for i, j in self.cond.items():
-                    newTempTrials = []
-                    for q in range(0, len(j)):
-                        newTempTrials.append(self.stimNames[i][j[q] - 1])
-                    finalDict.append((i, newTempTrials))
-                self.stimNames = dict(finalDict)
+                    year = 2000 + int(thisInfo[5])
+                DOB = date(year, int(thisInfo[3]), int(thisInfo[4]))
+                if self.stimPres:
+                    DOT = self.today
+                elif len(thisInfo[9]) == 0 or len(thisInfo[8]) == 0 or len(thisInfo[7]) == 0:
+                    DOT = self.today
+                else:
+                    try:
+                        if len(thisInfo[9]) > 2:
+                            year = int(thisInfo[9])
+                        else:
+                            year = 2000 + int(thisInfo[9])
+                        DOT = date(year, int(thisInfo[7]), int(thisInfo[8]))
+                    except:
+                        DOT = self.today
+                        warnDlg = gui.Dlg("Warning! Invalid date!")
+                        warnDlg.addText("DOT is invalid. Defaulting to today's date.")
+                        irrel = warnDlg.show()
+                # Dateutil's relativedelta is included in psychopy and just better than every other option!
+                ageDif = relativedelta(DOT, DOB)
+                self.ageMo = ageDif.years * 12 + ageDif.months
+                self.ageDay = ageDif.days  # Impossibly simple, but it works.
+                self.actualTrialOrder = []  # in this version, mostly a key for the hab trials.
+                for i in range(0, len(self.trialOrder)):
+                    if self.trialOrder[i] == 'Hab':
+                        for j in range(0, self.maxHabTrials):
+                            if len(self.habTrialList) > 0:
+                                for q in range(0, len(self.habTrialList)):
+                                    self.actualTrialOrder.append(self.habTrialList[q])
+                            else:
+                                self.actualTrialOrder.append('Hab')
+                    else:
+                        self.actualTrialOrder.append(self.trialOrder[i])
+                # build trial order
+                if self.randPres and len(self.condList) > 0:  # Extra check: We WANT conditions and we HAVE them too.
+                    self.condLabel = thisInfo[6]
+                    testReader = csv.reader(open(self.condPath + self.condFile, 'rU'))
+                    testStuff = []
+                    for row in testReader:
+                        testStuff.append(row)
+                    testDict = dict(testStuff)
+                    self.cond = testDict[self.condLabel]  # this will read as order of indeces in N groups, in a 2-dimensional array
+                    # type conversion required. Eval will read the string into a dictionary (now).
+                    self.cond = eval(self.cond)
+                    # now to rearrange the lists of each trial type.
+                    finalDict = []
+                    for i, j in self.cond.items():
+                        newTempTrials = []
+                        for q in range(0, len(j)):
+                            newTempTrials.append(self.stimNames[i][j[q] - 1])
+                        finalDict.append((i, newTempTrials))
+                    self.stimNames = dict(finalDict)
+                else:
+                    self.cond = thisInfo[6]
+                    self.condLabel = self.cond
+                if len(testMode) == 0: # If we're in test mode, skip setting up the window and launching the experiment.
+                    self.SetupWindow()
             else:
-                self.cond = thisInfo[6]
-                self.condLabel = self.cond
-            if len(testMode) == 0: # If we're in test mode, skip setting up the window and launching the experiment.
-                self.SetupWindow()
+                self.run()
 
     def SetupWindow(self):
         """
