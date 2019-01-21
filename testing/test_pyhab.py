@@ -440,7 +440,7 @@ class TestRunSetup(object):
         self.trialInst.randPres = True
         self.trialInst.stimPres = True
 
-        testTwo = [99, 'Test', 'NB', 7, 2, 16, 'A']  # corresponds to {Intro:[1,2], Fam:[1,2], Test:[1,2]}
+        testTwo = [99, 'Test', 'NB', '7', '2', '16', 'A']  # corresponds to {Intro:[1,2], Fam:[1,2], Test:[1,2]}
         self.trialInst.run(testMode=testTwo)
 
         # First make sure it won't go without condlist
