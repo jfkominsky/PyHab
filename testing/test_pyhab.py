@@ -555,7 +555,7 @@ class TestCommands(object):
     def test_jump_and_insert(self):
         self.commandInst.trialText = mock.MagicMock()
         self.commandInst.stimPres = True
-        testOne = [99, 'Test', 'NB', 7, 2, 18, 'testcond', 8, 2, 18]
+        testOne = [99, 'Test', 'NB', '7', '2', '18', 'testcond', '8', '2', '18']
         self.commandInst.stimNames = {'A': ['Movie1', 'Movie2', 'Movie3', 'Movie4'],
                                       'B': ['Movie5', 'Movie6', 'Movie7', 'Movie8'],
                                       'C': ['Movie1', 'Movie2', 'Movie3', 'Movie4'],
