@@ -37,6 +37,7 @@ class PyHab:
 
     TODO: make ISI trial type specific
     TODO: Habituation calculated over whole meta-trial rather than just "Hab"
+    TODO: Change condition system to read text (as well as or instead of?) ints.
     """
 
     def __init__(self, settingsDict):
@@ -1656,8 +1657,6 @@ class PyHab:
         files. Now with a testing mode to allow us to skip the dialog and ensure the actualTrialOrder structure is being
         put together properly in unit testing.
 
-        TODO: Make this smarter about input so it doesn't flip its shit if people enter a 4-digit year and such.
-
         :param testMode: Optional and primarily only used for unit testing. Will not launch the window and start the experiment. Contains all the info that would appear in the subject info dialog.
         :type testMode: list
         :return:
@@ -1747,7 +1746,7 @@ class PyHab:
                     for row in testReader:
                         testStuff.append(row)
                     testDict = dict(testStuff)
-                    self.cond = testDict[self.condLabel]  # this will read as order of indeces in N groups, in a 2-dimensional array
+                    self.cond = testDict[self.condLabel]  # this will read as order of movies in N groups, in a 2-dimensional array
                     # type conversion required. Eval will read the string into a dictionary (now).
                     self.cond = eval(self.cond)
                     # now to rearrange the lists of each trial type.
@@ -1755,7 +1754,11 @@ class PyHab:
                     for i, j in self.cond.items():
                         newTempTrials = []
                         for q in range(0, len(j)):
-                            newTempTrials.append(self.stimNames[i][j[q] - 1])
+                            if type(j[q]) is int: # Dealing with old versions, I hope.
+                                newTempTrials.append(self.stimNames[i][j[q] - 1])
+                                print("Converting old conditions...")
+                            else:
+                                newTempTrials.append(j[q])
                         finalDict.append((i, newTempTrials))
                     self.stimNames = dict(finalDict)
                 else:

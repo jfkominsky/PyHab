@@ -429,6 +429,7 @@ class TestRunSetup(object):
     def test_condition_files(self):
         """
         To test condition files requires a condition file. The demo is handy here.
+        TODO: Change for new condition system?
         :return:
         :rtype:
         """
