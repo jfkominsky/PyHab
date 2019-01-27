@@ -45,7 +45,7 @@ base_settings = {
     'movieWidth': '800',
     'movieHeight': '600',
     'screenIndex': '1',
-    'ISI': '0.0',
+    'ISI': "{'A':0.0,'B':0.0,'C':0.0,'D':0.0}",
     'freezeFrame': '0.0',
     'playAttnGetter': "{'A':'PyHabDefault','B':'PyHabDefault'}",
     'attnGetterList': "{'PyHabDefault':{'stimType':'Audio','stimName':'upchime1.wav','stimDur':2,'stimLoc':'PyHab/upchime1.wav','shape':'Rectangle','color':'yellow'}}",
@@ -63,13 +63,13 @@ def test_init():
     """
     itest = PH.PyHab(base_settings)
     TheDicts = [itest.maxDur, itest.playThrough, itest.maxOff, itest.minOn, itest.stimNames,
-                itest.stimList, itest.playAttnGetter, itest.attnGetterList]
+                itest.stimList, itest.playAttnGetter, itest.attnGetterList, itest.ISI]
     TheLists = [itest.dataColumns, itest.movieEnd, itest.autoAdvance, itest.condList, itest.trialOrder,
                 itest.habTrialList]
     TheStrings = [itest.prefix, itest.dataFolder, itest.stimPath, itest.condFile, itest.setCritType,
                   itest.metCritStatic,
                   itest.screenColor]
-    TheFloats = [itest.ISI, itest.freezeFrame]
+    TheFloats = [itest.freezeFrame]
     TheInts = [itest.blindPres, itest.maxHabTrials, itest.setCritWindow, itest.setCritDivisor, itest.metCritDivisor,
                itest.metCritWindow, itest.screenWidth, itest.screenHeight, itest.movieWidth, itest.movieHeight]
     for i in TheDicts:

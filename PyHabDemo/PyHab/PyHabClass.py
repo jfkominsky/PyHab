@@ -76,18 +76,6 @@ class PyHab:
             self.condPath = [self.dirMarker if x == otherOS else x for x in self.condPath]
             self.condPath = ''.join(self.condPath)
 
-        # Secondary evals to make sure everything in the dictionaries that needs to be a number is one.
-        # maxDur, maxOff, minOn
-        for q in [self.maxDur, self.maxOff, self.minOn]:
-            for [i,j] in q.items():
-                if isinstance(j, str):
-                    try:
-                        q[i] = eval(j)
-                    except:
-                        errDlg = gui.Dlg(title="Settings error")
-                        errDlg.addText("A setting for trial type " + i + " contains text where number expected. Please update settings in builder!")
-                        errDlg.show()
-                        core.quit()
 
         # ORDER OF PRESENTATION
         # NOTE: a SINGLE instance of 'Hab' will insert a contiguous habituation BLOCK of up to maxHabTrials.
@@ -109,8 +97,7 @@ class PyHab:
         if not self.stimPres:
             self.movieEnd = []  # So we don't run into trouble with trials not ending waiting for movies that don't exist.
         self.stimPath = settingsDict['stimPath']  # Folder where movie files can be located (if not in same folder as script)
-        self.stimNames = eval(settingsDict['stimNames'])
-        # ^ A list of trial types. One is special: 'Hab' (only plays first entry), which should only be used for a habituation block in which you have a variable number of trials depending on a habituation criterion
+        self.stimNames = eval(settingsDict['stimNames']) # A dict of trial types with associated lists of stimuli
         self.stimList = eval(settingsDict['stimList'])  # List of all stimuli in the experiment.
         # Go through each item in stimlist, find its stimloc parameter, and replace \\ with / or vise-versa
         for [i,j] in self.stimList.items():
@@ -122,7 +109,28 @@ class PyHab:
         self.movieWidth = eval(settingsDict['movieWidth'])  # movie width
         self.movieHeight = eval(settingsDict['movieHeight'])  # movie height
         self.screenIndex = eval(settingsDict['screenIndex'])  # which monitor stimuli are presented on. 1 for secondary monitor, 0 for primary monitor.
-        self.ISI = eval(settingsDict['ISI'])  # time between loops (in seconds, if desired)
+        self.ISI = eval(settingsDict['ISI'])  # time between loops (by trial type)
+        # Backwards compatibility time!
+        if type(self.ISI) is not dict:
+            # Go through stimNames and make everything work
+            tempISI = {}
+            for [i,j] in self.stimNames.items():
+                tempISI[i] = self.ISI
+            self.ISI = tempISI
+
+        # Secondary evals to make sure everything in the dictionaries that needs to be a number is one.
+        # maxDur, maxOff, minOn, ISI
+        for q in [self.maxDur, self.maxOff, self.minOn, self.ISI]:
+            for [i,j] in q.items():
+                if isinstance(j, str):
+                    try:
+                        q[i] = eval(j)
+                    except:
+                        errDlg = gui.Dlg(title="Settings error")
+                        errDlg.addText("A setting for trial type " + i + " contains text where number expected. Please update settings in builder!")
+                        errDlg.show()
+                        core.quit()
+
         self.freezeFrame = eval(settingsDict['freezeFrame'])  # time that movie remains on first frame at start of trial.
         self.playAttnGetter = eval(settingsDict['playAttnGetter'])  # Trial-by-trial marker of which attngetter goes with which trial (if applicable).
         self.attnGetterList = eval(settingsDict['attnGetterList'])  # List of all attention-getters
@@ -464,8 +472,8 @@ class PyHab:
             dMovie = attnGetter['file']
             dMovie.seek(0.0)
             self.frameCount = 0
-            self.pauseCount = self.ISI*60 #To make it end instantly while ignoring ISI
-            while self.dispMovieStim(1, dMovie) < 2:
+            self.ISI['NobodyNameTheirTrialTypeThis'] = 0.0 # A goofy solution but it'll work. dispMovieStim requires a trial type, and the ISI for an attngetter needs to be 0.
+            while self.dispMovieStim('NobodyNameTheirTrialTypeThis', dMovie) < 2:
                 pass
 
         self.dispCoderWindow(0)
@@ -584,14 +592,14 @@ class PyHab:
             self.frameCount += 1
             self.win.flip()
             return 0
-        elif dispMovie.getCurrentFrameTime() >= dispMovie.duration - .05 and self.pauseCount < self.ISI * 60:  # pause, check for ISI.
+        elif dispMovie.getCurrentFrameTime() >= dispMovie.duration - .05 and self.pauseCount < self.ISI[trialType] * 60:  # pause, check for ISI.
             dispMovie.pause()
             dispMovie.draw()  # might want to have it vanish rather than leave it on the screen for the ISI, in which case comment out this line.
             self.frameCount += 1
             self.pauseCount += 1
             self.win.flip()
             return 1
-        elif dispMovie.getCurrentFrameTime() >= dispMovie.duration - .05 and self.pauseCount >= self.ISI * 60:  # MovieStim's Loop functionality can't do an ISI
+        elif dispMovie.getCurrentFrameTime() >= dispMovie.duration - .05 and self.pauseCount >= self.ISI[trialType] * 60:  # MovieStim's Loop functionality can't do an ISI
             # print('repeating at ' + str(dispMovie.getCurrentFrameTime()))
             self.frameCount = 0  # changed to 0 to better enable studies that want to blank between trials
             self.pauseCount = 0
@@ -635,10 +643,10 @@ class PyHab:
             self.frameCount = 1
             return 0
         elif self.frameCount == 1:
-            if dispAudio.status not in [STARTED, PLAYING] and self.pauseCount < self.ISI * 60:
+            if dispAudio.status not in [STARTED, PLAYING] and self.pauseCount < self.ISI[trialType] * 60:
                 self.pauseCount += 1
                 return 1
-            elif dispAudio.status not in [STARTED, PLAYING] and self.pauseCount >= self.ISI * 60:
+            elif dispAudio.status not in [STARTED, PLAYING] and self.pauseCount >= self.ISI[trialType] * 60:
                 self.frameCount = 0
                 return 2
             else:
@@ -1656,8 +1664,6 @@ class PyHab:
         files. Now with a testing mode to allow us to skip the dialog and ensure the actualTrialOrder structure is being
         put together properly in unit testing.
 
-        TODO: Make this smarter about input so it doesn't flip its shit if people enter a 4-digit year and such.
-
         :param testMode: Optional and primarily only used for unit testing. Will not launch the window and start the experiment. Contains all the info that would appear in the subject info dialog.
         :type testMode: list
         :return:
@@ -1747,7 +1753,7 @@ class PyHab:
                     for row in testReader:
                         testStuff.append(row)
                     testDict = dict(testStuff)
-                    self.cond = testDict[self.condLabel]  # this will read as order of indeces in N groups, in a 2-dimensional array
+                    self.cond = testDict[self.condLabel]  # this will read as order of movies in N groups, in a 2-dimensional array
                     # type conversion required. Eval will read the string into a dictionary (now).
                     self.cond = eval(self.cond)
                     # now to rearrange the lists of each trial type.
@@ -1755,7 +1761,11 @@ class PyHab:
                     for i, j in self.cond.items():
                         newTempTrials = []
                         for q in range(0, len(j)):
-                            newTempTrials.append(self.stimNames[i][j[q] - 1])
+                            if type(j[q]) is int: # Dealing with old versions, I hope.
+                                newTempTrials.append(self.stimNames[i][j[q] - 1])
+                                print("Converting old conditions...")
+                            else:
+                                newTempTrials.append(j[q])
                         finalDict.append((i, newTempTrials))
                     self.stimNames = dict(finalDict)
                 else:

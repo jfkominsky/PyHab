@@ -18,7 +18,6 @@ class PyHabBuilder:
     with different trial types.
 
     TODO: Add the ability to remove stimuli once added. Nonessential.
-    TODO: Make ISI trial-type specific
     TODO: Option for habituation over whole meta-trials not just the "hab" portion
     """
     def __init__(self, loadedSaved=False, settingsDict={}):
@@ -110,7 +109,7 @@ class PyHabBuilder:
                                                         'movieWidth': 800, 
                                                         'movieHeight': 600, 
                                                         'screenIndex': '1', 
-                                                        'ISI': '0.0',
+                                                        'ISI': {},
                                                         'freezeFrame': '0.0',
                                                         'playAttnGetter': {},
                                                         'attnGetterList':{'PyHabDefault':{'stimType':'Audio',
@@ -132,13 +131,19 @@ class PyHabBuilder:
             if 'nextFlash' not in self.settings.keys():
                 self.settings['nextFlash'] = '0'
             # Settings requiring evaluation to get sensible values. Mostly dicts.
-            evalList = ['dataColumns','maxDur','condList','movieEnd','playThrough','trialOrder','stimNames', 'stimList',
+            evalList = ['dataColumns','maxDur','condList','movieEnd','playThrough','trialOrder','stimNames', 'stimList', 'ISI',
                         'maxOff','minOn','autoAdvance','playAttnGetter','attnGetterList','trialTypes','habTrialList','nextFlash']
             for i in evalList:
                 self.settings[i] = eval(self.settings[i])
                 if i in ['stimList','attnGetterList']:
                     for [i,j] in self.settings[i].items():
                         j['stimLoc'] = ''.join([self.dirMarker if x == otherOS else x for x in j['stimLoc']])
+            # Backwards compatibility for ISI
+            if type(self.settings['ISI']) is not dict:
+                tempISI = {}
+                for q in range(0,len(self.settings['trialTypes'])):
+                    tempISI[self.settings['trialTypes'][q]] = str(self.settings['ISI'])
+                self.settings['ISI'] = tempISI
             # Backwards compatibility for startImage and endImage
             if 'startImage' not in self.settings.keys():
                 self.settings['startImage'] = ''
@@ -363,17 +368,19 @@ class PyHabBuilder:
 
         [if movies assigned to trial type already, they occupy 2 - N]
 
-        2/-6 = Gaze-contingent trial type?
+        2/-7 = Gaze-contingent trial type?
 
-        3/-5 = Maximum continuous looking-away to end trial of type
+        3/-6 = Maximum continuous looking-away to end trial of type
 
-        4/-4 = Minimum on-time to enable off-time criterion (not continuous)
+        4/-5 = Minimum on-time to enable off-time criterion (not continuous)
 
-        5/-3 = Auto-advance into trial?
+        5/-4 = Auto-advance into trial?
 
-        6/-2 = Attention-getter selection
+        6/-3 = Attention-getter selection
 
-        7/-1 = End trial on movie end or mid-movie
+        7/-2 = End trial on movie end or mid-movie
+
+        8/-1 = inter-stimulus iterveral (ISI) for this trial type
 
         :param trialType: Name of the trial type
         :type trialType: str
@@ -402,15 +409,17 @@ class PyHabBuilder:
                     typeDlg.addField("Max duration", self.settings['maxDur'][trialType])
                     maxOff = self.settings['maxOff'][trialType]
                     minOn = self.settings['minOn'][trialType]
+                    ISI = self.settings['ISI'][trialType]
                     if len(self.settings['stimNames'][trialType]) > 0:
                         typeDlg.addText("Current movie files in trial type (uncheck to remove)")
                         for i in range(0,len(self.settings['stimNames'][trialType])):
                             typeDlg.addField(self.settings['stimNames'][trialType][i], initial=True)
                 else:
                     typeDlg.addField("Max duration", prevInfo[1])
-                    maxOff = prevInfo[-5]
-                    minOn = prevInfo[-4]
-                    if len(prevInfo) > 8:  # If there were no movies to start with, this will have a length of 8.
+                    maxOff = prevInfo[-6]
+                    minOn = prevInfo[-5]
+                    ISI = prevInfo[-1]
+                    if len(prevInfo) > 9:  # If there were no movies to start with, this will have a length of 9.
                         typeDlg.addText("Current stimuli in trial type (uncheck to remove)")
                         for i in range(0,len(self.settings['stimNames'][trialType])):
                             typeDlg.addField(self.settings['stimNames'][trialType][i], initial=prevInfo[i+2])
@@ -440,6 +449,7 @@ class PyHabBuilder:
                 typeDlg.addField("Max duration", 60.0)
                 maxOff = 2.0
                 minOn = 1.0
+                ISI = 0.0
                 chz = ["Yes", "OnOnly", "No"]
             typeDlg.addField("Gaze-contingent trial type (next two lines ignored otherwise)", choices=chz)
             typeDlg.addField("Number of continuous seconds looking away to end trial", maxOff)
@@ -468,6 +478,7 @@ class PyHabBuilder:
             else:
                 chz4 = False
             typeDlg.addField("Only end trial on end of movie repetition? (Only works when presenting stimuli)", initial = chz4)
+            typeDlg.addField("Inter-stimulus interval on loops (pause between end of one loop and start of next)", ISI)
             typeInfo = typeDlg.show()
             if typeDlg.OK:
                 # Check if all the things that need to be numbers are actually numbers.
@@ -517,46 +528,48 @@ class PyHabBuilder:
                     if not skip:
 
                         self.settings['maxDur'][trialType] = typeInfo[1] #Update maxDur
-                        self.settings['maxOff'][trialType] = typeInfo[len(typeInfo)-5]
-                        self.settings['minOn'][trialType] = typeInfo[len(typeInfo)-4]
+                        self.settings['maxOff'][trialType] = typeInfo[len(typeInfo)-6]
+                        self.settings['minOn'][trialType] = typeInfo[len(typeInfo)-5]
+                        self.settings['ISI'][trialType] = typeInfo[len(typeInfo)-1]
 
                         # Gaze-contingency settings
                         if trialType not in self.settings['playThrough'].keys(): #Initialize if needed.
                             self.settings['playThrough'][trialType] = 0
-                        if typeInfo[len(typeInfo)-6] == "Yes" and self.settings['playThrough'][trialType] is not 0: #gaze-contingent trial type, not already tagged as such.
+                        if typeInfo[len(typeInfo)-7] == "Yes" and self.settings['playThrough'][trialType] is not 0: #gaze-contingent trial type, not already tagged as such.
                             self.settings['playThrough'][trialType] = 0
-                        elif typeInfo[len(typeInfo)-6] == "No" and self.settings['playThrough'][trialType] is not 2:
+                        elif typeInfo[len(typeInfo)-7] == "No" and self.settings['playThrough'][trialType] is not 2:
                             self.settings['playThrough'][trialType] = 2
-                        elif typeInfo[len(typeInfo)-6] == "OnOnly" and self.settings['playThrough'][trialType] is not 1:
+                        elif typeInfo[len(typeInfo)-7] == "OnOnly" and self.settings['playThrough'][trialType] is not 1:
                             self.settings['playThrough'][trialType] = 1
 
                         # Auto-advance settings
-                        if typeInfo[len(typeInfo)-3] in [False,0,'False','0'] and trialType in self.settings['autoAdvance']: #gaze-contingent trial type, not already tagged as such.
+                        if typeInfo[len(typeInfo)-4] in [False,0,'False','0'] and trialType in self.settings['autoAdvance']: #gaze-contingent trial type, not already tagged as such.
                             self.settings['autoAdvance'].remove(trialType)
-                        elif typeInfo[len(typeInfo)-3] in [True, 1, 'True', '1'] and not trialType in self.settings['autoAdvance']:
+                        elif typeInfo[len(typeInfo)-4] in [True, 1, 'True', '1'] and not trialType in self.settings['autoAdvance']:
                             self.settings['autoAdvance'].append(trialType)
 
                         # Attention-getter settings
-                        if typeInfo[len(typeInfo)-2] == 'None':
+                        if typeInfo[len(typeInfo)-3] == 'None':
                             if trialType in self.settings['playAttnGetter']:
                                 del self.settings['playAttnGetter'][trialType]
                         else:
                             if trialType not in self.settings['playAttnGetter']:  # If it did not have an attngetter before.
-                                agname = typeInfo[len(typeInfo)-2]
+                                agname = typeInfo[len(typeInfo)-3]
                                 self.settings['playAttnGetter'][trialType] = agname
-                            elif typeInfo[len(typeInfo)-2] is not self.settings['playAttnGetter'][trialType]:
+                            elif typeInfo[len(typeInfo) - 3] is not self.settings['playAttnGetter'][trialType]:
                                 # If a different attention-getter has been selected
-                                agname = typeInfo[len(typeInfo) - 2]
+                                agname = typeInfo[len(typeInfo) - 3]
                                 self.settings['playAttnGetter'][trialType] = agname
 
                         # End-trial-on-movie-end settings
-                        if typeInfo[len(typeInfo)-1] in [False,0,'False','0'] and trialType in self.settings['movieEnd']:
+                        if typeInfo[len(typeInfo)-2] in [False,0,'False','0'] and trialType in self.settings['movieEnd']:
                             self.settings['movieEnd'].remove(trialType)
-                        elif typeInfo[len(typeInfo)-1] in [True, 1, 'True', '1'] and not trialType in self.settings['movieEnd']:
+                        elif typeInfo[len(typeInfo)-2] in [True, 1, 'True', '1'] and not trialType in self.settings['movieEnd']:
                             self.settings['movieEnd'].append(trialType)
 
+
                         # Remove stimuli if needed
-                        if len(typeInfo) > 8: #Again, if there were movies to list.
+                        if len(typeInfo) > 9: #Again, if there were movies to list.
                             tempMovies = [] #This will just replace the stimNames list
                             for i in range(0,len(self.settings['stimNames'][trialType])):
                                 if typeInfo[i+2]:
@@ -986,14 +999,12 @@ class PyHabBuilder:
 
         0 = prefix: The prefix of the launcher and all data files.
 
-        1 = ISI: Minimum time between loops of stimuli.
-
-        2 = blindPres: Level of experimenter blinding, 0 (none), 1 (no trial type info), or
+        1 = blindPres: Level of experimenter blinding, 0 (none), 1 (no trial type info), or
             2 (only info is whether a trial is currently active.
 
-        3 = prefLook: Whether the study is preferential-looking or single-target.
+        2 = prefLook: Whether the study is preferential-looking or single-target.
 
-        4 = nextFlash: Whether to have the coder window flash to alert the experimenter they need to manually trigger
+        3 = nextFlash: Whether to have the coder window flash to alert the experimenter they need to manually trigger
             the next trial
 
         :return:
@@ -1006,7 +1017,6 @@ class PyHabBuilder:
         uDlg = gui.Dlg(title="Universal settings")
         # [default] blindpres, autoadvance, ISI,
         uDlg.addField("Experiment name", self.settings['prefix'])
-        uDlg.addField("Minimum ISI between loops, in seconds", self.settings['ISI'])
         ch = []
         if self.settings['blindPres'] == '1' or self.settings['blindPres'] == 1:
             ch=['do not display next trial type','none','only show trial active/inactive']
@@ -1030,29 +1040,19 @@ class PyHabBuilder:
         if uDlg.OK:
             tryAgain = False
             self.settings['prefix'] = uInfo[0]
-            if isinstance(uInfo[1], float) or isinstance(uInfo[1], int):
-                self.settings['ISI'] = uInfo[1]
-            else:
-                try:
-                    uInfo[1]=eval(uInfo[1])
-                except:
-                    warnDlg = gui.Dlg(title="Warning!")
-                    warnDlg.addText("Number expected, got text instead. \nPlease make sure ISI is a number")
-                    warnDlg.show()
-                    tryAgain = True
-            if uInfo[2] == 'none':
+            if uInfo[1] == 'none':
                 self.settings['blindPres'] = 0
-            elif uInfo[2] == 'do not display next trial type':
+            elif uInfo[1] == 'do not display next trial type':
                 self.settings['blindPres'] = 1
             else:
                 self.settings['blindPres'] = 2
-            if uInfo[3] == "Preferential looking" and self.settings['prefLook'] in [0,'0','False',False]: #specifically switching, reactivate all data cols.
+            if uInfo[2] == "Preferential looking" and self.settings['prefLook'] in [0,'0','False',False]: #specifically switching, reactivate all data cols.
                 self.settings['prefLook'] = 1
                 self.settings['dataColumns'] = self.allDataColumnsPL
-            elif uInfo[3] == "Single-target" and self.settings['prefLook'] in [1,'1','True',True]:
+            elif uInfo[2] == "Single-target" and self.settings['prefLook'] in [1,'1','True',True]:
                 self.settings['prefLook'] = 0
                 self.settings['dataColumns'] = self.allDataColumns
-            if uInfo[4] == "Yes":
+            if uInfo[3] == "Yes":
                 self.settings['nextFlash'] = 1
             else:
                 self.settings['nextFlash'] = 0
@@ -1589,7 +1589,7 @@ class PyHabBuilder:
         lastPageArrow = visual.ShapeStim(self.win, vertices=upArrowVerts, size=.5, lineColor='white', fillColor='white', pos=[.2,-.8])
 
         intervalHoriz = 1.5/(len(self.trialTypesArray['labels']))
-        intervalVert = 1.5/4 # Locked at this interval because pages of 4 conditions each.
+        intervalVert = 1.5/4  # Locked at this interval because pages of 4 conditions each.
         startH = -.5
         startV = .8
         tempLineH = visual.Line(self.win, start=[-.99,.82], end=[.99,.82]) # End lines slightly shy of the right edge.
