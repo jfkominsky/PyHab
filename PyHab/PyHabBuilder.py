@@ -20,7 +20,6 @@ class PyHabBuilder:
     TODO: Add the ability to remove stimuli once added. Nonessential.
     TODO: Make ISI trial-type specific
     TODO: Option for habituation over whole meta-trials not just the "hab" portion
-    TODO: Make condition interface less garbage.
     """
     def __init__(self, loadedSaved=False, settingsDict={}):
         """
@@ -1533,14 +1532,12 @@ class PyHabBuilder:
                 self.settings['condList'] = []  # Gets rid of existing condition list to save trouble.
                 self.condDict = {}  # Gets rid of conditions altogether.
 
-    def condMaker(self, rep=False):
+    def condMaker(self, rep=False, currPage=1):
         """
         A whole separate interface for managing condition creation.
 
         Outputs settings condList (labels of each condition), condFile (save conditions to this file)
         and makes new structure condDict (mapping of each label to actual condition it applies to)
-        TODO: Pages for conditions. Makes one thing easier. Makes other things harder.
-        TODO: Make it survive better with >3 trial types - not much we can do though.
 
         :param rep: Basically whether we are recursing while editing conditions
         :type rep: bool
@@ -1554,6 +1551,7 @@ class PyHabBuilder:
         condLabels = [] # Labels
         condContent = [] # The content of each condition (a list of dicts).
         drawConds = [] # The text things for drawing.
+        numPages = 1
         if os.path.exists(self.settings['condFile']) and not rep: #If we already have a pre-existing cond file and aren't in the process of looping.
             testReader=csv.reader(open(self.settings['condFile'],'rU'))
             testStuff=[]
@@ -1567,8 +1565,10 @@ class PyHabBuilder:
                 testDict[i]=eval(testDict[i])
             self.condDict=testDict 
             self.settings['condList'] = condLabels
+            numPages = ceil(float(len(self.settings['condList']))/4) #use math.ceil to round up.
             
         elif len(self.condDict) > 0: #If we already have something to build on
+            numPages = ceil(float(len(self.condDict.keys()))/4) #use math.ceil to round up.
             for i in range(0, len(self.settings['condList'])):
                 if self.settings['condList'][i] in self.condDict.keys():
                     condContent.append(self.condDict[self.settings['condList'][i]])
@@ -1582,15 +1582,17 @@ class PyHabBuilder:
         deleteCondText = visual.TextStim(self.win, text="Delete condition", bold=True, height=deleteCondButton.height*.3, pos=deleteCondButton.pos)
         randomCondsButton = visual.Rect(self.win, width=.4, height=.67*(.15/self.aspect),fillColor="purple",pos=[-.13,-.85])
         randomCondsText = visual.TextStim(self.win, text="Randomize over subjects", bold=True, height=randomCondsButton.height*.3, pos=randomCondsButton.pos)
-        instrText = visual.TextStim(self.win, text="Click a condition row to modify it", height=.05, pos=[.4,-.9])
+        instrText = visual.TextStim(self.win, text="Page: 1/"+str(numPages), height=.1, pos=[.4,-.9])
+        downArrowVerts = [(0.05,0.3),(-.05,0.3),(-0.05,0.15),(-0.1,0.15),(0,0),(0.1,0.15),(0.05,0.15)]
+        nextPageArrow = visual.ShapeStim(self.win, vertices=downArrowVerts, size=.5, lineColor='white', fillColor='white', pos=[.6,-.95])
+        upArrowVerts = [(0.05,-0.3),(-.05,-0.3),(-0.05,-0.15),(-0.1,-0.15),(0,0),(0.1,-0.15),(0.05,-0.15)]
+        lastPageArrow = visual.ShapeStim(self.win, vertices=upArrowVerts, size=.5, lineColor='white', fillColor='white', pos=[.2,-.8])
+
         intervalHoriz = 1.5/(len(self.trialTypesArray['labels']))
-        if len(self.settings['condList']) > 2:
-            intervalVert = 1.5/(len(self.settings['condList']))
-        else:
-            intervalVert = 1.5/3 # Just defaulting to the display minimum of 2 conditions.
+        intervalVert = 1.5/4 # Locked at this interval because pages of 4 conditions each.
         startH = -.5
         startV = .8
-        tempLineH = visual.Line(self.win, start=[-.99,.82], end=[.99,.82])
+        tempLineH = visual.Line(self.win, start=[-.99,.82], end=[.99,.82]) # End lines slightly shy of the right edge.
         divLinesH.append(tempLineH)
         tempLineV = visual.Rect(self.win, width=.01, height=2, fillColor="white", pos=[-.65,.3])
         divLinesV.append(tempLineV)
@@ -1600,14 +1602,24 @@ class PyHabBuilder:
             hpos = (i)*intervalHoriz + startH+intervalHoriz/3
             tempText = visual.TextStim(self.win, alignHoriz='center', text=self.trialTypesArray['labels'][i],height=(1-startV)*.3, pos=[hpos, .94])
             tTypeHeaders.append(tempText)
-            tempLineV = visual.Line(self.win, start=[hpos+intervalHoriz/2,.99], end=[hpos+intervalHoriz/2,-.7])
+            tempLineV = visual.Line(self.win, start=[hpos+intervalHoriz/2,.99], end=[hpos+intervalHoriz/2,-.675])
             divLinesV.append(tempLineV)
+        if len(self.settings['condList']) >= 4:
+            q = 4
+        else:
+            q = len(self.settings['condList'])
+        for i in range(0, q):
+            vpos = startV - (i + 1) * intervalVert + intervalVert / 1.5
+            tempLineH = visual.Line(self.win, start=[-.99, vpos - intervalVert / 2], end=[.99, vpos - intervalVert / 2])
+            divLinesH.append(tempLineH)
+
         for j in range(0, len(self.settings['condList'])): #condition labels. Here's where rubber meets road!
-            vpos = startV - (j+1) * intervalVert + intervalVert/1.5
+            block = (j+1)%4
+            if block == 0:
+                block = 4
+            vpos = startV - block * intervalVert + intervalVert/1.5
             tempText = visual.TextStim(self.win, text=self.settings['condList'][j], alignHoriz='center',height=intervalVert*.35, pos=[condHeader.pos[0],vpos])
             drawConds.append(tempText)
-            tempLineH = visual.Line(self.win, start=[-.99,vpos-intervalVert/2], end=[.99,vpos-intervalVert/2])
-            divLinesH.append(tempLineH)
             # And now, finally, we have to populate each of those conditions.
             for q in range(0,len(self.trialTypesArray['labels'])):
                 if self.trialTypesArray['labels'][q] in condContent[j].keys():
@@ -1633,19 +1645,29 @@ class PyHabBuilder:
             randomCondsButton.draw()
             randomCondsText.draw()
             instrText.draw()
+            if numPages > 1:
+                if currPage < numPages:
+                    nextPageArrow.draw()
+                if currPage > 1:
+                    lastPageArrow.draw()
             for i in range(0, len(divLinesV)):
                 divLinesV[i].draw()
             for j in range(0, len(divLinesH)):
                 divLinesH[j].draw()
             for k in range(0, len(tTypeHeaders)):
                 tTypeHeaders[k].draw()
-            for l in range(0, len(drawConds)):
-                drawConds[l].draw()
+            if len(drawConds) <= 4*(len(self.trialTypesArray['labels'])+1):  # Each row has one column for each trial type plus one for the label, so rows of n trial types + 1
+                for l in range(0, len(drawConds)):
+                    drawConds[l].draw()
+            else:
+                for l in range((currPage-1)*4*(len(self.trialTypesArray['labels'])+1), currPage*4*(len(self.trialTypesArray['labels'])+1)):
+                    if l < len(drawConds):  # Easy safety cutoff for when we can't fill a page, so we don't go out of bounds
+                        drawConds[l].draw()
             self.win.flip()
             if 1 in self.mouse.getPressed():
-                for i in range(0, len(clickRanges)):
+                for i in range((currPage-1)*4, currPage*4):
                     p=self.mouse.getPos()
-                    if p[1] <= clickRanges[i][0] and p[1] >= clickRanges[i][1]:
+                    if i < len(clickRanges) and p[1] <= clickRanges[i][0] and p[1] >= clickRanges[i][1]:
                         if os.name is not 'posix':
                             while 1 in self.mouse.getPressed(): # Work on mouseup, impt. for windows.
                                 pass
@@ -1658,7 +1680,7 @@ class PyHabBuilder:
                             pass
                         done = True
                         # Refresh the condition display
-                        self.condMaker(rep=True)
+                        self.condMaker(rep=True,currPage=currPage)
                 if self.mouse.isPressedIn(addCondButton):
                     if os.name is not 'posix':
                         while 1 in self.mouse.getPressed():
@@ -1671,7 +1693,7 @@ class PyHabBuilder:
                         pass
                     done = True
                     # Start this over...
-                    self.condMaker(rep=True)
+                    self.condMaker(rep=True,currPage=currPage)
                 if self.mouse.isPressedIn(deleteCondButton) and len(self.settings['condList'])>0:
                     if os.name is not 'posix':
                         while 1 in self.mouse.getPressed():
@@ -1684,7 +1706,7 @@ class PyHabBuilder:
                         pass
                     done = True
                     # Start this over...
-                    self.condMaker(rep=True)
+                    self.condMaker(rep=True,currPage=currPage)
                 if self.mouse.isPressedIn(randomCondsButton) and len(self.settings['condList'])>0:
                     if os.name is not 'posix':
                         while 1 in self.mouse.getPressed():
@@ -1696,6 +1718,18 @@ class PyHabBuilder:
                     while len(self.mouse.getPressed()) < 0:
                         pass
                     done = True
+                if self.mouse.isPressedIn(nextPageArrow):
+                    currPage = currPage + 1
+                    if currPage > numPages:
+                        currPage = numPages # Safety. Shouldn't be necessary.
+                    while 1 in self.mouse.getPressed():
+                        pass # so it doesn't jump pages
+                if self.mouse.isPressedIn(lastPageArrow):
+                    currPage = currPage - 1
+                    if currPage < 1:
+                        currPage = 1  # Safety. Shouldn't be necessary
+                    while 1 in self.mouse.getPressed():
+                        pass
                 if self.mouse.isPressedIn(doneButton):
                     done = True
                     while 1 in self.mouse.getPressed():
@@ -1707,7 +1741,6 @@ class PyHabBuilder:
         One dialog per trial type. Each dialog has a list of all the movies in that type
         This is not intuitive under the hood. The output of this is a dict with a list of movies, in order, for each
         trial type. This makes it slightly more human-intelligible than the previous system, which had a list of indexes.
-        Todo: Backwards compatibility?
 
 
         :param cond: Condition name

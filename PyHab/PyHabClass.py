@@ -37,7 +37,6 @@ class PyHab:
 
     TODO: make ISI trial type specific
     TODO: Habituation calculated over whole meta-trial rather than just "Hab"
-    TODO: Change condition system to read text (as well as or instead of?) ints.
     """
 
     def __init__(self, settingsDict):
