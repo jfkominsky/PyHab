@@ -576,6 +576,7 @@ class PyHab:
         """
 
         if self.frameCount == 0:  # initial setup
+            self.dummyThing.draw()
             self.frameCount += 1
             dispMovie.draw()
             if trialType == 0:
@@ -593,6 +594,7 @@ class PyHab:
             self.win.flip()
             return 0
         elif dispMovie.getCurrentFrameTime() >= dispMovie.duration - .05 and self.pauseCount < self.ISI[trialType] * 60:  # pause, check for ISI.
+            self.dummyThing.draw()
             dispMovie.pause()
             dispMovie.draw()  # might want to have it vanish rather than leave it on the screen for the ISI, in which case comment out this line.
             self.frameCount += 1
@@ -600,6 +602,7 @@ class PyHab:
             self.win.flip() # TODO: Goes blank if ISI is long enough. Pyglet problem.
             return 1
         elif dispMovie.getCurrentFrameTime() >= dispMovie.duration - .05 and self.pauseCount >= self.ISI[trialType] * 60:  # MovieStim's Loop functionality can't do an ISI
+            self.dummyThing.draw()
             # print('repeating at ' + str(dispMovie.getCurrentFrameTime()))
             self.frameCount = 0  # changed to 0 to better enable studies that want to blank between trials
             self.pauseCount = 0
@@ -986,6 +989,7 @@ class PyHab:
                 didRedo = False
                 self.endExperiment()
             elif x == 3:  # bad trial, redo!
+                self.dummyThing.draw()
                 trialNum = trialNum
                 didRedo = True
                 self.win.flip() #Blank the screen.
@@ -1251,6 +1255,7 @@ class PyHab:
                 disMovie['stim']['Audio'].stop()
         if self.stimPres and number < len(self.actualTrialOrder):
             if self.actualTrialOrder[number] not in self.autoAdvance:
+                self.dummyThing.draw()
                 self.win.flip()  # blanks the screen outright between trials if NOT auto-advancing into the next trial
         if redo:  # if the abort button was pressed
             if self.stimPres and disMovie['stimType'] == 'Movie':
@@ -1286,6 +1291,7 @@ class PyHab:
         tempText.draw()
         self.win2.flip()
         if self.stimPres:
+            self.dummyThing.draw()
             if self.endImageObject is not None:
                 self.endImageObject.draw()
             self.win.flip()
@@ -1469,6 +1475,7 @@ class PyHab:
         tempText.draw()
         self.win2.flip()
         if self.stimPres:
+            self.dummyThing.draw()
             if self.endImageObject is not None:
                 self.endImageObject.draw()
             self.win.flip()
@@ -1789,6 +1796,7 @@ class PyHab:
             # Stimulus presentation window
             self.win = visual.Window((self.screenWidth, self.screenHeight), fullscr=False, screen=self.screenIndex, allowGUI=False,
                                      units='pix', color=self.screenColor)
+            self.dummyThing = visual.Circle(self.win, size=1, color=self.win.color) # This is for fixing a display glitch in PsychoPy3 involving multiple windows of different sizes.
         # Coder window
         self.win2 = visual.Window((400, 400), fullscr=False, screen=0, allowGUI=True, units='pix', waitBlanking=False,
                                   rgb=[-1, -1, -1])
@@ -1798,6 +1806,7 @@ class PyHab:
             self.win2.flip()
             # Step 1: Load and present "startImage"
             if self.startImage is not '':
+                self.dummyThing.draw()
                 tempStim = self.stimList[self.startImage]
                 tempStimObj = visual.ImageStim(self.win, tempStim['stimLoc'], size=[self.movieWidth, self.movieHeight])
                 tempStimObj.draw()
