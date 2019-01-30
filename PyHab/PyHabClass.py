@@ -871,7 +871,15 @@ class PyHab:
         AA = []  # a localized autoadvance to allow for first trial
         while runExp:
             reviewed = False
-            self.trialText.text = "Trial no. " + str(trialNum)
+            if len(self.badTrials) > 0:
+                badTrialTrials = [x['trial'] for x in self.badTrials]  # Gets just trial numbers
+                if trialNum in badTrialTrials:
+                    self.trialText.text = "Trial no. " + str(trialNum) + " (" + str(
+                        badTrialTrials.count(trialNum) + 1) + "x)"
+                else:
+                    self.trialText.text = "Trial no. " + str(trialNum)
+            else:
+                self.trialText.text = "Trial no. " + str(trialNum)
             self.statusSquareA.fillColor = 'black'
             self.statusSquareB.fillColor = 'black'
             trialType = self.actualTrialOrder[trialNum - 1]
@@ -1101,8 +1109,8 @@ class PyHab:
                     offDur = endTrial - startOff
                     tempGazeArray = {'trial':number, 'trialType':type, 'startTime':startOff, 'endTime':endTrial, 'duration':offDur}
                     offArray.append(tempGazeArray)
-            elif core.getTime() - startTrial >= .5 and self.keyboard[self.key.S] and 'Hab' not in self.actualTrialOrder[(number-1):]:
-                # New feature: End trial and go forward manually. Disabled for hab experiments where habs are ongoing.
+            elif core.getTime() - startTrial >= .5 and self.keyboard[self.key.S] and type not in self.habTrialList and type != 'Hab':
+                # New feature: End trial and go forward manually. Disabled for hab trials and meta-trials.
                 # Disabled for the first half-second to stop you from skipping through multiple auto-advancing trials
                 if type in self.movieEnd:
                     endFlag = True
@@ -1880,6 +1888,6 @@ class PyHab:
                                            color='white', bold=True, height=30)
         self.statusTextB = visual.TextStim(self.win2, text="", pos=[self.statusOffset + 60, self.statusOffsetY + 0],
                                            color='white', bold=True, height=30)
-        self.trialText = visual.TextStim(self.win2, text="Trial no: ", pos=[-150, 150], color='white')
+        self.trialText = visual.TextStim(self.win2, text="Trial no: ", pos=[-100, 150], color='white')
         self.readyText = visual.TextStim(self.win2, text="Trial not active", pos=[-25, 100], color='white')
         self.doExperiment()  # Get this show on the road!

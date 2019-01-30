@@ -434,9 +434,9 @@ class TestRunSetup(object):
         :rtype:
         """
         self.trialInst.condFile = 'PyHabDemo/conditions.csv'
-        self.trialInst.stimNames = {{'Test': ['3x2_2_2_1_1-converted.mp4', '3x2_2_3_1_1-converted.mp4'],
+        self.trialInst.stimNames = {'Test': ['3x2_2_2_1_1-converted.mp4', '3x2_2_3_1_1-converted.mp4'],
                                      'Intro': ['3x2_1_1_1-converted.mp4', '3x2_1_2_1_1-converted.mp4','Movie1','Movie2'],
-                                     'Fam': ['3x2_1_3_1_1-converted.mp4', '3x2_2_1_1_1-converted.mp4']}}
+                                     'Fam': ['3x2_1_3_1_1-converted.mp4', '3x2_2_1_1_1-converted.mp4']}
         self.trialInst.trialOrder = ['Intro', 'Fam', 'Test']
         self.trialInst.randPres = True
         self.trialInst.stimPres = True
