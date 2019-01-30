@@ -27,5 +27,5 @@ Looking time and stimulus presentation system for PsychoPy.
 <p>If you use PyHab, please cite both of the following:</p>
 <ul>
 <li><b>Follow the guidelines for citing PsychoPy</b>: http://psychopy.org/about/index.html#citingpsychopy</li>
-<li>Kominsky, J. F. (in press) PyHab: Open-Source Real Time Infant Gaze Coding and Stimulus Presentation Software. <em>Infant Behavior & Development</em>.</li>
+<li>Kominsky, J. F. (2019) PyHab: Open-Source Real Time Infant Gaze Coding and Stimulus Presentation Software. <em>Infant Behavior & Development, 54</em>, 114-119. doi:10.1016/j.infbeh.2018.11.006</li>
 </ul>
