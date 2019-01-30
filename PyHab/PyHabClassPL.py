@@ -527,6 +527,7 @@ class PyHabPL(PyHab):
         tempText.draw()
         self.win2.flip()
         if self.stimPres:
+            self.dummyThing.draw()
             if self.endImageObject is not None:
                 self.endImageObject.draw()
             self.win.flip()
@@ -661,6 +662,7 @@ class PyHabPL(PyHab):
         tempText.draw()
         self.win2.flip()
         if self.stimPres:
+            self.dummyThing.draw() # A safety to stop a weird graphical issue in PsychoPy3.
             if self.endImageObject is not None:
                 self.endImageObject.draw()
             self.win.flip()

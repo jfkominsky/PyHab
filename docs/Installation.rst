@@ -3,7 +3,7 @@ Installation
 ============
 
 Prerequisites::
-    Install version 1.90.3 of PsychoPy (https://github.com/psychopy/psychopy/releases/tag/1.90.3).
+    Install the most recent version of PsychoPy (https://github.com/psychopy/psychopy/releases/).
 
     Download the .dmg installer for mac or the .exe installer for Windows.
 

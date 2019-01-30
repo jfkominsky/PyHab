@@ -45,7 +45,7 @@ base_settings = {
     'movieWidth': '800',
     'movieHeight': '600',
     'screenIndex': '1',
-    'ISI': '0.0',
+    'ISI': "{'A':0.0,'B':0.0,'C':0.0,'D':0.0}",
     'freezeFrame': '0.0',
     'playAttnGetter': "{'A':'PyHabDefault','B':'PyHabDefault'}",
     'attnGetterList': "{'PyHabDefault':{'stimType':'Audio','stimName':'upchime1.wav','stimDur':2,'stimLoc':'PyHab/upchime1.wav','shape':'Rectangle','color':'yellow'}}",
@@ -63,13 +63,13 @@ def test_init():
     """
     itest = PH.PyHab(base_settings)
     TheDicts = [itest.maxDur, itest.playThrough, itest.maxOff, itest.minOn, itest.stimNames,
-                itest.stimList, itest.playAttnGetter, itest.attnGetterList]
+                itest.stimList, itest.playAttnGetter, itest.attnGetterList, itest.ISI]
     TheLists = [itest.dataColumns, itest.movieEnd, itest.autoAdvance, itest.condList, itest.trialOrder,
                 itest.habTrialList]
     TheStrings = [itest.prefix, itest.dataFolder, itest.stimPath, itest.condFile, itest.setCritType,
                   itest.metCritStatic,
                   itest.screenColor]
-    TheFloats = [itest.ISI, itest.freezeFrame]
+    TheFloats = [itest.freezeFrame]
     TheInts = [itest.blindPres, itest.maxHabTrials, itest.setCritWindow, itest.setCritDivisor, itest.metCritDivisor,
                itest.metCritWindow, itest.screenWidth, itest.screenHeight, itest.movieWidth, itest.movieHeight]
     for i in TheDicts:
@@ -379,7 +379,7 @@ class TestRunSetup(object):
         del self.trialInst
 
     def test_setup(self):
-        testOne = [99, 'Test', 'NB', 7, 2, 18, 'testcond', 8, 2, 18]
+        testOne = [99, 'Test', 'NB', '7', '2', '18', 'testcond', '8', '2', '18']
 
         self.trialInst.run(testMode=testOne)
 
@@ -388,7 +388,7 @@ class TestRunSetup(object):
         assert self.trialInst.ageDay == 0
 
     def test_hab_expansion(self):
-        testOne = [99, 'Test', 'NB', 7, 2, 18, 'testcond', 8, 2, 18]
+        testOne = [99, 'Test', 'NB', '7', '2', '18', 'testcond', '8', '2', '18']
         self.trialInst.trialOrder = ['A', 'A', 'B', 'B', 'Hab', 'D']
         self.trialInst.run(testMode=testOne)
         assert len(self.trialInst.actualTrialOrder) == 19
@@ -401,43 +401,57 @@ class TestRunSetup(object):
 
 
     def test_multiyear_age(self):
-        testOne = [99, 'Test', 'NB', 7, 2, 16, 'testcond', 8, 2, 18]
+        testOne = [99, 'Test', 'NB', '7', '2', '16', 'testcond', '8', '2', '18']
         self.trialInst.run(testMode=testOne)
 
         assert self.trialInst.ageMo == 25
         assert self.trialInst.ageDay == 0
 
-        testTwo = [99, 'Test', 'NB', 7, 2, 16, 'testcond', 8, 1, 18]
+        testTwo = [99, 'Test', 'NB', '7', '2', '16', 'testcond', '8', '1', '18']
         self.trialInst.run(testMode=testTwo)
 
         assert self.trialInst.ageMo == 24
         assert self.trialInst.ageDay == 30
 
+    def test_four_digit_years(self):
+        testOne = [99, 'Test', 'NB', '7', '2', '2016', 'testcond', '8', '2', '18']
+        self.trialInst.run(testMode=testOne)
+
+        assert self.trialInst.ageMo == 25
+        assert self.trialInst.ageDay == 0
+
+        testTwo = [99, 'Test', 'NB', '7', '2', '16', 'testcond', '8', '2', '2018']
+        self.trialInst.run(testMode=testTwo)
+        assert self.trialInst.ageMo == 25
+        assert self.trialInst.ageDay == 0
+
+
     def test_condition_files(self):
         """
         To test condition files requires a condition file. The demo is handy here.
+        TODO: Change for new condition system?
         :return:
         :rtype:
         """
         self.trialInst.condFile = 'PyHabDemo/conditions.csv'
-        self.trialInst.stimNames = {'Intro': ['Movie1', 'Movie2', 'Movie3', 'Movie4'],
-                                    'Fam': ['Movie5', 'Movie6', 'Movie7', 'Movie8'],
-                                    'Test': ['Movie1', 'Movie2', 'Movie3', 'Movie4']}
+        self.trialInst.stimNames = {'Test': ['3x2_2_2_1_1-converted.mp4', '3x2_2_3_1_1-converted.mp4'],
+                                     'Intro': ['3x2_1_1_1-converted.mp4', '3x2_1_2_1_1-converted.mp4','Movie1','Movie2'],
+                                     'Fam': ['3x2_1_3_1_1-converted.mp4', '3x2_2_1_1_1-converted.mp4']}
         self.trialInst.trialOrder = ['Intro', 'Fam', 'Test']
         self.trialInst.randPres = True
         self.trialInst.stimPres = True
 
-        testTwo = [99, 'Test', 'NB', 7, 2, 16, 'A']  # corresponds to {Intro:[1,2], Fam:[1,2], Test:[1,2]}
+        testTwo = [99, 'Test', 'NB', '7', '2', '16', 'A']  # corresponds to {Intro:[1,2], Fam:[1,2], Test:[1,2]}
         self.trialInst.run(testMode=testTwo)
 
         # First make sure it won't go without condlist
-        assert self.trialInst.stimNames['Intro'] == ['Movie1', 'Movie2', 'Movie3', 'Movie4']
+        assert self.trialInst.stimNames['Intro'] == ['3x2_1_1_1-converted.mp4', '3x2_1_2_1_1-converted.mp4','Movie1','Movie2']
         self.trialInst.condList = ['A', 'B', 'C', 'D']
         self.trialInst.run(testMode=testTwo)
 
-        assert self.trialInst.stimNames['Intro'] == ['Movie1', 'Movie2']
-        assert self.trialInst.stimNames['Fam'] == ['Movie5', 'Movie6']
-        assert self.trialInst.stimNames['Test'] == ['Movie1', 'Movie2']
+        assert self.trialInst.stimNames['Intro'] == ['3x2_1_1_1-converted.mp4', '3x2_1_2_1_1-converted.mp4']
+        assert self.trialInst.stimNames['Fam'] == ['3x2_1_3_1_1-converted.mp4', '3x2_2_1_1_1-converted.mp4']
+        assert self.trialInst.stimNames['Test'] == ['3x2_2_2_1_1-converted.mp4', '3x2_2_3_1_1-converted.mp4']
 
 
 class TestCommands(object):
@@ -542,7 +556,7 @@ class TestCommands(object):
     def test_jump_and_insert(self):
         self.commandInst.trialText = mock.MagicMock()
         self.commandInst.stimPres = True
-        testOne = [99, 'Test', 'NB', 7, 2, 18, 'testcond', 8, 2, 18]
+        testOne = [99, 'Test', 'NB', '7', '2', '18', 'testcond', '8', '2', '18']
         self.commandInst.stimNames = {'A': ['Movie1', 'Movie2', 'Movie3', 'Movie4'],
                                       'B': ['Movie5', 'Movie6', 'Movie7', 'Movie8'],
                                       'C': ['Movie1', 'Movie2', 'Movie3', 'Movie4'],

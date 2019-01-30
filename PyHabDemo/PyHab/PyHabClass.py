@@ -35,6 +35,8 @@ class PyHab:
     On2 and Off2 (for the optional secondary coder)
     Each coder's on and off are recorded in a separate dict with trial, gaze on/off, start, end, and duration.
 
+    TODO: make ISI trial type specific
+    TODO: Habituation calculated over whole meta-trial rather than just "Hab"
     """
 
     def __init__(self, settingsDict):
@@ -74,6 +76,7 @@ class PyHab:
             self.condPath = [self.dirMarker if x == otherOS else x for x in self.condPath]
             self.condPath = ''.join(self.condPath)
 
+
         # ORDER OF PRESENTATION
         # NOTE: a SINGLE instance of 'Hab' will insert a contiguous habituation BLOCK of up to maxHabTrials.
         # Recommend you make sure repetitions of each trial type is a multiple of the list length, if you want even presentation
@@ -94,8 +97,7 @@ class PyHab:
         if not self.stimPres:
             self.movieEnd = []  # So we don't run into trouble with trials not ending waiting for movies that don't exist.
         self.stimPath = settingsDict['stimPath']  # Folder where movie files can be located (if not in same folder as script)
-        self.stimNames = eval(settingsDict['stimNames'])
-        # ^ A list of trial types. One is special: 'Hab' (only plays first entry), which should only be used for a habituation block in which you have a variable number of trials depending on a habituation criterion
+        self.stimNames = eval(settingsDict['stimNames']) # A dict of trial types with associated lists of stimuli
         self.stimList = eval(settingsDict['stimList'])  # List of all stimuli in the experiment.
         # Go through each item in stimlist, find its stimloc parameter, and replace \\ with / or vise-versa
         for [i,j] in self.stimList.items():
@@ -107,7 +109,28 @@ class PyHab:
         self.movieWidth = eval(settingsDict['movieWidth'])  # movie width
         self.movieHeight = eval(settingsDict['movieHeight'])  # movie height
         self.screenIndex = eval(settingsDict['screenIndex'])  # which monitor stimuli are presented on. 1 for secondary monitor, 0 for primary monitor.
-        self.ISI = eval(settingsDict['ISI'])  # time between loops (in seconds, if desired)
+        self.ISI = eval(settingsDict['ISI'])  # time between loops (by trial type)
+        # Backwards compatibility time!
+        if type(self.ISI) is not dict:
+            # Go through stimNames and make everything work
+            tempISI = {}
+            for [i,j] in self.stimNames.items():
+                tempISI[i] = self.ISI
+            self.ISI = tempISI
+
+        # Secondary evals to make sure everything in the dictionaries that needs to be a number is one.
+        # maxDur, maxOff, minOn, ISI
+        for q in [self.maxDur, self.maxOff, self.minOn, self.ISI]:
+            for [i,j] in q.items():
+                if isinstance(j, str):
+                    try:
+                        q[i] = eval(j)
+                    except:
+                        errDlg = gui.Dlg(title="Settings error")
+                        errDlg.addText("A setting for trial type " + i + " contains text where number expected. Please update settings in builder!")
+                        errDlg.show()
+                        core.quit()
+
         self.freezeFrame = eval(settingsDict['freezeFrame'])  # time that movie remains on first frame at start of trial.
         self.playAttnGetter = eval(settingsDict['playAttnGetter'])  # Trial-by-trial marker of which attngetter goes with which trial (if applicable).
         self.attnGetterList = eval(settingsDict['attnGetterList'])  # List of all attention-getters
@@ -122,6 +145,10 @@ class PyHab:
             self.startImage = ''
             self.endImage = ''
             self.nextFlash = 0
+        try:
+            self.habThresh = eval(settingsDict['habThresh'])
+        except:
+            self.habThresh = 1.0
 
         if len(self.stimPath) > 0 and self.stimPath[-1] is not self.dirMarker:  # If it was made in one OS and running in another
             self.stimPath = [self.dirMarker if x == otherOS else x for x in self.stimPath]
@@ -132,6 +159,7 @@ class PyHab:
         '''
         self.habCount = 0  # For hab designs, checks the # of habituation trials completed
         self.habCrit = 0  # initial setting of habcrit at 0
+        self.habSetWhen = -1
         self.dataMatrix = []  # primary data array
         # data format: snum, age in months, age in days, sex, condition, trial, GNGtrial, trial type, hab crit, on-time, number of gazes, off-time, number of look-offs
         # then same again at the end for b-coder?
@@ -311,12 +339,14 @@ class PyHab:
     def checkStop(self):
         """
         After a hab trial, checks the habitution criteria and returns 'true' if any of them are met.
+        Also responsible for setting the habituation criteria according to settings.
+        Prior to any criteria being set, self.HabCrit is 0. We can use this as a check whether it has been set.
 
         :return: True if hab criteria have been met, False otherwise
         :rtype:
         """
 
-        if self.habCount == self.setCritWindow:  # time to set the hab criterion. This will be true for both dynamic and first
+        if self.habCount == self.setCritWindow and self.setCritType != 'Threshold':  # time to set the hab criterion. This will be true for both dynamic and first
             sumOnTimes = 0
             # find first hab trial
             x = 0
@@ -330,6 +360,7 @@ class PyHab:
                     # add up total looking time for first three (good) trials
                     sumOnTimes = sumOnTimes + self.dataMatrix[k]['sumOnA']
             self.habCrit = sumOnTimes / self.setCritDivisor
+            self.habSetWhen = deepcopy(self.habCount)
         elif self.setCritType == 'Peak':  # Checks if we need to update the hab criterion
             sumOnTimes = 0
             habs = [i for i, x in enumerate(self.actualTrialOrder) if x == 'Hab']  # list of all habs
@@ -341,6 +372,7 @@ class PyHab:
             sumOnTimes = sumOnTimes / self.setCritDivisor
             if sumOnTimes > self.habCrit:
                 self.habCrit = sumOnTimes
+                self.habSetWhen = deepcopy(self.habCount)
         elif self.setCritType == 'Max' and self.habCount > self.setCritWindow:  # Absolute max looking time among hab trials, regardless of order.
             habOns = []
             for n in range(0, len(self.dataMatrix)):
@@ -351,6 +383,19 @@ class PyHab:
             sumOnTimes = sumOnTimes / self.setCritDivisor
             if sumOnTimes > self.habCrit:
                 self.habCrit = sumOnTimes
+                self.habSetWhen = deepcopy(self.habCount)
+        elif self.setCritType == 'Threshold' and self.habCount >= self.setCritWindow and self.habCrit == 0:
+            sumOnTimes = 0
+            habs = [i for i, x in enumerate(self.actualTrialOrder) if x == 'Hab']  # list of all habs
+            habs.sort()
+            index = habs[self.habCount - self.setCritWindow]  # How far back should we look?
+            for n in range(index, len(
+                    self.dataMatrix)):  # now, starting with that trial, go through and add up the good trial looking times
+                if self.dataMatrix[n]['GNG'] == 1 and self.dataMatrix[n]['trialType'] == 'Hab':  # only good trials!
+                    sumOnTimes = sumOnTimes + self.dataMatrix[n]['sumOnA']  # add up total looking time
+            if sumOnTimes > self.habThresh:
+                self.habCrit = sumOnTimes / self.setCritDivisor
+                self.habSetWhen = deepcopy(self.habCount)
 
         # Now we separate out the set and met business.
         if self.habCount == self.maxHabTrials:
@@ -360,27 +405,32 @@ class PyHab:
                     core.wait(.25)  # an inadvertent side effect of playing the sound is a short pause before the test trial can begin
                     self.endHabSound.play()
             return True
-        elif self.habCount >= self.setCritWindow + self.metCritWindow:  # if we're far enough in that we can plausibly meet the hab criterion
-            sumOnTimes = 0
-            habs = [i for i, x in enumerate(self.actualTrialOrder) if x == 'Hab']  # list of all habs
-            habs.sort()
-            index = habs[self.habCount - self.metCritWindow]
-            if (self.metCritStatic == 'Moving') or (self.habCount-self.setCritWindow) % self.metCritWindow == 0:
-                for n in range(index, len(self.dataMatrix)):  # now, starting with that trial, go through and add up the good trial looking times
-                    if self.dataMatrix[n]['GNG'] == 1 and self.dataMatrix[n]['trialType'] == 'Hab':  # only good trials!
-                        sumOnTimes = sumOnTimes + self.dataMatrix[n]['sumOnA']  # add up total looking time
-                sumOnTimes = sumOnTimes / self.metCritDivisor
-                if sumOnTimes < self.habCrit:
-                    # end habituation and go to test
-                    if not self.stimPres:
-                        for i in [0, 1, 2]:
-                            core.wait(.25)  # an inadvertent side effect of playing the sound is a short pause before the test trial can begin
-                            self.endHabSound.play()
-                    return True
+        elif self.habCount >= self.setCritWindow + self.metCritWindow and self.habSetWhen > -1:  # if we're far enough in that we can plausibly meet the hab criterion
+            # Problem: Fixed window, peak, and max as relates to habsetwhen....
+            # Fixed window is probably the only thing that should ignore habsetwhen.
+            if self.habCount < self.habSetWhen + self.metCritWindow and self.metCritStatic == 'Moving': # Was the hab set "late" and are we too early as a result
+                return False
+            else:
+                sumOnTimes = 0
+                habs = [i for i, x in enumerate(self.actualTrialOrder) if x == 'Hab']  # list of all habs
+                habs.sort()
+                index = habs[self.habCount - self.metCritWindow]
+                if (self.metCritStatic == 'Moving') or (self.habCount-self.setCritWindow) % self.metCritWindow == 0:
+                    for n in range(index, len(self.dataMatrix)):  # now, starting with that trial, go through and add up the good trial looking times
+                        if self.dataMatrix[n]['GNG'] == 1 and self.dataMatrix[n]['trialType'] == 'Hab':  # only good trials!
+                            sumOnTimes = sumOnTimes + self.dataMatrix[n]['sumOnA']  # add up total looking time
+                    sumOnTimes = sumOnTimes / self.metCritDivisor
+                    if sumOnTimes < self.habCrit:
+                        # end habituation and go to test
+                        if not self.stimPres:
+                            for i in [0, 1, 2]:
+                                core.wait(.25)  # an inadvertent side effect of playing the sound is a short pause before the test trial can begin
+                                self.endHabSound.play()
+                        return True
+                    else:
+                        return False
                 else:
                     return False
-            else:
-                return False
         else:
             return False
 
@@ -422,8 +472,8 @@ class PyHab:
             dMovie = attnGetter['file']
             dMovie.seek(0.0)
             self.frameCount = 0
-            self.pauseCount = self.ISI*60 #To make it end instantly while ignoring ISI
-            while self.dispMovieStim(1, dMovie) < 2:
+            self.ISI['NobodyNameTheirTrialTypeThis'] = 0.0 # A goofy solution but it'll work. dispMovieStim requires a trial type, and the ISI for an attngetter needs to be 0.
+            while self.dispMovieStim('NobodyNameTheirTrialTypeThis', dMovie) < 2:
                 pass
 
         self.dispCoderWindow(0)
@@ -526,6 +576,7 @@ class PyHab:
         """
 
         if self.frameCount == 0:  # initial setup
+            self.dummyThing.draw()
             self.frameCount += 1
             dispMovie.draw()
             if trialType == 0:
@@ -542,14 +593,16 @@ class PyHab:
             self.frameCount += 1
             self.win.flip()
             return 0
-        elif dispMovie.getCurrentFrameTime() >= dispMovie.duration - .05 and self.pauseCount < self.ISI * 60:  # pause, check for ISI.
+        elif dispMovie.getCurrentFrameTime() >= dispMovie.duration - .05 and self.pauseCount < self.ISI[trialType] * 60:  # pause, check for ISI.
+            self.dummyThing.draw()
             dispMovie.pause()
             dispMovie.draw()  # might want to have it vanish rather than leave it on the screen for the ISI, in which case comment out this line.
             self.frameCount += 1
             self.pauseCount += 1
-            self.win.flip()
+            self.win.flip() # TODO: Goes blank if ISI is long enough. Pyglet problem.
             return 1
-        elif dispMovie.getCurrentFrameTime() >= dispMovie.duration - .05 and self.pauseCount >= self.ISI * 60:  # MovieStim's Loop functionality can't do an ISI
+        elif dispMovie.getCurrentFrameTime() >= dispMovie.duration - .05 and self.pauseCount >= self.ISI[trialType] * 60:  # MovieStim's Loop functionality can't do an ISI
+            self.dummyThing.draw()
             # print('repeating at ' + str(dispMovie.getCurrentFrameTime()))
             self.frameCount = 0  # changed to 0 to better enable studies that want to blank between trials
             self.pauseCount = 0
@@ -593,10 +646,10 @@ class PyHab:
             self.frameCount = 1
             return 0
         elif self.frameCount == 1:
-            if dispAudio.status not in [STARTED, PLAYING] and self.pauseCount < self.ISI * 60:
+            if dispAudio.status not in [STARTED, PLAYING] and self.pauseCount < self.ISI[trialType] * 60:
                 self.pauseCount += 1
                 return 1
-            elif dispAudio.status not in [STARTED, PLAYING] and self.pauseCount >= self.ISI * 60:
+            elif dispAudio.status not in [STARTED, PLAYING] and self.pauseCount >= self.ISI[trialType] * 60:
                 self.frameCount = 0
                 return 2
             else:
@@ -703,21 +756,25 @@ class PyHab:
         # trialNum is in fact the index after the current trial at this point
         # so we can just erase everything between that and the first non-hab trial.
         del self.actualTrialOrder[(trialNum - 1):(tempNum + 1)]
-        trialType = self.actualTrialOrder[trialNum - 1]
-        if self.stimPres:
-            if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
-                self.stimName = self.stimNames[trialType][self.counters[trialType] % len(self.stimNames[trialType])]
+        try:
+            trialType = self.actualTrialOrder[trialNum - 1]
+            if self.stimPres:
+                if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
+                    self.stimName = self.stimNames[trialType][self.counters[trialType] % len(self.stimNames[trialType])]
+                else:
+                    self.stimName = self.stimNames[trialType][self.counters[trialType]]
+                disMovie = self.stimDict[trialType][self.counters[trialType]]
+                self.counters[trialType] += 1
+                if self.counters[trialType] >= len(self.stimDict[trialType]):
+                    self.counters[trialType] = 0
             else:
-                self.stimName = self.stimNames[trialType][self.counters[trialType]]
-            disMovie = self.stimDict[trialType][self.counters[trialType]]
-            self.counters[trialType] += 1
-            if self.counters[trialType] >= len(self.stimDict[trialType]):
-                self.counters[trialType] = 0
-        else:
-            disMovie = 0
-        if self.blindPres < 1:
-            self.rdyTextAppend = " NEXT: " + trialType + " TRIAL"
-        return [disMovie, trialType]
+                disMovie = 0
+            if self.blindPres < 1:
+                self.rdyTextAppend = " NEXT: " + trialType + " TRIAL"
+            return [disMovie, trialType]
+        except IndexError: # Comes up when there are no non-hab trials
+            self.endExperiment()
+            return[0,'4']
 
     def insertHab(self,tn):
         """
@@ -814,7 +871,15 @@ class PyHab:
         AA = []  # a localized autoadvance to allow for first trial
         while runExp:
             reviewed = False
-            self.trialText.text = "Trial no. " + str(trialNum)
+            if len(self.badTrials) > 0:
+                badTrialTrials = [x['trial'] for x in self.badTrials]  # Gets just trial numbers
+                if trialNum in badTrialTrials:
+                    self.trialText.text = "Trial no. " + str(trialNum) + " (" + str(
+                        badTrialTrials.count(trialNum) + 1) + "x)"
+                else:
+                    self.trialText.text = "Trial no. " + str(trialNum)
+            else:
+                self.trialText.text = "Trial no. " + str(trialNum)
             self.statusSquareA.fillColor = 'black'
             self.statusSquareB.fillColor = 'black'
             trialType = self.actualTrialOrder[trialNum - 1]
@@ -831,6 +896,7 @@ class PyHab:
             if self.blindPres < 1:
                 self.rdyTextAppend = " NEXT: " + self.actualTrialOrder[trialNum - 1] + " TRIAL"
             end = False
+            skip = False
             if trialType not in AA and self.nextFlash in [1,'1',True,'True']: # The 'flasher' to alert the experimenter they need to start the next trial
                 self.flashCoderWindow()
             while not self.keyboard[self.key.A] and trialType not in AA and not end:  # wait for 'ready' key, check at frame intervals
@@ -915,11 +981,15 @@ class PyHab:
                         [disMovie,trialType] = self.jumpToTest(trialNum)
                     elif trialType != 'Hab' and self.keyboard[self.key.I] and 'Hab' in self.trialOrder and trialType not in self.habTrialList:  # insert additional hab trial
                         [disMovie,trialType] = self.insertHab(trialNum)
+                    elif self.keyboard[self.key.S] and trialType != 'Hab': # Skip this trial
+                        skip = True
                     else:
                         self.dispCoderWindow(0)
-            if not end: #If Y has not been pressed, do the trial! Otherwise, end the experiment.
+            if not end or skip: #If Y has not been pressed, do the trial! Otherwise, end the experiment.
                 x = self.doTrial(trialNum, trialType, disMovie)  # the actual trial, returning one of four status values at the end
                 AA = self.autoAdvance  # After the very first trial AA will always be whatever it was set to at the top.
+            elif skip:
+                x = 0 # Simply proceed to next trial.
             else:
                 x = 2
             if x == 2:  # end experiment, either due to final trial ending or 'end experiment altogether' button.
@@ -927,6 +997,7 @@ class PyHab:
                 didRedo = False
                 self.endExperiment()
             elif x == 3:  # bad trial, redo!
+                self.dummyThing.draw()
                 trialNum = trialNum
                 didRedo = True
                 self.win.flip() #Blank the screen.
@@ -1038,6 +1109,26 @@ class PyHab:
                     offDur = endTrial - startOff
                     tempGazeArray = {'trial':number, 'trialType':type, 'startTime':startOff, 'endTime':endTrial, 'duration':offDur}
                     offArray.append(tempGazeArray)
+            elif core.getTime() - startTrial >= .5 and self.keyboard[self.key.S] and type not in self.habTrialList and type != 'Hab':
+                # New feature: End trial and go forward manually. Disabled for hab trials and meta-trials.
+                # Disabled for the first half-second to stop you from skipping through multiple auto-advancing trials
+                if type in self.movieEnd:
+                    endFlag = True
+                else:
+                    runTrial = False
+                    endTrial = core.getTime() - startTrial
+                    if not self.stimPres:
+                        self.endTrialSound.play()
+                    # determine if they were looking or not at end of trial and update appropriate array
+                    if gazeOn:
+                        onDur = endTrial - startOn
+                        tempGazeArray = {'trial':number, 'trialType':type, 'startTime':startOn, 'endTime':endTrial, 'duration':onDur}
+                        onArray.append(tempGazeArray)
+                    else:
+                        offDur = endTrial - startOff
+                        tempGazeArray = {'trial':number, 'trialType':type, 'startTime':startOff, 'endTime':endTrial, 'duration':offDur}
+                        offArray.append(tempGazeArray)
+
             elif self.keyboard[self.key.Y]:  # the 'end the study' button, for fuss-outs
                 runTrial = False
                 endTrial = core.getTime() - startTrial
@@ -1172,6 +1263,7 @@ class PyHab:
                 disMovie['stim']['Audio'].stop()
         if self.stimPres and number < len(self.actualTrialOrder):
             if self.actualTrialOrder[number] not in self.autoAdvance:
+                self.dummyThing.draw()
                 self.win.flip()  # blanks the screen outright between trials if NOT auto-advancing into the next trial
         if redo:  # if the abort button was pressed
             if self.stimPres and disMovie['stimType'] == 'Movie':
@@ -1207,6 +1299,7 @@ class PyHab:
         tempText.draw()
         self.win2.flip()
         if self.stimPres:
+            self.dummyThing.draw()
             if self.endImageObject is not None:
                 self.endImageObject.draw()
             self.win.flip()
@@ -1390,6 +1483,7 @@ class PyHab:
         tempText.draw()
         self.win2.flip()
         if self.stimPres:
+            self.dummyThing.draw()
             if self.endImageObject is not None:
                 self.endImageObject.draw()
             self.win.flip()
@@ -1609,61 +1703,93 @@ class PyHab:
             else:
                 startDlg.addField('Cond: ')
             if not self.stimPres:
+                startDlg.addText("Date of test (leave blank for today)")
                 startDlg.addField('DOT(month): ')
                 startDlg.addField('DOT(day): ')
                 startDlg.addField('DOT(year): ')
             startDlg.show()
         if startDlg.OK:
+            fail = False # A bool for detecting if we have to start over at any point.
             thisInfo = startDlg.data
             self.sNum = thisInfo[0]
             self.sID = thisInfo[1]
             self.sex = thisInfo[2]
             # now for the exciting bit: converting DOB into months/days.
             self.today = date.today()
-            DOB = date(2000 + int(thisInfo[5]), int(thisInfo[3]), int(thisInfo[4]))
-            if self.stimPres:
-                DOT = self.today
-            else:
-                DOT = date(2000 + int(thisInfo[9]), int(thisInfo[7]), int(thisInfo[8]))
-            # Dateutil's relativedelta is included in psychopy and just better than every other option!
-            ageDif = relativedelta(DOT, DOB)
-            self.ageMo = ageDif.years * 12 + ageDif.months
-            self.ageDay = ageDif.days  # Impossibly simple, but it works.
-            self.actualTrialOrder = []  # in this version, mostly a key for the hab trials.
-            for i in range(0, len(self.trialOrder)):
-                if self.trialOrder[i] == 'Hab':
-                    for j in range(0, self.maxHabTrials):
-                        if len(self.habTrialList) > 0:
-                            for q in range(0, len(self.habTrialList)):
-                                self.actualTrialOrder.append(self.habTrialList[q])
-                        else:
-                            self.actualTrialOrder.append('Hab')
+            # First, check valid entries
+            try:
+                for i in range(3,6):
+                    irrel = int(thisInfo[i])
+            except:
+                fail = True
+            if not fail:
+                # then, check if 4-digit or 2-digit year.
+                if len(thisInfo[5]) > 2:
+                    year = int(thisInfo[5])
                 else:
-                    self.actualTrialOrder.append(self.trialOrder[i])
-            # build trial order
-            if self.randPres and len(self.condList) > 0:  # Extra check: We WANT conditions and we HAVE them too.
-                self.condLabel = thisInfo[6]
-                testReader = csv.reader(open(self.condPath + self.condFile, 'rU'))
-                testStuff = []
-                for row in testReader:
-                    testStuff.append(row)
-                testDict = dict(testStuff)
-                self.cond = testDict[self.condLabel]  # this will read as order of indeces in N groups, in a 2-dimensional array
-                # type conversion required. Eval will read the string into a dictionary (now).
-                self.cond = eval(self.cond)
-                # now to rearrange the lists of each trial type.
-                finalDict = []
-                for i, j in self.cond.items():
-                    newTempTrials = []
-                    for q in range(0, len(j)):
-                        newTempTrials.append(self.stimNames[i][j[q] - 1])
-                    finalDict.append((i, newTempTrials))
-                self.stimNames = dict(finalDict)
+                    year = 2000 + int(thisInfo[5])
+                DOB = date(year, int(thisInfo[3]), int(thisInfo[4]))
+                if self.stimPres:
+                    DOT = self.today
+                elif len(thisInfo[9]) == 0 or len(thisInfo[8]) == 0 or len(thisInfo[7]) == 0:
+                    DOT = self.today
+                else:
+                    try:
+                        if len(thisInfo[9]) > 2:
+                            year = int(thisInfo[9])
+                        else:
+                            year = 2000 + int(thisInfo[9])
+                        DOT = date(year, int(thisInfo[7]), int(thisInfo[8]))
+                    except:
+                        DOT = self.today
+                        warnDlg = gui.Dlg("Warning! Invalid date!")
+                        warnDlg.addText("DOT is invalid. Defaulting to today's date.")
+                        irrel = warnDlg.show()
+                # Dateutil's relativedelta is included in psychopy and just better than every other option!
+                ageDif = relativedelta(DOT, DOB)
+                self.ageMo = ageDif.years * 12 + ageDif.months
+                self.ageDay = ageDif.days  # Impossibly simple, but it works.
+                self.actualTrialOrder = []  # in this version, mostly a key for the hab trials.
+                for i in range(0, len(self.trialOrder)):
+                    if self.trialOrder[i] == 'Hab':
+                        for j in range(0, self.maxHabTrials):
+                            if len(self.habTrialList) > 0:
+                                for q in range(0, len(self.habTrialList)):
+                                    self.actualTrialOrder.append(self.habTrialList[q])
+                            else:
+                                self.actualTrialOrder.append('Hab')
+                    else:
+                        self.actualTrialOrder.append(self.trialOrder[i])
+                # build trial order
+                if self.randPres and len(self.condList) > 0:  # Extra check: We WANT conditions and we HAVE them too.
+                    self.condLabel = thisInfo[6]
+                    testReader = csv.reader(open(self.condPath + self.condFile, 'rU'))
+                    testStuff = []
+                    for row in testReader:
+                        testStuff.append(row)
+                    testDict = dict(testStuff)
+                    self.cond = testDict[self.condLabel]  # this will read as order of movies in N groups, in a 2-dimensional array
+                    # type conversion required. Eval will read the string into a dictionary (now).
+                    self.cond = eval(self.cond)
+                    # now to rearrange the lists of each trial type.
+                    finalDict = []
+                    for i, j in self.cond.items():
+                        newTempTrials = []
+                        for q in range(0, len(j)):
+                            if type(j[q]) is int:  # Dealing with old versions.
+                                newTempTrials.append(self.stimNames[i][j[q] - 1])
+                                #print("Converting old conditions...")
+                            else:
+                                newTempTrials.append(j[q])
+                        finalDict.append((i, newTempTrials))
+                    self.stimNames = dict(finalDict)
+                else:
+                    self.cond = thisInfo[6]
+                    self.condLabel = self.cond
+                if len(testMode) == 0: # If we're in test mode, skip setting up the window and launching the experiment.
+                    self.SetupWindow()
             else:
-                self.cond = thisInfo[6]
-                self.condLabel = self.cond
-            if len(testMode) == 0: # If we're in test mode, skip setting up the window and launching the experiment.
-                self.SetupWindow()
+                self.run()
 
     def SetupWindow(self):
         """
@@ -1678,6 +1804,7 @@ class PyHab:
             # Stimulus presentation window
             self.win = visual.Window((self.screenWidth, self.screenHeight), fullscr=False, screen=self.screenIndex, allowGUI=False,
                                      units='pix', color=self.screenColor)
+            self.dummyThing = visual.Circle(self.win, size=1, color=self.win.color) # This is for fixing a display glitch in PsychoPy3 involving multiple windows of different sizes.
         # Coder window
         self.win2 = visual.Window((400, 400), fullscr=False, screen=0, allowGUI=True, units='pix', waitBlanking=False,
                                   rgb=[-1, -1, -1])
@@ -1687,6 +1814,7 @@ class PyHab:
             self.win2.flip()
             # Step 1: Load and present "startImage"
             if self.startImage is not '':
+                self.dummyThing.draw()
                 tempStim = self.stimList[self.startImage]
                 tempStimObj = visual.ImageStim(self.win, tempStim['stimLoc'], size=[self.movieWidth, self.movieHeight])
                 tempStimObj.draw()
@@ -1760,6 +1888,6 @@ class PyHab:
                                            color='white', bold=True, height=30)
         self.statusTextB = visual.TextStim(self.win2, text="", pos=[self.statusOffset + 60, self.statusOffsetY + 0],
                                            color='white', bold=True, height=30)
-        self.trialText = visual.TextStim(self.win2, text="Trial no: ", pos=[-150, 150], color='white')
+        self.trialText = visual.TextStim(self.win2, text="Trial no: ", pos=[-100, 150], color='white')
         self.readyText = visual.TextStim(self.win2, text="Trial not active", pos=[-25, 100], color='white')
         self.doExperiment()  # Get this show on the road!
