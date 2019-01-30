@@ -6,13 +6,13 @@ trialTypes,"['Intro', 'Fam', 'Test']"
 metCritWindow,3
 freezeFrame,0.0
 dataColumns,"['sNum', 'months', 'days', 'sex', 'cond', 'condLabel', 'trial', 'GNG', 'trialType', 'stimName', 'habCrit', 'sumOnA', 'numOnA', 'sumOffA', 'numOffA', 'sumOnB', 'numOnB', 'sumOffB', 'numOffB']"
-ISI,0.0
+ISI,"{'Intro': '0.0', 'Fam': '0.0', 'Test': '0.0'}"
 blindPres,0
 stimPres,0
 condList,"['A', 'B', 'C', 'D']"
 prefix,PyHabDemo
 habTrialList,[]
-folderPath,/Users/jonk/Desktop/Active Studies/Infant studies/PyHab/ExportTests/PyHabDemo/
+folderPath,/Users/jonk/Desktop/Active Studies/Infant studies/PyHab/PyHab Repository/PyHab/PyHabDemo/
 setCritWindow,3
 autoAdvance,[]
 playAttnGetter,"{'Test': 'PyHabDefault', 'Intro': 'PyHabDefault', 'Fam': 'PyHabDefault'}"
@@ -22,11 +22,11 @@ movieWidth,800
 maxOff,"{'Test': 2.0, 'Intro': 2.0, 'Fam': 2.0}"
 setCritDivisor,2
 playThrough,"{'Test': 0, 'Intro': 0, 'Fam': 0}"
-stimList,"{u'3x2_1_1_1-converted.mp4': {'stimLoc': u'stimuli/3x2_1_1_1-converted.mp4', 'stimType': 'Movie'}, u'3x2_2_3_1_1-converted.mp4': {'stimLoc': u'stimuli/3x2_2_3_1_1-converted.mp4', 'stimType': 'Movie'}, u'3x2_2_1_1_1-converted.mp4': {'stimLoc': u'stimuli/3x2_2_1_1_1-converted.mp4', 'stimType': 'Movie'}, u'3x2_1_2_1_1-converted.mp4': {'stimLoc': u'stimuli/3x2_1_2_1_1-converted.mp4', 'stimType': 'Movie'}, u'3x2_1_3_1_1-converted.mp4': {'stimLoc': u'stimuli/3x2_1_3_1_1-converted.mp4', 'stimType': 'Movie'}, u'3x2_2_2_1_1-converted.mp4': {'stimLoc': u'stimuli/3x2_2_2_1_1-converted.mp4', 'stimType': 'Movie'}}"
+stimList,"{'3x2_1_1_1-converted.mp4': {'stimLoc': 'stimuli/3x2_1_1_1-converted.mp4', 'stimType': 'Movie'}, '3x2_2_3_1_1-converted.mp4': {'stimLoc': 'stimuli/3x2_2_3_1_1-converted.mp4', 'stimType': 'Movie'}, '3x2_2_1_1_1-converted.mp4': {'stimLoc': 'stimuli/3x2_2_1_1_1-converted.mp4', 'stimType': 'Movie'}, '3x2_1_2_1_1-converted.mp4': {'stimLoc': 'stimuli/3x2_1_2_1_1-converted.mp4', 'stimType': 'Movie'}, '3x2_1_3_1_1-converted.mp4': {'stimLoc': 'stimuli/3x2_1_3_1_1-converted.mp4', 'stimType': 'Movie'}, '3x2_2_2_1_1-converted.mp4': {'stimLoc': 'stimuli/3x2_2_2_1_1-converted.mp4', 'stimType': 'Movie'}}"
 metCritDivisor,1
 metCritStatic,Moving
 movieEnd,[]
-stimNames,"{'Test': [u'3x2_2_2_1_1-converted.mp4', u'3x2_2_3_1_1-converted.mp4'], 'Intro': [u'3x2_1_1_1-converted.mp4', u'3x2_1_2_1_1-converted.mp4'], 'Fam': [u'3x2_1_3_1_1-converted.mp4', u'3x2_2_1_1_1-converted.mp4']}"
+stimNames,"{'Test': ['3x2_2_2_1_1-converted.mp4', '3x2_2_3_1_1-converted.mp4'], 'Intro': ['3x2_1_1_1-converted.mp4', '3x2_1_2_1_1-converted.mp4'], 'Fam': ['3x2_1_3_1_1-converted.mp4', '3x2_2_1_1_1-converted.mp4']}"
 dataloc,data/
 attnGetterList,"{'PyHabDefault': {'stimDur': 2, 'stimLoc': 'stimuli/attnGetters/upchime1.wav', 'color': 'yellow', 'shape': 'Rectangle', 'stimType': 'Audio', 'stimName': 'upchime1.wav'}}"
 screenHeight,700
@@ -38,3 +38,7 @@ stimPath,stimuli/
 setCritType,First
 condFile,conditions.csv
 condPath,
+nextFlash,0
+startImage,
+endImage,
+habThresh,1.0
