@@ -1,4 +1,4 @@
-from types import NoneType
+#from types import NoneType
 
 from psychopy import core, data, gui, monitors, tools
 import wx, random, csv, os
@@ -189,9 +189,9 @@ startDlg.show()
 if startDlg.OK:
     dlg1 = gui.fileOpenDlg()
     print(dlg1)
-    if type(dlg1) is not 'NoneType':
+    if type(dlg1) is not type(None):
         dlg2 = gui.fileOpenDlg()
-        if type(dlg2) is not 'NoneType':
+        if type(dlg2) is not type(None):
             ready = True
 if ready:
     thisInfo = startDlg.data
@@ -227,7 +227,7 @@ if ready:
     doneDlg.show()
     if doneDlg.OK:
         sDlg = gui.fileSaveDlg(initFilePath=os.getcwd(), initFileName=str(thisInfo[0])+'_'+str(thisInfo[1])+'_Stats.csv')
-        if type(sDlg) is not NoneType:
+        if type(sDlg) is not type(None):
             headers3=['WeightedPercentageAgreement', 'CohensKappa','AverageObserverAgreement','PearsonsR']
             outputWriter4 = csv.DictWriter(open(sDlg,'w'),
                                            fieldnames=headers3, extrasaction='ignore',lineterminator ='\n')
