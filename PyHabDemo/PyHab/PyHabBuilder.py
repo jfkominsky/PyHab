@@ -380,7 +380,7 @@ class PyHabBuilder:
 
         7/-2 = End trial on movie end or mid-movie
 
-        8/-1 = inter-stimulus iterveral (ISI) for this trial type
+        8/-1 = inter-stimulus interveral (ISI) for this trial type
 
         :param trialType: Name of the trial type
         :type trialType: str
@@ -611,13 +611,15 @@ class PyHabBuilder:
 
         [If stimulus files associated with type, these occupy 3-N]
 
-        3/-4 = Auto-advance into trial
+        3/-5 = Auto-advance into trial
 
-        4/-3 = Select attention-getter
+        4/-4 = Select attention-getter
 
-        5/-2 = Use sub-block structure?
+        5/-3 = Inter-stimulus interval (ISI)
 
-        6/-1 = Number of trial types in sub-block, including hab
+        6/-2 = Use sub-block structure?
+
+        7/-1 = Number of trial types in sub-block, including hab
 
 
         :return:
@@ -631,6 +633,7 @@ class PyHabBuilder:
             typeDlg.addField("Number of continuous seconds looking away to end trial", self.settings['maxOff']['Hab'])
             typeDlg.addField("Minimum time looking at screen before stimuli can be ended (not consecutive)",
                              self.settings['minOn']['Hab'])
+            ISI = self.settings['ISI']['Hab']
             if len(self.settings['stimNames']['Hab']) > 0:
                 typeDlg.addText("Current movie files in trial type (uncheck to remove)")
                 for i in range(0, len(self.settings['stimNames']['Hab'])):
@@ -640,6 +643,7 @@ class PyHabBuilder:
             typeDlg.addField("Maximum duration", 60.0)
             typeDlg.addField("Number of continuous seconds looking away to end trial", 2.0)
             typeDlg.addField("Minimum time looking at screen before stimuli can be ended (not consecutive)", 1.0)
+            ISI = 0.0
         if 'Hab' in self.settings['autoAdvance']:
             chz2 = True
         else:
@@ -656,6 +660,7 @@ class PyHabBuilder:
             chz3.insert(0, 'None')
             chz3.insert(0, self.settings['playAttnGetter']['Hab'])
         typeDlg.addField("Attention-getter for this trial type (Stim presentation mode only)", choices=chz3)
+        typeDlg.addField("Inter-stimulus interval on loops (pause between end of one loop and start of next)", ISI)
         typeDlg.addText("Hab block sub-trials")
         if not makeNew:
             if len(self.settings['habTrialList']) > 0:
@@ -693,21 +698,22 @@ class PyHabBuilder:
                 self.settings['maxDur']['Hab'] = habInfo[0]
                 self.settings['maxOff']['Hab'] = habInfo[1]
                 self.settings['minOn']['Hab'] = habInfo[2]
-                if habInfo[len(habInfo) - 4] in [False,0,'False','0'] and 'Hab' in self.settings['autoAdvance']:
+                self.settings['ISI']['Hab'] = habInfo[len(habInfo) - 3]
+                if habInfo[len(habInfo) - 5] in [False,0,'False','0'] and 'Hab' in self.settings['autoAdvance']:
                     self.settings['autoAdvance'].remove('Hab')
-                elif habInfo[len(habInfo) - 4] in [True, 1, 'True', '1'] and not 'Hab' in self.settings['autoAdvance']:
+                elif habInfo[len(habInfo) - 5] in [True, 1, 'True', '1'] and not 'Hab' in self.settings['autoAdvance']:
                     self.settings['autoAdvance'].append('Hab')
 
-                if habInfo[len(habInfo) - 3] == 'None':
+                if habInfo[len(habInfo) - 4] == 'None':
                     if 'Hab' in self.settings['playAttnGetter']:
                         del self.settings['playAttnGetter']['Hab']
                 else:
                     if 'Hab' not in self.settings['playAttnGetter']:  # If it did not have an attngetter before.
-                        agname = habInfo[len(habInfo) - 3]
+                        agname = habInfo[len(habInfo) - 4]
                         self.settings['playAttnGetter']['Hab'] = agname
-                    elif habInfo[len(habInfo) - 3] is not self.settings['playAttnGetter']['Hab']:
+                    elif habInfo[len(habInfo) - 4] is not self.settings['playAttnGetter']['Hab']:
                         # If a different attention-getter has been selected
-                        agname = habInfo[len(habInfo) - 3]
+                        agname = habInfo[len(habInfo) - 4]
                         self.settings['playAttnGetter']['Hab'] = agname
 
 
