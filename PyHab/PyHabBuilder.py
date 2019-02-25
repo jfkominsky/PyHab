@@ -2001,7 +2001,10 @@ class PyHabBuilder:
         :rtype:
         """
         NoneType = type(None)
-        sDlg = gui.fileSaveDlg(initFilePath=os.getcwd(), initFileName=self.settings['prefix'], prompt="Name a folder to save study into")
+        if len(self.folderPath) > 0:
+            for i,j in self.settings['stimList'].items():
+                self.stimSource[i] = j['stimLoc'] # Re-initializes the stimSource dict to incorporate both existing and new stim.
+        sDlg = gui.fileSaveDlg(initFilePath=os.getcwd(), initFileName=self.settings['prefix'], prompt="Name a folder to save study into", allowed="")
         if type(sDlg) is not NoneType:
             self.settings['folderPath'] = sDlg+self.dirMarker #Makes a folder of w/e they entered
             #If there is no pre-selected prefix, make the prefix the folder name!
@@ -2054,6 +2057,10 @@ class PyHabBuilder:
                 try:
                     targPath = stimPath + i
                     shutil.copyfile(j, targPath)
+                except:
+                    success = False
+                    print('Could not copy file ' + j + ' to location ' + targPath + '. Make sure both exist!')
+                if success:
                     for q, r in self.settings['stimList'].items():
                         if r['stimType'] != 'Image with audio':
                             if q == i:  # For movies, images, or audio in isolation, the keys match.
@@ -2063,9 +2070,7 @@ class PyHabBuilder:
                                 r['audioLoc'] = 'stimuli' + self.dirMarker + i
                             elif r['imageLoc'] == j:
                                 r['imageLoc'] = 'stimuli' + self.dirMarker + i
-                except:
-                    success = False
-                    print('Could not copy file ' + j + '. Make sure it exists!')
+
         if len(list(self.settings['attnGetterList'].keys())) > 0:  # This should virtually always be true b/c default attngetter.
             for i, j in self.settings['attnGetterList'].items():
                 try:
@@ -2077,7 +2082,7 @@ class PyHabBuilder:
                         j['stimLoc'] = 'stimuli' + self.dirMarker + 'attnGetters' + self.dirMarker + j['stimName']
                 except:
                     success = False
-                    print('Could not copy file ' + j['stimLoc'] + '. Make sure it exists!')
+                    print('Could not copy file ' + j['stimLoc'] + ' to location ' +  targPath + '. Make sure both exist!')
 
         if not success:
             errDlg = gui.Dlg(title="Could not copy stimuli!")
@@ -2120,7 +2125,14 @@ class PyHabBuilder:
         if not os.path.exists(launcherPath):
             try:
                 # the location of the pyHabLauncher template file
-                launcherSource = srcDir+'PyHab Launcher.py'
+                if os.path.exists(srcDir+'PyHab Launcher.py'):
+                    launcherSource = srcDir+'PyHab Launcher.py'
+                else:
+                    # It'll end in launcher.py. So need to find a file in the working directory with the last 11 characters 'Launcher.py'
+                    fileList = os.listdir()
+                    for i in range(0, len(fileList)):
+                        if fileList[i][-11:] == 'Launcher.py':
+                            launcherSource = fileList[i]
                 # Open file and find line 5, aka the path to the settings file, replace it appropriately
                 with open(launcherSource,'r') as file:
                     launcherFile = file.readlines()
@@ -2136,6 +2148,10 @@ class PyHabBuilder:
                 errDlg.show()
                 success=False
                 print('creating launcher script failed!')
+                if len(launcherSource) == 0:
+                    print('Could not find launcher template file!')
+                else:
+                    print('Found launcher template, still could not save launcher script')
         if success:
             saveSuccessDlg = gui.Dlg(title="Experiment saved!")
             saveSuccessDlg.addText("Experiment saved successfully to" + self.folderPath)
