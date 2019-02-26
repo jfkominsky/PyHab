@@ -30,11 +30,10 @@ class PyHabBuilder:
         """
 
         self.loadSave = loadedSaved #For easy reference elsewhere
+        self.dirMarker = os.sep
         if os.name is 'posix': #glorious simplicity of unix filesystem
-            self.dirMarker = '/'
             otherOS = '\\'
         elif os.name is 'nt': #Nonsensical Windows-based contrarianism
-            self.dirMarker = '\\'
             otherOS = '/'
         #The base window
         width = 1080
@@ -1192,7 +1191,6 @@ class PyHabBuilder:
         Works a bit like the attention-getter construction dialogs, but different in that it allows audio or images alone.
         The image/audio pairs are complicated, but not worth splitting into their own function at this time.
 
-
         :return:
         :rtype:
         """
@@ -1212,8 +1210,7 @@ class PyHabBuilder:
                 for i in range(0, stNum):
                     stimDlg = gui.fileOpenDlg(prompt="Select stimulus file (only one!)")
                     if type(stimDlg) is not NoneType:
-                        fileIndex = stimDlg[0].rfind(self.dirMarker) + 1  # Finds last instance of / or \
-                        fileName = stimDlg[0][fileIndex:]  # Gets the file name in isolation.
+                        fileName = os.path.split(stimDlg[0])[1] # Gets the file name in isolation.
                         self.stimSource[fileName] = stimDlg[0]  # Creates a "Find this file" path for the save function.
                         self.settings['stimList'][fileName] = {'stimType': stType, 'stimLoc': stimDlg[0]}
             else:  # Creating image/audio pairs is more complicated.
@@ -1234,8 +1231,7 @@ class PyHabBuilder:
                         if a:
                             stimDlg = gui.fileOpenDlg(prompt="Select AUDIO file (only one!)")
                             if type(stimDlg) is not NoneType:
-                                fileIndex = stimDlg[0].rfind(self.dirMarker) + 1  # Finds last instance of / or \
-                                fileName = stimDlg[0][fileIndex:]  # Gets the file name in isolation.
+                                fileName = os.path.split(stimDlg[0])[1] # Gets the file name in isolation.
                                 self.stimSource[fileName] = stimDlg[0]  # Creates a "Find this file" path for the save function.
                                 self.settings['stimList'][sd2[0]] = {'stimType': stType, 'audioLoc': stimDlg[0]}
                                 tempDlg = gui.Dlg(title="Now select image")
@@ -1244,8 +1240,7 @@ class PyHabBuilder:
                                 if tempDlg.OK:
                                     stimDlg2 = gui.fileOpenDlg(prompt="Select IMAGE file (only one!)")
                                     if type(stimDlg2) is not NoneType:
-                                        fileIndex2 = stimDlg2[0].rfind(self.dirMarker) + 1  # Finds last instance of / or \
-                                        fileName2 = stimDlg2[0][fileIndex2:]  # Gets the file name in isolation.
+                                        fileName2 = os.path.split(stimDlg2[0])[1] # Gets the file name in isolation.
                                         self.stimSource[fileName2] = stimDlg2[0]
                                         self.settings['stimList'][sd2[0]].update({'imageLoc': stimDlg2[0]})
                                 else:
@@ -2000,25 +1995,34 @@ class PyHabBuilder:
         :return:
         :rtype:
         """
-        NoneType = type(None)
-        if len(self.folderPath) > 0:
-            for i,j in self.settings['stimList'].items():
-                self.stimSource[i] = j['stimLoc'] # Re-initializes the stimSource dict to incorporate both existing and new stim.
-        sDlg = gui.fileSaveDlg(initFilePath=os.getcwd(), initFileName=self.settings['prefix'], prompt="Name a folder to save study into", allowed="")
-        if type(sDlg) is not NoneType:
-            self.settings['folderPath'] = sDlg+self.dirMarker #Makes a folder of w/e they entered
-            #If there is no pre-selected prefix, make the prefix the folder name!
-            if self.settings['prefix'] == "PyHabExperiment":
-                self.settings['prefix'] = os.path.split(sDlg)[1]
-            self.folderPath=self.settings['folderPath']
-            #Add save button if it does not exist.
-            if self.saveEverything not in self.buttonList['functions']:
-                saveButton = visual.Rect(self.win,width=.15, height=.67*(.15/self.aspect), pos=[-.52,-.9],fillColor="green")
-                saveText = visual.TextStim(self.win, text="SAVE",color="black",height=saveButton.height*.5, pos=saveButton.pos)
-                self.buttonList['shapes'].append(saveButton)
-                self.buttonList['text'].append(saveText)
-                self.buttonList['functions'].append(self.saveEverything)
-            self.saveEverything()
+        go = True
+        if len(self.settings['trialOrder']) == 0:
+            warnDlg = gui.Dlg("Warning: No trials in study flow!")
+            warnDlg.addText("You haven't added any trials to the study flow yet! You won't be able to run this experiment.")
+            warnDlg.addText("Hit 'OK' to save anyways (you can add trials later and save then) or cancel to go back.")
+            warnDlg.show()
+            if not warnDlg.OK:
+                go = False
+        if go:
+            NoneType = type(None)
+            if len(self.folderPath) > 0:
+                for i,j in self.settings['stimList'].items():
+                    self.stimSource[i] = j['stimLoc'] # Re-initializes the stimSource dict to incorporate both existing and new stim.
+            sDlg = gui.fileSaveDlg(initFilePath=os.getcwd(), initFileName=self.settings['prefix'], prompt="Name a folder to save study into", allowed="")
+            if type(sDlg) is not NoneType:
+                self.settings['folderPath'] = sDlg + self.dirMarker #Makes a folder of w/e they entered
+                #If there is no pre-selected prefix, make the prefix the folder name!
+                if self.settings['prefix'] == "PyHabExperiment":
+                    self.settings['prefix'] = os.path.split(sDlg)[1]
+                self.folderPath=self.settings['folderPath']
+                #Add save button if it does not exist.
+                if self.saveEverything not in self.buttonList['functions']:
+                    saveButton = visual.Rect(self.win,width=.15, height=.67*(.15/self.aspect), pos=[-.52,-.9],fillColor="green")
+                    saveText = visual.TextStim(self.win, text="SAVE",color="black",height=saveButton.height*.5, pos=saveButton.pos)
+                    self.buttonList['shapes'].append(saveButton)
+                    self.buttonList['text'].append(saveText)
+                    self.buttonList['functions'].append(self.saveEverything)
+                self.saveEverything()
     
     def saveEverything(self):
         """

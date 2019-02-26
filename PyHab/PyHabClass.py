@@ -1786,7 +1786,13 @@ class PyHab:
                     self.cond = thisInfo[6]
                     self.condLabel = self.cond
                 if len(testMode) == 0: # If we're in test mode, skip setting up the window and launching the experiment.
-                    self.SetupWindow()
+                    if len(self.actualTrialOrder) == 0:
+                        errWindow = gui.Dlg("Warning: No trials!")
+                        errWindow.addText(
+                            "There are no trials in the study flow! Please return to the builder and add trials to the study flow.")
+                        errWindow.show()
+                    else:
+                        self.SetupWindow()
             else:
                 self.run()
 
