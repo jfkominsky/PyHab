@@ -100,7 +100,11 @@ class PyHab:
         self.stimList = eval(settingsDict['stimList'])  # List of all stimuli in the experiment.
         # Go through each item in stimlist, find its stimloc parameter, and replace \\ with / or vise-versa
         for [i,j] in self.stimList.items():
-            j['stimLoc'] =''.join([self.dirMarker if x == otherOS else x for x in j['stimLoc']])
+            try:
+                j['stimLoc'] = ''.join([self.dirMarker if x == otherOS else x for x in j['stimLoc']])
+            except KeyError:  # For image/audio pairs
+                j['audioLoc'] = ''.join([self.dirMarker if x == otherOS else x for x in j['audioLoc']])
+                j['imageLoc'] = ''.join([self.dirMarker if x == otherOS else x for x in j['imageLoc']])
 
         self.screenWidth = eval(settingsDict['screenWidth'])  # Display window width, in pixels
         self.screenHeight = eval(settingsDict['screenHeight'])  # Display window height, in pixels

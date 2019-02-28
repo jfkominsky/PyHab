@@ -85,7 +85,11 @@
               <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="Installation.html">Installation</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Quickstart guide</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Quickstart guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#creating-a-new-pyhab-project-from-scratch">Creating a new PyHab project from scratch</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#running-the-demo-or-a-pre-made-pyhab-experiment">Running the demo or a pre-made PyHab experiment</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="Builder.html">Builder</a></li>
 <li class="toctree-l1"><a class="reference internal" href="BasePyHabClass.html">PyHab Class (base)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="PrefLook.html">Preferential Looking</a></li>
@@ -156,6 +160,8 @@
             
   <div class="section" id="quickstart-guide">
 <h1>Quickstart guide<a class="headerlink" href="#quickstart-guide" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="creating-a-new-pyhab-project-from-scratch">
+<h2>Creating a new PyHab project from scratch<a class="headerlink" href="#creating-a-new-pyhab-project-from-scratch" title="Permalink to this headline">¶</a></h2>
 <ol class="arabic">
 <li><p class="first">Open PsychoPy</p>
 </li>
@@ -177,11 +183,45 @@
 </li>
 <li><p class="first">In the PsychoPy coder, choose “Open”, then find the experiment folder you saved. Open the file “[projectname]Launcher.py”</p>
 </li>
-<li><p class="first">Hit the big green run button.</p>
+<li><p class="first">Hit the big green run button to open the builder.</p>
+</li>
+<li><p class="first">Read the manual (<a class="reference external" href="https://github.com/jfkominsky/PyHab/raw/master/PyHab%20User%20Manual.pdf">https://github.com/jfkominsky/PyHab/raw/master/PyHab%20User%20Manual.pdf</a>) for more information on how to build an experiment.</p>
 </li>
 </ol>
-<p>To see a demo experiment, in the coder view, go to the same folder that contains NewPyHabProject.py, and open the “PyHabDemo” sub-folder,
-and the “PyHabDemoLauncher.py” file within that. Hit the big green run button to see a pre-made experiment.</p>
+</div>
+<div class="section" id="running-the-demo-or-a-pre-made-pyhab-experiment">
+<h2>Running the demo or a pre-made PyHab experiment<a class="headerlink" href="#running-the-demo-or-a-pre-made-pyhab-experiment" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic">
+<li><p class="first">In coder view, open the experiment’s launcher script. For the demo experiment, in the PyHab folder open “PyHabDemoLauncher.py” in the “PyHabDemo” folder.</p>
+</li>
+<li><dl class="first docutils">
+<dt>Hit the green “Run” button, and you should see a window like this.</dt>
+<dd><img alt="_images/LaunchScr.png" class="first last" src="_images/LaunchScr.png" />
+</dd>
+</dl>
+</li>
+<li><p class="first">If you want to modify anything about the experiment, click the first drop-down menu and select “Builder”, and then click OK. If you want to run the experiment, select whether or not you want it to present stimuli with the second drop-down list, and then hit OK.</p>
+</li>
+<li><dl class="first docutils">
+<dt>The next window that appears will be the subject information window.</dt>
+<dd><img alt="_images/SubjInfo.png" class="first" src="_images/SubjInfo.png" />
+<p>4a. The first two lines are the subject number and identifier. These are arbitrary, but you need to put something in at least one of them.</p>
+<p>4b. The subject sex is entirely optional and can be left blank.</p>
+<p>4c. The next three lines are the subject date of birth. These MUST be filled out. Each field takes ONLY two digits. So, for a date of birth of November 12, 2018, you would put 11 in the first box, 12 in the second, and 18 in the third.</p>
+<p class="last">4d. The final line is a condition drop-down menu with a list of conditions. If the experiment you are running does not have conditions configured, this will be an arbitrary text box. Otherwise, select the appopriate condition.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>Hit OK, and the experiment will launch. You will be presented with the experimenter window. Press “A” to start the first trial and play the attention-getter. Hold “B” whenever the infant is looking at the screen and release it when they are not. Press Y at any time to end the experiment.</dt>
+<dd><p class="first last">5a. For preferential looking studies, hold “B” when they are looking left and “M” when they are looking right.</p>
+</dd>
+</dl>
+</li>
+<li><p class="first">The experiment will notify you when it is saving data and then prompt you to press “return” to close the stimuli and experimenter windows and return to the launcher menu.</p>
+</li>
+</ol>
+</div>
 </div>
 
 

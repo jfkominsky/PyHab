@@ -173,6 +173,7 @@ On (for gaze-on events)
 Off (for gaze-off events)
 On2 and Off2 (for the optional secondary coder)
 Each coder’s on and off are recorded in a separate dict with trial, gaze on/off, start, end, and duration.</p>
+<p>TODO: Habituation calculated over whole meta-trial rather than just “Hab”</p>
 <dl class="method">
 <dt id="PyHab.PyHabClass.PyHab.SetupWindow">
 <code class="descname">SetupWindow</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab.SetupWindow" title="Permalink to this definition">¶</a></dt>
@@ -264,7 +265,9 @@ Separate settings for audio w/shape and video file attention-getters.</p>
 <dl class="method">
 <dt id="PyHab.PyHabClass.PyHab.checkStop">
 <code class="descname">checkStop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab.checkStop" title="Permalink to this definition">¶</a></dt>
-<dd><p>After a hab trial, checks the habitution criteria and returns ‘true’ if any of them are met.</p>
+<dd><p>After a hab trial, checks the habitution criteria and returns ‘true’ if any of them are met.
+Also responsible for setting the habituation criteria according to settings.
+Prior to any criteria being set, self.HabCrit is 0. We can use this as a check whether it has been set.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -463,7 +466,7 @@ Returns a status value (int) that tells doExperiment what to do next</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>number</strong> (<em>int</em>) – Trial number</li>
 <li><strong>type</strong> (<em>string</em>) – Trial type</li>
-<li><strong>disMovie</strong> (<em>movieStim3 object</em>) – Movie object for stimulus presentation</li>
+<li><strong>disMovie</strong> (<em>dictionary</em>) – A dictionary as follows {‘stim’:[psychopy object for stimulus presentation], ‘stimType’:[movie,image,audio, pair]}</li>
 </ul>
 </td>
 </tr>
@@ -480,9 +483,35 @@ Returns a status value (int) that tells doExperiment what to do next</p>
 <dl class="method">
 <dt id="PyHab.PyHabClass.PyHab.endExperiment">
 <code class="descname">endExperiment</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab.endExperiment" title="Permalink to this definition">¶</a></dt>
-<dd><p>End experiment, save all data, calculate reliability if needed, close up shop
-:return:
-:rtype:</p>
+<dd><p>End experiment, save all data, calculate reliability if needed, close up shop. Displays “saving data” and
+end-of-experiment screen.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabClass.PyHab.flashCoderWindow">
+<code class="descname">flashCoderWindow</code><span class="sig-paren">(</span><em>rep=False</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab.flashCoderWindow" title="Permalink to this definition">¶</a></dt>
+<dd><p>Flash the background of the coder window to alert the experimenter they need to initiate the next trial.
+.2 seconds of white and black, flashed twice. Can lengthen gap between trial but listens for ‘A’ on every flip.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
@@ -574,13 +603,25 @@ In this case, only B (coder A on) is sufficient.</p>
 <dl class="method">
 <dt id="PyHab.PyHabClass.PyHab.redoSetup">
 <code class="descname">redoSetup</code><span class="sig-paren">(</span><em>tn</em>, <em>autoAdv</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab.redoSetup" title="Permalink to this definition">¶</a></dt>
-<dd><p>Lays the groundwork for redoTrial, including correcting the trial order, selecting the right stim, etc.
-:param tn: Trial number (trialNum)
-:type tn: int
-:param autoAdv: The current auto-advance trial type list (different on first trial for Reasons)
-:type autoAdv: list
-:return: list, [disMovie, trialNum], the former being the movie file to play if relevant, and the latter being the new trial number
-:rtype:</p>
+<dd><p>Lays the groundwork for redoTrial, including correcting the trial order, selecting the right stim, etc.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>tn</strong> (<em>int</em>) – Trial number (trialNum)</li>
+<li><strong>autoAdv</strong> (<em>list</em>) – The current auto-advance trial type list (different on first trial for Reasons)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">list, [disMovie, trialNum], the former being the movie file to play if relevant, and the latter being the new trial number</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
