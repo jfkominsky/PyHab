@@ -2081,7 +2081,13 @@ class PyHabBuilder:
             NoneType = type(None)
             if len(self.folderPath) > 0:
                 for i,j in self.settings['stimList'].items():
-                    self.stimSource[i] = j['stimLoc'] # Re-initializes the stimSource dict to incorporate both existing and new stim.
+                    if self.settings['stimList']['stimType'] != 'Image with audio':
+                       self.stimSource[i] = j['stimLoc'] # Re-initializes the stimSource dict to incorporate both existing and new stim.
+                    else:
+                        tempAname = os.path.split(j['audioLoc'])[1]
+                        tempIname = os.path.split(j['imageLoc'])[1]
+                        self.stimSource[tempAname] = j['audioLoc']
+                        self.stimSource[tempIname] = j['imageLoc']
             sDlg = gui.fileSaveDlg(initFilePath=os.getcwd(), initFileName=self.settings['prefix'], prompt="Name a folder to save study into", allowed="")
             if type(sDlg) is not NoneType:
                 self.settings['folderPath'] = sDlg + self.dirMarker #Makes a folder of w/e they entered
@@ -2144,10 +2150,10 @@ class PyHabBuilder:
                             if q == i:  # For movies, images, or audio in isolation, the keys match.
                                 r['stimLoc'] = 'stimuli' + self.dirMarker + q
                         else:  # Here we have to look at the file paths themselves
-                            if r['audioLoc'] == j:
-                                r['audioLoc'] = 'stimuli' + self.dirMarker + os.path.basename(j)
-                            elif r['imageLoc'] == j:
-                                r['imageLoc'] = 'stimuli' + self.dirMarker + os.path.basename(j)
+                            if os.path.split(r['audioLoc'])[1] == i:
+                                r['audioLoc'] = 'stimuli' + self.dirMarker + os.path.split(j)[1]
+                            elif os.path.split(r['imageLoc'])[1] == i:
+                                r['imageLoc'] = 'stimuli' + self.dirMarker + os.path.split(j)[1]
 
         if len(list(self.settings['attnGetterList'].keys())) > 0:  # This should virtually always be true b/c default attngetter.
             for i, j in self.settings['attnGetterList'].items():
@@ -2168,14 +2174,14 @@ class PyHabBuilder:
         # Delete any removed stimuli
         if len(self.delList) > 0:
             for i in range(0, len(self.delList)):
-                stimPath = os.path.join(stimPath, self.delList[i])
-                if os.path.exists(stimPath):
+                delStimPath = os.path.join(stimPath, self.delList[i])
+                if os.path.exists(delStimPath):
                     try:
-                        os.remove(stimPath)
+                        os.remove(delStimPath)
                     except:
-                        print("Could not remove stimuli from experiment folder.")
+                        print("Could not remove stimuli " + delStimPath + " from experiment folder.")
                 else:
-                    print("Stimuli does not exist to be removed!")
+                    print("Stimuli " + delStimPath + " does not exist to be removed!")
             self.delList = []
         # create/overwrite the settings csv.
         settingsPath = self.folderPath+self.settings['prefix']+'Settings.csv'

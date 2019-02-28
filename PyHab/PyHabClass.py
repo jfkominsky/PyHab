@@ -633,7 +633,7 @@ class PyHab:
         self.win.flip()
         return 1  # This essentially allows it to end at any time if this is set to "movieend"
 
-    def dispAudioStim(self, dispAudio):
+    def dispAudioStim(self, trialType, dispAudio):
         """
         For playing audio stimuli. A little more complicated than most because it needs to track whether the audio
         is playing or not. Audio plays separately from main thread.
@@ -679,10 +679,10 @@ class PyHab:
             elif dispMovie['stimType'] == 'Image':
                 t = self.dispImageStim(dispMovie['stim'])
             elif dispMovie['stimType'] == 'Audio' and trialType != 0:  # No still-frame equivalent
-                t = self.dispAudioStim(dispMovie['stim'])
+                t = self.dispAudioStim(trialType, dispMovie['stim'])
             elif dispMovie['stimType'] == 'Image with audio': # Audio and image together
                 if trialType != 0:  # No still-frame equivalent
-                    t = self.dispAudioStim(dispMovie['stim']['Audio'])
+                    t = self.dispAudioStim(trialType,dispMovie['stim']['Audio'])
                 else:
                     t = 0
                 p = self.dispImageStim(dispMovie['stim']['Image'])
