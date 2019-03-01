@@ -1,8 +1,8 @@
 import os, sys
 from psychopy import gui, visual, event, core, data, monitors, tools, prefs, logging
 from psychopy.constants import (STARTED, PLAYING)  # Added for new stimulus types
+prefs.general['audioLib'] = ['sounddevice']
 if os.name is 'posix':
-    prefs.general['audioLib'] = ['pyo']
     prefs.general['audioDevice'] = ['Built-in Output']
 from psychopy import sound
 import pyglet
@@ -724,9 +724,10 @@ class PyHab:
             if self.stimPres:
                 if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
                     self.stimName = self.stimNames[trialType][self.counters[trialType] % len(self.stimNames[trialType])]
+                    disMovie = self.stimDict[trialType][self.counters[trialType] % len(self.stimNames[trialType])]
                 else:
                     self.stimName = self.stimNames[trialType][self.counters[trialType]]
-                disMovie = self.stimDict[trialType][self.counters[trialType]]
+                    disMovie = self.stimDict[trialType][self.counters[trialType]]
                 self.counters[trialType] += 1
                 if self.counters[trialType] < 0:
                     self.counters[trialType] = 0
@@ -756,6 +757,8 @@ class PyHab:
         tempNum = max(habs)
         # It's actually necessary to decrement the counter for the current trial type to deal with jump/insert!
         self.counters[self.actualTrialOrder[trialNum - 1]] -= 1
+        if self.counters[self.actualTrialOrder[trialNum - 1]] < 0:
+            self.counters[self.actualTrialOrder[trialNum - 1]] = 0
         # trialNum is in fact the index after the current trial at this point
         # so we can just erase everything between that and the first non-hab trial.
         del self.actualTrialOrder[(trialNum - 1):(tempNum + 1)]
@@ -764,12 +767,11 @@ class PyHab:
             if self.stimPres:
                 if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
                     self.stimName = self.stimNames[trialType][self.counters[trialType] % len(self.stimNames[trialType])]
+                    disMovie = self.stimDict[trialType][self.counters[trialType] % len(self.stimNames[trialType])]
                 else:
                     self.stimName = self.stimNames[trialType][self.counters[trialType]]
-                disMovie = self.stimDict[trialType][self.counters[trialType]]
+                    disMovie = self.stimDict[trialType][self.counters[trialType]]
                 self.counters[trialType] += 1
-                if self.counters[trialType] >= len(self.stimDict[trialType]):
-                    self.counters[trialType] = 0
             else:
                 disMovie = 0
             if self.blindPres < 1:
@@ -800,49 +802,15 @@ class PyHab:
                 self.stimName = self.stimNames[trialType][self.counters[trialType] % len(self.stimNames[trialType])]
             else:
                 self.stimName = self.stimNames[trialType][self.counters[trialType]]
-            # Insert movies into stimDict! This is difficult.
-            # stimDict is basically actualTrialOrder, but each key is a trial type, and each value a list of dicts
-            # with one entry per number of that trial type, of the form {'stimType': , 'stimObject'}
-            if len(self.habTrialList) > 0:
-                for z in range(0, len(self.habTrialList)):
-                    #Figure out what the next counter would be for each thing.
-                    tempStim = self.stimList[self.stimNames[self.habTrialList[z]][self.counters[self.habTrialList[z]] % len(self.stimNames[self.habTrialList[z]])]]
-                    if tempStim['stimType'] == 'Movie':
-                        tempStimObj = visual.MovieStim3(self.win, tempStim['stimLoc'],
-                                                        size=[self.movieWidth, self.movieHeight], flipHoriz=False,
-                                                        flipVert=False, loop=False)
-                    elif tempStim['stimType'] == 'Image':
-                        tempStimObj = visual.ImageStim(self.win, tempStim['stimLoc'],
-                                                       size=[self.movieWidth, self.movieHeight])
-                    elif tempStim['stimType'] == 'Audio':
-                        tempStimObj = sound.Sound(tempStim['stimLoc'])
-                    else:  # The eternal problem of audio/image pair. Just creates an object that's a dict of audio and image.
-                        audioObj = sound.Sound(tempStim['audioLoc'])
-                        imageObj = visual.ImageStim(self.win, tempStim['imageLoc'],
-                                                    size=[self.movieWidth, self.movieHeight])
-                        tempStimObj = {'Audio': audioObj, 'Image': imageObj}
-                    tempAdd = {'stimType': tempStim['stimType'], 'stim': tempStimObj}
 
-                    self.stimDict[self.habTrialList[z]].insert(self.counters[self.habTrialList[z]], tempAdd)
+            if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
+                self.stimName = self.stimNames[trialType][self.counters[trialType] % len(self.stimNames[trialType])]
+                disMovie = self.stimDict[trialType][
+                    self.counters[trialType] % len(self.stimNames[trialType])]
             else:
-                tempStim = self.stimList[self.stimNames[trialType][self.counters[trialType] % len(self.stimNames[trialType])]]
-                if tempStim['stimType'] == 'Movie':
-                    tempStimObj = visual.MovieStim3(self.win, tempStim['stimLoc'],
-                                                    size=[self.movieWidth, self.movieHeight], flipHoriz=False,
-                                                    flipVert=False, loop=False)
-                elif tempStim['stimType'] == 'Image':
-                    tempStimObj = visual.ImageStim(self.win, tempStim['stimLoc'],
-                                                   size=[self.movieWidth, self.movieHeight])
-                elif tempStim['stimType'] == 'Audio':
-                    tempStimObj = sound.Sound(tempStim['stimLoc'])
-                else:  # The eternal problem of audio/image pair. Just creates an object that's a dict of audio and image.
-                    audioObj = sound.Sound(tempStim['audioLoc'])
-                    imageObj = visual.ImageStim(self.win, tempStim['imageLoc'],
-                                                size=[self.movieWidth, self.movieHeight])
-                    tempStimObj = {'Audio': audioObj, 'Image': imageObj}
-                tempAdd = {'stimType': tempStim['stimType'], 'stim': tempStimObj}
-                self.stimDict['Hab'].insert(self.habCount, tempAdd)
-            disMovie = self.stimDict[trialType][self.counters[trialType]]
+                self.stimName = self.stimNames[trialType][self.counters[trialType]]
+                disMovie = self.stimDict[trialType][
+                    self.counters[trialType]]
             self.counters[trialType] += 1
             if self.counters[trialType] < 0:
                 self.counters[trialType] = 0
@@ -890,9 +858,10 @@ class PyHab:
             if self.stimPres:
                 if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
                     self.stimName = self.stimNames[trialType][self.counters[trialType] % len(self.stimNames[trialType])]
+                    disMovie = self.stimDict[trialType][self.counters[trialType] % len(self.stimNames[trialType])]
                 else:
                     self.stimName = self.stimNames[trialType][self.counters[trialType]]
-                disMovie = self.stimDict[trialType][self.counters[trialType]]
+                    disMovie = self.stimDict[trialType][self.counters[trialType]]
                 self.counters[trialType] += 1
             else:
                 disMovie = 0
@@ -1259,6 +1228,7 @@ class PyHab:
         if self.stimPres:
             # Reset everything, stop playing sounds and movies.
             if disMovie['stimType'] == 'Movie':
+                disMovie['stim'].seek(0.0)
                 disMovie['stim'].pause()
             elif disMovie['stimType'] == 'Audio':
                 disMovie['stim'].stop()
@@ -1279,8 +1249,12 @@ class PyHab:
 
         if type == 'Hab':  # if still during habituation
             # Check if criteria need to be set or have been met
-            if self.checkStop(): # If criteria met
-                return 1
+            if self.checkStop():  # If criteria met
+                # Check if there are any trials FOLLOWING the hab trials.
+                if self.actualTrialOrder[-1] not in ['Hab'] and self.actualTrialOrder[-1] not in self.habTrialList:
+                    return 1
+                else:
+                    return 2  # End experiment.
             else:
                 return 0
         elif number >= len(self.actualTrialOrder) or type == 4:
@@ -1833,26 +1807,25 @@ class PyHab:
             tempCtr = {x: 0 for x in self.stimNames.keys()}
             for i in self.actualTrialOrder:
                 x = tempCtr[i] # Changed so hab trials get the same treatment as everything else.
-                tempStim = self.stimList[self.stimNames[i][x]]
-                if tempStim['stimType'] == 'Movie':
-                    tempStimObj = visual.MovieStim3(self.win, tempStim['stimLoc'],
-                                                  size=[self.movieWidth, self.movieHeight], flipHoriz=False,
-                                                  flipVert=False, loop=False)
-                elif tempStim['stimType'] == 'Image':
-                    tempStimObj = visual.ImageStim(self.win, tempStim['stimLoc'],
-                                                   size=[self.movieWidth, self.movieHeight])
-                elif tempStim['stimType'] == 'Audio':
-                    tempStimObj = sound.Sound(tempStim['stimLoc'])
-                else: # The eternal problem of audio/image pair. Just creates an object that's a dict of audio and image.
-                    audioObj = sound.Sound(tempStim['audioLoc'])
-                    imageObj = visual.ImageStim(self.win, tempStim['imageLoc'],
-                                                   size=[self.movieWidth, self.movieHeight])
-                    tempStimObj = {'Audio': audioObj, 'Image': imageObj}
-                tempAdd = {'stimType':tempStim['stimType'], 'stim':tempStimObj}
-                self.stimDict[i].append(tempAdd)
+                if x < len(self.stimNames[i]):
+                    tempStim = self.stimList[self.stimNames[i][x]]
+                    if tempStim['stimType'] == 'Movie':
+                        tempStimObj = visual.MovieStim3(self.win, tempStim['stimLoc'],
+                                                      size=[self.movieWidth, self.movieHeight], flipHoriz=False,
+                                                      flipVert=False, loop=False)
+                    elif tempStim['stimType'] == 'Image':
+                        tempStimObj = visual.ImageStim(self.win, tempStim['stimLoc'],
+                                                       size=[self.movieWidth, self.movieHeight])
+                    elif tempStim['stimType'] == 'Audio':
+                        tempStimObj = sound.Sound(tempStim['stimLoc'])
+                    else: # The eternal problem of audio/image pair. Just creates an object that's a dict of audio and image.
+                        audioObj = sound.Sound(tempStim['audioLoc'])
+                        imageObj = visual.ImageStim(self.win, tempStim['imageLoc'],
+                                                       size=[self.movieWidth, self.movieHeight])
+                        tempStimObj = {'Audio': audioObj, 'Image': imageObj}
+                    tempAdd = {'stimType':tempStim['stimType'], 'stim':tempStimObj}
+                    self.stimDict[i].append(tempAdd)
                 tempCtr[i] += 1
-                if tempCtr[i] >= len(self.stimNames[i]):
-                    tempCtr[i] = 0
 
             if len(list(self.playAttnGetter.keys())) > 0:
                 for i in list(self.attnGetterList.keys()):
