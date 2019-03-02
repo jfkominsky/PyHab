@@ -1,7 +1,7 @@
 import os, sys
 from psychopy import gui, visual, event, core, data, monitors, tools, prefs, logging
 from psychopy.constants import (STARTED, PLAYING)  # Added for new stimulus types
-prefs.general['audioLib'] = ['sounddevice']
+prefs.hardware['audioLib'] = ['sounddevice']
 if os.name is 'posix':
     prefs.general['audioDevice'] = ['Built-in Output']
 from psychopy import sound
@@ -596,7 +596,7 @@ class PyHab:
             self.frameCount += 1
             self.win.flip()
             return 0
-        elif dispMovie.getCurrentFrameTime() >= dispMovie.duration - .05 and self.pauseCount < self.ISI[trialType] * 60:  # pause, check for ISI.
+        elif dispMovie.getCurrentFrameTime() >= dispMovie.duration - dispMovie._frameInterval*2 and self.pauseCount < self.ISI[trialType] * 60:  # pause, check for ISI.
             self.dummyThing.draw()
             dispMovie.pause()
             dispMovie.draw()  # might want to have it vanish rather than leave it on the screen for the ISI, in which case comment out this line.
@@ -604,7 +604,7 @@ class PyHab:
             self.pauseCount += 1
             self.win.flip() # TODO: Goes blank if ISI is long enough. Pyglet problem.
             return 1
-        elif dispMovie.getCurrentFrameTime() >= dispMovie.duration - .05 and self.pauseCount >= self.ISI[trialType] * 60:  # MovieStim's Loop functionality can't do an ISI
+        elif dispMovie.getCurrentFrameTime() >= dispMovie.duration - dispMovie._frameInterval*2 and self.pauseCount >= self.ISI[trialType] * 60:  # MovieStim's Loop functionality can't do an ISI
             self.dummyThing.draw()
             # print('repeating at ' + str(dispMovie.getCurrentFrameTime()))
             self.frameCount = 0  # changed to 0 to better enable studies that want to blank between trials
