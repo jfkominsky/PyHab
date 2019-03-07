@@ -969,10 +969,11 @@ class PyHab:
                 didRedo = False
                 self.endExperiment()
             elif x == 3:  # bad trial, redo!
-                self.dummyThing.draw()
                 trialNum = trialNum
                 didRedo = True
-                self.win.flip() #Blank the screen.
+                if self.stimPres:
+                    self.dummyThing.draw()
+                    self.win.flip() #Blank the screen.
                 self.counters[trialType] -= 1
                 if self.counters[trialType] < 0:
                     self.counters[trialType] = 0
