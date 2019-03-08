@@ -974,9 +974,9 @@ class PyHab:
                 if self.stimPres:
                     self.dummyThing.draw()
                     self.win.flip() #Blank the screen.
-                self.counters[trialType] -= 1
-                if self.counters[trialType] < 0:
-                    self.counters[trialType] = 0
+                    self.counters[trialType] -= 1
+                    if self.counters[trialType] < 0:
+                        self.counters[trialType] = 0
             elif x == 1:  # end hab block!
                 if len(self.habTrialList) > 0: # Now accounts for meta-trials in which hab is not the last one.
                     habs = [i for i, z in enumerate(self.actualTrialOrder) if z in self.habTrialList]
