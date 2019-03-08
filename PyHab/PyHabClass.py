@@ -875,11 +875,13 @@ class PyHab:
                 if self.keyboard[self.key.Y]:
                     end = True
                 elif self.keyboard[self.key.R] and not didRedo:
-                    if self.counters[trialType] > 0:
-                        self.counters[trialType] -= 1
+                    if self.stimPres:
+                        if self.counters[trialType] > 0:
+                            self.counters[trialType] -= 1
                     [disMovie,trialNum] = self.redoSetup(trialNum, AA) #This returns a new value for DisMovie and trialNum
-                    if disMovie['stimType'] == 'Movie':
-                        disMovie['stim'].loadMovie(disMovie['stim'].filename) # "Seek" causes audio bugs. This just reloads the movie. More memory load, but reliable.
+                    if self.stimPres:
+                        if disMovie['stimType'] == 'Movie':
+                            disMovie['stim'].loadMovie(disMovie['stim'].filename) # "Seek" causes audio bugs. This just reloads the movie. More memory load, but reliable.
                     trialType = self.actualTrialOrder[trialNum - 1]
                     didRedo = True
                 elif self.keyboard[self.key.J] and 'Hab' in self.actualTrialOrder[trialNum:]:  # jump to test in a hab design
@@ -1286,9 +1288,9 @@ class PyHab:
         if len(self.badTrials) > 0:  # if there are any redos, they need to be shuffled in appropriately.
             for i in range(0, len(self.badTrials)):
                 x = 0
-                while self.dataMatrix[x]['trial'] != self.badTrials[i]['trial']:
+                while x < len(self.dataMatrix) and self.dataMatrix[x]['trial'] != self.badTrials[i]['trial']:
                     x += 1
-                while self.dataMatrix[x]['GNG'] == 0:  # this is to get around the possibility that the same trial had multiple 'false starts'
+                while  x < len(self.dataMatrix) and self.dataMatrix[x]['GNG'] == 0:  # this is to get around the possibility that the same trial had multiple 'false starts'
                     x += 1
                 self.dataMatrix.insert(x, self.badTrials[i])  # python makes this stupid easy
         nDupe = '' # This infrastructure eliminates the risk of overwriting existing data
