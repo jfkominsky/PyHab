@@ -919,13 +919,13 @@ class PyHab:
                         waitStart = True
                     else:
                         self.frameCount = 0
-                        waitStart = False
+                        waitStart = True
                 else:
                     if trialType in self.playAttnGetter:
                         core.wait(self.attnGetterList[self.playAttnGetter[trialType]]['stimDur'] + self.freezeFrame)  # an attempt to match the delay caused by the attention-getter playing.
                         waitStart = True
                     else:
-                        waitStart = False
+                        waitStart = True
                 while waitStart and trialType not in AA and not end:  # Wait for first gaze-on
                     if self.keyboard[self.key.Y]:  # End experiment right there and then.
                         end = True
@@ -961,7 +961,7 @@ class PyHab:
                         self.dispCoderWindow(0)
             if not end or skip: #If Y has not been pressed, do the trial! Otherwise, end the experiment.
                 x = self.doTrial(trialNum, trialType, disMovie)  # the actual trial, returning one of four status values at the end
-                AA = self.autoAdvance  # After the very first trial AA will always be whatever it was set to at the top.
+                AA = self.autoAdvance  # After the very first trial AA will always be just the autoadvance list.
             elif skip:
                 x = 0 # Simply proceed to next trial.
             else:
