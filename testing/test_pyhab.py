@@ -607,7 +607,7 @@ class TestPrefLook(object):
         self.dataInstPL = PHL.PyHabPL(base_settings)
         # Set values for things that are usually set in the experimenter dialog
         self.dataInstPL.sNum = 99
-        self.dataInstPL.sID = "Lore"
+        self.dataInstPL.sID = 'TEST'
         self.dataInstPL.ageMo = 5
         self.dataInstPL.ageDay = 15
         self.dataInstPL.sex = 'm'
