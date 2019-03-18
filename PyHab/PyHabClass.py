@@ -242,7 +242,7 @@ class PyHab:
                 sumOff2 = sumOff2 + offArray2[j]['duration']
             self.verbBadList['verboseOn2'].extend(onArray2)
             self.verbBadList['verboseOff2'].extend(offArray2)
-        tempData = {'sNum': self.sNum, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex, 'cond': self.cond,
+        tempData = {'sNum': self.sNum, 'sID':self.sID, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex, 'cond': self.cond,
                     'condLabel': self.condLabel,'trial': trial, 'GNG': 0, 'trialType': ttype, 'stimName': stimName,
                     'habCrit': self.habCrit, 'sumOnA': sumOn, 'numOnA': len(onArray), 'sumOffA': sumOff,
                     'numOffA': len(offArray), 'sumOnB': sumOn2, 'numOnB': len(onArray2), 'sumOffB': sumOff2,
@@ -289,7 +289,7 @@ class PyHab:
         # add to verbose master gaze array
         self.verbDatList['verboseOn'].extend(onArray)
         self.verbDatList['verboseOff'].extend(offArray)
-        tempData = {'sNum': self.sNum, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex, 'cond': self.cond,
+        tempData = {'sNum': self.sNum, 'sID': self.sID, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex, 'cond': self.cond,
                     'condLabel': self.condLabel, 'trial': trial, 'GNG': 1, 'trialType': type, 'stimName': stimName,
                     'habCrit': self.habCrit, 'sumOnA': sumOn, 'numOnA': len(onArray), 'sumOffA': sumOff,
                     'numOffA': len(offArray), 'sumOnB': sumOn2, 'numOnB': len(onArray2), 'sumOffB': sumOff2,

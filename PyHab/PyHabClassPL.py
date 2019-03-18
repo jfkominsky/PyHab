@@ -59,7 +59,7 @@ class PyHabPL(PyHab):
         self.verbBadList['verboseOn'].extend(onArray)
         self.verbBadList['verboseOn2'].extend(onArray2)
         self.verbBadList['verboseOff'].extend(offArray)
-        tempData = {'sNum': self.sNum, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex, 'cond': self.cond,
+        tempData = {'sNum': self.sNum, 'sID': self.sID, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex, 'cond': self.cond,
                     'condLabel': self.condLabel,
                     'trial': trial, 'GNG': 0, 'trialType': ttype, 'stimName': stimName, 'habCrit': self.habCrit,
                     'sumOnL': sumOn, 'numOnL': len(onArray),
@@ -99,7 +99,7 @@ class PyHabPL(PyHab):
         self.verbDatList['verboseOn'].extend(onArray)
         self.verbDatList['verboseOff'].extend(offArray)
         self.verbDatList['verboseOn2'].extend(onArray2)
-        tempData={'sNum':self.sNum, 'months':self.ageMo, 'days':self.ageDay, 'sex':self.sex, 'cond':self.cond,'condLabel':self.condLabel,
+        tempData={'sNum':self.sNum, 'sID': self.sID, 'months':self.ageMo, 'days':self.ageDay, 'sex':self.sex, 'cond':self.cond,'condLabel':self.condLabel,
                                 'trial':trial, 'GNG':1, 'trialType':type, 'stimName':stimName, 'habCrit':self.habCrit,
                                 'sumOnL':sumOn, 'numOnL':len(onArray),
                                 'sumOnR':sumOn2,'numOnR':len(onArray2),'sumOff':sumOff, 'numOff':len(offArray)}
