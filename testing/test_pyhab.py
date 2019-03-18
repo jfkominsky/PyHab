@@ -623,10 +623,10 @@ class TestPrefLook(object):
         self.trialVOn2 = [{'trial': 1, 'trialType': 'A', 'startTime': 3.0, 'endTime': 4.5, 'duration': 1.5},
                           {'trial': 1, 'trialType': 'A', 'startTime': 8.0, 'endTime': 9.5,
                            'duration': 1.5}]  # VerboseOn2
-        self.testMatrix = [{'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+        self.testMatrix = [{'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
                             'condLabel': 'dataTest', 'trial': 1, 'GNG': 1, 'trialType': 'A', 'stimName': 'movie1.mov',
                             'habCrit': 0, 'sumOnL': 3.0, 'numOnL': 2, 'sumOnR': 3.0, 'numOnR': 2, 'sumOff': 3.5,
-                            'numOff': 2}, {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                            'numOff': 2}, {'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
                                             'condLabel': 'dataTest', 'trial': 2, 'GNG': 1, 'trialType': 'B',
                                             'stimName': 'movie2.mov',
                                             'habCrit': 0, 'sumOnL': 3.0, 'numOnL': 2, 'sumOnR': 3.0, 'numOnR': 2,
@@ -685,7 +685,7 @@ class TestPrefLook(object):
                :rtype:
                """
         habMatrix = copy.deepcopy(self.testMatrix)
-        habMatrix.append({'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+        habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
                           'condLabel': 'dataTest', 'trial': 3, 'GNG': 1, 'trialType': 'Hab', 'stimName': 'movie1.mov',
                           'habCrit': 0, 'sumOnL': 7.0, 'numOnL': 2, 'sumOff': 3.5,
                           'numOff': 2, 'sumOnR': 3.0, 'numOnR': 2})
@@ -697,7 +697,7 @@ class TestPrefLook(object):
         assert self.dataInstPL.checkStop() == False
         assert self.dataInstPL.habCrit == 0
 
-        habMatrix.append({'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+        habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
                           'condLabel': 'dataTest', 'trial': 4, 'GNG': 1, 'trialType': 'Hab', 'stimName': 'movie1.mov',
                           'habCrit': 0, 'sumOnL': 7.0, 'numOnL': 2, 'sumOff': 3.5,
                           'numOff': 2, 'sumOnR': 3.0, 'numOnR': 2})
@@ -706,7 +706,7 @@ class TestPrefLook(object):
         assert self.dataInstPL.checkStop() == False
         assert self.dataInstPL.habCrit == 0
 
-        habMatrix.append({'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+        habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
                           'condLabel': 'dataTest', 'trial': 5, 'GNG': 1, 'trialType': 'Hab', 'stimName': 'movie1.mov',
                           'habCrit': 0, 'sumOnL': 7.0, 'numOnL': 2, 'sumOff': 3.5,
                           'numOff': 2, 'sumOnR': 3.0, 'numOnR': 2})
@@ -727,7 +727,7 @@ class TestPrefLook(object):
         assert self.dataInstPL.habCrit == 30.0
         assert self.dataInstPL.habSetWhen == 3
         self.dataInstPL.habCrit = 0  # reset
-        habMatrix.append({'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+        habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
                           'condLabel': 'dataTest', 'trial': 6, 'GNG': 1, 'trialType': 'Hab', 'stimName': 'movie1.mov',
                           'habCrit': 0, 'sumOnL': 7.0, 'numOnL': 2, 'sumOff': 3.5,
                           'numOff': 2, 'sumOnR': 3.0, 'numOnR': 2})
@@ -743,7 +743,7 @@ class TestPrefLook(object):
         for i in range(0, 14):
             self.dataInstPL.actualTrialOrder.append('Hab')
         self.dataInstPL.actualTrialOrder.append('Test')
-        habMatrix.append({'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+        habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
                           'condLabel': 'dataTest', 'trial': 7, 'GNG': 1, 'trialType': 'Hab', 'stimName': 'movie1.mov',
                           'habCrit': 0, 'sumOnL': 2.0, 'numOnL': 2, 'sumOff': 3.5,
                           'numOff': 2, 'sumOnR': 3.0, 'numOnR': 2})
@@ -771,7 +771,7 @@ class TestPrefLook(object):
         assert self.dataInstPL.habCrit == 55.0  # should change to max now
         assert self.dataInstPL.habSetWhen == 5
 
-        habMatrix.append({'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+        habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
                           'condLabel': 'dataTest', 'trial': 8, 'GNG': 1, 'trialType': 'Hab', 'stimName': 'movie1.mov',
                           'habCrit': 0, 'sumOnL': 2.0, 'numOnL': 2, 'sumOff': 3.5,
                           'numOff': 2, 'sumOnR': 3.0, 'numOnR': 2})  # At this point, most recent 3 should be 25+10+5=40
@@ -784,7 +784,7 @@ class TestPrefLook(object):
         self.dataInstPL.habSetWhen = 5 # Change this for testing criteria
         assert self.dataInstPL.habCrit == 55.0  # should not have changed.
 
-        habMatrix.append({'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+        habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
                           'condLabel': 'dataTest', 'trial': 9, 'GNG': 1, 'trialType': 'Hab', 'stimName': 'movie1.mov',
                           'habCrit': 0, 'sumOnL': 7.0, 'numOnL': 2, 'sumOff': 3.5,
                           'numOff': 2, 'sumOnR': 3.0, 'numOnR': 2})
@@ -798,7 +798,7 @@ class TestPrefLook(object):
         self.dataInstPL.habSetWhen = 5
         assert self.dataInstPL.habCrit == 55.0  # should not have changed.
 
-        habMatrix.append({'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+        habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
                           'condLabel': 'dataTest', 'trial': 10, 'GNG': 1, 'trialType': 'Hab', 'stimName': 'movie1.mov',
                           'habCrit': 0, 'sumOnL': 2.1, 'numOnL': 2, 'sumOff': 3.5,
                           'numOff': 2, 'sumOnR': 3.0, 'numOnR': 2})
