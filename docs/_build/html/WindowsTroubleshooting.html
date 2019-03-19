@@ -1,0 +1,252 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Windows-specific troubleshooting &mdash; PyHab v0.5 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> PyHab
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                v0.5
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Quickstart.html">Quickstart guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Builder.html">Builder</a></li>
+<li class="toctree-l1"><a class="reference internal" href="BasePyHabClass.html">PyHab Class (base)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="PrefLook.html">Preferential Looking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Reliability.html">Standalone Reliability</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">PyHab</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Windows-specific troubleshooting</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/WindowsTroubleshooting.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="windows-specific-troubleshooting">
+<h1>Windows-specific troubleshooting<a class="headerlink" href="#windows-specific-troubleshooting" title="Permalink to this headline">¶</a></h1>
+<p>There are a couple of issues you may run into on Windows specifically, but they all have relatively straightforward solutions.</p>
+<dl class="docutils">
+<dt>Universal suggestions::</dt>
+<dd><p class="first">Always run PsychoPy as an administrator. Otherwise you may get “permissions errors” whenever it tries to do anything, but especially when it tries to save files.</p>
+<p>You can set PsychoPy to always run as administrator by right-clicking on the program icon and going into its properties.</p>
+<p class="last">Running PyHab off a network drive is not recommended. Some labs have reported that even when running as administrator, it will not save files correctly if it is not running from a local drive.</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="problems-playing-movies">
+<h1>Problems playing movies<a class="headerlink" href="#problems-playing-movies" title="Permalink to this headline">¶</a></h1>
+<p>There are two major classes of errors you are likely to run into:</p>
+<dl class="docutils">
+<dt>Problem #1: Crashes on “Loading Movies” with errors that mention “Memory” or “Overflow”, or no error messages at all. This means you don’t have enough RAM for the movies you are trying to play::</dt>
+<dd><p class="first">Explanation: The way PsychoPy plays media on Windows is extraordinarily inefficient, for some reason. Even if you have a lot of RAM, long experiments with long movie files can sometimes exceed your computer’s capacity.</p>
+<p class="last">Try re-encoding your movies in different formats that are more memory efficient (h.264, MPEG-4), making them lower-resolution, or cutting down their framerate.</p>
+</dd>
+<dt>Problem #2: Crashes on “Loading Movies” with errors that include “imageio.core.fetching.NeedDownloadError: Need ffmpeg exe.”::</dt>
+<dd><p class="first">Explanation: This is a codec which needs to be install into PsychoPy directly, but it can be done from the coder interface relatively easily and only needs to be done once per computer.</p>
+<ol class="last arabic">
+<li><p class="first">Make sure you are running PsychoPy as an administrator.</p>
+</li>
+<li><dl class="first docutils">
+<dt>In the lower part of the PsychoPy coder window, there are two tabs, “Output” and “Shell”. Click “Shell” and you should see something like this:</dt>
+<dd><img alt="_images/ShellTab.png" class="first last" src="_images/ShellTab.png" />
+</dd>
+</dl>
+</li>
+<li><p class="first">At the &gt;&gt;&gt;, type (without quotes): “import imageio” and hit return.</p>
+</li>
+<li><p class="first">At the &gt;&gt;&gt;, type (without quotes) “imageio.plugins.ffmpeg.download()” and hit return. This will cause a bunch of text to appear. Let it do its thing, it may take a few seconds.</p>
+</li>
+<li><p class="first">When it gets back to the &gt;&gt;&gt; prompt, go back to the “Output” tab, and then try running the experiment again. It should now work. If not, it failed to install the codec, and you’ll need to try the above steps again (make sure the commands are entered properly, and if it gives you a “permissions error”, make sure you are running as an administrator).</p>
+</li>
+</ol>
+</dd>
+</dl>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Jonathan F. Kominsky.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'v0.5',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  <script type="text/javascript" src="_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

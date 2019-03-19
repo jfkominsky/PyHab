@@ -17,7 +17,6 @@ class PyHabBuilder:
     Changed how stimuli are added to experiment - you now create a "stim library" and separately associate items in it
     with different trial types.
 
-    TODO: Add the ability to remove stimuli once added. Nonessential.
     TODO: Option for habituation over whole meta-trials not just the "hab" portion
     """
     def __init__(self, loadedSaved=False, settingsDict={}):
@@ -30,11 +29,10 @@ class PyHabBuilder:
         """
 
         self.loadSave = loadedSaved #For easy reference elsewhere
+        self.dirMarker = os.sep
         if os.name is 'posix': #glorious simplicity of unix filesystem
-            self.dirMarker = '/'
             otherOS = '\\'
         elif os.name is 'nt': #Nonsensical Windows-based contrarianism
-            self.dirMarker = '\\'
             otherOS = '/'
         #The base window
         width = 1080
@@ -136,8 +134,12 @@ class PyHabBuilder:
             for i in evalList:
                 self.settings[i] = eval(self.settings[i])
                 if i in ['stimList','attnGetterList']:
-                    for [i,j] in self.settings[i].items():
-                        j['stimLoc'] = ''.join([self.dirMarker if x == otherOS else x for x in j['stimLoc']])
+                    for [q,j] in self.settings[i].items():
+                        try:
+                            j['stimLoc'] = ''.join([self.dirMarker if x == otherOS else x for x in j['stimLoc']])
+                        except KeyError: # For image/audio pairs
+                            j['audioLoc'] = ''.join([self.dirMarker if x == otherOS else x for x in j['audioLoc']])
+                            j['imageLoc'] = ''.join([self.dirMarker if x == otherOS else x for x in j['imageLoc']])
             # Backwards compatibility for ISI
             if type(self.settings['ISI']) is not dict:
                 tempISI = {}
@@ -172,6 +174,7 @@ class PyHabBuilder:
         self.allDataColumns = ['sNum', 'months', 'days', 'sex', 'cond','condLabel', 'trial','GNG','trialType','stimName','habCrit','sumOnA','numOnA','sumOffA','numOffA','sumOnB','numOnB','sumOffB','numOffB']
         self.allDataColumnsPL = ['sNum', 'months', 'days', 'sex', 'cond','condLabel','trial','GNG','trialType','stimName','habCrit', 'sumOnL','numOnL','sumOnR','numOnR','sumOff','numOff']
         self.stimSource={}  # A list of the source folder(s) for each stimulus file, a dict where each key is the filename in stimNames?
+        self.delList=[] # A list of stimuli to delete if they are removed from the experiment library.
         self.allDone=False
         # Various main UI buttons, put into a dict of lists for easy looping through.
         self.buttonList={'shapes':[],'text':[],'functions':[]}#Yes, python means we can put the functions in there too.
@@ -247,7 +250,7 @@ class PyHabBuilder:
         self.buttonList['functions'].append(self.attnGetterDlg)
 
         stimLibraryButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect), pos=[.25, -.6], fillColor = "white")
-        stimLibraryText = visual.TextStim(self.win, text="Add stimuli \nto experiment library",color="black",height=stimLibraryButton.height*.3,alignHoriz='center', pos=stimLibraryButton.pos)
+        stimLibraryText = visual.TextStim(self.win, text="Add/remove stimuli \nto/from exp. library",color="black",height=stimLibraryButton.height*.3,alignHoriz='center', pos=stimLibraryButton.pos)
         self.buttonList['shapes'].append(stimLibraryButton)
         self.buttonList['text'].append(stimLibraryText)
         self.buttonList['functions'].append(self.addStimToLibraryDlg)
@@ -620,6 +623,8 @@ class PyHabBuilder:
         6/-2 = Use sub-block structure?
 
         7/-1 = Number of trial types in sub-block, including hab
+
+        TODO: Compute hab over whole thing versus just 'hab' trial.
 
 
         :return:
@@ -1192,78 +1197,144 @@ class PyHabBuilder:
         Works a bit like the attention-getter construction dialogs, but different in that it allows audio or images alone.
         The image/audio pairs are complicated, but not worth splitting into their own function at this time.
 
+        :return:
+        :rtype:
+        """
+        add = 1
+        if len(self.settings['stimList'].keys())>0:
+            sDlg0 = gui.Dlg(title="Add/remove stimuli")
+            sDlg0.addField("Add or remove stimuli?", choices=['Add','Remove'])
+            sd0 = sDlg0.show()
+            if sDlg0.OK and sd0[0] == 'Remove':
+                add = -1
+            elif sDlg0.OK:
+                add = 1
+            else:
+                add = 0
+        if add == 1:
+            cz = ['Movie', 'Image', 'Audio', 'Image with audio']
+            sDlg1 = gui.Dlg(title="Add stimuli to library, step 1")
+            sDlg1.addField("What kind of stimuli would you like to add? (Please add each type separately)", choices=cz)
+            sDlg1.addField("How many? (For image with audio, how many pairs?) You will select them one at a time.", 1)
+            sd1 = sDlg1.show()
+            allowedStrings = {'Audio': "Audio (*.aac, *.aiff, *.flac, *.m4a, *.mp3, *.ogg, *.raw, *.wav, *.m4b, *.m4p)",
+                              'Movie': "Movies (*.mov, *.avi, *.ogv, *.mkv, *.mp4, *.mpeg, *.mpe, *.mpg, *.dv, *.wmv, *.3gp)",
+                              'Image': "Images (*.jpg, *.jpeg, *.png, *.gif, *.bmp, *.tif, *.tiff)"}
+            if sDlg1.OK and isinstance(sd1[1],int):
+                stType = sd1[0]  # Type of stimuli (from drop-down).
+                stNum = sd1[1]  # Number to add.
+                NoneType = type(None)
+                if stType != 'Image with audio':  # Image w/ audio is complicated, so we will take care of that separately.
+                    for i in range(0, stNum):
+                        stimDlg = gui.fileOpenDlg(prompt="Select stimulus file (only one!)")
+                        if type(stimDlg) is not NoneType:
+                            fileName = os.path.split(stimDlg[0])[1] # Gets the file name in isolation.
+                            self.stimSource[fileName] = stimDlg[0]  # Creates a "Find this file" path for the save function.
+                            self.settings['stimList'][fileName] = {'stimType': stType, 'stimLoc': stimDlg[0]}
+                else:  # Creating image/audio pairs is more complicated.
+                    for i in range(0, stNum):
+                        stimDlg1 = gui.Dlg(title="Pair number " + str(i+1))
+                        stimDlg1.addField("Unique name for this stimulus pair (you will use this to add it to trials later)", 'pairName')
+                        stimDlg1.addText("Click OK to select the AUDIO file for this pair")
+                        sd2 = stimDlg1.show()
+                        if stimDlg1.OK:
+                            a = True
+                            if sd2[0] in list(self.settings['stimList'].keys()):  # If the pair name exists already
+                                a = False
+                                errDlg = gui.Dlg("Change existing pair?")
+                                errDlg.addText("Warning: Pair name already in use! Press OK to overwrite existing pair, or cancel to skip to next pair.")
+                                ea = errDlg.show()
+                                if errDlg.OK:
+                                    a = True
+                            if a:
+                                stimDlg = gui.fileOpenDlg(prompt="Select AUDIO file (only one!)")
+                                if type(stimDlg) is not NoneType:
+                                    fileName = os.path.split(stimDlg[0])[1] # Gets the file name in isolation.
+                                    self.stimSource[fileName] = stimDlg[0]  # Creates a "Find this file" path for the save function.
+                                    self.settings['stimList'][sd2[0]] = {'stimType': stType, 'audioLoc': stimDlg[0]}
+                                    tempDlg = gui.Dlg(title="Now select image")
+                                    tempDlg.addText("Now, select the IMAGE file for this pair (cancel to erase audio and skip pair)")
+                                    t = tempDlg.show()
+                                    if tempDlg.OK:
+                                        stimDlg2 = gui.fileOpenDlg(prompt="Select IMAGE file (only one!)")
+                                        if type(stimDlg2) is not NoneType:
+                                            fileName2 = os.path.split(stimDlg2[0])[1] # Gets the file name in isolation.
+                                            self.stimSource[fileName2] = stimDlg2[0]
+                                            self.settings['stimList'][sd2[0]].update({'imageLoc': stimDlg2[0]})
+                                    else:
+                                        del self.settings['stimList'][sd2[0]]
+
+            elif sDlg1.OK:
+                errDlg = gui.Dlg(title="Warning, invalid value!")
+                errDlg.addText("Number of files to add was not a whole number! Please try again.")
+                e = errDlg.show()
+            # When we are done with this dialog, if we have actually added anything, create the "add to types" dlg.
+            if len(list(self.settings['stimList'].keys())) > 0 and self.addStimToTypesDlg not in self.buttonList['functions']:
+                addMovButton = visual.Rect(self.win, width=.3, height=.5 * (.2 / self.aspect), pos=[.75, -.6],
+                                           fillColor="white")
+                addMovText = visual.TextStim(self.win, text="Add stimulus files \nto trial types", color="black",
+                                             height=addMovButton.height * .3, alignHoriz='center', pos=addMovButton.pos)
+                self.buttonList['shapes'].append(addMovButton)
+                self.buttonList['text'].append(addMovText)
+                self.buttonList['functions'].append(self.addStimToTypesDlg)
+
+        elif add == -1: # Remove stimuli from library
+            self.removeStimFromLibrary()
+
+    def removeStimFromLibrary(self):
+        """
+        Presents a dialog listing every item of stimuli in the study library. Allows you to remove any number at once,
+        removes from all trial types at same time. Deletes from stimuli folder on save if extant.
+
 
         :return:
         :rtype:
         """
-        cz = ['Movie', 'Image', 'Audio', 'Image with audio']
-        sDlg1 = gui.Dlg(title="Add stimuli to library, step 1")
-        sDlg1.addField("What kind of stimuli would you like to add? (Please add each type separately)", choices=cz)
-        sDlg1.addField("How many? (For image with audio, how many pairs?) You will select them one at a time.", 1)
-        sd1 = sDlg1.show()
-        allowedStrings = {'Audio': "Audio (*.aac, *.aiff, *.flac, *.m4a, *.mp3, *.ogg, *.raw, *.wav, *.m4b, *.m4p)",
-                          'Movie': "Movies (*.mov, *.avi, *.ogv, *.mkv, *.mp4, *.mpeg, *.mpe, *.mpg, *.dv, *.wmv, *.3gp)",
-                          'Image': "Images (*.jpg, *.jpeg, *.png, *.gif, *.bmp, *.tif, *.tiff)"}
-        if sDlg1.OK and isinstance(sd1[1],int):
-            stType = sd1[0]  # Type of stimuli (from drop-down).
-            stNum = sd1[1]  # Number to add.
-            NoneType = type(None)
-            if stType != 'Image with audio':  # Image w/ audio is complicated, so we will take care of that separately.
-                for i in range(0, stNum):
-                    stimDlg = gui.fileOpenDlg(prompt="Select stimulus file (only one!)")
-                    if type(stimDlg) is not NoneType:
-                        fileIndex = stimDlg[0].rfind(self.dirMarker) + 1  # Finds last instance of / or \
-                        fileName = stimDlg[0][fileIndex:]  # Gets the file name in isolation.
-                        self.stimSource[fileName] = stimDlg[0]  # Creates a "Find this file" path for the save function.
-                        self.settings['stimList'][fileName] = {'stimType': stType, 'stimLoc': stimDlg[0]}
-            else:  # Creating image/audio pairs is more complicated.
-                for i in range(0, stNum):
-                    stimDlg1 = gui.Dlg(title="Pair number " + str(i+1))
-                    stimDlg1.addField("Unique name for this stimulus pair (you will use this to add it to trials later)", 'pairName')
-                    stimDlg1.addText("Click OK to select the AUDIO file for this pair")
-                    sd2 = stimDlg1.show()
-                    if stimDlg1.OK:
-                        a = True
-                        if sd2[0] in list(self.settings['stimList'].keys()):  # If the pair name exists already
-                            a = False
-                            errDlg = gui.Dlg("Change existing pair?")
-                            errDlg.addText("Warning: Pair name already in use! Press OK to overwrite existing pair, or cancel to skip to next pair.")
-                            ea = errDlg.show()
-                            if errDlg.OK:
-                                a = True
-                        if a:
-                            stimDlg = gui.fileOpenDlg(prompt="Select AUDIO file (only one!)")
-                            if type(stimDlg) is not NoneType:
-                                fileIndex = stimDlg[0].rfind(self.dirMarker) + 1  # Finds last instance of / or \
-                                fileName = stimDlg[0][fileIndex:]  # Gets the file name in isolation.
-                                self.stimSource[fileName] = stimDlg[0]  # Creates a "Find this file" path for the save function.
-                                self.settings['stimList'][sd2[0]] = {'stimType': stType, 'audioLoc': stimDlg[0]}
-                                tempDlg = gui.Dlg(title="Now select image")
-                                tempDlg.addText("Now, select the IMAGE file for this pair (cancel to erase audio and skip pair)")
-                                t = tempDlg.show()
-                                if tempDlg.OK:
-                                    stimDlg2 = gui.fileOpenDlg(prompt="Select IMAGE file (only one!)")
-                                    if type(stimDlg2) is not NoneType:
-                                        fileIndex2 = stimDlg2[0].rfind(self.dirMarker) + 1  # Finds last instance of / or \
-                                        fileName2 = stimDlg2[0][fileIndex2:]  # Gets the file name in isolation.
-                                        self.stimSource[fileName2] = stimDlg2[0]
-                                        self.settings['stimList'][sd2[0]].update({'imageLoc': stimDlg2[0]})
-                                else:
-                                    del self.settings['stimList'][sd2[0]]
 
-        elif sDlg1.OK:
-            errDlg = gui.Dlg(title="Warning, invalid value!")
-            errDlg.addText("Number of files to add was not a whole number! Please try again.")
-            e = errDlg.show()
-        # When we are done with this dialog, if we have actually added anything, create the "add to types" dlg.
-        if len(list(self.settings['stimList'].keys())) > 0 and self.addStimToTypesDlg not in self.buttonList['functions']:
-            addMovButton = visual.Rect(self.win, width=.3, height=.5 * (.2 / self.aspect), pos=[.75, -.6],
-                                       fillColor="white")
-            addMovText = visual.TextStim(self.win, text="Add stimulus files \nto trial types", color="black",
-                                         height=addMovButton.height * .3, alignHoriz='center', pos=addMovButton.pos)
-            self.buttonList['shapes'].append(addMovButton)
-            self.buttonList['text'].append(addMovText)
-            self.buttonList['functions'].append(self.addStimToTypesDlg)
+        #Use self.folderpath to see if there's an extant save that needs to be updated.
+
+        remDlg = gui.Dlg("Remove stimuli from library")
+        orderList = []
+        remDlg.addText("Uncheck any stimuli you want to remove. NOTE: This will remove stimuli from trial types as well.")
+        for i in self.settings['stimList'].keys():
+            remDlg.addField(i, initial=True)
+            orderList.append(i) # Neccessary because dicts are un-ordered.
+
+        remList=remDlg.show()
+
+        if remDlg.OK:
+            for j in range(0,len(remList)):
+                if not remList[j]:
+                    toRemove = orderList[j]
+                    #Things to remove it from: stimlist, stimsource, stimNames(if assigned to trial types). Doesn't apply to attngetter, has its own system.
+                    if self.settings['stimList'][toRemove]['stimType'] != 'Image with audio':
+                        self.delList.append(toRemove)
+                        if toRemove in self.stimSource.keys():
+                            try:
+                                del self.stimSource[toRemove]
+                            except:
+                                print("Could not remove from stimSource!")
+                    else:
+                        #If it's an image/audio pair, need to append both files.
+                        tempAname = os.path.split(self.settings['stimList'][toRemove]['audioLoc'])[1]
+                        tempIname = os.path.split(self.settings['stimList'][toRemove]['imageLoc'])[1]
+                        self.delList.append(tempAname)
+                        self.delList.append(tempIname)
+                        if tempAname in self.stimSource.keys():
+                            try:
+                                del self.stimSource[tempAname]
+                                del self.stimSource[tempIname]
+                            except:
+                                print("Could not remove from stimSource!")
+
+                    try:
+                        del self.settings['stimList'][toRemove]
+                    except:
+                        print("Could not remove from stimList!")
+                    for q in self.settings['stimNames'].keys(): # Remove from trial types it has been assigned to.
+                        self.settings['stimNames'][q] = [x for x in self.settings['stimNames'][q] if x != toRemove]
+
+
 
 
 
@@ -2000,22 +2071,40 @@ class PyHabBuilder:
         :return:
         :rtype:
         """
-        NoneType = type(None)
-        sDlg = gui.fileSaveDlg(initFilePath=os.getcwd(), initFileName=self.settings['prefix'], prompt="Name a folder to save study into")
-        if type(sDlg) is not NoneType:
-            self.settings['folderPath'] = sDlg+self.dirMarker #Makes a folder of w/e they entered
-            #If there is no pre-selected prefix, make the prefix the folder name!
-            if self.settings['prefix'] == "PyHabExperiment":
-                self.settings['prefix'] = os.path.split(sDlg)[1]
-            self.folderPath=self.settings['folderPath']
-            #Add save button if it does not exist.
-            if self.saveEverything not in self.buttonList['functions']:
-                saveButton = visual.Rect(self.win,width=.15, height=.67*(.15/self.aspect), pos=[-.52,-.9],fillColor="green")
-                saveText = visual.TextStim(self.win, text="SAVE",color="black",height=saveButton.height*.5, pos=saveButton.pos)
-                self.buttonList['shapes'].append(saveButton)
-                self.buttonList['text'].append(saveText)
-                self.buttonList['functions'].append(self.saveEverything)
-            self.saveEverything()
+        go = True
+        if len(self.settings['trialOrder']) == 0:
+            warnDlg = gui.Dlg("Warning: No trials in study flow!")
+            warnDlg.addText("You haven't added any trials to the study flow yet! You won't be able to run this experiment.")
+            warnDlg.addText("Hit 'OK' to save anyways (you can add trials later and save then) or cancel to go back.")
+            warnDlg.show()
+            if not warnDlg.OK:
+                go = False
+        if go:
+            NoneType = type(None)
+            if len(self.folderPath) > 0:
+                for i,j in self.settings['stimList'].items():
+                    if self.settings['stimList'][i]['stimType'] != 'Image with audio':
+                       self.stimSource[i] = j['stimLoc'] # Re-initializes the stimSource dict to incorporate both existing and new stim.
+                    else:
+                        tempAname = os.path.split(j['audioLoc'])[1]
+                        tempIname = os.path.split(j['imageLoc'])[1]
+                        self.stimSource[tempAname] = j['audioLoc']
+                        self.stimSource[tempIname] = j['imageLoc']
+            sDlg = gui.fileSaveDlg(initFilePath=os.getcwd(), initFileName=self.settings['prefix'], prompt="Name a folder to save study into", allowed="")
+            if type(sDlg) is not NoneType:
+                self.settings['folderPath'] = sDlg + self.dirMarker #Makes a folder of w/e they entered
+                #If there is no pre-selected prefix, make the prefix the folder name!
+                if self.settings['prefix'] == "PyHabExperiment":
+                    self.settings['prefix'] = os.path.split(sDlg)[1]
+                self.folderPath=self.settings['folderPath']
+                #Add save button if it does not exist.
+                if self.saveEverything not in self.buttonList['functions']:
+                    saveButton = visual.Rect(self.win,width=.15, height=.67*(.15/self.aspect), pos=[-.52,-.9],fillColor="green")
+                    saveText = visual.TextStim(self.win, text="SAVE",color="black",height=saveButton.height*.5, pos=saveButton.pos)
+                    self.buttonList['shapes'].append(saveButton)
+                    self.buttonList['text'].append(saveText)
+                    self.buttonList['functions'].append(self.saveEverything)
+                self.saveEverything()
     
     def saveEverything(self):
         """
@@ -2054,18 +2143,20 @@ class PyHabBuilder:
                 try:
                     targPath = stimPath + i
                     shutil.copyfile(j, targPath)
+                except:
+                    success = False
+                    print('Could not copy file ' + j + ' to location ' + targPath + '. Make sure both exist!')
+                if success:
                     for q, r in self.settings['stimList'].items():
                         if r['stimType'] != 'Image with audio':
                             if q == i:  # For movies, images, or audio in isolation, the keys match.
                                 r['stimLoc'] = 'stimuli' + self.dirMarker + q
                         else:  # Here we have to look at the file paths themselves
-                            if r['audioLoc'] == j:
-                                r['audioLoc'] = 'stimuli' + self.dirMarker + i
-                            elif r['imageLoc'] == j:
-                                r['imageLoc'] = 'stimuli' + self.dirMarker + i
-                except:
-                    success = False
-                    print('Could not copy file ' + j + '. Make sure it exists!')
+                            if os.path.split(r['audioLoc'])[1] == i:
+                                r['audioLoc'] = 'stimuli' + self.dirMarker + os.path.split(j)[1]
+                            elif os.path.split(r['imageLoc'])[1] == i:
+                                r['imageLoc'] = 'stimuli' + self.dirMarker + os.path.split(j)[1]
+
         if len(list(self.settings['attnGetterList'].keys())) > 0:  # This should virtually always be true b/c default attngetter.
             for i, j in self.settings['attnGetterList'].items():
                 try:
@@ -2077,12 +2168,23 @@ class PyHabBuilder:
                         j['stimLoc'] = 'stimuli' + self.dirMarker + 'attnGetters' + self.dirMarker + j['stimName']
                 except:
                     success = False
-                    print('Could not copy file ' + j['stimLoc'] + '. Make sure it exists!')
-
+                    print('Could not copy attention-getter file ' + j['stimLoc'] + ' to location ' +  targPath + '. Make sure both exist!')
         if not success:
             errDlg = gui.Dlg(title="Could not copy stimuli!")
             errDlg.addText("Some stimuli could not be copied successfully. See the output of the coder window for details.")
             errDlg.show()
+        # Delete any removed stimuli
+        if len(self.delList) > 0:
+            for i in range(0, len(self.delList)):
+                delStimPath = os.path.join(stimPath, self.delList[i])
+                if os.path.exists(delStimPath):
+                    try:
+                        os.remove(delStimPath)
+                    except:
+                        print("Could not remove stimuli " + delStimPath + " from experiment folder.")
+                else:
+                    print("Stimuli " + delStimPath + " does not exist to be removed!")
+            self.delList = []
         # create/overwrite the settings csv.
         settingsPath = self.folderPath+self.settings['prefix']+'Settings.csv'
         with open(settingsPath,'w') as so: # this is theoretically safer than the "close" system.
@@ -2120,7 +2222,14 @@ class PyHabBuilder:
         if not os.path.exists(launcherPath):
             try:
                 # the location of the pyHabLauncher template file
-                launcherSource = srcDir+'PyHab Launcher.py'
+                if os.path.exists(srcDir+'PyHab Launcher.py'):
+                    launcherSource = srcDir+'PyHab Launcher.py'
+                else:
+                    # It'll end in launcher.py. So need to find a file in the working directory with the last 11 characters 'Launcher.py'
+                    fileList = os.listdir()
+                    for i in range(0, len(fileList)):
+                        if fileList[i][-11:] == 'Launcher.py':
+                            launcherSource = fileList[i]
                 # Open file and find line 5, aka the path to the settings file, replace it appropriately
                 with open(launcherSource,'r') as file:
                     launcherFile = file.readlines()
@@ -2136,6 +2245,10 @@ class PyHabBuilder:
                 errDlg.show()
                 success=False
                 print('creating launcher script failed!')
+                if len(launcherSource) == 0:
+                    print('Could not find launcher template file!')
+                else:
+                    print('Found launcher template, still could not save launcher script')
         if success:
             saveSuccessDlg = gui.Dlg(title="Experiment saved!")
             saveSuccessDlg.addText("Experiment saved successfully to" + self.folderPath)
