@@ -624,6 +624,8 @@ class PyHabBuilder:
 
         7/-1 = Number of trial types in sub-block, including hab
 
+        TODO: Compute hab over whole thing versus just 'hab' trial.
+
 
         :return:
         :rtype:
@@ -2081,7 +2083,7 @@ class PyHabBuilder:
             NoneType = type(None)
             if len(self.folderPath) > 0:
                 for i,j in self.settings['stimList'].items():
-                    if self.settings['stimList']['stimType'] != 'Image with audio':
+                    if self.settings['stimList'][i]['stimType'] != 'Image with audio':
                        self.stimSource[i] = j['stimLoc'] # Re-initializes the stimSource dict to incorporate both existing and new stim.
                     else:
                         tempAname = os.path.split(j['audioLoc'])[1]

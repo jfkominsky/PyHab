@@ -345,6 +345,8 @@ class PyHab:
         Also responsible for setting the habituation criteria according to settings.
         Prior to any criteria being set, self.HabCrit is 0. We can use this as a check whether it has been set.
 
+        TODO: Hab over sub-trials versus just the 'Hab' trial type. This requires some kind of tagging for hab sub-trials.
+
         :return: True if hab criteria have been met, False otherwise
         :rtype:
         """
@@ -1729,7 +1731,7 @@ class PyHab:
                 ageDif = relativedelta(DOT, DOB)
                 self.ageMo = ageDif.years * 12 + ageDif.months
                 self.ageDay = ageDif.days  # Impossibly simple, but it works.
-                self.actualTrialOrder = []  # in this version, mostly a key for the hab trials.
+                self.actualTrialOrder = []  # in this version, mostly a key for the hab trials. #TODO: see if we can flag hab sub-trials somehow
                 for i in range(0, len(self.trialOrder)):
                     if self.trialOrder[i] == 'Hab':
                         for j in range(0, self.maxHabTrials):

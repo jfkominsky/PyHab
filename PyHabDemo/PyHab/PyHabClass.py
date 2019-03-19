@@ -1,7 +1,7 @@
 import os, sys
 from psychopy import gui, visual, event, core, data, monitors, tools, prefs, logging
 from psychopy.constants import (STARTED, PLAYING)  # Added for new stimulus types
-prefs.general['audioLib'] = ['sounddevice']
+prefs.hardware['audioLib'] = ['sounddevice']
 if os.name is 'posix':
     prefs.general['audioDevice'] = ['Built-in Output']
 from psychopy import sound
@@ -242,7 +242,7 @@ class PyHab:
                 sumOff2 = sumOff2 + offArray2[j]['duration']
             self.verbBadList['verboseOn2'].extend(onArray2)
             self.verbBadList['verboseOff2'].extend(offArray2)
-        tempData = {'sNum': self.sNum, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex, 'cond': self.cond,
+        tempData = {'sNum': self.sNum, 'sID':self.sID, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex, 'cond': self.cond,
                     'condLabel': self.condLabel,'trial': trial, 'GNG': 0, 'trialType': ttype, 'stimName': stimName,
                     'habCrit': self.habCrit, 'sumOnA': sumOn, 'numOnA': len(onArray), 'sumOffA': sumOff,
                     'numOffA': len(offArray), 'sumOnB': sumOn2, 'numOnB': len(onArray2), 'sumOffB': sumOff2,
@@ -289,7 +289,7 @@ class PyHab:
         # add to verbose master gaze array
         self.verbDatList['verboseOn'].extend(onArray)
         self.verbDatList['verboseOff'].extend(offArray)
-        tempData = {'sNum': self.sNum, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex, 'cond': self.cond,
+        tempData = {'sNum': self.sNum, 'sID': self.sID, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex, 'cond': self.cond,
                     'condLabel': self.condLabel, 'trial': trial, 'GNG': 1, 'trialType': type, 'stimName': stimName,
                     'habCrit': self.habCrit, 'sumOnA': sumOn, 'numOnA': len(onArray), 'sumOffA': sumOff,
                     'numOffA': len(offArray), 'sumOnB': sumOn2, 'numOnB': len(onArray2), 'sumOffB': sumOff2,
@@ -344,6 +344,8 @@ class PyHab:
         After a hab trial, checks the habitution criteria and returns 'true' if any of them are met.
         Also responsible for setting the habituation criteria according to settings.
         Prior to any criteria being set, self.HabCrit is 0. We can use this as a check whether it has been set.
+
+        TODO: Hab over sub-trials versus just the 'Hab' trial type. This requires some kind of tagging for hab sub-trials.
 
         :return: True if hab criteria have been met, False otherwise
         :rtype:
@@ -596,7 +598,7 @@ class PyHab:
             self.frameCount += 1
             self.win.flip()
             return 0
-        elif dispMovie.getCurrentFrameTime() >= dispMovie.duration - .05 and self.pauseCount < self.ISI[trialType] * 60:  # pause, check for ISI.
+        elif dispMovie.getCurrentFrameTime() >= dispMovie.duration - dispMovie._frameInterval*2 and self.pauseCount < self.ISI[trialType] * 60:  # pause, check for ISI.
             self.dummyThing.draw()
             dispMovie.pause()
             dispMovie.draw()  # might want to have it vanish rather than leave it on the screen for the ISI, in which case comment out this line.
@@ -604,7 +606,7 @@ class PyHab:
             self.pauseCount += 1
             self.win.flip() # TODO: Goes blank if ISI is long enough. Pyglet problem.
             return 1
-        elif dispMovie.getCurrentFrameTime() >= dispMovie.duration - .05 and self.pauseCount >= self.ISI[trialType] * 60:  # MovieStim's Loop functionality can't do an ISI
+        elif dispMovie.getCurrentFrameTime() >= dispMovie.duration - dispMovie._frameInterval*2 and self.pauseCount >= self.ISI[trialType] * 60:  # MovieStim's Loop functionality can't do an ISI
             self.dummyThing.draw()
             # print('repeating at ' + str(dispMovie.getCurrentFrameTime()))
             self.frameCount = 0  # changed to 0 to better enable studies that want to blank between trials
@@ -875,11 +877,13 @@ class PyHab:
                 if self.keyboard[self.key.Y]:
                     end = True
                 elif self.keyboard[self.key.R] and not didRedo:
-                    if self.counters[trialType] > 0:
-                        self.counters[trialType] -= 1
+                    if self.stimPres:
+                        if self.counters[trialType] > 0:
+                            self.counters[trialType] -= 1
                     [disMovie,trialNum] = self.redoSetup(trialNum, AA) #This returns a new value for DisMovie and trialNum
-                    if disMovie['stimType'] == 'Movie':
-                        disMovie['stim'].loadMovie(disMovie['stim'].filename) # "Seek" causes audio bugs. This just reloads the movie. More memory load, but reliable.
+                    if self.stimPres:
+                        if disMovie['stimType'] == 'Movie':
+                            disMovie['stim'].loadMovie(disMovie['stim'].filename) # "Seek" causes audio bugs. This just reloads the movie. More memory load, but reliable.
                     trialType = self.actualTrialOrder[trialNum - 1]
                     didRedo = True
                 elif self.keyboard[self.key.J] and 'Hab' in self.actualTrialOrder[trialNum:]:  # jump to test in a hab design
@@ -917,13 +921,13 @@ class PyHab:
                         waitStart = True
                     else:
                         self.frameCount = 0
-                        waitStart = False
+                        waitStart = True
                 else:
                     if trialType in self.playAttnGetter:
                         core.wait(self.attnGetterList[self.playAttnGetter[trialType]]['stimDur'] + self.freezeFrame)  # an attempt to match the delay caused by the attention-getter playing.
                         waitStart = True
                     else:
-                        waitStart = False
+                        waitStart = True
                 while waitStart and trialType not in AA and not end:  # Wait for first gaze-on
                     if self.keyboard[self.key.Y]:  # End experiment right there and then.
                         end = True
@@ -959,7 +963,7 @@ class PyHab:
                         self.dispCoderWindow(0)
             if not end or skip: #If Y has not been pressed, do the trial! Otherwise, end the experiment.
                 x = self.doTrial(trialNum, trialType, disMovie)  # the actual trial, returning one of four status values at the end
-                AA = self.autoAdvance  # After the very first trial AA will always be whatever it was set to at the top.
+                AA = self.autoAdvance  # After the very first trial AA will always be just the autoadvance list.
             elif skip:
                 x = 0 # Simply proceed to next trial.
             else:
@@ -969,13 +973,14 @@ class PyHab:
                 didRedo = False
                 self.endExperiment()
             elif x == 3:  # bad trial, redo!
-                self.dummyThing.draw()
                 trialNum = trialNum
                 didRedo = True
-                self.win.flip() #Blank the screen.
-                self.counters[trialType] -= 1
-                if self.counters[trialType] < 0:
-                    self.counters[trialType] = 0
+                if self.stimPres:
+                    self.dummyThing.draw()
+                    self.win.flip() #Blank the screen.
+                    self.counters[trialType] -= 1
+                    if self.counters[trialType] < 0:
+                        self.counters[trialType] = 0
             elif x == 1:  # end hab block!
                 if len(self.habTrialList) > 0: # Now accounts for meta-trials in which hab is not the last one.
                     habs = [i for i, z in enumerate(self.actualTrialOrder) if z in self.habTrialList]
@@ -1285,9 +1290,9 @@ class PyHab:
         if len(self.badTrials) > 0:  # if there are any redos, they need to be shuffled in appropriately.
             for i in range(0, len(self.badTrials)):
                 x = 0
-                while self.dataMatrix[x]['trial'] != self.badTrials[i]['trial']:
+                while x < len(self.dataMatrix) and self.dataMatrix[x]['trial'] != self.badTrials[i]['trial']:
                     x += 1
-                while self.dataMatrix[x]['GNG'] == 0:  # this is to get around the possibility that the same trial had multiple 'false starts'
+                while  x < len(self.dataMatrix) and self.dataMatrix[x]['GNG'] == 0:  # this is to get around the possibility that the same trial had multiple 'false starts'
                     x += 1
                 self.dataMatrix.insert(x, self.badTrials[i])  # python makes this stupid easy
         nDupe = '' # This infrastructure eliminates the risk of overwriting existing data
@@ -1726,7 +1731,7 @@ class PyHab:
                 ageDif = relativedelta(DOT, DOB)
                 self.ageMo = ageDif.years * 12 + ageDif.months
                 self.ageDay = ageDif.days  # Impossibly simple, but it works.
-                self.actualTrialOrder = []  # in this version, mostly a key for the hab trials.
+                self.actualTrialOrder = []  # in this version, mostly a key for the hab trials. #TODO: see if we can flag hab sub-trials somehow
                 for i in range(0, len(self.trialOrder)):
                     if self.trialOrder[i] == 'Hab':
                         for j in range(0, self.maxHabTrials):

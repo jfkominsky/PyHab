@@ -624,6 +624,8 @@ class PyHabBuilder:
 
         7/-1 = Number of trial types in sub-block, including hab
 
+        TODO: Compute hab over whole thing versus just 'hab' trial.
+
 
         :return:
         :rtype:
