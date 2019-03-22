@@ -55,4 +55,4 @@ Running the demo or a pre-made PyHab experiment
 ManyBabies 4 setup
 ------------------
 
-If you are helping out with the ManyBabies 4 project, there is a `video guide to setting up the PyHab version of the ManyBabies 4 experiment <https://youtu.be/4GOnU2f1wks>`, as well as a `ManyBabies 4-specific text setup guide <https://bit.ly/2RyUzLo>`.
+If you are helping out with the ManyBabies 4 project, there is a `video guide to setting up the PyHab version of the ManyBabies 4 experiment <https://youtu.be/4GOnU2f1wks>`_, as well as a `ManyBabies 4-specific text setup guide <https://bit.ly/2RyUzLo>`_.
