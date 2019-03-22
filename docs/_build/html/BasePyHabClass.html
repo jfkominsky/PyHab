@@ -268,6 +268,7 @@ Separate settings for audio w/shape and video file attention-getters.</p>
 <dd><p>After a hab trial, checks the habitution criteria and returns ‘true’ if any of them are met.
 Also responsible for setting the habituation criteria according to settings.
 Prior to any criteria being set, self.HabCrit is 0. We can use this as a check whether it has been set.</p>
+<p>TODO: Hab over sub-trials versus just the ‘Hab’ trial type. This requires some kind of tagging for hab sub-trials.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -335,7 +336,7 @@ Prior to any criteria being set, self.HabCrit is 0. We can use this as a check w
 
 <dl class="method">
 <dt id="PyHab.PyHabClass.PyHab.dispAudioStim">
-<code class="descname">dispAudioStim</code><span class="sig-paren">(</span><em>dispAudio</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab.dispAudioStim" title="Permalink to this definition">¶</a></dt>
+<code class="descname">dispAudioStim</code><span class="sig-paren">(</span><em>trialType</em>, <em>dispAudio</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab.dispAudioStim" title="Permalink to this definition">¶</a></dt>
 <dd><p>For playing audio stimuli. A little more complicated than most because it needs to track whether the audio
 is playing or not. Audio plays separately from main thread.</p>
 <table class="docutils field-list" frame="void" rules="none">

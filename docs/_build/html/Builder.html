@@ -171,8 +171,7 @@ copies of all of the stimuli and attention-getters to a stimuli folder.</p>
 <p>Now supports different types of stimuli - Movies, images, audio, and images with audio.</p>
 <p>Changed how stimuli are added to experiment - you now create a “stim library” and separately associate items in it
 with different trial types.</p>
-<p>TODO: Add the ability to remove stimuli once added. Nonessential.
-TODO: Option for habituation over whole meta-trials not just the “hab” portion</p>
+<p>TODO: Option for habituation over whole meta-trials not just the “hab” portion</p>
 <dl class="method">
 <dt id="PyHab.PyHabBuilder.PyHabBuilder.addHabBlock">
 <code class="descname">addHabBlock</code><span class="sig-paren">(</span><em>makeNew=True</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.addHabBlock" title="Permalink to this definition">¶</a></dt>
@@ -187,6 +186,7 @@ It essentially needs to create a sub-flow.</p>
 <p>5/-3 = Inter-stimulus interval (ISI)</p>
 <p>6/-2 = Use sub-block structure?</p>
 <p>7/-1 = Number of trial types in sub-block, including hab</p>
+<p>TODO: Compute hab over whole thing versus just ‘hab’ trial.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -514,6 +514,23 @@ Resets if the experiment type is switched to or from preferential looking.</p>
 <dt id="PyHab.PyHabBuilder.PyHabBuilder.quitFunc">
 <code class="descname">quitFunc</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.quitFunc" title="Permalink to this definition">¶</a></dt>
 <dd><p>Simple function for quitting, checks if you want to save first (if there’s anything to save).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabBuilder.PyHabBuilder.removeStimFromLibrary">
+<code class="descname">removeStimFromLibrary</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.removeStimFromLibrary" title="Permalink to this definition">¶</a></dt>
+<dd><p>Presents a dialog listing every item of stimuli in the study library. Allows you to remove any number at once,
+removes from all trial types at same time. Deletes from stimuli folder on save if extant.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
