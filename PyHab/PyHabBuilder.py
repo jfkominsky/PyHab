@@ -2009,7 +2009,7 @@ class PyHabBuilder:
         windowtypes = ['First', 'Peak', 'Max', 'Threshold']
         winchz = [x for x in windowtypes if x != lastSet[3]]
         winchz.insert(0, lastSet[3])
-        if lastSet[6] == 'Fixed':
+        if lastSet[-1] == 'Fixed':
             evalChz = ['Fixed','Moving']
         else:
             evalChz = ['Moving', 'Fixed']
