@@ -1644,13 +1644,13 @@ class PyHabBuilder:
             self.settings['condList'] = condLabels
             numPages = ceil(float(len(self.settings['condList']))/4) #use math.ceil to round up.
             
-        elif len(self.condDict) > 0: #If we already have something to build on
-            numPages = ceil(float(len(self.condDict.keys()))/4) #use math.ceil to round up.
+        elif len(self.condDict) > 0:  # If we already have something to build on
+            numPages = ceil(float(len(self.condDict.keys()))/4)  # use math.ceil to round up.
             for i in range(0, len(self.settings['condList'])):
                 if self.settings['condList'][i] in self.condDict.keys():
                     condContent.append(self.condDict[self.settings['condList'][i]])
                 else:
-                    condContent.append({ })
+                    condContent.append({})
         doneButton = visual.Rect(self.win, width=.25, height=.67*(.15/self.aspect),fillColor="green",pos=[.82,-.85])
         doneText = visual.TextStim(self.win, text="DONE", bold=True, pos=doneButton.pos)
         addCondButton = visual.Rect(self.win, width=.3, height=.67*(.15/self.aspect),fillColor="blue",pos=[-.82,-.85])
@@ -1727,6 +1727,8 @@ class PyHabBuilder:
                     nextPageArrow.draw()
                 if currPage > 1:
                     lastPageArrow.draw()
+                while currPage > numPages:
+                    currPage = currPage - 1  # BF: Deleting while looking at last page could yield empty page.
             for i in range(0, len(divLinesV)):
                 divLinesV[i].draw()
             for j in range(0, len(divLinesH)):
@@ -1783,7 +1785,7 @@ class PyHabBuilder:
                         pass
                     done = True
                     # Start this over...
-                    self.condMaker(rep=True,currPage=currPage)
+                    self.condMaker(rep=True, currPage=currPage)
                 if self.mouse.isPressedIn(randomCondsButton) and len(self.settings['condList'])>0:
                     if os.name is not 'posix':
                         while 1 in self.mouse.getPressed():
@@ -1817,7 +1819,7 @@ class PyHabBuilder:
         """
         One dialog per trial type. Each dialog has a list of all the movies in that type
         This is not intuitive under the hood. The output of this is a dict with a list of movies, in order, for each
-        trial type. This makes it slightly more human-intelligible than the previous system, which had a list of indexes.
+        trial type. This makes it slightly more human-intelligible than the previous system, which had a list of indexes
 
 
         :param cond: Condition name
@@ -1833,7 +1835,7 @@ class PyHabBuilder:
         condDinfo = condDlg2.show()
         if condDlg2.OK:
             condDinfo[0] = str(condDinfo[0])
-            if ex and condDinfo[0] != cond: # Renamed existing condition
+            if ex and condDinfo[0] != cond:  # Renamed existing condition
                 self.settings['condList'][self.settings['condList'].index(cond)] = condDinfo[0] 
                 if cond in self.condDict.keys():
                     self.condDict[condDinfo[0]] = self.condDict.pop(cond)
@@ -1844,7 +1846,7 @@ class PyHabBuilder:
                 tempType = self.trialTypesArray['labels'][i]
                 condTyDlg = gui.Dlg(title="Trial type " + tempType)
                 condTyDlg.addText("Enter order in which you want movies to appear. If you do not want a movie to appear in this condition, leave blank or put 0.")
-                if ex: #If there is an existing trial that we are modifying.
+                if ex:  # If there is an existing condition that we are modifying.
                     try:
                         movieOrder = self.condDict[cond][tempType]
                         for z in range(0, len(movieOrder)):
@@ -1854,34 +1856,44 @@ class PyHabBuilder:
                     except:
                         movieOrder = []
                         for k in range(0, len(self.settings['stimNames'][tempType])):
-                            movieOrder.append(self.settings['stimNames'][tempType][k]) #default order.
+                            movieOrder.append(self.settings['stimNames'][tempType][k])  # default order.
                 else:
                     movieOrder = []
                     for k in range(0, len(self.settings['stimNames'][tempType])):
-                        movieOrder.append(self.settings['stimNames'][tempType][k]) #default order.
-                for x in range(0, len(self.settings['stimNames'][tempType])): #Yeah we gotta loop it again.
+                        movieOrder.append(self.settings['stimNames'][tempType][k])  # default order.
+                for x in range(0, len(self.settings['stimNames'][tempType])):  # Yeah we gotta loop it again.
                     thisMov = self.settings['stimNames'][tempType][x]
-                    if thisMov in movieOrder: #If that movie appears in the movie order.
+                    if thisMov in movieOrder:  # If that movie appears in the movie order.
                         condTyDlg.addField(thisMov, movieOrder.index(thisMov)+1)
                     else:
                         condTyDlg.addField(thisMov)
                 condTyInfo = condTyDlg.show()
                 if condTyDlg.OK:
+                    stop = False
                     i += 1
                     # Now we need to reinterpret all that input ot make the output.
-                    # First, code all non-numbers or invalid numbers as 0
-                    condTyInfo = [0 if type(x) is not int or x <= 0 else x for x in condTyInfo] 
+                    # First, try converting everything to ints to make sure no foolishness is happening.
+                    for x in range(0,len(condTyInfo)):
+                        if type(condTyInfo[x]) is str and len(condTyInfo[x]) > 0:  # If they have put something where there was nothing
+                            try:
+                                condTyInfo[x] = int(condTyInfo[x])
+                            except:
+                                errDlg = gui.Dlg(title="Warning, invalid input!")
+                                errDlg.addText("Non-number entered, please use only numbers or leave blank.")
+                                i -= 1  # This is why our for loop became a while loop. So we could go back and fix things.
+                                irrel = errDlg.show()
+                                stop = True
+                    condTyInfo = [0 if type(x) is not int or x <= 0 else x for x in condTyInfo]
                     # Identify any doubles other than 0s, if so error msg and redo
                     maxNum = max(condTyInfo)
-                    stop = False
                     for q in range(1, maxNum+1):
-                        if condTyInfo.count(q) > 1:
+                        if condTyInfo.count(q) > 1 and not stop:
                             errDlg = gui.Dlg(title="Warning, invalid order!")
                             errDlg.addText("Order has a repeat of the same number. Please re-enter.")
-                            i -= 1 # This is why our for loop became a while loop.
+                            i -= 1  # This is why our for loop became a while loop. So we could go back and fix things.
                             irrel = errDlg.show()
                             stop = True
-                    if maxNum == 0:
+                    if maxNum == 0 and not stop:
                         errDlg = gui.Dlg(title="Warning, invalid order!")
                         errDlg.addText("No stimuli selected. Please re-enter")
                         i -= 1
