@@ -345,6 +345,9 @@ class PyHabBuilder:
             self.studyFlowArray['lines'][i].draw()
         for j in range(0,len(self.studyFlowArray['labels'])):
             self.studyFlowArray['shapes'][j].draw()
+            if self.studyFlowArray['labels'][j] == 'Hab' and len(self.studyFlowArray['extras'])>0:
+                for z in range(0,len(self.studyFlowArray['extras'])):
+                    self.studyFlowArray['extras'][z].draw()
             self.studyFlowArray['text'][j].draw()
         #Buttons for trial types, etc.
         self.paletteRect.draw() #Palette of trial types.
@@ -867,7 +870,7 @@ class PyHabBuilder:
         core.wait(.1)
 
     
-    def loadFlow(self):
+    def loadFlow(self, specNumItems=0):
         """
         This creates the array of objects in the study flow display
 
@@ -880,25 +883,37 @@ class PyHabBuilder:
         for i in range(0,len(tOrd)):
             if tOrd[i] == 'Hab':
                 numItems += 1 #Double-size for habs
-        outputDict = {'lines':[],'shapes':[],'text':[],'labels':[]}  #Labels allows us to index the others while still keeping order.
+        outputDict = {'lines':[],'shapes':[],'text':[],'labels':[], 'extras':[]}  #Labels allows us to index the others while still keeping order.
         j = 0 # This serves a purpose, trust me. It's for rendering hab blocks.
-        if len(tOrd) < 21:  # Past 20 we can't render it, but it won't crash.
+        if specNumItems > 0:
+            numItems = specNumItems  # Currently this deals with the edge of edge cases, a hab in position 20 looping into the second line.
+        if numItems < 21:  # Past 20 we can't render it, but it won't crash.
             flowSpace = self.flowLocs
         else:
             flowSpace = self.overFlowLocs
         for i in range(0, len(tOrd)):
             #Now, actually build the list of objects to render.
-            if i < 39 or (i == 39 and len(tOrd) == 40):
+            if j < 39 or (j == 39 and numItems == 40):
                 c=tTypes.index(tOrd[i]) # find the trial type, get color index
                 if tOrd[i] == 'Hab': # The special category
-                    if j+1 % 10 == 0 and j < 40:
+                    if j % 10 == 9:
                         j += 1 # Just in case we're at the point where it would loop around to the second row. We don't want that.
+                        if numItems == 20 or numItems == 39:  # Special case of breaking flowLocs limits.
+                            #TODO: BF if there are multiple hab blocks or if there are precisely 41 items when you have a line skip like this it doesn't count them correctly in the study flow interface.
+                            return self.loadFlow(specNumItems=numItems+1)
                     lx1 = flowSpace[j][0]
                     j += 1
                     lx2 = flowSpace[j][0]
                     lx = (lx2+lx1)/2 # Ideally putting it square in between the two places.
                     loc = [lx,flowSpace[j][1]]
                     tempObj = visual.Rect(self.win,width=self.flowWidthObj*2, height=self.flowHeightObj, fillColor=self.colorsArray[c], pos=loc)
+                    if len(self.settings['habTrialList']) > 1:  # If there are hab sub-trials, add pips to the hab block object
+                        for q in range(0, len(self.settings['habTrialList'])):
+                            newwidth = self.flowWidthObj/len(self.settings['habTrialList'])
+                            tempPip = visual.Rect(self.win, width=newwidth, height=self.flowHeightObj/2.5,
+                                                  fillColor=self.colorsArray[tTypes.index(self.settings['habTrialList'][q])],
+                                                  pos=[lx+newwidth*(q-(len(self.settings['habTrialList'])-1)/2), flowSpace[j][1]-self.flowHeightObj/2.25])
+                            outputDict['extras'].append(tempPip)
                 elif tOrd[i] in self.settings['autoAdvance'] and j not in [0, 10, 20, 30]:
                     # Make it adjacent to the last one, unless it would start a row, in which case leave it.
                     loc = [flowSpace[j][0]-abs(self.flowArea[1]-self.flowArea[0])*((self.flowGap-self.flowWidMult)/2), flowSpace[j][1]]
@@ -943,7 +958,7 @@ class PyHabBuilder:
             tempLine = visual.Line(self.win, start=self.overFlowLocs[0], end=self.overFlowLocs[9])
             tempLine2 = visual.Line(self.win, start=self.overFlowLocs[10], end=self.overFlowLocs[19])
             tempLine3 = visual.Line(self.win, start=self.overFlowLocs[20], end=self.overFlowLocs[29])
-            tempLine4 = visual.Line(self.win, start=self.overFlowLocs[30], end=outputDict['shapes'][38].pos)
+            tempLine4 = visual.Line(self.win, start=self.overFlowLocs[30], end=outputDict['shapes'][-1].pos)
             outputDict['lines'].append(tempLine)
             outputDict['lines'].append(tempLine2)
             outputDict['lines'].append(tempLine3)
@@ -1524,7 +1539,7 @@ class PyHabBuilder:
                     colorChz = [x for x in allColors if x is not currAG['color']]
                     colorChz.insert(0, currAG['color']) # A more elegant shuffle because the words match
                     aDlg2b.addField("Looming shape color", choices=colorChz)
-                ans2b = aDlg2b.show
+                ans2b = aDlg2b.show()
                 if aDlg2b.OK:
                     if ans2b[0] is not ans1[0]:  # Did they change the name?
                         self.settings['attnGetterList'][ans2b[0]] = self.settings['attnGetterList'].pop(ans1[0])
