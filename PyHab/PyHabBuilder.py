@@ -18,7 +18,6 @@ class PyHabBuilder:
     Changed how stimuli are added to experiment - you now create a "stim library" and separately associate items in it
     with different trial types.
 
-    TODO: Option for habituation over whole meta-trials not just the "hab" portion
     """
     def __init__(self, loadedSaved=False, settingsDict={}):
         """
@@ -101,6 +100,7 @@ class PyHabBuilder:
                                                         'metCritDivisor': '1.0',
                                                         'metCritStatic': 'Moving',
                                                         'habTrialList': [],
+                                                        'calcHabOver': [],
                                                         'stimPres': 0,  # Will be set on each run anyways.
                                                         'stimPath': 'stimuli'+self.dirMarker,
                                                         'stimNames': {},
@@ -135,9 +135,14 @@ class PyHabBuilder:
             if 'baseCondList' not in self.settings.keys():
                 self.settings['baseCondList'] = '[]'
                 self.settings['baseCondFile'] = ''
+            if 'calcHabOver' not in self.settings.keys():
+                if len(self.settings['habTrialList'])>0:
+                    self.settings['calcHabOver'] = ['Hab']  # Default to old behavior.
+                else:
+                    self.settings['calcHabOver'] = []
             # Settings requiring evaluation to get sensible values. Mostly dicts.
             evalList = ['dataColumns','maxDur','condList','baseCondList','movieEnd','playThrough','trialOrder','stimNames', 'stimList', 'ISI',
-                        'maxOff','minOn','autoAdvance','playAttnGetter','attnGetterList','trialTypes','habTrialList','nextFlash']
+                        'maxOff','minOn','autoAdvance','playAttnGetter','attnGetterList','trialTypes','habTrialList', 'calcHabOver', 'nextFlash']
             for i in evalList:
                 self.settings[i] = eval(self.settings[i])
                 if i in ['stimList','attnGetterList']:
@@ -645,9 +650,6 @@ class PyHabBuilder:
 
         7/-1 = Number of trial types in sub-block, including hab
 
-        TODO: Compute hab over whole thing versus just 'hab' trial.
-
-
         :return:
         :rtype:
         """
@@ -767,13 +769,14 @@ class PyHabBuilder:
                     self.settings['stimNames']['Hab'] = tempMovies
                 #Check if we need to make a set of sub-trials.
                 if habInfo[-2] in [True, 1, 'True', '1'] and habInfo[-1] > 1:
-                   self.setHabSubTrials(habInfo[-1])
+                    self.setHabSubTrials(habInfo[-1])
                 elif habInfo[-2] in [True, 1, 'True', '1'] and habInfo[-1] <= 1:
                     errDlg = gui.Dlg("No sub-block created")
                     errDlg.addText("Sub-block of 1 or 0 defaults to single hab trial. Hab trial saved.")
                     errDlg.show()
                 elif len(self.settings['habTrialList']) > 0 and habInfo[-2] in [False,0,'False','0'] :
-                    self.settings['habTrialList'] = [] #If the sub-block functionality was on and is now off
+                    self.settings['habTrialList'] = []  # If the sub-block functionality was on and is now off
+                    self.settings['calcHabOver'] = []
 
     def setHabSubTrials(self,numHab):
         """
@@ -810,7 +813,9 @@ class PyHabBuilder:
                     else:
                         tempList.append(subBlockInfo[i])
                 self.settings['habTrialList'] = tempList
+                self.settings['calcHabOver'] = ['Hab']  # Default
                 self.studyFlowArray = self.loadFlow()
+                self.habSettingsDlg()  # Immediately load hab settings so they can set the trials over which it is computed.
 
 
     
@@ -2072,7 +2077,8 @@ class PyHabBuilder:
 
         7 = metCritStatic (static or moving window?)
 
-
+        8-N = Which trials to calculate hab over for multi-trial blocks. Hab selected by default, populated only if the
+        block structure is used
 
         :param lastSet: If information entered is invalid and the dialog needs to be shown again, this allows it to remember what was previously entered.
         :type lastSet: list
@@ -2109,6 +2115,16 @@ class PyHabBuilder:
         hDlg.addField("Number of trials to sum looking time over when determining whether criterion has been met", self.settings['metCritWindow'])
         hDlg.addField("Number to divide sum of looking time by when determining whether criterion has been met", self.settings['metCritDivisor'])
         hDlg.addField("Evaluate criterion over moving window or fixed windows?", choices=evalChz)
+        if len(self.settings['habTrialList'])>0:
+            hDlg.addText("Check which trial types criteria should be computed over (both setting and checking)")
+            for q in range(0, len(self.settings['habTrialList'])):
+                if self.settings['habTrialList'][q] == 'Hab' and len(self.settings['calcHabOver']) == 0:
+                    chk = True
+                elif self.settings['habTrialList'][q] in self.settings['calcHabOver']:
+                    chk = True
+                else:
+                    chk = False
+                hDlg.addField(self.settings['habTrialList'][q], initial=chk)
         habDat=hDlg.show()
         if hDlg.OK:
             skip = False
@@ -2141,6 +2157,18 @@ class PyHabBuilder:
                 self.settings['metCritWindow'] = habDat[5]
                 self.settings['metCritDivisor'] = habDat[6]
                 self.settings['metCritStatic'] = habDat[7]
+                if len(self.settings['habTrialList']) > 0:
+                    tempArr = []
+                    for i in range(0, len(self.settings['habTrialList'])):
+                        if habDat[i+8]:
+                           tempArr.append(self.settings['habTrialList'][i])
+                    if len(tempArr) > 0:
+                        self.settings['calcHabOver'] = tempArr
+                    else:
+                        errDlg = gui.Dlg(title="Warning, no trial types selected!")
+                        errDlg.addText("You must select at least one trial to calculate habituation over!")
+                        errDlg.show()
+                        self.habSettingsDlg(habDat, redo=True)
             else:
                 errDlg = gui.Dlg(title="Warning, invalid number!")
                 errDlg.addText(
