@@ -710,6 +710,8 @@ class PyHab:
         if trialNum > 1:  # This stops it from trying to redo a trial before the experiment begins.
             trialNum -= 1
             trialType = self.actualTrialOrder[trialNum - 1]
+            if trialType[0:4] == 'hab_':
+                trialType = trialType[4:] # In case this comes up with hab block trials.
             numTrialsRedo += 1
             if self.stimPres:
                 self.counters[trialType] -= 1
@@ -737,7 +739,7 @@ class PyHab:
                 disMovie = 0
             self.trialText.text = "Trial no. " + str(trialNum)
             if self.blindPres < 1:
-                self.rdyTextAppend = " NEXT: " + trialType + " TRIAL"
+                self.rdyTextAppend = " NEXT: " + self.actualTrialOrder[trialNum - 1] + " TRIAL"
         for i in range(trialNum, trialNum + numTrialsRedo):  # Should now rewind all the way to the last non-AA trial.
             self.redoTrial(i)
         return [disMovie, trialNum]
@@ -758,9 +760,12 @@ class PyHab:
         habs = [i for i, x in enumerate(self.actualTrialOrder) if x in types] #Find last hab trial or meta-trial
         tempNum = max(habs)
         # It's actually necessary to decrement the counter for the current trial type to deal with jump/insert!
-        self.counters[self.actualTrialOrder[trialNum - 1]] -= 1
-        if self.counters[self.actualTrialOrder[trialNum - 1]] < 0:
-            self.counters[self.actualTrialOrder[trialNum - 1]] = 0
+        currType = self.actualTrialOrder[trialNum - 1]
+        if currType[0:4] == 'hab_':
+            currType = currType[4:]
+        self.counters[currType] -= 1
+        if self.counters[currType] < 0:
+            self.counters[currType] = 0
         # trialNum is in fact the index after the current trial at this point
         # so we can just erase everything between that and the first non-hab trial.
         del self.actualTrialOrder[(trialNum - 1):(tempNum + 1)]
@@ -799,6 +804,8 @@ class PyHab:
         else:
             self.actualTrialOrder.insert(trialNum - 1, 'Hab')
         trialType = self.actualTrialOrder[trialNum - 1]
+        if trialType[0:4] == 'hab_':
+            trialType = trialType[4:]
         if self.stimPres:
             if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
                 self.stimName = self.stimNames[trialType][self.counters[trialType] % len(self.stimNames[trialType])]
@@ -819,7 +826,7 @@ class PyHab:
         else:
             disMovie = 0
         if self.blindPres < 1:
-            self.rdyTextAppend = " NEXT: " + trialType + " TRIAL"
+            self.rdyTextAppend = " NEXT: " + self.actualTrialOrder[trialNum - 1] + " TRIAL"
         return [disMovie,trialType]
 
     def doExperiment(self):
@@ -1103,7 +1110,7 @@ class PyHab:
             elif core.getTime() - startTrial >= .5 and self.keyboard[self.key.S] and type not in self.habTrialList and type != 'Hab':
                 # New feature: End trial and go forward manually. Disabled for hab trials and meta-trials.
                 # Disabled for the first half-second to stop you from skipping through multiple auto-advancing trials
-                if type in self.movieEnd:
+                if localType in self.movieEnd:
                     endFlag = True
                 else:
                     runTrial = False
@@ -1139,7 +1146,7 @@ class PyHab:
                 type = 4  # to force an immediate quit.
             # Now for the non-abort states.
             elif core.getTime() - startTrial >= self.maxDur[localType] and not endFlag:  # reached max trial duration
-                if type in self.movieEnd:
+                if localType in self.movieEnd:
                     endFlag = True
                 else:
                     runTrial = False
@@ -1159,7 +1166,7 @@ class PyHab:
                 nowOff = core.getTime() - startTrial
                 if sumOn >= self.minOn[localType] and nowOff - startOff >= self.maxOff[localType] and self.playThrough[localType] == 0 and not endFlag:
                     # if they have previously looked for at least .5s and now looked away for 2 continuous sec
-                    if type in self.movieEnd:
+                    if localType in self.movieEnd:
                         endFlag = True
                     else:
                         runTrial = False
@@ -1182,7 +1189,7 @@ class PyHab:
             elif gazeOn:
                 nowOn = core.getTime() - startTrial
                 if self.playThrough[localType] == 1 and sumOn + (nowOn - startOn) >= self.minOn[localType] and not endFlag:  # For trial types where the only crit is min-on.
-                    if type in self.movieEnd:
+                    if localType in self.movieEnd:
                         endFlag = True
                     else:
                         runTrial = False
@@ -1221,8 +1228,8 @@ class PyHab:
                 tempGazeArray2 = {'trial':number, 'trialType':type, 'startTime':startOn2, 'endTime':endOn2, 'duration':onDur2}
                 onArray2.append(tempGazeArray2)
                 sumOn2 = sumOn2 + onDur2
-            movieStatus = self.dispTrial(type, disMovie)
-            if type in self.movieEnd and endFlag and movieStatus >= 1:
+            movieStatus = self.dispTrial(localType, disMovie)
+            if localType in self.movieEnd and endFlag and movieStatus >= 1:
                 runTrial = False
                 endTrial = core.getTime() - startTrial
                 if gazeOn:
