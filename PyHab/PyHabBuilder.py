@@ -932,9 +932,12 @@ class PyHabBuilder:
                     tempObj = visual.Rect(self.win,width=self.flowWidthObj*2, height=self.flowHeightObj, fillColor=self.colorsArray[c], pos=loc)
                     if len(self.settings['habTrialList']) > 1:  # If there are hab sub-trials, add pips to the hab block object
                         for q in range(0, len(self.settings['habTrialList'])):
+                            tempStr = self.settings['habTrialList'][q]
+                            if tempStr != 'Hab':
+                                tempStr = tempStr[4:]
                             newwidth = self.flowWidthObj/len(self.settings['habTrialList'])
                             tempPip = visual.Rect(self.win, width=newwidth, height=self.flowHeightObj/2.5,
-                                                  fillColor=self.colorsArray[tTypes.index(self.settings['habTrialList'][q])],
+                                                  fillColor=self.colorsArray[tTypes.index(tempStr)],
                                                   pos=[lx+newwidth*(q-(len(self.settings['habTrialList'])-1)/2), flowSpace[j][1]-self.flowHeightObj/2.25])
                             outputDict['extras'].append(tempPip)
                 elif tOrd[i] in self.settings['autoAdvance'] and j not in [0, 10, 20, 30]:

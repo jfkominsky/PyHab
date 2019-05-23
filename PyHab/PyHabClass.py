@@ -857,7 +857,7 @@ class PyHab:
             self.statusSquareB.fillColor = 'black'
             trialType = self.actualTrialOrder[trialNum - 1]
             if trialType[0:4] == 'hab_':
-                trialType = trialType[5:]
+                trialType = trialType[4:]
             # select movie for trial
             if self.stimPres:
                 if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
@@ -888,14 +888,14 @@ class PyHab:
                             disMovie['stim'].loadMovie(disMovie['stim'].filename) # "Seek" causes audio bugs. This just reloads the movie. More memory load, but reliable.
                     trialType = self.actualTrialOrder[trialNum - 1]
                     if trialType[0:4] == 'hab_':
-                        trialType = trialType[5:]
+                        trialType = trialType[4:]
                     didRedo = True
                 elif self.keyboard[self.key.J] and 'Hab' in self.actualTrialOrder[trialNum:]:  # jump to test in a hab design
                     [disMovie, trialType] = self.jumpToTest(trialNum)
                 elif trialType != 'Hab' and self.keyboard[self.key.I] and 'Hab' in self.trialOrder and self.actualTrialOrder[trialNum-1][0:4] != 'hab_':  # insert additional hab trial
                     [disMovie, trialType] = self.insertHab(trialNum)
                     if trialType[0:4] == 'hab_':
-                        trialType = trialType[5:]
+                        trialType = trialType[4:]
                 elif trialNum > 1 and not self.stimPres and self.keyboard[self.key.P] and not reviewed:  # Print data so far, as xHab. Non-stimulus version only. Only between trials.
                     reviewed = True
                     print("hab crit, on-timeA, numOnA, offtimeA, numOffA, onTimeB, numOnB, offTimeB, numOffB")
@@ -959,14 +959,14 @@ class PyHab:
                             disMovie['stim'].loadMovie(disMovie['stim'].filename)
                         trialType = self.actualTrialOrder[trialNum - 1]
                         if trialType[0:4] == 'hab_':
-                            trialType = trialType[5:]
+                            trialType = trialType[4:]
                         didRedo = True
                     elif self.keyboard[self.key.J] and trialType == 'Hab':  # jump to test in a hab design
                         [disMovie,trialType] = self.jumpToTest(trialNum)
                     elif trialType != 'Hab' and self.keyboard[self.key.I] and 'Hab' in self.trialOrder and self.actualTrialOrder[trialNum-1][0:4] != 'hab_':  # insert additional hab trial
                         [disMovie,trialType] = self.insertHab(trialNum)
                         if trialType[0:4] == 'hab_':
-                            trialType = trialType[5:]
+                            trialType = trialType[4:]
                     elif self.keyboard[self.key.S] and trialType != 'Hab': # Skip this trial TODO: sub-trials as they can now count towards hab?
                         skip = True
                     else:
@@ -1044,7 +1044,7 @@ class PyHab:
         if type == 'Hab':
             self.habCount += 1
         if type[0:4] == 'hab_':
-            localType = type[5:]
+            localType = type[4:]
         else:
             localType = type
         self.frameCount = 0  # reset display
@@ -1827,7 +1827,7 @@ class PyHab:
             for i in self.actualTrialOrder:
                 # Adjust for hab sub-trials. Should be safeish.
                 if i[0:4] == 'hab_':
-                    i = i[5:]
+                    i = i[4:]
                 x = tempCtr[i] # Changed so hab trials get the same treatment as everything else.
                 if x < len(self.stimNames[i]):
                     tempStim = self.stimList[self.stimNames[i][x]]
