@@ -364,6 +364,8 @@ class TestDataFunc(object):
         assert self.dataInst.checkStop() == True
         assert self.dataInst.habCrit == 55.0  # should not have changed.
 
+        # TODO: Add hab sub-trial tracking.
+
 
 class TestRunSetup(object):
     """
@@ -394,11 +396,11 @@ class TestRunSetup(object):
         self.trialInst.run(testMode=testOne)
         assert len(self.trialInst.actualTrialOrder) == 19
         assert len([x for x in self.trialInst.actualTrialOrder if x == 'Hab']) == 14
-        self.trialInst.habTrialList = ['C','Hab']
+        self.trialInst.habTrialList = ['hab_C','Hab']
         self.trialInst.run(testMode=testOne)
         assert len(self.trialInst.actualTrialOrder) == 33
         assert len([x for x in self.trialInst.actualTrialOrder if x == 'Hab']) == 14
-        assert len([x for x in self.trialInst.actualTrialOrder if x == 'C']) == 14
+        assert len([x for x in self.trialInst.actualTrialOrder if x == 'hab_C']) == 14
 
 
     def test_multiyear_age(self):

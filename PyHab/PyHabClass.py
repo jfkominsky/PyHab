@@ -856,6 +856,8 @@ class PyHab:
             self.statusSquareA.fillColor = 'black'
             self.statusSquareB.fillColor = 'black'
             trialType = self.actualTrialOrder[trialNum - 1]
+            if trialType[0:4] == 'hab_':
+                trialType = trialType[5:]
             # select movie for trial
             if self.stimPres:
                 if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
@@ -885,11 +887,15 @@ class PyHab:
                         if disMovie['stimType'] == 'Movie':
                             disMovie['stim'].loadMovie(disMovie['stim'].filename) # "Seek" causes audio bugs. This just reloads the movie. More memory load, but reliable.
                     trialType = self.actualTrialOrder[trialNum - 1]
+                    if trialType[0:4] == 'hab_':
+                        trialType = trialType[5:]
                     didRedo = True
                 elif self.keyboard[self.key.J] and 'Hab' in self.actualTrialOrder[trialNum:]:  # jump to test in a hab design
                     [disMovie, trialType] = self.jumpToTest(trialNum)
-                elif trialType != 'Hab' and self.keyboard[self.key.I] and 'Hab' in self.trialOrder and trialType not in self.habTrialList:  # insert additional hab trial
+                elif trialType != 'Hab' and self.keyboard[self.key.I] and 'Hab' in self.trialOrder and self.actualTrialOrder[trialNum-1][0:4] != 'hab_':  # insert additional hab trial
                     [disMovie, trialType] = self.insertHab(trialNum)
+                    if trialType[0:4] == 'hab_':
+                        trialType = trialType[5:]
                 elif trialNum > 1 and not self.stimPres and self.keyboard[self.key.P] and not reviewed:  # Print data so far, as xHab. Non-stimulus version only. Only between trials.
                     reviewed = True
                     print("hab crit, on-timeA, numOnA, offtimeA, numOffA, onTimeB, numOnB, offTimeB, numOffB")
@@ -947,22 +953,26 @@ class PyHab:
                         self.dispCoderWindow(trialType)
                     elif self.keyboard[self.key.R] and not didRedo:  # Redo last trial, mark last trial as bad
                         if self.counters[trialType] > 0:
-                            self.counters[trialtype] -= 1
+                            self.counters[trialType] -= 1
                         [disMovie, trialNum] = self.redoSetup(trialNum, AA)  # This returns a new value for DisMovie and trialNum
                         if disMovie['stimType'] == 'Movie':
                             disMovie['stim'].loadMovie(disMovie['stim'].filename)
                         trialType = self.actualTrialOrder[trialNum - 1]
+                        if trialType[0:4] == 'hab_':
+                            trialType = trialType[5:]
                         didRedo = True
                     elif self.keyboard[self.key.J] and trialType == 'Hab':  # jump to test in a hab design
                         [disMovie,trialType] = self.jumpToTest(trialNum)
-                    elif trialType != 'Hab' and self.keyboard[self.key.I] and 'Hab' in self.trialOrder and trialType not in self.habTrialList:  # insert additional hab trial
+                    elif trialType != 'Hab' and self.keyboard[self.key.I] and 'Hab' in self.trialOrder and self.actualTrialOrder[trialNum-1][0:4] != 'hab_':  # insert additional hab trial
                         [disMovie,trialType] = self.insertHab(trialNum)
-                    elif self.keyboard[self.key.S] and trialType != 'Hab': # Skip this trial
+                        if trialType[0:4] == 'hab_':
+                            trialType = trialType[5:]
+                    elif self.keyboard[self.key.S] and trialType != 'Hab': # Skip this trial TODO: sub-trials as they can now count towards hab?
                         skip = True
                     else:
                         self.dispCoderWindow(0)
             if not end or skip: #If Y has not been pressed, do the trial! Otherwise, end the experiment.
-                x = self.doTrial(trialNum, trialType, disMovie)  # the actual trial, returning one of four status values at the end
+                x = self.doTrial(trialNum, self.actualTrialOrder[trialNum - 1], disMovie)  # the actual trial, returning one of four status values at the end
                 AA = self.autoAdvance  # After the very first trial AA will always be just the autoadvance list.
             elif skip:
                 x = 0 # Simply proceed to next trial.
@@ -1033,6 +1043,10 @@ class PyHab:
         self.trialText.text = "Trial no. " + str(number)
         if type == 'Hab':
             self.habCount += 1
+        if type[0:4] == 'hab_':
+            localType = type[5:]
+        else:
+            localType = type
         self.frameCount = 0  # reset display
         self.pauseCount = 0  # needed for ISI
         # returns 0 if do next trial, 1 if end hab, 2 if end experiment, 3 if abort/redo
@@ -1124,7 +1138,7 @@ class PyHab:
                     offArray.append({'trial':0, 'trialType':0, 'startTime':0, 'endTime':0, 'duration':0})  # keeps it from crashing while trying to write data.
                 type = 4  # to force an immediate quit.
             # Now for the non-abort states.
-            elif core.getTime() - startTrial >= self.maxDur[type] and not endFlag:  # reached max trial duration
+            elif core.getTime() - startTrial >= self.maxDur[localType] and not endFlag:  # reached max trial duration
                 if type in self.movieEnd:
                     endFlag = True
                 else:
@@ -1143,7 +1157,7 @@ class PyHab:
                         offArray.append(tempGazeArray)
             elif not gazeOn:  # if they are not looking as of the previous refresh, check if they have been looking away for too long
                 nowOff = core.getTime() - startTrial
-                if sumOn >= self.minOn[type] and nowOff - startOff >= self.maxOff[type] and self.playThrough[type] == 0 and not endFlag:
+                if sumOn >= self.minOn[localType] and nowOff - startOff >= self.maxOff[localType] and self.playThrough[localType] == 0 and not endFlag:
                     # if they have previously looked for at least .5s and now looked away for 2 continuous sec
                     if type in self.movieEnd:
                         endFlag = True
@@ -1167,7 +1181,7 @@ class PyHab:
                     offArray.append(tempGazeArray)
             elif gazeOn:
                 nowOn = core.getTime() - startTrial
-                if self.playThrough[type] == 1 and sumOn + (nowOn - startOn) >= self.minOn[type] and not endFlag:  # For trial types where the only crit is min-on.
+                if self.playThrough[localType] == 1 and sumOn + (nowOn - startOn) >= self.minOn[localType] and not endFlag:  # For trial types where the only crit is min-on.
                     if type in self.movieEnd:
                         endFlag = True
                     else:
@@ -1811,6 +1825,9 @@ class PyHab:
             self.counters = {x: 0 for x in self.stimNames.keys()}  # list of counters, one per index of the dict, so it knows which movie to play
             tempCtr = {x: 0 for x in self.stimNames.keys()}
             for i in self.actualTrialOrder:
+                # Adjust for hab sub-trials. Should be safeish.
+                if i[0:4] == 'hab_':
+                    i = i[5:]
                 x = tempCtr[i] # Changed so hab trials get the same treatment as everything else.
                 if x < len(self.stimNames[i]):
                     tempStim = self.stimList[self.stimNames[i][x]]

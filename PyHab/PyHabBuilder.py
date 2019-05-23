@@ -805,8 +805,13 @@ class PyHabBuilder:
             else:
                 tempList = []
                 for i in range(0, len(subBlockInfo)):
-                    tempList.append(subBlockInfo[i])
+                    if subBlockInfo[i] != 'Hab':
+                        tempList.append('hab_' + subBlockInfo[i])
+                    else:
+                        tempList.append(subBlockInfo[i])
                 self.settings['habTrialList'] = tempList
+                self.studyFlowArray = self.loadFlow()
+
 
     
     def delTrialTypeDlg(self):
@@ -835,9 +840,9 @@ class PyHabBuilder:
             del self.settings['maxDur'][dType]  # remove from maxdur
             if dType in self.settings['playThrough']:  # if it was in playThrough, remove it from there too.
                 self.settings['playThrough'].pop(dType, None)
-            if dType in self.settings['habTrialList']: #If it was in a hab meta-trial.
-                while dType in self.settings['habTrialList']:
-                    self.settings['habTrialList'].remove(dType)
+            if ('hab_' + dType) in self.settings['habTrialList']: #If it was in a hab meta-trial.  TODO: CHECK
+                while ('hab_' + dType) in self.settings['habTrialList']:
+                    self.settings['habTrialList'].remove(('hab_' + dType))
             self.trialTypesArray=self.loadTypes()  # easiest to just reload the trial types.
             # For the study flow, it's easiest just to remove it from the trial order and reload the study flow.
             if dType in self.settings['trialOrder']:
