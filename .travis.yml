@@ -52,7 +52,7 @@ before_install:
   # - locale -a  # list available locales
 
   - travis_retry sudo apt-get install -qq libasound2-dev alsa-utils alsa-oss
-  - sudo modprobe snd-dummy
+  #- sudo modprobe snd-dummy # Broken
   - sudo lsmod
 
 
