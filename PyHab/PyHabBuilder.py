@@ -2,6 +2,7 @@ from psychopy import visual, event, core, gui, monitors, tools, sound,__version_
 from psychopy.app import coder
 import wx, random, csv, shutil, os, sys, threading
 from math import *
+from copy import deepcopy
 
 
 class PyHabBuilder:
@@ -46,7 +47,7 @@ class PyHabBuilder:
                 pos=[self.paletteArea[0]+float(abs(self.paletteArea[1]-self.paletteArea[0]))/2,self.paletteArea[2]-float(abs(self.paletteArea[3]-self.paletteArea[2]))/2])
         self.aspect = float(height)/float(width) #Determine aspect ratio width/height. Impt. for using norm.
         #A bunch of useful stuff for drawing the interface
-        self.colorsArray= ['red','blue','green','purple','brown','LightSeaGreen','gold','Magenta'] #colors for dif trial types. Will eventually need an arbitrary number...
+        self.colorsArray = ['red','blue','green','purple','brown','LightSeaGreen','gold','Magenta'] #colors for dif trial types. Will eventually need an arbitrary number...
         self.flowWidMult = .07
         self.flowWidthObj = self.flowWidMult*float(abs(self.flowArea[1]-self.flowArea[0])) #Width of one item in the flow, though this will possibly have to change...
         self.flowHeightObj = (self.flowWidthObj/self.aspect)*.8
@@ -55,14 +56,15 @@ class PyHabBuilder:
         self.typeLocs =[]
         self.flowLocs =[]
         self.overFlowLocs = [] # For >20 trials, go up to 40
-        self.flowGap = .09 # A easy reference for the horizontal spacing of items in the flow
-        self.condDict = {} #For creating conditions
+        self.flowGap = .09  # A easy reference for the horizontal spacing of items in the flow
+        self.condDict = {}  # For creating conditions
+        self.baseCondDict = {}  # For remembering the original conditions...?
         self.mouse = event.Mouse()
-        for x in [.25,.75]: #Two columns of trial types
+        for x in [.25,.75]:  # Two columns of trial types
             for z in range(1,5):
                 self.typeLocs.append([self.paletteArea[0]+x*(self.paletteArea[1]-self.paletteArea[0]),
                                       self.paletteArea[2]+.2*(self.paletteArea[3]-self.paletteArea[2])+z*.15*(self.paletteArea[3]-self.paletteArea[2])])
-        for y in [.25,.75]: #two rows for the study flow.
+        for y in [.25,.75]:  # two rows for the study flow.
             for z in range(1,11):
                     self.flowLocs.append([self.flowArea[0]+z*(self.flowArea[1]-self.flowArea[0])*self.flowGap,
                                           self.flowArea[2]+y*(self.flowArea[3]-self.flowArea[2])])
@@ -87,6 +89,8 @@ class PyHabBuilder:
                                                         'condPath': '', 
                                                         'condFile': '', 
                                                         'condList': [],
+                                                        'baseCondFile': '',
+                                                        'baseCondList': [],  # 0.8 New, for remembering pre-counterbalancing
                                                         'trialOrder': [], 
                                                         'maxHabTrials': '14',
                                                         'setCritWindow': '3', 
@@ -96,8 +100,8 @@ class PyHabBuilder:
                                                         'metCritWindow': '3', 
                                                         'metCritDivisor': '1.0',
                                                         'metCritStatic': 'Moving',
-                                                        'habTrialList':[],
-                                                        'stimPres': 0,  #Will be set on each run anyways.
+                                                        'habTrialList': [],
+                                                        'stimPres': 0,  # Will be set on each run anyways.
                                                         'stimPath': 'stimuli'+self.dirMarker,
                                                         'stimNames': {},
                                                         'stimList': {},
@@ -110,26 +114,29 @@ class PyHabBuilder:
                                                         'ISI': {},
                                                         'freezeFrame': '0.0',
                                                         'playAttnGetter': {},
-                                                        'attnGetterList':{'PyHabDefault':{'stimType':'Audio',
+                                                        'attnGetterList': {'PyHabDefault':{'stimType':'Audio',
                                                                                           'stimName':'upchime1.wav',
                                                                                           'stimDur':2,
                                                                                           'stimLoc':'PyHab' + self.dirMarker + 'upchime1.wav',
                                                                                           'shape':'Rectangle',
                                                                                           'color':'yellow'}},
-                                                        'folderPath':'',
-                                                        'trialTypes':[],
-                                                        'prefLook':'0',
-                                                        'startImage':'',
-                                                        'endImage':'',
-                                                        'nextFlash':'0'}
-            self.studyFlowArray={'lines':[],'shapes':[],'text':[],'labels':[]} # an array of objects for the study flow.
-            self.trialTypesArray={'shapes':[],'text':[],'labels':[]}
+                                                        'folderPath': '',
+                                                        'trialTypes': [],
+                                                        'prefLook': '0',
+                                                        'startImage': '',
+                                                        'endImage': '',
+                                                        'nextFlash': '0'}
+            self.studyFlowArray={'lines': [],'shapes': [],'text': [],'labels': []}  # an array of objects for the study flow.
+            self.trialTypesArray={'shapes': [],'text': [],'labels': []}
         else:
             self.settings = settingsDict
             if 'nextFlash' not in self.settings.keys():
                 self.settings['nextFlash'] = '0'
+            if 'baseCondList' not in self.settings.keys():
+                self.settings['baseCondList'] = '[]'
+                self.settings['baseCondFile'] = ''
             # Settings requiring evaluation to get sensible values. Mostly dicts.
-            evalList = ['dataColumns','maxDur','condList','movieEnd','playThrough','trialOrder','stimNames', 'stimList', 'ISI',
+            evalList = ['dataColumns','maxDur','condList','baseCondList','movieEnd','playThrough','trialOrder','stimNames', 'stimList', 'ISI',
                         'maxOff','minOn','autoAdvance','playAttnGetter','attnGetterList','trialTypes','habTrialList','nextFlash']
             for i in evalList:
                 self.settings[i] = eval(self.settings[i])
@@ -157,7 +164,7 @@ class PyHabBuilder:
             self.trialTypesArray = self.loadTypes()
             self.studyFlowArray = self.loadFlow()
             # Get conditions!
-            if self.settings['randPres'] in [1,'1','True',True] or len(self.settings['condFile'])>0: #If there is a random presentation file...
+            if self.settings['randPres'] in [1,'1','True',True] or len(self.settings['condFile'])>0:  # If there is a condition file
                 if os.path.exists(self.settings['condFile']):
                     testReader=csv.reader(open(self.settings['condFile'],'rU'))
                     testStuff=[]
@@ -168,11 +175,22 @@ class PyHabBuilder:
                         testDict[i] = eval(testDict[i])
                     self.condDict = testDict
                 else:
-                    self.condDict={}
+                    self.condDict = {}
+                if os.path.exists(self.settings['baseCondFile']):
+                    testReader2 = csv.reader(open(self.settings['baseCondFile'],'rU'))
+                    testStuff2 = []
+                    for row in testReader2:
+                        testStuff2.append(row)
+                    newDict = dict(testStuff2)
+                    for i in newDict.keys():
+                        newDict[i] = eval(newDict[i])
+                    self.baseCondDict = newDict
+                else:
+                    self.baseCondDict = {}
             self.settings['folderPath'] = os.getcwd()+self.dirMarker  # On load, reset the folder path to wherever you are now.
         self.folderPath = self.settings['folderPath']  # The location where all the pieces are saved.
         self.allDataColumns = ['sNum', 'sID', 'months', 'days', 'sex', 'cond','condLabel', 'trial','GNG','trialType','stimName','habCrit','sumOnA','numOnA','sumOffA','numOffA','sumOnB','numOnB','sumOffB','numOffB']
-        self.allDataColumnsPL = ['sNum', 'sID', 'months', 'days', 'sex', 'cond','condLabel','trial','GNG','trialType','stimName','habCrit', 'sumOnL','numOnL','sumOnR','numOnR','sumOff','numOff']
+        self.allDataColumnsPL = ['sNum', 'sID', 'months', 'days', 'sex', 'cond','condLabel', 'trial','GNG','trialType','stimName','habCrit', 'sumOnL','numOnL','sumOnR','numOnR','sumOff','numOff']
         self.stimSource={}  # A list of the source folder(s) for each stimulus file, a dict where each key is the filename in stimNames?
         self.delList=[] # A list of stimuli to delete if they are removed from the experiment library.
         self.allDone=False
@@ -1527,7 +1545,7 @@ class PyHabBuilder:
                 if currAG['stimType'] is 'Audio':
                     chz = ['Audio', 'Video']
                 else:
-                    chz = ['Video, Audio']
+                    chz = ['Video', 'Audio']
                 aDlg2b.addField("Attention-getter type: ", choices=chz)
                 aDlg2b.addField("Change current file (%s)?" % currAG['stimName'], choices=["No","Yes"])
                 if currAG['stimType'] is 'Audio':
@@ -1576,6 +1594,9 @@ class PyHabBuilder:
         condition randomization is used at all, a separate interface is used to
         define the conditions themselves.
 
+        TODO: Add option to reload base conditions instead of randomized
+        TODO: Block system? Auto-randomize?
+
         :return:
         :rtype:
         """
@@ -1587,12 +1608,19 @@ class PyHabBuilder:
             chkBox = True
         cDlg.addField("Use random presentation? If yes, a new interface will open",initial=chkBox)
         cDlg.addField("Pre-existing condition file (optional, leave blank to make new file called conditions.csv)", self.settings['condFile'])
+        if len(self.baseCondDict) > 0:
+            cDlg.addField("Reload base conditions instead of randomized conditions? (WARNING: You will need to re-randomize)", initial=False)
         condInfo = cDlg.show()
         if cDlg.OK:
             self.settings['randPres'] = condInfo[0]
             if condInfo[0]:
                 # A new interface that allows you to re-order things
                 # Check if there are movies to re-order.
+                if len(condInfo) == 3 and condInfo[2] == True:
+                    # Reload the 'base' conditions instead of randomized ones.
+                    baseConds = True
+                else:
+                    baseConds = False
                 allReady = True
                 if len(self.trialTypesArray['labels']) == 0: # If there are no trial types
                     allReady = False
@@ -1608,7 +1636,7 @@ class PyHabBuilder:
                         self.settings['condFile'] = "conditions.csv"
                     if os.name is not 'posix':
                         self.win.winHandle.set_visible(visible=True)
-                    self.condMaker()
+                    self.condMaker(bc=baseConds)
                 else:
                     #Create err dlg.
                     errDlg = gui.Dlg(title="No stimuli!")
@@ -1624,7 +1652,7 @@ class PyHabBuilder:
                 self.settings['condList'] = []  # Gets rid of existing condition list to save trouble.
                 self.condDict = {}  # Gets rid of conditions altogether.
 
-    def condMaker(self, rep=False, currPage=1):
+    def condMaker(self, rep=False, currPage=1, bc=False):
         """
         A whole separate interface for managing condition creation.
 
@@ -1633,10 +1661,14 @@ class PyHabBuilder:
 
         :param rep: Basically whether we are recursing while editing conditions
         :type rep: bool
+        :param currPage: The current page number
+        :type currPage: int
+        :param bc: Are we displaying the raw conditions, or the 'base' (pre-randomization) conditions?
+        :type bc: bool
         :return:
         :rtype:
         """
-        condHeader = visual.TextStim(self.win, text="Conditions",height=.1, bold=True,pos=[-.83,.9])
+        condHeader = visual.TextStim(self.win, text="Conditions", height=.1, bold=True, pos=[-.83,.9])
         divLinesV = [] # Vertical dividing lines (actually very thin rects)
         divLinesH = [] # Horizontal dividing lines
         tTypeHeaders = [] # Heads of each column for trial types.
@@ -1644,8 +1676,18 @@ class PyHabBuilder:
         condContent = [] # The content of each condition (a list of dicts).
         drawConds = [] # The text things for drawing.
         numPages = 1
-        if os.path.exists(self.settings['condFile']) and not rep: #If we already have a pre-existing cond file and aren't in the process of looping.
-            testReader=csv.reader(open(self.settings['condFile'],'rU'))
+        # TODO: Loading base conditions - totally separate? or do we overwrite conddict?
+        # TODO: We're going to have to rethink this from the ground up for blocks.
+        if bc:
+            condPath = self.settings['baseCondFile']
+            condDict = self.baseCondDict
+            condList = self.settings['baseCondList']
+        else:
+            condPath = self.settings['condFile']
+            condDict = self.condDict
+            condList = self.settings['condList']
+        if os.path.exists(self.settings['condFile']) and not rep:  # If we already have a pre-existing cond file and aren't in the process of looping.
+            testReader=csv.reader(open(self.settings['condFile'], 'rU'))
             testStuff=[]
             for row in testReader:
                 testStuff.append(row)
@@ -1655,14 +1697,21 @@ class PyHabBuilder:
             testDict = dict(testStuff) 
             for i in testDict.keys():
                 testDict[i]=eval(testDict[i])
-            self.condDict=testDict 
-            self.settings['condList'] = condLabels
-            numPages = ceil(float(len(self.settings['condList']))/4) #use math.ceil to round up.
-            
+            self.condDict = testDict
+            self.settings['condList'] = condLabels # Problem: This creates a local copy.
+            numPages = ceil(float(len(self.settings['condList'])) / 4)  # use math.ceil to round up.
+            '''if bc:
+                self.baseCondDict = testDict
+                self.settings['baseCondList'] = condLabels
+                numPages = ceil(float(len(self.settings['condList'])) / 4)  # use math.ceil to round up.
+            else:
+                self.condDict=testDict
+                self.settings['condList'] = condLabels
+                numPages = ceil(float(len(self.settings['condList'])) / 4)  # use math.ceil to round up.'''
         elif len(self.condDict) > 0:  # If we already have something to build on
             numPages = ceil(float(len(self.condDict.keys()))/4)  # use math.ceil to round up.
             for i in range(0, len(self.settings['condList'])):
-                if self.settings['condList'][i] in self.condDict.keys():
+                if list[i] in self.condDict.keys():
                     condContent.append(self.condDict[self.settings['condList'][i]])
                 else:
                     condContent.append({})
@@ -1827,7 +1876,7 @@ class PyHabBuilder:
                 if self.mouse.isPressedIn(doneButton):
                     done = True
                     while 1 in self.mouse.getPressed():
-                        pass # Just to make it not auto-click something on return to the main window
+                        pass  # Just to make it not auto-click something on return to the main window
                 
     
     def condSetter(self, cond='NEW', ex=False):
@@ -1963,6 +2012,9 @@ class PyHabBuilder:
         randCond = rCondDlg.show()
         if rCondDlg.OK and isinstance(randCond[0],int):
             totalN = len(self.condDict.keys())*randCond[0]
+            # First, save the old, un-randomized thing for later reference.
+            self.baseCondDict = deepcopy(self.condDict)
+            self.settings['baseCondList'] = deepcopy(self.settings['condList'])
             newCondList = [] # Will replace condlist.
             for i in range (1, totalN+1):
                 if i < 10:
@@ -2156,7 +2208,7 @@ class PyHabBuilder:
         srcDir = 'PyHab'+self.dirMarker
         # Condition file! Save if there are any conditions created.
         # Convoluted mess because the dict won't necessarily be in order and we want the file to be.
-        if len(self.condDict)>0:
+        if len(self.condDict) > 0:
             tempArray = []
             for j in range(0, len(self.settings['condList'])):
                 tempArray.append([self.settings['condList'][j],self.condDict[self.settings['condList'][j]]])
@@ -2164,6 +2216,15 @@ class PyHabBuilder:
                 secretWriter = csv.writer(co,lineterminator='\n')
                 for k in range(0, len(tempArray)):
                     secretWriter.writerow(tempArray[k])
+            if len(self.baseCondDict) > 0:
+                # Same again, but for the 'base' conditions, with a modified filename.
+                tempArray2 = []
+                for l in range(0, len(self.settings['baseCondList'])):
+                    tempArray2.append([self.settings['baseCondlist'][l], self.baseCondDict[self.settings['baseCondList'][l]]])
+                with open(self.folderPath+'base_'+self.settings['condFile'],'w') as bc:
+                    baseWriter = csv.writer(bc, lineterminator='\n')
+                    for m in range(0, len(tempArray2)):
+                        baseWriter.writerow(tempArray2[m])
         # copy stimuli if there are stimuli.
         if len(self.stimSource) > 0:
             for i, j in self.stimSource.items():  # Find each file, copy it over
