@@ -708,7 +708,7 @@ class PyHab:
                 # Safety check: Make sure that it was really a hab sub trial!
                 if 'hab_' + trialType not in self.habTrialList:
                     trialType = self.actualTrialOrder[trialNum - 1] # In case this comes up with hab block trials.
-            elif trialType == 'Hab∞':
+            elif trialType == 'Hab^':
                 trialType = 'Hab'
             numTrialsRedo += 1
             if self.stimPres:
@@ -723,7 +723,7 @@ class PyHab:
                     # Safety check: Make sure that it was really a hab sub trial!
                     if 'hab_' + trialType not in self.habTrialList:
                         trialType = self.actualTrialOrder[trialNum - 1]
-                elif trialType == 'Hab∞':
+                elif trialType == 'Hab^':
                     trialType = 'Hab'
                 numTrialsRedo += 1
                 if self.stimPres:
@@ -766,7 +766,7 @@ class PyHab:
             # Safety check: Make sure that it was really a hab sub trial!
             if 'hab_' + currType not in self.habTrialList:
                 currType = self.actualTrialOrder[trialNum - 1]
-        elif currType == 'Hab∞':
+        elif currType == 'Hab^':
             currType = 'Hab'
         self.counters[currType] -= 1
         if self.counters[currType] < 0:
@@ -809,8 +809,8 @@ class PyHab:
                 tempName[4] = str(self.habCount) + tempName[4]  # Hab-counter
                 if z == len(self.habTrialList) - 1:  # Last of this sub-trial block
                     # Need a signifier of end of block on trial name.
-                    tempName[4] = tempName[4] + '∞'  # A symbol I hope nobody will use for their ttypename. opt-5. Windows?
-                tempName = "".join(tempName)  # End result hab[n][∞]_TrialType
+                    tempName[4] = tempName[4] + '^'  # A symbol I hope nobody will use for their ttypename. opt-5. Windows?
+                tempName = "".join(tempName)  # End result hab[n][^]_TrialType
                 self.actualTrialOrder.insert(trialNum - 1 + z, tempName)
                 self.maxHabIndex = trialNum - 1 + z
         else:
@@ -822,7 +822,7 @@ class PyHab:
             # Safety check: Make sure that it was really a hab sub trial!
             if 'hab_' + trialType not in self.habTrialList:
                 trialType = self.actualTrialOrder[trialNum - 1]
-        elif trialType == 'Hab∞':
+        elif trialType == 'Hab^':
             trialType = 'Hab'
         if self.stimPres:
             if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
@@ -886,7 +886,7 @@ class PyHab:
                 # Safety check: Make sure that it was really a hab sub trial!
                 if 'hab_' + trialType not in self.habTrialList:
                     trialType = self.actualTrialOrder[trialNum - 1]
-            elif trialType == 'Hab∞':
+            elif trialType == 'Hab^':
                 trialType = 'Hab'
             # select movie for trial
             if self.stimPres:
@@ -922,7 +922,7 @@ class PyHab:
                         # Safety check: Make sure that it was really a hab sub trial!
                         if 'hab_' + trialType not in self.habTrialList:
                             trialType = self.actualTrialOrder[trialNum - 1]
-                    elif trialType == 'Hab∞':
+                    elif trialType == 'Hab^':
                         trialType = 'Hab'
                     didRedo = True
                 elif self.keyboard[self.key.J] and 'Hab' in self.actualTrialOrder[trialNum:]:  # jump to test in a hab design
@@ -934,7 +934,7 @@ class PyHab:
                         # Safety check: Make sure that it was really a hab sub trial!
                         if 'hab_' + trialType not in self.habTrialList:
                             trialType = self.actualTrialOrder[trialNum - 1]
-                    elif trialType == 'Hab∞':
+                    elif trialType == 'Hab^':
                         trialType = 'Hab'  # Shouldn't come up, but JIC.
                 elif trialNum > 1 and not self.stimPres and self.keyboard[self.key.P] and not reviewed:  # Print data so far, as xHab. Non-stimulus version only. Only between trials.
                     reviewed = True
@@ -1003,7 +1003,7 @@ class PyHab:
                             # Safety check: Make sure that it was really a hab sub trial!
                             if 'hab_' + trialType not in self.habTrialList:
                                 trialType = self.actualTrialOrder[trialNum - 1]
-                        elif trialType == 'Hab∞':
+                        elif trialType == 'Hab^':
                             trialType = 'Hab'
                         didRedo = True
                     elif self.keyboard[self.key.J] and 'Hab' in self.actualTrialOrder and self.habMetWhen == -1:  # jump to test in a hab design.
@@ -1015,9 +1015,9 @@ class PyHab:
                             # Safety check: Make sure that it was really a hab sub trial!
                             if 'hab_' + trialType not in self.habTrialList:
                                 trialType = self.actualTrialOrder[trialNum - 1]
-                        elif trialType == 'Hab∞':
+                        elif trialType == 'Hab^':
                             trialType = 'Hab'
-                    elif self.keyboard[self.key.S] and trialType != 'Hab' and '∞' not in trialType:  # Skip trial. Doesn't work on things required for habituation.
+                    elif self.keyboard[self.key.S] and trialType != 'Hab' and '^' not in trialType:  # Skip trial. Doesn't work on things required for habituation.
                         skip = True
                     else:
                         self.dispCoderWindow(0)
@@ -1059,7 +1059,7 @@ class PyHab:
                     # Safety check: Make sure that it was really a hab sub trial!
                     if 'hab_' + trialType not in self.habTrialList:
                         trialType = self.actualTrialOrder[trialNum - 1]
-                elif trialType == 'Hab∞':
+                elif trialType == 'Hab^':
                     trialType = 'Hab'
                 if not self.blindPres:
                     self.rdyTextAppend = " NEXT: " + trialType + " TRIAL"
@@ -1101,7 +1101,7 @@ class PyHab:
             if dataType not in self.habTrialList:
                 localType = ttype
                 dataType = ttype
-        elif ttype == 'Hab∞':  # A common irregular case, when 'Hab' is the last trial in a sub-block.
+        elif ttype == 'Hab^':  # A common irregular case, when 'Hab' is the last trial in a sub-block.
             localType = 'Hab'
             dataType = localType
         else:
@@ -1160,7 +1160,7 @@ class PyHab:
                     offDur = endTrial - startOff
                     tempGazeArray = {'trial':number, 'trialType':dataType, 'startTime':startOff, 'endTime':endTrial, 'duration':offDur}
                     offArray.append(tempGazeArray)
-            elif core.getTime() - startTrial >= .5 and self.keyboard[self.key.S] and trialType != 'Hab' and '∞' not in trialType:
+            elif core.getTime() - startTrial >= .5 and self.keyboard[self.key.S] and trialType != 'Hab' and '^' not in trialType:
                 # New feature: End trial and go forward manually. Disabled for hab trials and meta-trials.
                 # Disabled for the first half-second to stop you from skipping through multiple auto-advancing trials
                 if localType in self.movieEnd:
@@ -1333,7 +1333,7 @@ class PyHab:
                 for c in range(0, len(onArray)):
                     tempSum += onArray[c]['duration']
                 self.habDataCompiled[self.habCount] += tempSum
-            if '∞' in ttype:
+            if '^' in ttype:
                 self.habCount += 1
                 # Check if criteria need to be set or have been met
                 if self.checkStop():  # If criteria met
@@ -1838,11 +1838,11 @@ class PyHab:
                                         tempName[4] = str(j+1) + tempName[4]  # Hab-counter
                                         if q == len(self.habTrialList) - 1:  # Last of this sub-trial block
                                             # Need a signifier of end of block on trial name.
-                                            tempName[4] = tempName[4]+'∞' # A symbol I hope nobody will use for their ttypename. opt-5. Windows?
-                                        tempName = "".join(tempName)  # End result hab[n][∞]_TrialType
+                                            tempName[4] = tempName[4]+'^' # A symbol I hope nobody will use for their ttypename. opt-5. Windows?
+                                        tempName = "".join(tempName)  # End result hab[n][^]_TrialType
                                     else:
                                         if q == len(self.habTrialList) - 1:  # Last of this sub-trial block
-                                            tempName = 'Hab∞'
+                                            tempName = 'Hab^'
                                         else:
                                             tempName = 'Hab'
 
@@ -1928,7 +1928,7 @@ class PyHab:
                     # Safety: Make sure it's a sub-trial
                     if 'hab_' + tempI in self.habTrialList:
                         i = tempI
-                elif i == 'Hab∞':  # The particular case of 'Hab' being the last trial in a sub-block.
+                elif i == 'Hab^':  # The particular case of 'Hab' being the last trial in a sub-block.
                     i = 'Hab'
                 x = tempCtr[i]  # Changed so hab trials get the same treatment as everything else.
                 if x < len(self.stimNames[i]):
