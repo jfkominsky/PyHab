@@ -227,7 +227,7 @@ class TestDataFunc(object):
         self.dataInst.dataMatrix = habMatrix  # We can actually use python's pointer thing to our advantage here: dataMatrix will update with habMatrix
         self.dataInst.badTrials = []
         self.dataInst.stimPres = True  # Temporary, so it doesn't try to play the end-hab sound.
-
+        self.dataInst.habDataCompiled[self.dataInst.habCount] = habMatrix[-1]['sumOnA']
         self.dataInst.habCount = 1
         assert self.dataInst.checkStop() == False
         assert self.dataInst.habCrit == 0
@@ -238,6 +238,7 @@ class TestDataFunc(object):
                           'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
                           'numOffB': 2})
 
+        self.dataInst.habDataCompiled[self.dataInst.habCount] = habMatrix[-1]['sumOnA']
         self.dataInst.habCount = 2
         assert self.dataInst.checkStop() == False
         assert self.dataInst.habCrit == 0
@@ -248,6 +249,7 @@ class TestDataFunc(object):
                           'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
                           'numOffB': 2})
 
+        self.dataInst.habDataCompiled[self.dataInst.habCount] = habMatrix[-1]['sumOnA']
         self.dataInst.habCount = 3
         assert self.dataInst.habCrit == 0
         assert self.dataInst.checkStop() == False
@@ -267,6 +269,7 @@ class TestDataFunc(object):
                           'habCrit': 0, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
                           'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
                           'numOffB': 2})
+        self.dataInst.habDataCompiled[self.dataInst.habCount] = habMatrix[-1]['sumOnA']
         self.dataInst.habCount += 1 # 4
         self.dataInst.setCritWindow = 4
         assert self.dataInst.checkStop() == False
@@ -283,12 +286,13 @@ class TestDataFunc(object):
                           'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
                           'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
                           'numOffB': 2})
+        self.dataInst.habDataCompiled[self.dataInst.habCount] = habMatrix[-1]['sumOnA'] # This is cheating, kind of, but the only way to proceed.
         self.dataInst.habCount += 1 # 5
         assert self.dataInst.checkStop() == False
         assert self.dataInst.habCrit == 40.0  # should not change yet. HabSetWhen = 4
         assert self.dataInst.habSetWhen == 4
 
-        habMatrix[6]['sumOnA'] = 25.0
+        self.dataInst.habDataCompiled[5] = 25.0
         assert self.dataInst.checkStop() == False
         assert self.dataInst.habCrit == 45.0  # should change to peak now. HabSetWhen = 5
         assert self.dataInst.habSetWhen == 5
@@ -296,12 +300,14 @@ class TestDataFunc(object):
 
         self.dataInst.setCritType = 'Max'
         habMatrix[3]['sumOnA'] = 15.0  # 25+15+10=50
+        self.dataInst.habDataCompiled[2] = 15.0
         assert self.dataInst.checkStop() == False
         assert self.dataInst.habCrit == 50.0  # should change to max now
         assert self.dataInst.habSetWhen == 5
 
 
         habMatrix[2]['sumOnA'] = 15.0  # 25+15+15=55
+        self.dataInst.habDataCompiled[1] = 15.0
         assert self.dataInst.checkStop() == False
         assert self.dataInst.habCrit == 55.0  # should change to max now. HabSetWhen=5
         assert self.dataInst.habSetWhen == 5
@@ -312,6 +318,7 @@ class TestDataFunc(object):
                           'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
                           'numOffB': 2})  # At this point, most recent 3 should be 25+10+5=40
 
+        self.dataInst.habDataCompiled[self.dataInst.habCount] = habMatrix[-1]['sumOnA'] # This is cheating, kind of, but the only way to proceed.
         self.dataInst.habCount += 1  # 6
         assert self.dataInst.habSetWhen == 5
         assert self.dataInst.checkStop() == False
@@ -326,6 +333,7 @@ class TestDataFunc(object):
                           'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
                           'numOffB': 2})
 
+        self.dataInst.habDataCompiled[self.dataInst.habCount] = habMatrix[-1]['sumOnA'] # This is cheating, kind of, but the only way to proceed.
         self.dataInst.habCount += 1  # 7
 
         self.dataInst.metCritWindow = 4  # 25+10+5+10 = 50
@@ -341,6 +349,7 @@ class TestDataFunc(object):
                           'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
                           'numOffB': 2})
 
+        self.dataInst.habDataCompiled[self.dataInst.habCount] = habMatrix[-1]['sumOnA'] # This is cheating, kind of, but the only way to proceed.
         self.dataInst.habCount += 1  # 8
         self.dataInst.metCritWindow = 5  # 25+10+5+10+5.1  = 55.1
         assert self.dataInst.habCrit == 55.0  # should not have changed.

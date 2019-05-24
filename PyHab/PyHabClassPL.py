@@ -17,6 +17,7 @@ class PyHabPL(PyHab):
     """
     A new preferential-looking version of PyHab that extends the base class rather than being a wholly separate class.
     There's still a lot of redundant code here, which will require significant restructuring of the base class to fix.
+    TODO: Need to redo a few things (notably doTrial and checkStop) for new hab block tricks.
     """
     def __init__(self, settingsDict):
         PyHab.__init__(self, settingsDict)
@@ -201,22 +202,22 @@ class PyHabPL(PyHab):
         else:
             return False
 
-    def doTrial(self, number, type, disMovie):
+    def doTrial(self, number, ttype, disMovie):
         """
         Control function for individual trials, to be called by doExperiment
         Returns a status value (int) that tells doExperiment what to do next
 
         :param number: Trial number
         :type number: int
-        :param type: Trial type
-        :type type: string
+        :param ttype: Trial type
+        :type ttype: string
         :param disMovie: Movie object for stimulus presentation
         :type disMovie: movieStim3 object
         :return: int, 0 = proceed to next trial, 1 = hab crit met, 2 = end experiment, 3 = trial aborted
         :rtype:
         """
         self.trialText.text = "Trial no. " + str(number)
-        if type == 'Hab':
+        if ttype == 'Hab':
             self.habCount += 1
         self.frameCount = 0 #reset display
         self.pauseCount = 0 #needed for ISI
@@ -263,22 +264,22 @@ class PyHabPL(PyHab):
                     if gazeOn:
                         onDur = endTrial - startOn
                         # Current format: Trial number, type, start of event, end of event, duration of event.
-                        tempGazeArray = {'trial': number, 'trialType': type, 'startTime': startOn, 'endTime': endTrial,
+                        tempGazeArray = {'trial': number, 'trialType': ttype, 'startTime': startOn, 'endTime': endTrial,
                                          'duration': onDur}
                         onArray.append(tempGazeArray)
                     if gazeOn2:
                         onDur2 = endTrial - startOn2
-                        tempGazeArray = {'trial': number, 'trialType': type, 'startTime': startOn2, 'endTime': endTrial,
+                        tempGazeArray = {'trial': number, 'trialType': ttype, 'startTime': startOn2, 'endTime': endTrial,
                                          'duration': onDur2}
                         onArray2.append(tempGazeArray)
                 else:
                     offDur = endTrial - startOff
-                    tempGazeArray = {'trial': number, 'trialType': type, 'startTime': startOff, 'endTime': endTrial,
+                    tempGazeArray = {'trial': number, 'trialType': ttype, 'startTime': startOff, 'endTime': endTrial,
                                      'duration': offDur}
                     offArray.append(tempGazeArray)
             elif core.getTime() - startTrial >= .5 and self.keyboard[self.key.J] and 'Hab' not in self.actualTrialOrder[(number-1):]:
                 # End this trial, move to next, do not mark as bad.
-                if type in self.movieEnd:
+                if ttype in self.movieEnd:
                     endFlag = True
                 else:
                     runTrial = False
@@ -290,19 +291,19 @@ class PyHabPL(PyHab):
                         if gazeOn:
                             onDur = endTrial - startOn
                             # Current format: Trial number, type, start of event, end of event, duration of event.
-                            tempGazeArray = {'trial': number, 'trialType': type, 'startTime': startOn,
+                            tempGazeArray = {'trial': number, 'trialType': ttype, 'startTime': startOn,
                                              'endTime': endTrial,
                                              'duration': onDur}
                             onArray.append(tempGazeArray)
                         if gazeOn2:
                             onDur2 = endTrial - startOn2
-                            tempGazeArray = {'trial': number, 'trialType': type, 'startTime': startOn2,
+                            tempGazeArray = {'trial': number, 'trialType': ttype, 'startTime': startOn2,
                                              'endTime': endTrial,
                                              'duration': onDur2}
                             onArray2.append(tempGazeArray)
                     else:
                         offDur = endTrial - startOff
-                        tempGazeArray = {'trial': number, 'trialType': type, 'startTime': startOff, 'endTime': endTrial,
+                        tempGazeArray = {'trial': number, 'trialType': ttype, 'startTime': startOff, 'endTime': endTrial,
                                          'duration': offDur}
                         offArray.append(tempGazeArray)
             elif self.keyboard[self.key.Y]: #the 'end the study' button, for fuss-outs
@@ -313,17 +314,17 @@ class PyHabPL(PyHab):
                     if gazeOn:
                         onDur = endTrial - startOn
                         # Current format: Trial number, type, start of event, end of event, duration of event.
-                        tempGazeArray = {'trial': number, 'trialType': type, 'startTime': startOn, 'endTime': endTrial,
+                        tempGazeArray = {'trial': number, 'trialType': ttype, 'startTime': startOn, 'endTime': endTrial,
                                          'duration': onDur}
                         onArray.append(tempGazeArray)
                     if gazeOn2:
                         onDur2 = endTrial - startOn2
-                        tempGazeArray = {'trial': number, 'trialType': type, 'startTime': startOn2, 'endTime': endTrial,
+                        tempGazeArray = {'trial': number, 'trialType': ttype, 'startTime': startOn2, 'endTime': endTrial,
                                          'duration': onDur2}
                         onArray2.append(tempGazeArray)
                 else:
                     offDur = endTrial - startOff
-                    tempGazeArray = {'trial': number, 'trialType': type, 'startTime': startOff, 'endTime': endTrial,
+                    tempGazeArray = {'trial': number, 'trialType': ttype, 'startTime': startOff, 'endTime': endTrial,
                                      'duration': offDur}
                     offArray.append(tempGazeArray)
                 if len(onArray) == 0:
@@ -332,10 +333,10 @@ class PyHabPL(PyHab):
                     onArray2.append({'trial': 0, 'trialType': 0, 'startTime': 0, 'endTime': 0,'duration': 0})
                 if len(offArray) == 0:
                     offArray.append({'trial': 0, 'trialType': 0, 'startTime': 0, 'endTime': 0,'duration': 0}) #keeps it from crashing while trying to write data.
-                type = 4 #to force an immediate quit.
+                ttype = 4 #to force an immediate quit.
             #Now for the non-abort states.
-            elif core.getTime() - startTrial >= self.maxDur[type] and not endFlag: #reached max trial duration
-                if type in self.movieEnd:
+            elif core.getTime() - startTrial >= self.maxDur[ttype] and not endFlag: #reached max trial duration
+                if ttype in self.movieEnd:
                     endFlag = True
                 else:
                     runTrial = False
@@ -347,26 +348,26 @@ class PyHabPL(PyHab):
                         if gazeOn:
                             onDur = endTrial - startOn
                             # Current format: Trial number, type, start of event, end of event, duration of event.
-                            tempGazeArray = {'trial': number, 'trialType': type, 'startTime': startOn,
+                            tempGazeArray = {'trial': number, 'trialType': ttype, 'startTime': startOn,
                                              'endTime': endTrial,
                                              'duration': onDur}
                             onArray.append(tempGazeArray)
                         if gazeOn2:
                             onDur2 = endTrial - startOn2
-                            tempGazeArray = {'trial': number, 'trialType': type, 'startTime': startOn2,
+                            tempGazeArray = {'trial': number, 'trialType': ttype, 'startTime': startOn2,
                                              'endTime': endTrial,
                                              'duration': onDur2}
                             onArray2.append(tempGazeArray)
                     else:
                         offDur = endTrial - startOff
-                        tempGazeArray = {'trial': number, 'trialType': type, 'startTime': startOff, 'endTime': endTrial,
+                        tempGazeArray = {'trial': number, 'trialType': ttype, 'startTime': startOff, 'endTime': endTrial,
                                          'duration': offDur}
                         offArray.append(tempGazeArray)
             elif not gazeOn and not gazeOn2: #if they are not looking as of the previous refresh, check if they have been looking away for too long
                 nowOff = core.getTime() - startTrial
-                if sumOn + sumOn2 > self.minOn[type] and nowOff - startOff >= self.maxOff[type] and self.playThrough[type] == 0 and not endFlag:
+                if sumOn + sumOn2 > self.minOn[ttype] and nowOff - startOff >= self.maxOff[ttype] and self.playThrough[ttype] == 0 and not endFlag:
                     #if they have previously looked for at least .5s and now looked away for 2 continuous sec
-                    if type in self.movieEnd:
+                    if ttype in self.movieEnd:
                         endFlag = True
                     else:
                         runTrial = False
@@ -375,7 +376,7 @@ class PyHabPL(PyHab):
                             self.endTrialSound.play()
                         endOff = nowOff
                         offDur = nowOff - startOff
-                        tempGazeArray = {'trial': number, 'trialType': type, 'startTime': startOff, 'endTime': endOff,
+                        tempGazeArray = {'trial': number, 'trialType': ttype, 'startTime': startOff, 'endTime': endOff,
                                          'duration': offDur}
                         offArray.append(tempGazeArray)
                 elif self.keyboard[self.key.B]: #if they have started looking since the last refresh and not met criterion
@@ -385,7 +386,7 @@ class PyHabPL(PyHab):
                     endOff = core.getTime() - startTrial
                     #by definition, if this is tripped there will be a preceding 'off' section if this is tripped because gazeOn is set at start
                     offDur = endOff - startOff
-                    tempGazeArray = {'trial': number, 'trialType': type, 'startTime': startOff, 'endTime': endOff,
+                    tempGazeArray = {'trial': number, 'trialType': ttype, 'startTime': startOff, 'endTime': endOff,
                                      'duration': offDur}
                     offArray.append(tempGazeArray)
                 elif self.keyboard[self.key.M]: #if they have started looking since the last refresh and not met criterion
@@ -395,7 +396,7 @@ class PyHabPL(PyHab):
                     endOff = core.getTime() - startTrial
                     #by definition, if this is tripped there will be a preceding 'off' section if this is tripped because gazeOn is set at start
                     offDur = endOff - startOff
-                    tempGazeArray = {'trial': number, 'trialType': type, 'startTime': startOff, 'endTime': endOff,
+                    tempGazeArray = {'trial': number, 'trialType': ttype, 'startTime': startOff, 'endTime': endOff,
                                      'duration': offDur}
                     offArray.append(tempGazeArray)
             elif gazeOn or gazeOn2:
@@ -404,8 +405,8 @@ class PyHabPL(PyHab):
                     tempOn = startOn
                 else:
                     tempOn = startOn2
-                if self.playThrough[type] == 1 and sumOn + sumOn2 + (nowOn - tempOn) >= self.minOn[type] and not endFlag:
-                    if type in self.movieEnd:
+                if self.playThrough[ttype] == 1 and sumOn + sumOn2 + (nowOn - tempOn) >= self.minOn[ttype] and not endFlag:
+                    if ttype in self.movieEnd:
                         endFlag = True
                     else:
                         runTrial = False
@@ -414,19 +415,19 @@ class PyHabPL(PyHab):
                             self.endTrialSound.play()
                         if gazeOn:
                             onDur = endTrial - startOn
-                            tempGazeArray = {'trial': number, 'trialType': type, 'startTime': startOn, 'endTime': endTrial,
+                            tempGazeArray = {'trial': number, 'trialType': ttype, 'startTime': startOn, 'endTime': endTrial,
                                              'duration': onDur}
                             onArray.append(tempGazeArray)
                         if gazeOn2:
                             onDur = endTrial - startOn2
-                            tempGazeArray = {'trial': number, 'trialType': type, 'startTime': startOn2, 'endTime': endTrial,
+                            tempGazeArray = {'trial': number, 'trialType': ttype, 'startTime': startOn2, 'endTime': endTrial,
                                              'duration': onDur}
                             onArray2.append(tempGazeArray)
                 if gazeOn and not self.keyboard[self.key.B]: #if they were looking and have looked away.
                     gazeOn = False
                     endOn = core.getTime() - startTrial
                     onDur = endOn - startOn
-                    tempGazeArray = {'trial': number, 'trialType': type, 'startTime': startOn, 'endTime': endOn,
+                    tempGazeArray = {'trial': number, 'trialType': ttype, 'startTime': startOn, 'endTime': endOn,
                                      'duration': onDur}
                     onArray.append(tempGazeArray)
                     sumOn = sumOn + onDur
@@ -441,7 +442,7 @@ class PyHabPL(PyHab):
                     gazeOn2 = False
                     endOn2 = core.getTime() - startTrial2
                     onDur2 = endOn2 - startOn2
-                    tempGazeArray2 = {'trial': number, 'trialType': type, 'startTime': startOn2, 'endTime': endOn2,
+                    tempGazeArray2 = {'trial': number, 'trialType': ttype, 'startTime': startOn2, 'endTime': endOn2,
                                       'duration': onDur2}
                     onArray2.append(tempGazeArray2)
                     sumOn2 = sumOn2 + onDur2
@@ -452,8 +453,8 @@ class PyHabPL(PyHab):
                     else:
                         numOff = numOff + 1
                         startOff = core.getTime() - startTrial
-            movieStatus = self.dispTrial(type, disMovie)
-            if type in self.movieEnd and endFlag and movieStatus >= 1:
+            movieStatus = self.dispTrial(ttype, disMovie)
+            if ttype in self.movieEnd and endFlag and movieStatus >= 1:
                 runTrial = False
                 endTrial = core.getTime() - startTrial
                 if not self.stimPres:
@@ -461,17 +462,17 @@ class PyHabPL(PyHab):
                 # determine if they were looking or not at end of trial and update appropriate array
                 if gazeOn:
                     onDur = endTrial - startOn
-                    tempGazeArray = {'trial': number, 'trialType': type, 'startTime': startOn, 'endTime': endTrial,
+                    tempGazeArray = {'trial': number, 'trialType': ttype, 'startTime': startOn, 'endTime': endTrial,
                                              'duration': onDur}
                     onArray.append(tempGazeArray)
                 if gazeOn2:
                     onDur = endTrial - startOn2
-                    tempGazeArray = {'trial': number, 'trialType': type, 'startTime': startOn2, 'endTime': endTrial,
+                    tempGazeArray = {'trial': number, 'trialType': ttype, 'startTime': startOn2, 'endTime': endTrial,
                                              'duration': onDur}
                     onArray2.append(tempGazeArray)
                 else:
                     offDur = endTrial - startOff
-                    tempGazeArray = {'trial': number, 'trialType': type, 'startTime': startOff, 'endTime': endTrial,
+                    tempGazeArray = {'trial': number, 'trialType': ttype, 'startTime': startOff, 'endTime': endTrial,
                                      'duration':offDur}
                     offArray.append(tempGazeArray)
         if self.stimPres:
@@ -498,18 +499,18 @@ class PyHabPL(PyHab):
             if self.actualTrialOrder[number] not in self.autoAdvance:
                 self.win.flip() #blanks the screen outright if not auto-advancing
         if redo: #if the abort button was pressed
-            self.abortTrial(onArray, offArray, number, type, onArray2, self.stimName)
+            self.abortTrial(onArray, offArray, number, ttype, onArray2, self.stimName)
             return 3
         else:
-            self.dataRec(onArray, offArray, number, type, onArray2, self.stimName)
+            self.dataRec(onArray, offArray, number, ttype, onArray2, self.stimName)
 
-        if type == 'Hab': #if still during habituation
+        if ttype == 'Hab': #if still during habituation
             #need to check based on number of HAB trial specifically
             if self.checkStop():
                 return 1
             else:
                 return 0
-        elif number >= len(self.actualTrialOrder) or type == 4:
+        elif number >= len(self.actualTrialOrder) or ttype == 4:
             #self.endExperiment()
             return 2
         else:
@@ -558,27 +559,27 @@ class PyHabPL(PyHab):
         #on and off until we reach the end of a given trial, to reconstruct it.
         #at the start of each line, add information: sNum, ageMo, ageDay, sex, cond, GNG, ON/OFF
         for n in range(0, len(self.verbDatList['verboseOn'])):
-            self.verbDatList['verboseOn'][n].update({'snum': self.sNum, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex,
+            self.verbDatList['verboseOn'][n].update({'snum': self.sNum, 'sID': self.sID, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex,
                                       'cond': self.cond, 'GNG': 1, 'gazeOnOff': 1})
         for m in range(0, len(self.verbDatList['verboseOff'])):  # adding the details to the verbose array
             self.verbDatList['verboseOff'][m].update(
-                {'snum': self.sNum, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex,
+                {'snum': self.sNum, 'sID': self.sID, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex,
                  'cond': self.cond, 'GNG': 1, 'gazeOnOff': 0})
         for o in range(0, len(self.verbDatList['verboseOn2'])):
-            self.verbDatList['verboseOn2'][o].update({'snum': self.sNum, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex,
+            self.verbDatList['verboseOn2'][o].update({'snum': self.sNum, 'sID': self.sID, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex,
                                       'cond': self.cond, 'GNG': 1, 'gazeOnOff': 2})
         if len(self.badTrials) > 0:
             for p in range(0, len(self.verbBadList['verboseOn'])):
                 self.verbBadList['verboseOn'][p].update(
-                    {'snum': self.sNum, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex,
+                    {'snum': self.sNum, 'sID': self.sID, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex,
                      'cond': self.cond, 'GNG': 0, 'gazeOnOff': 1})
             for q in range(0, len(self.verbBadList['verboseOff'])):  # same details for the bad trials
                 self.verbBadList['verboseOff'][q].update(
-                    {'snum': self.sNum, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex,
+                    {'snum': self.sNum, 'sID': self.sID, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex,
                      'cond': self.cond, 'GNG': 0, 'gazeOnOff': 0})
             for r in range(0, len(self.verbBadList['verboseOn2'])):
                 self.verbBadList['verboseOn2'][r].update(
-                    {'snum': self.sNum, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex,
+                    {'snum': self.sNum, 'sID': self.sID, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex,
                      'cond': self.cond, 'GNG': 0, 'gazeOnOff': 2})
         #read the final data matrix and go trial by trial.
         #print(verboseOn) #debug, to make sure verboseOn is being constructed correctly
@@ -646,7 +647,7 @@ class PyHabPL(PyHab):
                             offIndex += 1
                     trialVerbose2 = sorted(trialVerbose, key=lambda trialVerbose:trialVerbose['startTime']) #this is the magic bullet, in theory.
                     verboseMatrix.extend(trialVerbose2)
-        headers2 = ['snum', 'months', 'days', 'sex', 'cond', 'GNG', 'gazeOnOff', 'trial', 'trialType',
+        headers2 = ['snum', 'sID', 'months', 'days', 'sex', 'cond', 'GNG', 'gazeOnOff', 'trial', 'trialType',
                                 'startTime', 'endTime', 'duration']
         with open(self.dataFolder+self.prefix+str(self.sNum)+'_'+str(self.sID)+nDupe+'_'+str(self.today.month)+str(self.today.day)+str(self.today.year)+'_VERBOSE.csv','w') as f:
             outputWriter2 = csv.DictWriter(f, fieldnames = headers2, extrasaction = 'ignore', lineterminator ='\n') #careful! this OVERWRITES the existing file. Fills from snum.
