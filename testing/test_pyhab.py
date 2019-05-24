@@ -408,8 +408,8 @@ class TestRunSetup(object):
         self.trialInst.habTrialList = ['hab_C','Hab']
         self.trialInst.run(testMode=testOne)
         assert len(self.trialInst.actualTrialOrder) == 33
-        assert len([x for x in self.trialInst.actualTrialOrder if x == 'Hab']) == 14
-        assert len([x for x in self.trialInst.actualTrialOrder if x == 'hab_C']) == 14
+        assert len([x for x in self.trialInst.actualTrialOrder if x == 'Hab^']) == 14
+        assert len([x for x in self.trialInst.actualTrialOrder if '_C' in x]) == 14
 
 
     def test_multiyear_age(self):
