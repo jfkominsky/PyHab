@@ -292,7 +292,7 @@ class TestDataFunc(object):
         assert self.dataInst.habCrit == 40.0  # should not change yet. HabSetWhen = 4
         assert self.dataInst.habSetWhen == 4
 
-        self.dataInst.habDataCompiled[5] = 25.0
+        self.dataInst.habDataCompiled[4] = 25.0
         assert self.dataInst.checkStop() == False
         assert self.dataInst.habCrit == 45.0  # should change to peak now. HabSetWhen = 5
         assert self.dataInst.habSetWhen == 5
@@ -605,6 +605,7 @@ class TestCommands(object):
         assert self.commandInst.actualTrialOrder == ['A', 'A', 'B', 'B', 'Hab', 'hab1^_C', 'D']
 
         self.commandInst.stimPres = False
+        self.commandInst.habCount = 1
         [x, y] = self.commandInst.insertHab(7)
         assert x == 0
         assert y == 'Hab'
