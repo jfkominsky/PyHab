@@ -808,8 +808,8 @@ class PyHab:
                 tempName = list(self.habTrialList[z])
                 if z == len(self.habTrialList) - 1:  # Last of this sub-trial block
                     # Need a signifier of end of block on trial name.
-                    tempName[4] = '^' + tempName[4] # A symbol I hope nobody will use for their ttypename. opt-5. Windows?
-                tempName[4] = str(self.habCount) + tempName[4]  # Hab-counter
+                    tempName[3] = '^' + tempName[3] # A symbol I hope nobody will use for their ttypename. opt-5. Windows?
+                tempName[3] = str(self.habCount) + tempName[3]  # Hab-counter
                 tempName = "".join(tempName)  # End result hab[n][^]_TrialType
                 self.actualTrialOrder.insert(trialNum - 1 + z, tempName)
                 self.maxHabIndex = trialNum - 1 + z
@@ -1837,8 +1837,8 @@ class PyHab:
                                         tempName = list(self.habTrialList[q])
                                         if q == len(self.habTrialList) - 1:  # Last of this sub-trial block
                                             # Need a signifier of end of block on trial name.
-                                            tempName[4] = '^' + tempName[4] # A symbol I hope nobody will use for their ttypename. opt-5. Windows?
-                                        tempName[4] = str(j+1) + tempName[4]  # Hab-counter
+                                            tempName[3] = '^' + tempName[3] # A symbol I hope nobody will use for their ttypename. opt-5. Windows?
+                                        tempName[3] = str(j+1) + tempName[3]  # Hab-counter
                                         tempName = "".join(tempName)  # End result hab[n][^]_TrialType
                                     else:
                                         if q == len(self.habTrialList) - 1:  # Last of this sub-trial block
