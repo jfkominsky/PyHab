@@ -300,14 +300,14 @@ class TestDataFunc(object):
 
         self.dataInst.setCritType = 'Max'
         habMatrix[3]['sumOnA'] = 15.0  # 25+15+10=50
-        self.dataInst.habDataCompiled[2] = 15.0
+        self.dataInst.habDataCompiled[1] = 15.0
         assert self.dataInst.checkStop() == False
         assert self.dataInst.habCrit == 50.0  # should change to max now
         assert self.dataInst.habSetWhen == 5
 
 
         habMatrix[2]['sumOnA'] = 15.0  # 25+15+15=55
-        self.dataInst.habDataCompiled[1] = 15.0
+        self.dataInst.habDataCompiled[0] = 15.0
         assert self.dataInst.checkStop() == False
         assert self.dataInst.habCrit == 55.0  # should change to max now. HabSetWhen=5
         assert self.dataInst.habSetWhen == 5
