@@ -379,6 +379,7 @@ class PyHab:
                 self.habCrit = sumOnTimes
                 self.habSetWhen = deepcopy(self.habCount)
         elif self.setCritType == 'Max' and self.habCount > self.setCritWindow:  # Absolute max looking time among hab trials, regardless of order.
+            sumOnTimes = 0
             habOns = deepcopy(self.habDataCompiled)
             habOns.sort  # Rearranges the array into lowest-highest
             for i in range(-1*self.setCritWindow,0):
