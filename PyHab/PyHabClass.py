@@ -806,10 +806,10 @@ class PyHab:
         if len(self.habTrialList) > 0:
             for z in range(0, len(self.habTrialList)):
                 tempName = list(self.habTrialList[z])
-                tempName[4] = str(self.habCount) + tempName[4]  # Hab-counter
                 if z == len(self.habTrialList) - 1:  # Last of this sub-trial block
                     # Need a signifier of end of block on trial name.
-                    tempName[4] = tempName[4] + '^'  # A symbol I hope nobody will use for their ttypename. opt-5. Windows?
+                    tempName[4] = '^' + tempName[4] # A symbol I hope nobody will use for their ttypename. opt-5. Windows?
+                tempName[4] = str(self.habCount) + tempName[4]  # Hab-counter
                 tempName = "".join(tempName)  # End result hab[n][^]_TrialType
                 self.actualTrialOrder.insert(trialNum - 1 + z, tempName)
                 self.maxHabIndex = trialNum - 1 + z
@@ -1835,10 +1835,10 @@ class PyHab:
                                 for q in range(0, len(self.habTrialList)):
                                     if self.habTrialList[q] != 'Hab':
                                         tempName = list(self.habTrialList[q])
-                                        tempName[4] = str(j+1) + tempName[4]  # Hab-counter
                                         if q == len(self.habTrialList) - 1:  # Last of this sub-trial block
                                             # Need a signifier of end of block on trial name.
-                                            tempName[4] = tempName[4]+'^' # A symbol I hope nobody will use for their ttypename. opt-5. Windows?
+                                            tempName[4] = '^' + tempName[4] # A symbol I hope nobody will use for their ttypename. opt-5. Windows?
+                                        tempName[4] = str(j+1) + tempName[4]  # Hab-counter
                                         tempName = "".join(tempName)  # End result hab[n][^]_TrialType
                                     else:
                                         if q == len(self.habTrialList) - 1:  # Last of this sub-trial block
