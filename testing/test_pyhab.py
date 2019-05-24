@@ -594,20 +594,21 @@ class TestCommands(object):
         assert y == 'Hab'
 
         self.commandInst.stimPres = True
-        self.commandInst.habTrialList = ['Hab','C']
+        self.commandInst.habTrialList = ['Hab','hab_C']
         self.commandInst.trialOrder = ['A', 'A', 'B', 'B', 'Hab', 'D']
         self.commandInst.counters = {'A': 2, 'B': 2, 'C': 1, 'D': 0,'Hab':1}
+        self.commandInst.calcHabOver=['Hab']
         self.commandInst.run(testMode=testOne)
         [x, y] = self.commandInst.jumpToTest(7)
         assert x == 'Movie9'
         assert y == 'D'
-        assert self.commandInst.actualTrialOrder == ['A', 'A', 'B', 'B', 'Hab', 'C', 'D']
+        assert self.commandInst.actualTrialOrder == ['A', 'A', 'B', 'B', 'Hab', 'hab1^_C', 'D']
 
         self.commandInst.stimPres = False
         [x, y] = self.commandInst.insertHab(7)
         assert x == 0
         assert y == 'Hab'
-        assert self.commandInst.actualTrialOrder == ['A', 'A', 'B', 'B', 'Hab', 'C','Hab','C','D']
+        assert self.commandInst.actualTrialOrder == ['A', 'A', 'B', 'B', 'Hab', 'hab1^_C','Hab','hab2^_C','D']
 
 
 class TestPrefLook(object):
