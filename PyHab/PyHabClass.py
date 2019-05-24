@@ -805,12 +805,19 @@ class PyHab:
         trialNum = tn
         if len(self.habTrialList) > 0:
             for z in range(0, len(self.habTrialList)):
-                tempName = list(self.habTrialList[z])
-                if z == len(self.habTrialList) - 1:  # Last of this sub-trial block
-                    # Need a signifier of end of block on trial name.
-                    tempName[3] = '^' + tempName[3] # A symbol I hope nobody will use for their ttypename. opt-5. Windows?
-                tempName[3] = str(self.habCount) + tempName[3]  # Hab-counter
-                tempName = "".join(tempName)  # End result hab[n][^]_TrialType
+                if self.habTrialList[z] != 'Hab':
+                    tempName = list(self.habTrialList[z])
+                    if z == len(self.habTrialList) - 1:  # Last of this sub-trial block
+                        # Need a signifier of end of block on trial name.
+                        tempName[3] = '^' + tempName[3] # A symbol I hope nobody will use for their ttypename. opt-5. Windows?
+                    tempName[3] = str(self.habCount) + tempName[3]  # Hab-counter
+                    tempName = "".join(tempName)  # End result hab[n][^]_TrialType
+                else:
+                    if z == len(self.habTrialList) - 1:  # Last of this sub-trial block
+                        tempName = 'Hab^'
+                    else:
+                        tempName = 'Hab'
+
                 self.actualTrialOrder.insert(trialNum - 1 + z, tempName)
                 self.maxHabIndex = trialNum - 1 + z
         else:
