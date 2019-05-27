@@ -902,7 +902,8 @@ class TestCommands(object):
         self.commandInst.dataMatrix.append(temp4)
         self.commandInst.dataMatrix.append(temp5)
         self.commandInst.dataMatrix.append(temp6)
-        self.commandInst.habDataCompiled=[10,10,10]  # Need to set this manually too.
+        self.commandInst.habDataCompiled = [0]*self.commandInst.maxHabTrials
+        self.commandInst.habDataCompiled[0:2] = [10,10,10]  # Need to set this manually too.
         self.commandInst.habCount = 3
 
         assert self.commandInst.checkStop() == False
@@ -910,6 +911,7 @@ class TestCommands(object):
         assert self.commandInst.habCrit == 15
         # OK, assuming all that got set up properly, lets get messy.
         self.commandInst.redoSetup(6,['B','C'])
+        assert self.commandInst.habDataCompiled[2] == 0
         assert self.commandInst.habSetWhen == -1
         assert self.commandInst.habCrit == 0
         assert self.habCount == 2
