@@ -400,12 +400,15 @@ class PyHab:
             sumOnTimes = 0
             habOns = deepcopy(self.habDataCompiled)
             habOns.sort()  # Rearranges the array into lowest-highest.
+            lastHabUsed = 0
             for i in range(-1*self.setCritWindow,0):
                 sumOnTimes = sumOnTimes + habOns[i]
+                # This convoluted mess finds the last instance of the 'max' value(s) used in the computation.
+                lastHabUsed = max(lastHabUsed,len(self.habDataCompiled) - self.habDataCompiled[::-1].index(habOns[i]))
             sumOnTimes = sumOnTimes / self.setCritDivisor
             if sumOnTimes > self.habCrit:
                 self.habCrit = sumOnTimes
-                self.habSetWhen = deepcopy(self.habCount)
+                self.habSetWhen = lastHabUsed
         elif self.setCritType == 'Threshold' and self.habCount >= self.setCritWindow and self.habSetWhen == -1:
             sumOnTimes = 0
             index = self.habCount - self.setCritWindow  # How far back should we look?
@@ -781,7 +784,7 @@ class PyHab:
                     tempTN = trialNum + max(len(self.habTrialList), 1)  # Starting with the next trial.
                     ctr = 0
                     for h in range(self.habCount, self.maxHabTrials):
-                        [irrel, irrel2] = self.insertHab(self, tn=tempTN+ctr*max(len(self.habTrialList),1), hn=h)
+                        [irrel, irrel2] = self.insertHab(tn=tempTN+ctr*max(len(self.habTrialList), 1), hn=h)
                         ctr += 1
         return [disMovie, trialNum]
 

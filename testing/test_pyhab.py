@@ -958,6 +958,51 @@ class TestCommands(object):
         assert self.commandInst.checkStop() == False
         assert self.commandInst.habMetWhen == -1
         assert len(self.commandInst.actualTrialOrder) == 33
+        assert self.commandInst.habCount == 5
+
+        self.commandInst.setCritType = 'Max'
+        self.commandInst.redoSetup(15,['B','C'])
+        assert self.commandInst.habCount == 4
+        assert len(self.commandInst.actualTrialOrder) == 33
+        assert self.commandInst.habCrit == 15 # Should as yet be unchanged
+
+        temp7['trial'] = 13
+        temp8['trial'] = 14
+        temp8['sumOnA'] = 12
+        self.commandInst.dataMatrix.append(temp7)
+        self.commandInst.dataMatrix.append(temp8)
+        self.commandInst.habDataCompiled[4] = 12
+        self.commandInst.habCount = 5
+        assert self.commandInst.checkStop() == False
+        assert self.commandInst.habCrit == 16
+        assert self.commandInst.habSetWhen == 5
+        self.commandInst.redoSetup(15,['B','C'])
+        assert self.commandInst.checkStop() == False
+        assert self.commandInst.habCrit == 15
+        assert self.commandInst.habSetWhen == 3  # Because of new habSetWhen calculation.
+
+
+        self.commandInst.setCritType = 'Peak' # Really need to go back and set this initially!
+        self.commandInst.habDataCompiled[3] = 12  # peak window hab 2/3/4
+        self.commandInst.dataMatrix[3]['sumOnA'] = 12
+        assert self.commandInst.checkStop() == False
+        assert self.commandInst.habCrit == 16
+        assert self.commandInst.habSetWhen == 4
+
+        temp7['trial'] = 13
+        temp8['trial'] = 14
+        temp8['sumOnA'] = 2
+        self.commandInst.dataMatrix.append(temp7)
+        self.commandInst.dataMatrix.append(temp8)
+        self.commandInst.habDataCompiled[4] = 2
+        self.commandInst.habCount = 5
+        assert self.commandInst.checkStop() == False
+        assert self.commandInst.habCrit == 16
+        assert self.commandInst.habSetWhen == 4
+        self.commandInst.redoSetup(15, ['B', 'C'])
+        assert self.commandInst.checkStop() == False
+        assert self.commandInst.habCrit == 16
+        assert self.commandInst.habSetWhen == 4  # Verifying unchanged.
 
 
 class TestPrefLook(object):
