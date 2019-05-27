@@ -410,14 +410,14 @@ class TestDataFunc(object):
         self.dataInst.redoTrial(4)
         assert self.dataInst.habCount == 1
         assert self.dataInst.habDataCompiled[0] == 10
-        assert len(self.dataInst.dataMatrix) == 2
+        assert len(self.dataInst.dataMatrix) == 3
         assert len(self.dataInst.badTrials) == 2
 
         self.dataInst.redoTrial(5)
         assert self.dataInst.habCount == 0
         assert self.dataInst.habDataCompiled[0] == 0
         assert len(self.dataInst.dataMatrix) == 2
-        assert len(self.dataInst.badTrials) == 2
+        assert len(self.dataInst.badTrials) == 3
 
     def test_datarec(self):
         self.dataInst.dataMatrix = []
@@ -449,10 +449,11 @@ class TestDataFunc(object):
         self.dataInst.calcHabOver = []
         self.dataInst.habDataCompiled = [0]*self.dataInst.maxHabTrials
         self.dataInst.stimPres = True  # Temporary, so it doesn't try to play the end-hab sound.
-        self.dataInst.habDataCompiled[self.dataInst.habCount] = habMatrix[-1]['sumOnA']  # 0, 10
+        self.dataInst.habDataCompiled[self.dataInst.habCount] += habMatrix[-1]['sumOnA']  # 0, 10
         self.dataInst.habCount = 1
         assert self.dataInst.checkStop() == False
         assert self.dataInst.habCrit == 0
+        assert self.dataInst.habSetWhen == -1
 
         habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
                           'condLabel': 'dataTest', 'trial': 4, 'GNG': 1, 'trialType': 'Hab', 'stimName': 'movie1.mov',
@@ -460,10 +461,11 @@ class TestDataFunc(object):
                           'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
                           'numOffB': 2})
 
-        self.dataInst.habDataCompiled[self.dataInst.habCount] = habMatrix[-1]['sumOnA']  # 1, 10
+        self.dataInst.habDataCompiled[self.dataInst.habCount] += habMatrix[-1]['sumOnA']  # 1, 10
         self.dataInst.habCount = 2
         assert self.dataInst.checkStop() == False
         assert self.dataInst.habCrit == 0
+        assert self.dataInst.habSetWhen == -1
 
         habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
                           'condLabel': 'dataTest', 'trial': 5, 'GNG': 1, 'trialType': 'Hab', 'stimName': 'movie1.mov',
@@ -471,17 +473,20 @@ class TestDataFunc(object):
                           'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
                           'numOffB': 2})
 
-        self.dataInst.habDataCompiled[self.dataInst.habCount] = habMatrix[-1]['sumOnA']  # 2, 10
+        self.dataInst.habDataCompiled[self.dataInst.habCount] += habMatrix[-1]['sumOnA']  # 2, 10
         self.dataInst.habCount = 3
         assert self.dataInst.habCrit == 0
+        assert self.dataInst.habSetWhen == -1
         assert self.dataInst.checkStop() == False
         assert self.dataInst.habCrit == 15.0  # Check criteria set properly
+        assert self.dataInst.habSetWhen == 3
 
         self.dataInst.habCount = 14
         assert self.dataInst.checkStop() == True
 
         self.dataInst.habCount = 3
         self.dataInst.habCrit = 0  # reset.
+        self.dataInst.habSetWhen = -1
         self.dataInst.setCritDivisor = 1
         assert self.dataInst.checkStop() == False
         assert self.dataInst.habCrit == 30.0
