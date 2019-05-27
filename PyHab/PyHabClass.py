@@ -780,7 +780,7 @@ class PyHab:
                     self.habMetWhen = -1  # Reset
                     tempTN = trialNum + max(len(self.habTrialList), 1)  # Starting with the next trial.
                     ctr = 0
-                    for h in range(self.habCount+1, self.maxHabTrials+1):
+                    for h in range(self.habCount, self.maxHabTrials):
                         [irrel, irrel2] = self.insertHab(self, tn=tempTN+ctr*max(len(self.habTrialList),1), hn=h)
                         ctr += 1
         return [disMovie, trialNum]
