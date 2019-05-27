@@ -826,7 +826,7 @@ class PyHab:
             self.endExperiment()
             return[0,'4']
 
-    def insertHab(self, tn, hn=self.habCount):
+    def insertHab(self, tn, hn=-1):
         """
         Literally insert a new hab trial or meta-trial into actualTrialOrder, get the right movie, etc.
 
@@ -839,6 +839,8 @@ class PyHab:
         :rtype: list
         """
         trialNum = tn
+        if hn == -1:
+            hn = self.habCount
         habNum = hn
         if len(self.habTrialList) > 0:
             for z in range(0, len(self.habTrialList)):

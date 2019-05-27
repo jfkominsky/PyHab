@@ -911,6 +911,7 @@ class TestCommands(object):
         self.commandInst.redoSetup(6,['B','C'])
         assert self.commandInst.habSetWhen == -1
         assert self.commandInst.habCrit == 0
+        assert self.habCount == 2
 
 
 
