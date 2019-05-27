@@ -769,17 +769,20 @@ class PyHab:
             self.redoTrial(i)
         if self.habCount != tempHabCount: # Did we change a trial that can change checkStop?
             # If hab type is threshold, max, or peak, we might need to recalculate dynamically
-            if self.setCritType != 'First' and self.habSetWhen >= self.habCount:
+            if self.habSetWhen >= self.habCount:
                 self.habSetWhen = -1
                 self.habCrit = 0
-                dummy = self.checkStop()
+                if self.setCritType != 'First':  # If it's 'first', it'll just solve itself.
+                    dummy = self.checkStop()
             # If habituation has been reached, we have to basically undo what happens when a hab crit is met.
             if self.habMetWhen > -1 and self.habCount != self.maxHabTrials - 1:  # If it was the last hab trial possible, it'll just solve itself with no further action
                 if not self.checkStop():  # Almost always true in this case, because we're redoing a hab trial.
                     self.habMetWhen = -1  # Reset
-                    tempTN = trialNum + 1  # Starting with the next trial.
+                    tempTN = trialNum + max(len(self.habTrialList), 1)  # Starting with the next trial.
+                    ctr = 0
                     for h in range(self.habCount+1, self.maxHabTrials+1):
-                        [irrel, irrel2] = self.insertHab(self, tn=tempTN, hn=h)
+                        [irrel, irrel2] = self.insertHab(self, tn=tempTN+ctr*max(len(self.habTrialList),1), hn=h)
+                        ctr += 1
         return [disMovie, trialNum]
 
     def jumpToTest(self, tn):
