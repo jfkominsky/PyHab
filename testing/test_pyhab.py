@@ -344,7 +344,8 @@ class TestDataFunc(object):
         self.dataInst.verbDatList = copy.deepcopy(self.testDatList)
         self.dataInst.badTrials = []
         self.dataInst.verbBadList = {'verboseOn': [], 'verboseOff': [], 'verboseOn2': [], 'verboseOff2': []}
-        self.dataInst.habTrialList = ['hab_C', 'Hab','hab_C']
+        self.dataInst.habTrialList = ['hab_C', 'Hab', 'hab_C']
+        self.dataInst.calcHabOver = ['Hab', 'hab_C']
         self.dataInst.actualTrialOrder = ['A', 'B', 'hab1_C', 'Hab', 'hab1^_C','hab2_c', 'Hab', 'hab2^_C','hab3_C', 'Hab', 'hab3^_C']
 
         self.dataInst.dataMatrix.append(
@@ -358,10 +359,10 @@ class TestDataFunc(object):
         self.dataInst.verbDatList['verboseOff'].append(
             {'trial': 3, 'trialType': 'hab_C', 'startTime': 3.5, 'endTime': 5.0, 'duration': 1.5})
         self.dataInst.verbDatList['verboseOn'].append(
-            {'trial': 3, 'trialType': 'Hhab_Cab', 'startTime': 5.0, 'endTime': 11.5, 'duration': 6.5})
+            {'trial': 3, 'trialType': 'hab_C', 'startTime': 5.0, 'endTime': 11.5, 'duration': 6.5})
         self.dataInst.verbDatList['verboseOff'].append(
             {'trial': 3, 'trialType': 'hab_C', 'startTime': 11.5, 'endTime': 13.5, 'duration': 2.0})
-        self.dataInst.habDataCompiled[self.dataInst.habCount] = self.dataInst.dataMatrix[-1]['sumOnA']
+        self.dataInst.habDataCompiled[self.dataInst.habCount] = self.dataInst.dataMatrix[-1]['sumOnA']  # 10
         self.dataInst.habCount = 0  # Has not yet proceeded to end of hab trial!
 
         self.dataInst.dataMatrix.append(
@@ -378,7 +379,7 @@ class TestDataFunc(object):
             {'trial': 4, 'trialType': 'Hab', 'startTime': 5.0, 'endTime': 11.5, 'duration': 6.5})
         self.dataInst.verbDatList['verboseOff'].append(
             {'trial': 4, 'trialType': 'Hab', 'startTime': 11.5, 'endTime': 13.5, 'duration': 2.0})
-        self.dataInst.habDataCompiled[self.dataInst.habCount] += self.dataInst.dataMatrix[-1]['sumOnA']
+        self.dataInst.habDataCompiled[self.dataInst.habCount] += self.dataInst.dataMatrix[-1]['sumOnA']  # 20
         self.dataInst.habCount = 0  # Has not yet proceeded to end of hab trial!
 
         self.dataInst.dataMatrix.append(
@@ -395,7 +396,7 @@ class TestDataFunc(object):
             {'trial': 5, 'trialType': 'hab_C', 'startTime': 5.0, 'endTime': 11.5, 'duration': 6.5})
         self.dataInst.verbDatList['verboseOff'].append(
             {'trial': 5, 'trialType': 'hab_C', 'startTime': 11.5, 'endTime': 13.5, 'duration': 2.0})
-        self.dataInst.habDataCompiled[self.dataInst.habCount] += self.dataInst.dataMatrix[-1]['sumOnA']
+        self.dataInst.habDataCompiled[self.dataInst.habCount] += self.dataInst.dataMatrix[-1]['sumOnA']  # 30
         self.dataInst.habCount = 1
 
         # Now redo 3, then 4, then 5.
@@ -446,6 +447,7 @@ class TestDataFunc(object):
         self.dataInst.badTrials = []
         self.dataInst.habTrialList = []  # Resetting from the 'redo' tests above.
         self.dataInst.calcHabOver = []
+        self.dataInst.habDataCompiled = [0]*self.dataInst.maxHabTrials
         self.dataInst.stimPres = True  # Temporary, so it doesn't try to play the end-hab sound.
         self.dataInst.habDataCompiled[self.dataInst.habCount] = habMatrix[-1]['sumOnA']  # 0, 10
         self.dataInst.habCount = 1
