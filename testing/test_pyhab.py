@@ -444,6 +444,8 @@ class TestDataFunc(object):
                           'numOffB': 2})
         self.dataInst.dataMatrix = habMatrix  # We can actually use python's pointer thing to our advantage here: dataMatrix will update with habMatrix
         self.dataInst.badTrials = []
+        self.dataInst.habTrialList = []  # Resetting from the 'redo' tests above.
+        self.dataInst.calcHabOver = []
         self.dataInst.stimPres = True  # Temporary, so it doesn't try to play the end-hab sound.
         self.dataInst.habDataCompiled[self.dataInst.habCount] = habMatrix[-1]['sumOnA']  # 0, 10
         self.dataInst.habCount = 1

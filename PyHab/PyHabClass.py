@@ -332,12 +332,13 @@ class PyHab:
                 i += 1
         # add the new 'bad' trial to badTrials
         newTempData['GNG'] = 0
-        if len(self.habTrialList) > 0 and self.dataMatrix[trialIndex]['trialType'] in self.habTrialList and self.dataMatrix[trialIndex]['trialType'] in self.calcHabOver:
+        if len(self.habTrialList) > 0 and self.dataMatrix[trialIndex]['trialType'] in self.habTrialList:
             # Subtract data from self.habDataCompiled before checking whether we reduce the hab count, do make indexing
             # the correct part of habDataCompiled easier. Notably, reduces but does not inherently zero out.
-            self.habDataCompiled[self.habCount-1] = self.habDataCompiled[self.habCount-1] - self.dataMatrix[trialIndex]['sumOnA']
-            if self.habDataCompiled[self.habCount-1] < 0:  # For rounding errors
-                self.habDataCompiled[self.habCount-1] = 0
+            if self.dataMatrix[trialIndex]['trialType'] in self.calcHabOver:  # Make sure it's part of the hab calc
+                self.habDataCompiled[self.habCount-1] = self.habDataCompiled[self.habCount-1] - self.dataMatrix[trialIndex]['sumOnA']
+                if self.habDataCompiled[self.habCount-1] < 0:  # For rounding errors
+                    self.habDataCompiled[self.habCount-1] = 0
             # If it's the end of the hab iteration, then reduce the hab count.
             if self.habTrialList[-1] == self.dataMatrix[trialIndex]['trialType'] and self.habTrialList[-1].count(self.dataMatrix[trialIndex]['trialType']) == 1:  # Multiple instances will screw this up.
                 self.habCount -= 1
