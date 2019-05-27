@@ -214,6 +214,8 @@ class PyHab:
         Only happens when the 'abort' button is pressed during a trial. Creates a "bad trial" entry
         out of any data recorded for the trial so far, to be saved later.
 
+        TODO: Deal with self.habDataCompiled as well
+
         :param onArray: Gaze-on events for coder 1
         :type onArray: list of dicts {trial, trialType, startTime, endTime, duration}
         :param offArray: Gaze-off events for coder 1
@@ -234,7 +236,7 @@ class PyHab:
 
         sumOn = 0
         sumOff = 0
-        if ttype == 'Hab':
+        if ttype == 'Hab':  # TODO: Fix.
             self.habCount -= 1
         for i in range(0, len(onArray)):
             sumOn = sumOn + onArray[i]['duration']
@@ -313,8 +315,6 @@ class PyHab:
         Decrementing of trial numbers is handled in doExperiment when the relevant key is
         pressed.
 
-        TODO: Deal with self.habDataCompiled as well.
-
         :param trialNum: Trial number to redo
         :type trialNum: int
         :return:
@@ -332,8 +332,21 @@ class PyHab:
                 i += 1
         # add the new 'bad' trial to badTrials
         newTempData['GNG'] = 0
-        if newTempData['trialType'] == 'Hab': # TODO: Fix.
+        if len(self.habTrialList) > 0 and self.dataMatrix[trialIndex]['trialType'] in self.habTrialList and self.dataMatrix[trialIndex]['trialType'] in self.calcHabOver:
+            # Subtract data from self.habDataCompiled before checking whether we reduce the hab count, do make indexing
+            # the correct part of habDataCompiled easier. Notably, reduces but does not inherently zero out.
+            self.habDataCompiled[self.habCount-1] = self.habDataCompiled[self.habCount-1] - self.dataMatrix[trialIndex]['sumOnA']
+            if self.habDataCompiled[self.habCount-1] < 0:  # For rounding errors
+                self.habDataCompiled[self.habCount-1] = 0
+            # If it's the end of the hab iteration, then reduce the hab count.
+            if self.habTrialList[-1] == self.dataMatrix[trialIndex]['trialType'] and self.habTrialList[-1].count(self.dataMatrix[trialIndex]['trialType']) == 1:  # Multiple instances will screw this up.
+                self.habCount -= 1
+            elif self.habTrialList[-1] == self.dataMatrix[trialIndex]['trialType']:  # Edge case, multiple instances of same trial in a hab meta-trial!
+                if '^' in self.actualTrialOrder[trialNum-1]:  # This is a very dangerous kludge that hopefully won't come up much.
+                    self.habCount -= 1
+        elif newTempData['trialType'] == 'Hab':
             self.habCount -= 1
+            self.habDataCompiled[self.habCount] = 0 # Resets the appropriate instance of the hab data structure
         self.badTrials.append(newTempData)
         # remove it from dataMatrix
         self.dataMatrix.remove(self.dataMatrix[trialIndex])
@@ -1764,6 +1777,9 @@ class PyHab:
         Startup function. Presents subject information dialog to researcher, reads and follows settings and condition
         files. Now with a testing mode to allow us to skip the dialog and ensure the actualTrialOrder structure is being
         put together properly in unit testing.
+
+        Also expands habituation blocks appropriately and tags trials with habituation iteration number as well as
+        the symbol for the end of a hab block (^)
 
         :param testMode: Optional and primarily only used for unit testing. Will not launch the window and start the experiment. Contains all the info that would appear in the subject info dialog.
         :type testMode: list

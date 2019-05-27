@@ -137,9 +137,9 @@ class PyHabBuilder:
                 self.settings['baseCondFile'] = ''
             if 'calcHabOver' not in self.settings.keys():
                 if len(self.settings['habTrialList'])>0:
-                    self.settings['calcHabOver'] = ['Hab']  # Default to old behavior.
+                    self.settings['calcHabOver'] = "['Hab']"  # Default to old behavior.
                 else:
-                    self.settings['calcHabOver'] = []
+                    self.settings['calcHabOver'] = "[]"
             # Settings requiring evaluation to get sensible values. Mostly dicts.
             evalList = ['dataColumns','maxDur','condList','baseCondList','movieEnd','playThrough','trialOrder','stimNames', 'stimList', 'ISI',
                         'maxOff','minOn','autoAdvance','playAttnGetter','attnGetterList','trialTypes','habTrialList', 'calcHabOver', 'nextFlash']
@@ -2115,7 +2115,7 @@ class PyHabBuilder:
         hDlg.addField("Number of trials to sum looking time over when determining whether criterion has been met", self.settings['metCritWindow'])
         hDlg.addField("Number to divide sum of looking time by when determining whether criterion has been met", self.settings['metCritDivisor'])
         hDlg.addField("Evaluate criterion over moving window or fixed windows?", choices=evalChz)
-        if len(self.settings['habTrialList'])>0:
+        if len(self.settings['habTrialList']) > 0:
             hDlg.addText("Check which trial types criteria should be computed over (both setting and checking)")
             for q in range(0, len(self.settings['habTrialList'])):
                 if self.settings['habTrialList'][q] == 'Hab' and len(self.settings['calcHabOver']) == 0:

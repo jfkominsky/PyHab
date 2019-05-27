@@ -169,7 +169,7 @@ class TestDataFunc(object):
 
     def test_redo(self):
         """
-        Test that redo properly updates the data file and structures.
+        Test that redo properly updates the data file and structures. TODO: Does not test 'redosetup' for auto-advancing
         :return:
         :rtype:
         """
@@ -199,6 +199,224 @@ class TestDataFunc(object):
         for j,k in self.dataInst.verbDatList.items():
             assert len(k) == 2
 
+    def test_redo_hab(self):
+        self.dataInst.dataMatrix = copy.deepcopy(self.testMatrix)
+        self.dataInst.verbDatList = copy.deepcopy(self.testDatList)
+        self.dataInst.badTrials = []  # It doesn't teardown until ALL of the functions have been run so we have to reset it
+        self.dataInst.verbBadList = {'verboseOn': [], 'verboseOff': [], 'verboseOn2': [], 'verboseOff2': []}
+
+        self.dataInst.dataMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                'condLabel': 'dataTest', 'trial': 3, 'GNG': 1, 'trialType': 'Hab', 'stimName': 'movie1.mov',
+                'habCrit': 0, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
+                'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
+                'numOffB': 2})
+        self.dataInst.verbDatList['verboseOn'].append({'trial':3, 'trialType':'Hab', 'startTime':0, 'endTime':3.5, 'duration':3.5})
+        self.dataInst.verbDatList['verboseOff'].append({'trial':3, 'trialType':'Hab', 'startTime':3.5, 'endTime':5.0, 'duration':1.5})
+        self.dataInst.verbDatList['verboseOn'].append({'trial':3, 'trialType':'Hab', 'startTime':5.0, 'endTime':11.5, 'duration':6.5})
+        self.dataInst.verbDatList['verboseOff'].append({'trial':3,'trialType':'Hab', 'startTime':11.5, 'endTime':13.5, 'duration':2.0})
+        self.dataInst.habDataCompiled[self.dataInst.habCount] = self.dataInst.dataMatrix[-1]['sumOnA']
+        self.dataInst.habCount = 1
+
+        self.dataInst.redoTrial(3)
+        # All that setup, but there are only two things not tested in the above test. Still, some redundancies just to be sure
+        assert self.dataInst.habCount == 0
+        assert self.dataInst.habDataCompiled[0] == 0
+        assert len(self.dataInst.dataMatrix) == 2
+        assert len(self.dataInst.badTrials) == 1
+
+        # Reset again, but this time with a multi-trial hab block
+
+        self.dataInst.dataMatrix = copy.deepcopy(self.testMatrix)
+        self.dataInst.verbDatList = copy.deepcopy(self.testDatList)
+        self.dataInst.badTrials = []
+        self.dataInst.verbBadList = {'verboseOn': [], 'verboseOff': [], 'verboseOn2': [], 'verboseOff2': []}
+
+        self.dataInst.habTrialList = ['Hab','hab_C']
+        # Expands into 'Hab', 'hab1^_C' etc.
+        self.dataInst.calcHabOver=['Hab','hab_C']
+
+        self.dataInst.dataMatrix.append(
+            {'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+             'condLabel': 'dataTest', 'trial': 3, 'GNG': 1, 'trialType': 'Hab', 'stimName': 'movie1.mov',
+             'habCrit': 0, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
+             'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
+             'numOffB': 2})
+        self.dataInst.verbDatList['verboseOn'].append(
+            {'trial': 3, 'trialType': 'Hab', 'startTime': 0, 'endTime': 3.5, 'duration': 3.5})
+        self.dataInst.verbDatList['verboseOff'].append(
+            {'trial': 3, 'trialType': 'Hab', 'startTime': 3.5, 'endTime': 5.0, 'duration': 1.5})
+        self.dataInst.verbDatList['verboseOn'].append(
+            {'trial': 3, 'trialType': 'Hab', 'startTime': 5.0, 'endTime': 11.5, 'duration': 6.5})
+        self.dataInst.verbDatList['verboseOff'].append(
+            {'trial': 3, 'trialType': 'Hab', 'startTime': 11.5, 'endTime': 13.5, 'duration': 2.0})
+        self.dataInst.habDataCompiled[self.dataInst.habCount] = self.dataInst.dataMatrix[-1]['sumOnA']
+        self.dataInst.habCount = 0  # Has not yet proceeded to end of hab trial!
+
+        self.dataInst.dataMatrix.append(
+            {'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+             'condLabel': 'dataTest', 'trial': 4, 'GNG': 1, 'trialType': 'hab_C', 'stimName': 'movie1.mov',
+             'habCrit': 0, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
+             'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
+             'numOffB': 2})
+        self.dataInst.verbDatList['verboseOn'].append(
+            {'trial': 4, 'trialType': 'hab_C', 'startTime': 0, 'endTime': 3.5, 'duration': 3.5})
+        self.dataInst.verbDatList['verboseOff'].append(
+            {'trial': 4, 'trialType': 'hab_C', 'startTime': 3.5, 'endTime': 5.0, 'duration': 1.5})
+        self.dataInst.verbDatList['verboseOn'].append(
+            {'trial': 4, 'trialType': 'hab_C', 'startTime': 5.0, 'endTime': 11.5, 'duration': 6.5})
+        self.dataInst.verbDatList['verboseOff'].append(
+            {'trial': 4, 'trialType': 'hab_C', 'startTime': 11.5, 'endTime': 13.5, 'duration': 2.0})
+        self.dataInst.habDataCompiled[self.dataInst.habCount] += self.dataInst.dataMatrix[-1]['sumOnA']
+        self.dataInst.habCount = 1
+
+        # Try redoing 3, then 4.
+        self.dataInst.redoTrial(3)
+        assert self.dataInst.habCount == 1
+        assert self.dataInst.habDataCompiled[0] == 10
+        assert len(self.dataInst.dataMatrix) == 3
+        assert len(self.dataInst.badTrials) == 1
+
+        self.dataInst.redoTrial(4)
+        assert self.dataInst.habCount == 0
+        assert self.dataInst.habDataCompiled[0] == 0
+        assert len(self.dataInst.dataMatrix) == 2
+        assert len(self.dataInst.badTrials) == 2
+
+        # 'undo' the last two redos, try again, this time with only 'Hab' in the calcHabOver list.
+        self.dataInst.badTrials = []
+        self.dataInst.verbBadList = {'verboseOn': [], 'verboseOff': [], 'verboseOn2': [], 'verboseOff2': []}
+
+        self.dataInst.habTrialList = ['Hab', 'hab_C']
+        # Expands into 'Hab', 'hab1^_C' etc.
+        self.dataInst.calcHabOver = ['Hab']
+
+        self.dataInst.dataMatrix.append(
+            {'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+             'condLabel': 'dataTest', 'trial': 3, 'GNG': 1, 'trialType': 'Hab', 'stimName': 'movie1.mov',
+             'habCrit': 0, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
+             'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
+             'numOffB': 2})
+        self.dataInst.verbDatList['verboseOn'].append(
+            {'trial': 3, 'trialType': 'Hab', 'startTime': 0, 'endTime': 3.5, 'duration': 3.5})
+        self.dataInst.verbDatList['verboseOff'].append(
+            {'trial': 3, 'trialType': 'Hab', 'startTime': 3.5, 'endTime': 5.0, 'duration': 1.5})
+        self.dataInst.verbDatList['verboseOn'].append(
+            {'trial': 3, 'trialType': 'Hab', 'startTime': 5.0, 'endTime': 11.5, 'duration': 6.5})
+        self.dataInst.verbDatList['verboseOff'].append(
+            {'trial': 3, 'trialType': 'Hab', 'startTime': 11.5, 'endTime': 13.5, 'duration': 2.0})
+        self.dataInst.habDataCompiled[self.dataInst.habCount] = self.dataInst.dataMatrix[-1]['sumOnA']
+        self.dataInst.habCount = 0  # Has not yet proceeded to end of hab trial!
+
+        self.dataInst.dataMatrix.append(
+            {'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+             'condLabel': 'dataTest', 'trial': 4, 'GNG': 1, 'trialType': 'hab_C', 'stimName': 'movie1.mov',
+             'habCrit': 0, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
+             'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
+             'numOffB': 2})
+        self.dataInst.verbDatList['verboseOn'].append(
+            {'trial': 4, 'trialType': 'hab_C', 'startTime': 0, 'endTime': 3.5, 'duration': 3.5})
+        self.dataInst.verbDatList['verboseOff'].append(
+            {'trial': 4, 'trialType': 'hab_C', 'startTime': 3.5, 'endTime': 5.0, 'duration': 1.5})
+        self.dataInst.verbDatList['verboseOn'].append(
+            {'trial': 4, 'trialType': 'hab_C', 'startTime': 5.0, 'endTime': 11.5, 'duration': 6.5})
+        self.dataInst.verbDatList['verboseOff'].append(
+            {'trial': 4, 'trialType': 'hab_C', 'startTime': 11.5, 'endTime': 13.5, 'duration': 2.0})
+        # self.dataInst.habDataCompiled[self.dataInst.habCount] += self.dataInst.dataMatrix[-1]['sumOnA']
+        # Because this is no longer included in calcHabOver.
+        self.dataInst.habCount = 1
+
+        # Try redoing 3, then 4.
+        self.dataInst.redoTrial(3)
+        assert self.dataInst.habCount == 1
+        assert self.dataInst.habDataCompiled[0] == 0
+        assert len(self.dataInst.dataMatrix) == 3
+        assert len(self.dataInst.badTrials) == 1
+
+        self.dataInst.redoTrial(4)
+        assert self.dataInst.habCount == 0
+        assert self.dataInst.habDataCompiled[0] == 0
+        assert len(self.dataInst.dataMatrix) == 2
+        assert len(self.dataInst.badTrials) == 2
+
+        # Reset one more to test an edge case: When there are multiple instances of the same trial type in a single hab
+        # block iteration.
+        self.dataInst.dataMatrix = copy.deepcopy(self.testMatrix)
+        self.dataInst.verbDatList = copy.deepcopy(self.testDatList)
+        self.dataInst.badTrials = []
+        self.dataInst.verbBadList = {'verboseOn': [], 'verboseOff': [], 'verboseOn2': [], 'verboseOff2': []}
+        self.dataInst.habTrialList = ['hab_C', 'Hab','hab_C']
+        self.dataInst.actualTrialOrder = ['A', 'B', 'hab1_C', 'Hab', 'hab1^_C','hab2_c', 'Hab', 'hab2^_C','hab3_C', 'Hab', 'hab3^_C']
+
+        self.dataInst.dataMatrix.append(
+            {'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+             'condLabel': 'dataTest', 'trial': 3, 'GNG': 1, 'trialType': 'hab_C', 'stimName': 'movie1.mov',
+             'habCrit': 0, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
+             'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
+             'numOffB': 2})
+        self.dataInst.verbDatList['verboseOn'].append(
+            {'trial': 3, 'trialType': 'hab_C', 'startTime': 0, 'endTime': 3.5, 'duration': 3.5})
+        self.dataInst.verbDatList['verboseOff'].append(
+            {'trial': 3, 'trialType': 'hab_C', 'startTime': 3.5, 'endTime': 5.0, 'duration': 1.5})
+        self.dataInst.verbDatList['verboseOn'].append(
+            {'trial': 3, 'trialType': 'Hhab_Cab', 'startTime': 5.0, 'endTime': 11.5, 'duration': 6.5})
+        self.dataInst.verbDatList['verboseOff'].append(
+            {'trial': 3, 'trialType': 'hab_C', 'startTime': 11.5, 'endTime': 13.5, 'duration': 2.0})
+        self.dataInst.habDataCompiled[self.dataInst.habCount] = self.dataInst.dataMatrix[-1]['sumOnA']
+        self.dataInst.habCount = 0  # Has not yet proceeded to end of hab trial!
+
+        self.dataInst.dataMatrix.append(
+            {'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+             'condLabel': 'dataTest', 'trial': 4, 'GNG': 1, 'trialType': 'Hab', 'stimName': 'movie1.mov',
+             'habCrit': 0, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
+             'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
+             'numOffB': 2})
+        self.dataInst.verbDatList['verboseOn'].append(
+            {'trial': 4, 'trialType': 'Hab', 'startTime': 0, 'endTime': 3.5, 'duration': 3.5})
+        self.dataInst.verbDatList['verboseOff'].append(
+            {'trial': 4, 'trialType': 'Hab', 'startTime': 3.5, 'endTime': 5.0, 'duration': 1.5})
+        self.dataInst.verbDatList['verboseOn'].append(
+            {'trial': 4, 'trialType': 'Hab', 'startTime': 5.0, 'endTime': 11.5, 'duration': 6.5})
+        self.dataInst.verbDatList['verboseOff'].append(
+            {'trial': 4, 'trialType': 'Hab', 'startTime': 11.5, 'endTime': 13.5, 'duration': 2.0})
+        self.dataInst.habDataCompiled[self.dataInst.habCount] += self.dataInst.dataMatrix[-1]['sumOnA']
+        self.dataInst.habCount = 0  # Has not yet proceeded to end of hab trial!
+
+        self.dataInst.dataMatrix.append(
+            {'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+             'condLabel': 'dataTest', 'trial': 5, 'GNG': 1, 'trialType': 'hab_C', 'stimName': 'movie1.mov',
+             'habCrit': 0, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
+             'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
+             'numOffB': 2})
+        self.dataInst.verbDatList['verboseOn'].append(
+            {'trial': 5, 'trialType': 'hab_C', 'startTime': 0, 'endTime': 3.5, 'duration': 3.5})
+        self.dataInst.verbDatList['verboseOff'].append(
+            {'trial': 5, 'trialType': 'hab_C', 'startTime': 3.5, 'endTime': 5.0, 'duration': 1.5})
+        self.dataInst.verbDatList['verboseOn'].append(
+            {'trial': 5, 'trialType': 'hab_C', 'startTime': 5.0, 'endTime': 11.5, 'duration': 6.5})
+        self.dataInst.verbDatList['verboseOff'].append(
+            {'trial': 5, 'trialType': 'hab_C', 'startTime': 11.5, 'endTime': 13.5, 'duration': 2.0})
+        self.dataInst.habDataCompiled[self.dataInst.habCount] += self.dataInst.dataMatrix[-1]['sumOnA']
+        self.dataInst.habCount = 1
+
+        # Now redo 3, then 4, then 5.
+
+        self.dataInst.redoTrial(3)
+        assert self.dataInst.habCount == 1
+        assert self.dataInst.habDataCompiled[0] == 20
+        assert len(self.dataInst.dataMatrix) == 4
+        assert len(self.dataInst.badTrials) == 1
+
+        self.dataInst.redoTrial(4)
+        assert self.dataInst.habCount == 1
+        assert self.dataInst.habDataCompiled[0] == 10
+        assert len(self.dataInst.dataMatrix) == 2
+        assert len(self.dataInst.badTrials) == 2
+
+        self.dataInst.redoTrial(5)
+        assert self.dataInst.habCount == 0
+        assert self.dataInst.habDataCompiled[0] == 0
+        assert len(self.dataInst.dataMatrix) == 2
+        assert len(self.dataInst.badTrials) == 2
 
     def test_datarec(self):
         self.dataInst.dataMatrix = []
@@ -373,8 +591,8 @@ class TestDataFunc(object):
         assert self.dataInst.checkStop() == True
         assert self.dataInst.habCrit == 55.0  # should not have changed.
 
-        # TODO: Add hab sub-trial tracking.
-
+        # Hab sub-trial tracking does not need its own tests here because data from habituation trials are recorded in
+        # their own data structure, which is compiled during doTrial.
 
 class TestRunSetup(object):
     """
