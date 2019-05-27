@@ -347,7 +347,7 @@ class PyHab:
             elif self.habTrialList[-1] == self.dataMatrix[trialIndex]['trialType']:  # Edge case, multiple instances of same trial in a hab meta-trial!
                 if '^' in self.actualTrialOrder[trialNum-1]:  # This is a very dangerous kludge that hopefully won't come up much.
                     self.habCount -= 1
-            
+
 
         elif newTempData['trialType'] == 'Hab':
             self.habCount -= 1
@@ -406,7 +406,7 @@ class PyHab:
             if sumOnTimes > self.habCrit:
                 self.habCrit = sumOnTimes
                 self.habSetWhen = deepcopy(self.habCount)
-        elif self.setCritType == 'Threshold' and self.habCount >= self.setCritWindow and self.habCrit == 0:
+        elif self.setCritType == 'Threshold' and self.habCount >= self.setCritWindow and self.habSetWhen == -1:
             sumOnTimes = 0
             index = self.habCount - self.setCritWindow  # How far back should we look?
             for j in range(index,self.habCount):
@@ -719,6 +719,7 @@ class PyHab:
         """
         numTrialsRedo = 0
         trialNum = tn
+        tempHabCount = deepcopy(self.habCount)
         if trialNum > 1:  # This stops it from trying to redo a trial before the experiment begins.
             trialNum -= 1
             trialType = self.actualTrialOrder[trialNum - 1]
@@ -727,7 +728,7 @@ class PyHab:
                 # Safety check: Make sure that it was really a hab sub trial!
                 if 'hab_' + trialType not in self.habTrialList:
                     trialType = self.actualTrialOrder[trialNum - 1] # In case this comes up with hab block trials.
-            elif trialType == 'Hab^':
+            elif trialType[0:3] == 'Hab':
                 trialType = 'Hab'
             numTrialsRedo += 1
             if self.stimPres:
@@ -742,7 +743,7 @@ class PyHab:
                     # Safety check: Make sure that it was really a hab sub trial!
                     if 'hab_' + trialType not in self.habTrialList:
                         trialType = self.actualTrialOrder[trialNum - 1]
-                elif trialType == 'Hab^':
+                elif trialType[0:3] == 'Hab':  # Gets both 'Hab' and 'Hab^'
                     trialType = 'Hab'
                 numTrialsRedo += 1
                 if self.stimPres:
@@ -766,6 +767,19 @@ class PyHab:
                 self.rdyTextAppend = " NEXT: " + self.actualTrialOrder[trialNum - 1] + " TRIAL"
         for i in range(trialNum, trialNum + numTrialsRedo):  # Should now rewind all the way to the last non-AA trial.
             self.redoTrial(i)
+        if self.habCount != tempHabCount: # Did we change a trial that can change checkStop?
+            # If hab type is threshold, max, or peak, we might need to recalculate dynamically
+            if self.setCritType != 'First' and self.habSetWhen >= self.habCount:
+                self.habSetWhen = -1
+                self.habCrit = 0
+                dummy = self.checkStop()
+            # If habituation has been reached, we have to basically undo what happens when a hab crit is met.
+            if self.habMetWhen > -1 and self.habCount != self.maxHabTrials - 1:  # If it was the last hab trial possible, it'll just solve itself with no further action
+                if not self.checkStop():  # Almost always true in this case, because we're redoing a hab trial.
+                    self.habMetWhen = -1  # Reset
+                    tempTN = trialNum + 1  # Starting with the next trial.
+                    for h in range(self.habCount+1, self.maxHabTrials+1):
+                        [irrel, irrel2] = self.insertHab(self, tn=tempTN, hn=h)
         return [disMovie, trialNum]
 
     def jumpToTest(self, tn):
@@ -812,16 +826,20 @@ class PyHab:
             self.endExperiment()
             return[0,'4']
 
-    def insertHab(self,tn):
+    def insertHab(self, tn, hn=self.habCount):
         """
         Literally insert a new hab trial or meta-trial into actualTrialOrder, get the right movie, etc.
 
-        :param tn: trialNum
+        :param tn: trial number to insert the trial
         :type tn: int
+        :param hn: HabCount number to insert the hab trial. By default, whatever the current habcount is. However, there
+        are edge cases when recovering from "redo" trials when we want to throw in a hab trial further down the line.
+        :type hn: int
         :return: [disMovie, trialType], the former being the movie file to play if relevant, and the latter being the new trial type
         :rtype: list
         """
         trialNum = tn
+        habNum = hn
         if len(self.habTrialList) > 0:
             for z in range(0, len(self.habTrialList)):
                 if self.habTrialList[z] != 'Hab':
@@ -829,7 +847,7 @@ class PyHab:
                     if z == len(self.habTrialList) - 1:  # Last of this sub-trial block
                         # Need a signifier of end of block on trial name.
                         tempName[3] = '^' + tempName[3] # A symbol I hope nobody will use for their ttypename. opt-5. Windows?
-                    tempName[3] = str(self.habCount+1) + tempName[3]  # Hab-counter
+                    tempName[3] = str(habNum+1) + tempName[3]  # Hab-counter
                     tempName = "".join(tempName)  # End result hab[n][^]_TrialType
                 else:
                     if z == len(self.habTrialList) - 1:  # Last of this sub-trial block
@@ -850,7 +868,7 @@ class PyHab:
                 trialType = self.actualTrialOrder[trialNum - 1]
         elif trialType == 'Hab^':
             trialType = 'Hab'
-        if self.stimPres:
+        if self.stimPres and habNum == self.habCount:  # If we're inserting something way down the line, don't mess with it yet.
             if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
                 self.stimName = self.stimNames[trialType][self.counters[trialType] % len(self.stimNames[trialType])]
             else:
@@ -869,7 +887,7 @@ class PyHab:
                 self.counters[trialType] = 0
         else:
             disMovie = 0
-        if self.blindPres < 1:
+        if self.blindPres < 1:  # TODO: Do we need this?
             self.rdyTextAppend = " NEXT: " + self.actualTrialOrder[trialNum - 1] + " TRIAL"
         return [disMovie,trialType]
 
