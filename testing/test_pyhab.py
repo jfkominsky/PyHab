@@ -883,19 +883,19 @@ class TestCommands(object):
         self.commandInst.dataMatrix.append(temp1)
         self.commandInst.dataMatrix.append(temp2)
         temp3 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-                 'condLabel': 'dataTest', 'trial': 4, 'GNG': 1, 'trialType': 'B', 'stimName': 'movie5.mov',
+                 'condLabel': 'dataTest', 'trial': 4, 'GNG': 1, 'trialType': 'Hab', 'stimName': 'movie5.mov',
                  'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
                  'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
         temp4 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-                 'condLabel': 'dataTest', 'trial': 5, 'GNG': 1, 'trialType': 'B',
+                 'condLabel': 'dataTest', 'trial': 5, 'GNG': 1, 'trialType': 'hab_C',
                  'stimName': 'movie2.mov', 'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
                  'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
         temp5 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-                 'condLabel': 'dataTest', 'trial': 5, 'GNG': 1, 'trialType': 'B', 'stimName': 'movie5.mov',
+                 'condLabel': 'dataTest', 'trial': 5, 'GNG': 1, 'trialType': 'Hab', 'stimName': 'movie5.mov',
                  'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
                  'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
         temp6 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-                 'condLabel': 'dataTest', 'trial': 6, 'GNG': 1, 'trialType': 'B',
+                 'condLabel': 'dataTest', 'trial': 6, 'GNG': 1, 'trialType': 'hab_C',
                  'stimName': 'movie2.mov', 'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
                  'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
         self.commandInst.dataMatrix.append(temp3)

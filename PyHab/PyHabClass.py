@@ -767,7 +767,7 @@ class PyHab:
                 self.rdyTextAppend = " NEXT: " + self.actualTrialOrder[trialNum - 1] + " TRIAL"
         for i in range(trialNum, trialNum + numTrialsRedo):  # Should now rewind all the way to the last non-AA trial.
             self.redoTrial(i)
-        if self.habCount != tempHabCount: # Did we change a trial that can change checkStop?
+        if self.habCount != tempHabCount:  # Did we change a trial that can change checkStop?
             # If hab type is threshold, max, or peak, we might need to recalculate dynamically
             if self.habSetWhen >= self.habCount:
                 self.habSetWhen = -1
