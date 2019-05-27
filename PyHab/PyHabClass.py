@@ -315,6 +315,8 @@ class PyHab:
         Decrementing of trial numbers is handled in doExperiment when the relevant key is
         pressed.
 
+        TODO: Reset habituation criteria and clearing out of trials?
+
         :param trialNum: Trial number to redo
         :type trialNum: int
         :return:
@@ -340,11 +342,13 @@ class PyHab:
                 if self.habDataCompiled[self.habCount-1] < 0:  # For rounding errors
                     self.habDataCompiled[self.habCount-1] = 0
             # If it's the end of the hab iteration, then reduce the hab count.
-            if self.habTrialList[-1] == self.dataMatrix[trialIndex]['trialType'] and self.habTrialList[-1].count(self.dataMatrix[trialIndex]['trialType']) == 1:  # Multiple instances will screw this up.
+            if self.habTrialList[-1] == self.dataMatrix[trialIndex]['trialType'] and self.habTrialList.count(self.dataMatrix[trialIndex]['trialType']) == 1:  # Multiple instances will screw this up.
                 self.habCount -= 1
             elif self.habTrialList[-1] == self.dataMatrix[trialIndex]['trialType']:  # Edge case, multiple instances of same trial in a hab meta-trial!
                 if '^' in self.actualTrialOrder[trialNum-1]:  # This is a very dangerous kludge that hopefully won't come up much.
                     self.habCount -= 1
+            
+
         elif newTempData['trialType'] == 'Hab':
             self.habCount -= 1
             self.habDataCompiled[self.habCount] = 0 # Resets the appropriate instance of the hab data structure
