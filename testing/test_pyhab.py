@@ -914,7 +914,7 @@ class TestCommands(object):
         assert self.commandInst.habDataCompiled[2] == 0
         assert self.commandInst.habSetWhen == -1
         assert self.commandInst.habCrit == 0
-        assert self.habCount == 2
+        assert self.commandInst.habCount == 2
 
         self.commandInst.dataMatrix.append(temp5)
         self.commandInst.dataMatrix.append(temp6)
