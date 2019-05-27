@@ -873,29 +873,29 @@ class TestCommands(object):
         self.commandInst.run(testMode=testOne)
 
         temp1 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-                 'condLabel': 'dataTest', 'trial': 3, 'GNG': 1, 'trialType': 'Hab', 'stimName': 'Movie12.mov',
+                 'condLabel': 'dataTest', 'trial': 5, 'GNG': 1, 'trialType': 'Hab', 'stimName': 'Movie12.mov',
                  'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
                  'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
         temp2 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-                 'condLabel': 'dataTest', 'trial': 4, 'GNG': 1, 'trialType': 'hab_C',
+                 'condLabel': 'dataTest', 'trial': 6, 'GNG': 1, 'trialType': 'hab_C',
                  'stimName': 'Movie1.mov', 'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
                  'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
         self.commandInst.dataMatrix.append(temp1)
         self.commandInst.dataMatrix.append(temp2)
         temp3 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-                 'condLabel': 'dataTest', 'trial': 4, 'GNG': 1, 'trialType': 'Hab', 'stimName': 'movie5.mov',
+                 'condLabel': 'dataTest', 'trial': 7, 'GNG': 1, 'trialType': 'Hab', 'stimName': 'movie5.mov',
                  'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
                  'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
         temp4 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-                 'condLabel': 'dataTest', 'trial': 5, 'GNG': 1, 'trialType': 'hab_C',
+                 'condLabel': 'dataTest', 'trial': 8, 'GNG': 1, 'trialType': 'hab_C',
                  'stimName': 'movie2.mov', 'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
                  'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
         temp5 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-                 'condLabel': 'dataTest', 'trial': 5, 'GNG': 1, 'trialType': 'Hab', 'stimName': 'movie5.mov',
+                 'condLabel': 'dataTest', 'trial': 9, 'GNG': 1, 'trialType': 'Hab', 'stimName': 'movie5.mov',
                  'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
                  'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
         temp6 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-                 'condLabel': 'dataTest', 'trial': 6, 'GNG': 1, 'trialType': 'hab_C',
+                 'condLabel': 'dataTest', 'trial': 10, 'GNG': 1, 'trialType': 'hab_C',
                  'stimName': 'movie2.mov', 'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
                  'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
         self.commandInst.dataMatrix.append(temp3)
@@ -910,7 +910,7 @@ class TestCommands(object):
         assert self.commandInst.habSetWhen == 3
         assert self.commandInst.habCrit == 15
         # OK, assuming all that got set up properly, lets get messy.
-        self.commandInst.redoSetup(6,['B','C'])
+        self.commandInst.redoSetup(10,['B','C'])
         assert self.commandInst.habDataCompiled[2] == 0
         assert self.commandInst.habSetWhen == -1
         assert self.commandInst.habCrit == 0
