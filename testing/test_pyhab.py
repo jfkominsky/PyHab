@@ -840,7 +840,7 @@ class TestCommands(object):
 
         # Test something down the line!
         self.commandInst.stimPres = True
-        [x, y] = self.commandInst.insertHab(8, 3)
+        [x, y] = self.commandInst.insertHab(9, 3)
         assert x == 0
         assert y == 'Hab'
         assert self.commandInst.actualTrialOrder == ['A', 'A', 'B', 'B', 'Hab', 'hab1^_C','Hab','hab2^_C','Hab','hab3^_C','D']
@@ -902,6 +902,7 @@ class TestCommands(object):
         self.commandInst.dataMatrix.append(temp4)
         self.commandInst.dataMatrix.append(temp5)
         self.commandInst.dataMatrix.append(temp6)
+        self.commandInst.habDataCompiled=[10,10,10]  # Need to set this manually too.
         self.commandInst.habCount = 3
 
         assert self.commandInst.checkStop() == False
