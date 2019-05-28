@@ -871,6 +871,22 @@ class TestCommands(object):
         self.commandInst.calcHabOver = ['Hab','hab_C']
         self.commandInst.counters = {'A': 2, 'B': 2, 'C': 0, 'D': 0, 'Hab': 0}
         self.commandInst.run(testMode=testOne)
+        self.commandInst.verbDatList = copy.deepcopy(self.testDatList)
+        self.commandInst.dataMatrix = copy.deepcopy(self.testMatrix)
+
+
+
+        temp0 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                 'condLabel': 'dataTest', 'trial': 3, 'GNG': 1, 'trialType': 'B', 'stimName': 'Movie12.mov',
+                 'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
+                 'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
+        tempA = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                 'condLabel': 'dataTest', 'trial': 4, 'GNG': 1, 'trialType': 'B', 'stimName': 'Movie12.mov',
+                 'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
+                 'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
+
+        self.commandInst.dataMatrix.append(temp0)
+        self.commandInst.dataMatrix.append(tempA)
 
         temp1 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
                  'condLabel': 'dataTest', 'trial': 5, 'GNG': 1, 'trialType': 'Hab', 'stimName': 'Movie12.mov',
@@ -962,7 +978,7 @@ class TestCommands(object):
         assert len(self.commandInst.dataMatrix) == 15
 
         self.commandInst.setCritType = 'Max'
-        self.commandInst.redoSetup(15,['B','C'])
+        self.commandInst.redoSetup(15,['B','C']) # This is actually something that would never come up - you can't redo twice in a row
         assert self.commandInst.habCount == 4
         assert len(self.commandInst.actualTrialOrder) == 33
         assert self.commandInst.habCrit == 15 # Should as yet be unchanged
