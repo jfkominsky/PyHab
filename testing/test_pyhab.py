@@ -949,7 +949,7 @@ class TestCommands(object):
         self.commandInst.habDataCompiled[5] = 2
         self.commandInst.habCount = 6
 
-
+        assert len(self.commandInst.actualTrialOrder) == 33  # check initial
         assert self.commandInst.checkStop() == True
         assert self.commandInst.habMetWhen == 6
         self.commandInst.jumpToTest(17)
