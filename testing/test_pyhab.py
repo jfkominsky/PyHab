@@ -996,8 +996,14 @@ class TestCommands(object):
         assert self.commandInst.habCrit == 15 # Should as yet be unchanged
 
         temp10['sumOnA'] = 12
-        self.commandInst.dataMatrix.append(temp9)
-        self.commandInst.dataMatrix.append(temp10)
+        self.commandInst.dataMatrix.append({'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                 'condLabel': 'dataTest', 'trial': 13, 'GNG': 1, 'trialType': 'Hab', 'stimName': 'movie5.mov',
+                 'habCrit': 15.0, 'sumOnA': 1.0, 'numOnA': 2, 'sumOffA': 3.5,
+                 'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2})
+        self.commandInst.dataMatrix.append({'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                 'condLabel': 'dataTest', 'trial': 14, 'GNG': 1, 'trialType': 'hab_C',
+                 'stimName': 'movie2.mov', 'habCrit': 15.0, 'sumOnA': 12, 'numOnA': 2, 'sumOffA': 3.5,
+                 'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2})
         self.commandInst.habDataCompiled[4] = 12
         self.commandInst.habCount = 5
         assert self.commandInst.checkStop() == False
@@ -1017,8 +1023,14 @@ class TestCommands(object):
         assert self.commandInst.habSetWhen == 4
 
         temp10['sumOnA'] = 2
-        self.commandInst.dataMatrix.append(temp9)
-        self.commandInst.dataMatrix.append(temp10)
+        self.commandInst.dataMatrix.append({'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                 'condLabel': 'dataTest', 'trial': 13, 'GNG': 1, 'trialType': 'Hab', 'stimName': 'movie5.mov',
+                 'habCrit': 15.0, 'sumOnA': 1.0, 'numOnA': 2, 'sumOffA': 3.5,
+                 'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2})
+        self.commandInst.dataMatrix.append({'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                 'condLabel': 'dataTest', 'trial': 14, 'GNG': 1, 'trialType': 'hab_C',
+                 'stimName': 'movie2.mov', 'habCrit': 15.0, 'sumOnA': 2, 'numOnA': 2, 'sumOffA': 3.5,
+                 'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2})
         self.commandInst.habDataCompiled[4] = 2
         self.commandInst.habCount = 5
         assert self.commandInst.checkStop() == False

@@ -315,8 +315,6 @@ class PyHab:
         Decrementing of trial numbers is handled in doExperiment when the relevant key is
         pressed.
 
-        TODO: Reset habituation criteria and clearing out of trials?
-
         :param trialNum: Trial number to redo
         :type trialNum: int
         :return:
