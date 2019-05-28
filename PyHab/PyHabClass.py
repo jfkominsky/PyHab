@@ -783,7 +783,7 @@ class PyHab:
                     self.habMetWhen = -1  # Reset
                     tempTN = trialNum + max(len(self.habTrialList), 1)  # Starting with the next trial.
                     ctr = 0
-                    for h in range(self.habCount, self.maxHabTrials):
+                    for h in range(self.habCount+1, self.maxHabTrials):
                         [irrel, irrel2] = self.insertHab(tn=tempTN+ctr*max(len(self.habTrialList), 1), hn=h)
                         ctr += 1
         return [disMovie, trialNum]
@@ -1212,7 +1212,7 @@ class PyHab:
                     offDur = endTrial - startOff
                     tempGazeArray = {'trial':number, 'trialType':dataType, 'startTime':startOff, 'endTime':endTrial, 'duration':offDur}
                     offArray.append(tempGazeArray)
-            elif core.getTime() - startTrial >= .5 and self.keyboard[self.key.S] and trialType != 'Hab' and '^' not in trialType:
+            elif core.getTime() - startTrial >= .5 and self.keyboard[self.key.S] and ttype != 'Hab' and '^' not in ttype:
                 # New feature: End trial and go forward manually. Disabled for hab trials and meta-trials.
                 # Disabled for the first half-second to stop you from skipping through multiple auto-advancing trials
                 if localType in self.movieEnd:
@@ -1377,9 +1377,7 @@ class PyHab:
             return 3
         else:
             self.dataRec(onArray, offArray, number, dataType, onArray2, offArray2, self.stimName)
-
-
-        if len(self.habTrialList) > 0:   # if still during habituation
+        if self.habMetWhen == -1 and len(self.habTrialList) > 0:   # if still during habituation
             if dataType in self.calcHabOver:
                 tempSum = 0
                 for c in range(0, len(onArray)):
@@ -1396,6 +1394,8 @@ class PyHab:
                         return 2  # End experiment.
                 else:
                     return 0
+            else:
+                return 0
         elif ttype == 'Hab':
             tempSum = 0
             for c in range(0, len(onArray)):
