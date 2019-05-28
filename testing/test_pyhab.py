@@ -959,6 +959,7 @@ class TestCommands(object):
         assert self.commandInst.habMetWhen == -1
         assert len(self.commandInst.actualTrialOrder) == 33
         assert self.commandInst.habCount == 5
+        assert len(self.commandInst.dataMatrix) == 15
 
         self.commandInst.setCritType = 'Max'
         self.commandInst.redoSetup(15,['B','C'])
