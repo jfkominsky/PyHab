@@ -995,11 +995,9 @@ class TestCommands(object):
         assert len(self.commandInst.actualTrialOrder) == 33
         assert self.commandInst.habCrit == 15 # Should as yet be unchanged
 
-        temp7['trial'] = 13
-        temp8['trial'] = 14
-        temp8['sumOnA'] = 12
-        self.commandInst.dataMatrix.append(temp7)
-        self.commandInst.dataMatrix.append(temp8)
+        temp10['sumOnA'] = 12
+        self.commandInst.dataMatrix.append(temp9)
+        self.commandInst.dataMatrix.append(temp10)
         self.commandInst.habDataCompiled[4] = 12
         self.commandInst.habCount = 5
         assert self.commandInst.checkStop() == False
