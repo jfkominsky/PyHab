@@ -214,8 +214,6 @@ class PyHab:
         Only happens when the 'abort' button is pressed during a trial. Creates a "bad trial" entry
         out of any data recorded for the trial so far, to be saved later.
 
-        TODO: Deal with self.habDataCompiled as well
-
         :param onArray: Gaze-on events for coder 1
         :type onArray: list of dicts {trial, trialType, startTime, endTime, duration}
         :param offArray: Gaze-off events for coder 1
@@ -236,8 +234,6 @@ class PyHab:
 
         sumOn = 0
         sumOff = 0
-        if ttype == 'Hab':  # TODO: Fix.
-            self.habCount -= 1
         for i in range(0, len(onArray)):
             sumOn = sumOn + onArray[i]['duration']
         for j in range(0, len(offArray)):
@@ -1159,7 +1155,7 @@ class PyHab:
             dataType = ttype
         self.frameCount = 0  # reset display
         self.pauseCount = 0  # needed for ISI
-        # returns 0 if do next trial, 1 if end hab, 2 if end experiment, 3 if abort/redo
+        # returns 0 if do next trial, 1 if end hab, 2 if end experiment, 3 if abort/abort
         if self.stimPres and disMovie['stimType'] == 'Movie':
             disMovie['stim'].seek(0.0)
             disMovie['stim'].pause()
@@ -1175,7 +1171,7 @@ class PyHab:
         sumOn2 = 0
         numOff2 = 0
         numOn2 = 0
-        redo = False
+        abort = False
         runTrial = True
         endFlag = False
         self.readyText.text = "Trial running"
@@ -1197,7 +1193,7 @@ class PyHab:
             startOff2 = 0
         while runTrial:  # runTrial is the key boolean that actually ends the trial. Need an 'end flag' to work with.
             if self.keyboard[self.key.R]:  # 'abort trial' is pressed
-                redo = True
+                abort = True
                 runTrial = False
                 endTrial = core.getTime() - startTrial
                 # determine if they were looking or not at end of trial and update appropriate array
@@ -1367,7 +1363,7 @@ class PyHab:
             if self.actualTrialOrder[number] not in self.autoAdvance:
                 self.dummyThing.draw()
                 self.win.flip()  # blanks the screen outright between trials if NOT auto-advancing into the next trial
-        if redo:  # if the abort button was pressed
+        if abort:  # if the abort button was pressed
             if self.stimPres and disMovie['stimType'] == 'Movie':
                 disMovie['stim'].seek(0.0)
                 disMovie['stim'].pause()
@@ -1375,7 +1371,7 @@ class PyHab:
             return 3
         else:
             self.dataRec(onArray, offArray, number, dataType, onArray2, offArray2, self.stimName)
-        if self.habMetWhen == -1 and len(self.habTrialList) > 0:   # if still during habituation
+        if self.habMetWhen == -1 and len(self.habTrialList) > 0 and not abort:   # if still during habituation
             if dataType in self.calcHabOver:
                 tempSum = 0
                 for c in range(0, len(onArray)):
@@ -1394,7 +1390,7 @@ class PyHab:
                     return 0
             else:
                 return 0
-        elif ttype == 'Hab':
+        elif ttype == 'Hab' and not abort:
             tempSum = 0
             for c in range(0, len(onArray)):
                 tempSum += onArray[c]['duration']
