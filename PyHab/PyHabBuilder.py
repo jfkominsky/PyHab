@@ -927,7 +927,8 @@ class PyHabBuilder:
                     if j % 10 == 9:
                         j += 1 # Just in case we're at the point where it would loop around to the second row. We don't want that.
                         if numItems == 20 or numItems == 39:  # Special case of breaking flowLocs limits.
-                            #TODO: BF if there are multiple hab blocks or if there are precisely 41 items when you have a line skip like this it doesn't count them correctly in the study flow interface.
+                            #BF: if there are multiple hab blocks or if there are precisely 41 items when you have a line skip like this it doesn't count them correctly in the study flow interface.
+                            #But, having more than one hab block breaks the whole program anyways.
                             return self.loadFlow(specNumItems=numItems+1)
                     lx1 = flowSpace[j][0]
                     j += 1

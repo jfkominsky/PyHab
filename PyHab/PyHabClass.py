@@ -35,7 +35,6 @@ class PyHab:
     On2 and Off2 (for the optional secondary coder)
     Each coder's on and off are recorded in a separate dict with trial, gaze on/off, start, end, and duration.
 
-    TODO: Habituation calculated over whole meta-trial rather than just "Hab"
     """
 
     def __init__(self, settingsDict):
@@ -368,6 +367,9 @@ class PyHab:
         After a hab trial, checks the habitution criteria and returns 'true' if any of them are met.
         Also responsible for setting the habituation criteria according to settings.
         Prior to any criteria being set, self.HabCrit is 0, and self.habSetWhen is -1.
+
+        Uses a sort of parallel data structure that just tracks hab-relevant gaze totals. As a bonus, this means it now
+        works for both single-target and preferential looking designs with no modification.
 
         :return: True if hab criteria have been met, False otherwise
         :rtype:
@@ -1390,7 +1392,7 @@ class PyHab:
                     return 0
             else:
                 return 0
-        elif ttype == 'Hab' and not abort:
+        elif ttype == 'Hab' and self.habMetWhen == -1 and not abort:
             tempSum = 0
             for c in range(0, len(onArray)):
                 tempSum += onArray[c]['duration']
