@@ -975,7 +975,7 @@ class TestCommands(object):
         assert self.commandInst.habMetWhen == -1
         assert len(self.commandInst.actualTrialOrder) == 33
         assert self.commandInst.habCount == 5
-        assert len(self.commandInst.dataMatrix) == 15
+        assert len(self.commandInst.dataMatrix) == 14 
 
         self.commandInst.setCritType = 'Max'
         self.commandInst.redoSetup(15,['B','C']) # This is actually something that would never come up - you can't redo twice in a row
