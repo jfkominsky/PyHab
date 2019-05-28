@@ -952,16 +952,28 @@ class TestCommands(object):
         self.commandInst.dataMatrix.append(temp8)
         self.commandInst.habDataCompiled[3] = 2
         self.commandInst.habCount = 4
-        temp7['trial'] = 13
-        temp8['trial'] = 14
-        self.commandInst.dataMatrix.append(temp7)
-        self.commandInst.dataMatrix.append(temp8)
+        temp9 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                 'condLabel': 'dataTest', 'trial': 13, 'GNG': 1, 'trialType': 'Hab', 'stimName': 'movie5.mov',
+                 'habCrit': 15.0, 'sumOnA': 1.0, 'numOnA': 2, 'sumOffA': 3.5,
+                 'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
+        temp10 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                 'condLabel': 'dataTest', 'trial': 14, 'GNG': 1, 'trialType': 'hab_C',
+                 'stimName': 'movie2.mov', 'habCrit': 15.0, 'sumOnA': 1.0, 'numOnA': 2, 'sumOffA': 3.5,
+                 'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
+        self.commandInst.dataMatrix.append(temp9)
+        self.commandInst.dataMatrix.append(temp10)
         self.commandInst.habDataCompiled[4] = 2
         self.commandInst.habCount = 5
-        temp7['trial'] = 15
-        temp8['trial'] = 16
-        self.commandInst.dataMatrix.append(temp7)
-        self.commandInst.dataMatrix.append(temp8)
+        temp11 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                 'condLabel': 'dataTest', 'trial': 15, 'GNG': 1, 'trialType': 'Hab', 'stimName': 'movie5.mov',
+                 'habCrit': 15.0, 'sumOnA': 1.0, 'numOnA': 2, 'sumOffA': 3.5,
+                 'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
+        temp12 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                  'condLabel': 'dataTest', 'trial': 16, 'GNG': 1, 'trialType': 'hab_C',
+                  'stimName': 'movie2.mov', 'habCrit': 15.0, 'sumOnA': 1.0, 'numOnA': 2, 'sumOffA': 3.5,
+                  'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
+        self.commandInst.dataMatrix.append(temp11)
+        self.commandInst.dataMatrix.append(temp12)
         self.commandInst.habDataCompiled[5] = 2
         self.commandInst.habCount = 6
 
@@ -975,7 +987,7 @@ class TestCommands(object):
         assert self.commandInst.habMetWhen == -1
         assert len(self.commandInst.actualTrialOrder) == 33
         assert self.commandInst.habCount == 5
-        assert len(self.commandInst.dataMatrix) == 14 
+        assert len(self.commandInst.dataMatrix) == 14
 
         self.commandInst.setCritType = 'Max'
         self.commandInst.redoSetup(15,['B','C']) # This is actually something that would never come up - you can't redo twice in a row
