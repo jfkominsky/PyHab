@@ -118,7 +118,7 @@ class TestDataFunc(object):
                             'duration': 2.0}]  # VerboseOff2
         self.testMatrix = [{'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
                             'condLabel': 'dataTest', 'trial': 1, 'GNG': 1, 'trialType': 'A', 'stimName': 'movie1.mov',
-                            'habCrit': 0, 'habTrialNo':'', ''sumOnA': 3.0, 'numOnA': 2, 'sumOffA': 3.5,
+                            'habCrit': 0, 'habTrialNo':'', 'sumOnA': 3.0, 'numOnA': 2, 'sumOffA': 3.5,
                             'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
                             'numOffB': 2}, {'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
                                             'condLabel': 'dataTest', 'trial': 2, 'GNG': 1, 'trialType': 'B',
