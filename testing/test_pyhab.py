@@ -118,12 +118,12 @@ class TestDataFunc(object):
                             'duration': 2.0}]  # VerboseOff2
         self.testMatrix = [{'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
                             'condLabel': 'dataTest', 'trial': 1, 'GNG': 1, 'trialType': 'A', 'stimName': 'movie1.mov',
-                            'habCrit': 0, 'sumOnA': 3.0, 'numOnA': 2, 'sumOffA': 3.5,
+                            'habCrit': 0, 'habTrialNo':'', ''sumOnA': 3.0, 'numOnA': 2, 'sumOffA': 3.5,
                             'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
                             'numOffB': 2}, {'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
                                             'condLabel': 'dataTest', 'trial': 2, 'GNG': 1, 'trialType': 'B',
                                             'stimName': 'movie2.mov',
-                                            'habCrit': 0, 'sumOnA': 3.0, 'numOnA': 2, 'sumOffA': 3.5,
+                                            'habCrit': 0, 'habTrialNo':'', 'sumOnA': 3.0, 'numOnA': 2, 'sumOffA': 3.5,
                                             'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
                                             'numOffB': 2}]
         self.testDatList = {'verboseOn': [{'trial': 1, 'trialType': 'A', 'startTime': 0, 'endTime': 1.5, 'duration': 1.5},
@@ -1068,11 +1068,11 @@ class TestPrefLook(object):
                            'duration': 1.5}]  # VerboseOn2
         self.testMatrix = [{'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
                             'condLabel': 'dataTest', 'trial': 1, 'GNG': 1, 'trialType': 'A', 'stimName': 'movie1.mov',
-                            'habCrit': 0, 'sumOnL': 3.0, 'numOnL': 2, 'sumOnR': 3.0, 'numOnR': 2, 'sumOff': 3.5,
+                            'habCrit': 0, 'habTrialNo':'', 'sumOnL': 3.0, 'numOnL': 2, 'sumOnR': 3.0, 'numOnR': 2, 'sumOff': 3.5,
                             'numOff': 2}, {'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
                                             'condLabel': 'dataTest', 'trial': 2, 'GNG': 1, 'trialType': 'B',
                                             'stimName': 'movie2.mov',
-                                            'habCrit': 0, 'sumOnL': 3.0, 'numOnL': 2, 'sumOnR': 3.0, 'numOnR': 2,
+                                            'habCrit': 0, 'habTrialNo':'', 'sumOnL': 3.0, 'numOnL': 2, 'sumOnR': 3.0, 'numOnR': 2,
                                             'sumOffB': 3.5, 'numOffB': 2}]
         self.testDatList = {'verboseOn': [{'trial': 1, 'trialType': 'A', 'startTime': 0, 'endTime': 1.5, 'duration': 1.5},
                            {'trial': 1, 'trialType': 'A', 'startTime': 6.5, 'endTime': 8.0, 'duration': 1.5},
