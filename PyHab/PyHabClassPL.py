@@ -25,7 +25,7 @@ class PyHabPL(PyHab):
         self.verbDatList = {'verboseOn': [], 'verboseOn2': [], 'verboseOff': []}  # a dict of the verbose data arrays
         self.verbBadList = {'verboseOn': [], 'verboseOn2': [],  'verboseOff': []}  # Corresponding for bad data
 
-    def abortTrial(self, onArray, offArray, trial, ttype, onArray2, stimName=''):
+    def abortTrial(self, onArray, offArray, trial, ttype, onArray2, stimName = '', habTrialNo = 0):
         """
         Aborts a trial in progress, saves any data recorded thus far to the bad-data structures
 
@@ -47,6 +47,8 @@ class PyHabPL(PyHab):
         sumOn = 0
         sumOff = 0
         sumOn2 = 0
+        if habTrialNo <= 0:
+            habTrialNo = ''
         for i in range(0, len(onArray)):
             sumOn = sumOn + onArray[i]['duration']
         for k in range(0, len(onArray2)):
@@ -59,12 +61,12 @@ class PyHabPL(PyHab):
         self.verbBadList['verboseOff'].extend(offArray)
         tempData = {'sNum': self.sNum, 'sID': self.sID, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex, 'cond': self.cond,
                     'condLabel': self.condLabel,
-                    'trial': trial, 'GNG': 0, 'trialType': ttype, 'stimName': stimName, 'habCrit': self.habCrit,
+                    'trial': trial, 'GNG': 0, 'trialType': ttype, 'stimName': stimName, 'habCrit': self.habCrit, 'habTrialNo': habTrialNo,
                     'sumOnL': sumOn, 'numOnL': len(onArray),
                     'sumOnR': sumOn2, 'numOnR': len(onArray2), 'sumOff': sumOff, 'numOff': len(offArray)}
         self.badTrials.append(tempData)
 
-    def dataRec(self, onArray, offArray, trial, type, onArray2, stimName=''):
+    def dataRec(self, onArray, offArray, trial, type, onArray2, stimName = '', habTrialNo = 0):
         """
         Records the data for a trial that ended normally.
 
@@ -86,6 +88,8 @@ class PyHabPL(PyHab):
         sumOn = 0
         sumOff = 0
         sumOn2 = 0
+        if habTrialNo <= 0:
+            habTrialNo = ''
         #loop through each array adding up gaze duration (on and off).
         for i in range(0,len(onArray)):
             sumOn = sumOn + onArray[i]['duration']
@@ -98,7 +102,7 @@ class PyHabPL(PyHab):
         self.verbDatList['verboseOff'].extend(offArray)
         self.verbDatList['verboseOn2'].extend(onArray2)
         tempData={'sNum':self.sNum, 'sID': self.sID, 'months':self.ageMo, 'days':self.ageDay, 'sex':self.sex, 'cond':self.cond,'condLabel':self.condLabel,
-                                'trial':trial, 'GNG':1, 'trialType':type, 'stimName':stimName, 'habCrit':self.habCrit,
+                                'trial':trial, 'GNG':1, 'trialType':type, 'stimName':stimName, 'habCrit':self.habCrit, 'habTrialNo': habTrialNo,
                                 'sumOnL':sumOn, 'numOnL':len(onArray),
                                 'sumOnR':sumOn2,'numOnR':len(onArray2),'sumOff':sumOff, 'numOff':len(offArray)}
         self.dataMatrix.append(tempData)
@@ -123,8 +127,6 @@ class PyHabPL(PyHab):
         Control function for individual trials, to be called by doExperiment
         Returns a status value (int) that tells doExperiment what to do next
 
-        TODO: Huge update for new hab system
-
         :param number: Trial number
         :type number: int
         :param ttype: Trial type
@@ -135,16 +137,24 @@ class PyHabPL(PyHab):
         :rtype:
         """
         self.trialText.text = "Trial no. " + str(number)
+        habTrial = False
         if ttype[0:3] == 'hab' and type(eval(ttype[3])) is int and '_' in ttype:  # Hab sub-trials.
             localType = ttype[ttype.index('_') + 1:]
             # Safety check: Make sure that it was really a hab sub trial!
             dataType = 'hab_' + localType
+            habTrial = True
             if dataType not in self.habTrialList:
                 localType = ttype
                 dataType = ttype
+                habTrial = False
         elif ttype == 'Hab^':  # A common irregular case, when 'Hab' is the last trial in a sub-block.
             localType = 'Hab'
             dataType = localType
+            habTrial = True
+        elif len(self.habTrialList) == 0 and ttype == 'Hab':
+            localType = ttype
+            dataType = ttype
+            habTrial = True
         else:
             localType = ttype
             dataType = ttype
@@ -404,6 +414,10 @@ class PyHabPL(PyHab):
                     tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOff, 'endTime': endTrial,
                                      'duration':offDur}
                     offArray.append(tempGazeArray)
+        if habTrial:
+            habDataRec = self.habCount + 1
+        else:
+            habDataRec = 0
         if self.stimPres:
             # Reset everything, stop playing sounds and movies.
             if disMovie['stimType'] == 'Movie':
@@ -431,10 +445,10 @@ class PyHabPL(PyHab):
             if self.stimPres and disMovie['stimType'] == 'Movie':
                 disMovie['stim'].seek(0.0)
                 disMovie['stim'].pause()
-            self.abortTrial(onArray, offArray, number, dataType, onArray2, self.stimName)
+            self.abortTrial(onArray, offArray, number, dataType, onArray2, self.stimName, habDataRec)
             return 3
         else:
-            self.dataRec(onArray, offArray, number, dataType, onArray2, self.stimName)
+            self.dataRec(onArray, offArray, number, dataType, onArray2, self.stimName, habDataRec)
         if self.habMetWhen == -1 and len(self.habTrialList) > 0 and not abort:   # if still during habituation
             if dataType in self.calcHabOver:
                 tempSum = 0
