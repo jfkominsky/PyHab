@@ -231,9 +231,9 @@ class TestDataFunc(object):
         self.dataInst.badTrials = []
         self.dataInst.verbBadList = {'verboseOn': [], 'verboseOff': [], 'verboseOn2': [], 'verboseOff2': []}
 
-        self.dataInst.habTrialList = ['Hab','hab_C']
-        # Expands into 'Hab', 'hab1^_C' etc.
-        self.dataInst.calcHabOver=['Hab','hab_C']
+        self.dataInst.habTrialList = ['Hab','hab.C']
+        # Expands into 'Hab', 'hab1^.C' etc.
+        self.dataInst.calcHabOver=['Hab','hab.C']
 
         self.dataInst.dataMatrix.append(
             {'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
@@ -254,18 +254,18 @@ class TestDataFunc(object):
 
         self.dataInst.dataMatrix.append(
             {'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-             'condLabel': 'dataTest', 'trial': 4, 'GNG': 1, 'trialType': 'hab_C', 'stimName': 'movie1.mov',
+             'condLabel': 'dataTest', 'trial': 4, 'GNG': 1, 'trialType': 'hab.C', 'stimName': 'movie1.mov',
              'habCrit': 0, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
              'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
              'numOffB': 2})
         self.dataInst.verbDatList['verboseOn'].append(
-            {'trial': 4, 'trialType': 'hab_C', 'startTime': 0, 'endTime': 3.5, 'duration': 3.5})
+            {'trial': 4, 'trialType': 'hab.C', 'startTime': 0, 'endTime': 3.5, 'duration': 3.5})
         self.dataInst.verbDatList['verboseOff'].append(
-            {'trial': 4, 'trialType': 'hab_C', 'startTime': 3.5, 'endTime': 5.0, 'duration': 1.5})
+            {'trial': 4, 'trialType': 'hab.C', 'startTime': 3.5, 'endTime': 5.0, 'duration': 1.5})
         self.dataInst.verbDatList['verboseOn'].append(
-            {'trial': 4, 'trialType': 'hab_C', 'startTime': 5.0, 'endTime': 11.5, 'duration': 6.5})
+            {'trial': 4, 'trialType': 'hab.C', 'startTime': 5.0, 'endTime': 11.5, 'duration': 6.5})
         self.dataInst.verbDatList['verboseOff'].append(
-            {'trial': 4, 'trialType': 'hab_C', 'startTime': 11.5, 'endTime': 13.5, 'duration': 2.0})
+            {'trial': 4, 'trialType': 'hab.C', 'startTime': 11.5, 'endTime': 13.5, 'duration': 2.0})
         self.dataInst.habDataCompiled[self.dataInst.habCount] += self.dataInst.dataMatrix[-1]['sumOnA']
         self.dataInst.habCount = 1
 
@@ -286,8 +286,8 @@ class TestDataFunc(object):
         self.dataInst.badTrials = []
         self.dataInst.verbBadList = {'verboseOn': [], 'verboseOff': [], 'verboseOn2': [], 'verboseOff2': []}
 
-        self.dataInst.habTrialList = ['Hab', 'hab_C']
-        # Expands into 'Hab', 'hab1^_C' etc.
+        self.dataInst.habTrialList = ['Hab', 'hab.C']
+        # Expands into 'Hab', 'hab1^.C' etc.
         self.dataInst.calcHabOver = ['Hab']
 
         self.dataInst.dataMatrix.append(
@@ -309,18 +309,18 @@ class TestDataFunc(object):
 
         self.dataInst.dataMatrix.append(
             {'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-             'condLabel': 'dataTest', 'trial': 4, 'GNG': 1, 'trialType': 'hab_C', 'stimName': 'movie1.mov',
+             'condLabel': 'dataTest', 'trial': 4, 'GNG': 1, 'trialType': 'hab.C', 'stimName': 'movie1.mov',
              'habCrit': 0, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
              'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
              'numOffB': 2})
         self.dataInst.verbDatList['verboseOn'].append(
-            {'trial': 4, 'trialType': 'hab_C', 'startTime': 0, 'endTime': 3.5, 'duration': 3.5})
+            {'trial': 4, 'trialType': 'hab.C', 'startTime': 0, 'endTime': 3.5, 'duration': 3.5})
         self.dataInst.verbDatList['verboseOff'].append(
-            {'trial': 4, 'trialType': 'hab_C', 'startTime': 3.5, 'endTime': 5.0, 'duration': 1.5})
+            {'trial': 4, 'trialType': 'hab.C', 'startTime': 3.5, 'endTime': 5.0, 'duration': 1.5})
         self.dataInst.verbDatList['verboseOn'].append(
-            {'trial': 4, 'trialType': 'hab_C', 'startTime': 5.0, 'endTime': 11.5, 'duration': 6.5})
+            {'trial': 4, 'trialType': 'hab.C', 'startTime': 5.0, 'endTime': 11.5, 'duration': 6.5})
         self.dataInst.verbDatList['verboseOff'].append(
-            {'trial': 4, 'trialType': 'hab_C', 'startTime': 11.5, 'endTime': 13.5, 'duration': 2.0})
+            {'trial': 4, 'trialType': 'hab.C', 'startTime': 11.5, 'endTime': 13.5, 'duration': 2.0})
         # self.dataInst.habDataCompiled[self.dataInst.habCount] += self.dataInst.dataMatrix[-1]['sumOnA']
         # Because this is no longer included in calcHabOver.
         self.dataInst.habCount = 1
@@ -344,24 +344,24 @@ class TestDataFunc(object):
         self.dataInst.verbDatList = copy.deepcopy(self.testDatList)
         self.dataInst.badTrials = []
         self.dataInst.verbBadList = {'verboseOn': [], 'verboseOff': [], 'verboseOn2': [], 'verboseOff2': []}
-        self.dataInst.habTrialList = ['hab_C', 'Hab', 'hab_C']
-        self.dataInst.calcHabOver = ['Hab', 'hab_C']
-        self.dataInst.actualTrialOrder = ['A', 'B', 'hab1_C', 'Hab', 'hab1^_C','hab2_c', 'Hab', 'hab2^_C','hab3_C', 'Hab', 'hab3^_C']
+        self.dataInst.habTrialList = ['hab.C', 'Hab', 'hab.C']
+        self.dataInst.calcHabOver = ['Hab', 'hab.C']
+        self.dataInst.actualTrialOrder = ['A', 'B', 'hab1.C', 'Hab', 'hab1^.C','hab2.c', 'Hab', 'hab2^.C','hab3.C', 'Hab', 'hab3^.C']
 
         self.dataInst.dataMatrix.append(
             {'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-             'condLabel': 'dataTest', 'trial': 3, 'GNG': 1, 'trialType': 'hab_C', 'stimName': 'movie1.mov',
+             'condLabel': 'dataTest', 'trial': 3, 'GNG': 1, 'trialType': 'hab.C', 'stimName': 'movie1.mov',
              'habCrit': 0, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
              'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
              'numOffB': 2})
         self.dataInst.verbDatList['verboseOn'].append(
-            {'trial': 3, 'trialType': 'hab_C', 'startTime': 0, 'endTime': 3.5, 'duration': 3.5})
+            {'trial': 3, 'trialType': 'hab.C', 'startTime': 0, 'endTime': 3.5, 'duration': 3.5})
         self.dataInst.verbDatList['verboseOff'].append(
-            {'trial': 3, 'trialType': 'hab_C', 'startTime': 3.5, 'endTime': 5.0, 'duration': 1.5})
+            {'trial': 3, 'trialType': 'hab.C', 'startTime': 3.5, 'endTime': 5.0, 'duration': 1.5})
         self.dataInst.verbDatList['verboseOn'].append(
-            {'trial': 3, 'trialType': 'hab_C', 'startTime': 5.0, 'endTime': 11.5, 'duration': 6.5})
+            {'trial': 3, 'trialType': 'hab.C', 'startTime': 5.0, 'endTime': 11.5, 'duration': 6.5})
         self.dataInst.verbDatList['verboseOff'].append(
-            {'trial': 3, 'trialType': 'hab_C', 'startTime': 11.5, 'endTime': 13.5, 'duration': 2.0})
+            {'trial': 3, 'trialType': 'hab.C', 'startTime': 11.5, 'endTime': 13.5, 'duration': 2.0})
         self.dataInst.habDataCompiled[self.dataInst.habCount] = self.dataInst.dataMatrix[-1]['sumOnA']  # 10
         self.dataInst.habCount = 0  # Has not yet proceeded to end of hab trial!
 
@@ -384,18 +384,18 @@ class TestDataFunc(object):
 
         self.dataInst.dataMatrix.append(
             {'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-             'condLabel': 'dataTest', 'trial': 5, 'GNG': 1, 'trialType': 'hab_C', 'stimName': 'movie1.mov',
+             'condLabel': 'dataTest', 'trial': 5, 'GNG': 1, 'trialType': 'hab.C', 'stimName': 'movie1.mov',
              'habCrit': 0, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
              'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
              'numOffB': 2})
         self.dataInst.verbDatList['verboseOn'].append(
-            {'trial': 5, 'trialType': 'hab_C', 'startTime': 0, 'endTime': 3.5, 'duration': 3.5})
+            {'trial': 5, 'trialType': 'hab.C', 'startTime': 0, 'endTime': 3.5, 'duration': 3.5})
         self.dataInst.verbDatList['verboseOff'].append(
-            {'trial': 5, 'trialType': 'hab_C', 'startTime': 3.5, 'endTime': 5.0, 'duration': 1.5})
+            {'trial': 5, 'trialType': 'hab.C', 'startTime': 3.5, 'endTime': 5.0, 'duration': 1.5})
         self.dataInst.verbDatList['verboseOn'].append(
-            {'trial': 5, 'trialType': 'hab_C', 'startTime': 5.0, 'endTime': 11.5, 'duration': 6.5})
+            {'trial': 5, 'trialType': 'hab.C', 'startTime': 5.0, 'endTime': 11.5, 'duration': 6.5})
         self.dataInst.verbDatList['verboseOff'].append(
-            {'trial': 5, 'trialType': 'hab_C', 'startTime': 11.5, 'endTime': 13.5, 'duration': 2.0})
+            {'trial': 5, 'trialType': 'hab.C', 'startTime': 11.5, 'endTime': 13.5, 'duration': 2.0})
         self.dataInst.habDataCompiled[self.dataInst.habCount] += self.dataInst.dataMatrix[-1]['sumOnA']  # 30
         self.dataInst.habCount = 1
 
@@ -632,11 +632,11 @@ class TestRunSetup(object):
         self.trialInst.run(testMode=testOne)
         assert len(self.trialInst.actualTrialOrder) == 19
         assert len([x for x in self.trialInst.actualTrialOrder if x == 'Hab']) == 14
-        self.trialInst.habTrialList = ['hab_C','Hab']
+        self.trialInst.habTrialList = ['hab.C','Hab']
         self.trialInst.run(testMode=testOne)
         assert len(self.trialInst.actualTrialOrder) == 33
         assert len([x for x in self.trialInst.actualTrialOrder if x == 'Hab^']) == 14
-        assert len([x for x in self.trialInst.actualTrialOrder if '_C' in x]) == 14
+        assert len([x for x in self.trialInst.actualTrialOrder if '.C' in x]) == 14
 
 
     def test_multiyear_age(self):
@@ -821,7 +821,7 @@ class TestCommands(object):
         assert y == 'Hab'
 
         self.commandInst.stimPres = True
-        self.commandInst.habTrialList = ['Hab','hab_C']
+        self.commandInst.habTrialList = ['Hab','hab.C']
         self.commandInst.trialOrder = ['A', 'A', 'B', 'B', 'Hab', 'D']
         self.commandInst.counters = {'A': 2, 'B': 2, 'C': 1, 'D': 0,'Hab':1}
         self.commandInst.calcHabOver=['Hab']
@@ -829,21 +829,21 @@ class TestCommands(object):
         [x, y] = self.commandInst.jumpToTest(7)
         assert x == 'Movie9'
         assert y == 'D'
-        assert self.commandInst.actualTrialOrder == ['A', 'A', 'B', 'B', 'Hab', 'hab1^_C', 'D']
+        assert self.commandInst.actualTrialOrder == ['A', 'A', 'B', 'B', 'Hab', 'hab1^.C', 'D']
 
         self.commandInst.stimPres = False
         self.commandInst.habCount = 1
         [x, y] = self.commandInst.insertHab(7)
         assert x == 0
         assert y == 'Hab'
-        assert self.commandInst.actualTrialOrder == ['A', 'A', 'B', 'B', 'Hab', 'hab1^_C','Hab','hab2^_C','D']
+        assert self.commandInst.actualTrialOrder == ['A', 'A', 'B', 'B', 'Hab', 'hab1^.C','Hab','hab2^.C','D']
 
         # Test something down the line!
         self.commandInst.stimPres = True
         [x, y] = self.commandInst.insertHab(9, 2)
         assert x == 0
         assert y == 'Hab'
-        assert self.commandInst.actualTrialOrder == ['A', 'A', 'B', 'B', 'Hab', 'hab1^_C','Hab','hab2^_C','Hab','hab3^_C','D']
+        assert self.commandInst.actualTrialOrder == ['A', 'A', 'B', 'B', 'Hab', 'hab1^.C','Hab','hab2^.C','Hab','hab3^.C','D']
 
 
     def test_setupredo_hab(self):
@@ -866,9 +866,9 @@ class TestCommands(object):
                                      'D': ['Movie9', 'Movie10'],
                                      'Hab': ['Movie12']}
         self.commandInst.trialOrder = ['A', 'A', 'B', 'B', 'Hab', 'D']
-        self.commandInst.habTrialList = ['Hab','hab_C']
+        self.commandInst.habTrialList = ['Hab','hab.C']
         self.commandInst.autoAdvance = ['B','C']
-        self.commandInst.calcHabOver = ['Hab','hab_C']
+        self.commandInst.calcHabOver = ['Hab','hab.C']
         self.commandInst.counters = {'A': 2, 'B': 2, 'C': 0, 'D': 0, 'Hab': 0}
         self.commandInst.run(testMode=testOne)
         self.commandInst.verbDatList = copy.deepcopy(self.testDatList)
@@ -893,7 +893,7 @@ class TestCommands(object):
                  'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
                  'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
         temp2 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-                 'condLabel': 'dataTest', 'trial': 6, 'GNG': 1, 'trialType': 'hab_C',
+                 'condLabel': 'dataTest', 'trial': 6, 'GNG': 1, 'trialType': 'hab.C',
                  'stimName': 'Movie1.mov', 'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
                  'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
         self.commandInst.dataMatrix.append(temp1)
@@ -903,7 +903,7 @@ class TestCommands(object):
                  'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
                  'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
         temp4 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-                 'condLabel': 'dataTest', 'trial': 8, 'GNG': 1, 'trialType': 'hab_C',
+                 'condLabel': 'dataTest', 'trial': 8, 'GNG': 1, 'trialType': 'hab.C',
                  'stimName': 'movie2.mov', 'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
                  'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
         temp5 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
@@ -911,7 +911,7 @@ class TestCommands(object):
                  'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
                  'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
         temp6 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-                 'condLabel': 'dataTest', 'trial': 10, 'GNG': 1, 'trialType': 'hab_C',
+                 'condLabel': 'dataTest', 'trial': 10, 'GNG': 1, 'trialType': 'hab.C',
                  'stimName': 'movie2.mov', 'habCrit': 15.0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
                  'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
         self.commandInst.dataMatrix.append(temp3)
@@ -945,7 +945,7 @@ class TestCommands(object):
                  'habCrit': 15.0, 'sumOnA': 1.0, 'numOnA': 2, 'sumOffA': 3.5,
                  'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
         temp8 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-                 'condLabel': 'dataTest', 'trial': 12, 'GNG': 1, 'trialType': 'hab_C',
+                 'condLabel': 'dataTest', 'trial': 12, 'GNG': 1, 'trialType': 'hab.C',
                  'stimName': 'movie2.mov', 'habCrit': 15.0, 'sumOnA': 1.0, 'numOnA': 2, 'sumOffA': 3.5,
                  'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
         self.commandInst.dataMatrix.append(temp7)
@@ -957,7 +957,7 @@ class TestCommands(object):
                  'habCrit': 15.0, 'sumOnA': 1.0, 'numOnA': 2, 'sumOffA': 3.5,
                  'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
         temp10 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-                 'condLabel': 'dataTest', 'trial': 14, 'GNG': 1, 'trialType': 'hab_C',
+                 'condLabel': 'dataTest', 'trial': 14, 'GNG': 1, 'trialType': 'hab.C',
                  'stimName': 'movie2.mov', 'habCrit': 15.0, 'sumOnA': 1.0, 'numOnA': 2, 'sumOffA': 3.5,
                  'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
         self.commandInst.dataMatrix.append(temp9)
@@ -969,7 +969,7 @@ class TestCommands(object):
                  'habCrit': 15.0, 'sumOnA': 1.0, 'numOnA': 2, 'sumOffA': 3.5,
                  'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
         temp12 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-                  'condLabel': 'dataTest', 'trial': 16, 'GNG': 1, 'trialType': 'hab_C',
+                  'condLabel': 'dataTest', 'trial': 16, 'GNG': 1, 'trialType': 'hab.C',
                   'stimName': 'movie2.mov', 'habCrit': 15.0, 'sumOnA': 1.0, 'numOnA': 2, 'sumOffA': 3.5,
                   'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
         self.commandInst.dataMatrix.append(temp11)
@@ -1001,7 +1001,7 @@ class TestCommands(object):
                  'habCrit': 15.0, 'sumOnA': 1.0, 'numOnA': 2, 'sumOffA': 3.5,
                  'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2})
         self.commandInst.dataMatrix.append({'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-                 'condLabel': 'dataTest', 'trial': 14, 'GNG': 1, 'trialType': 'hab_C',
+                 'condLabel': 'dataTest', 'trial': 14, 'GNG': 1, 'trialType': 'hab.C',
                  'stimName': 'movie2.mov', 'habCrit': 15.0, 'sumOnA': 12, 'numOnA': 2, 'sumOffA': 3.5,
                  'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2})
         self.commandInst.habDataCompiled[4] = 12
@@ -1028,7 +1028,7 @@ class TestCommands(object):
                  'habCrit': 15.0, 'sumOnA': 1.0, 'numOnA': 2, 'sumOffA': 3.5,
                  'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2})
         self.commandInst.dataMatrix.append({'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-                 'condLabel': 'dataTest', 'trial': 14, 'GNG': 1, 'trialType': 'hab_C',
+                 'condLabel': 'dataTest', 'trial': 14, 'GNG': 1, 'trialType': 'hab.C',
                  'stimName': 'movie2.mov', 'habCrit': 15.0, 'sumOnA': 2, 'numOnA': 2, 'sumOffA': 3.5,
                  'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2})
         self.commandInst.habDataCompiled[4] = 2

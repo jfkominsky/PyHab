@@ -138,10 +138,10 @@ class PyHabPL(PyHab):
         """
         self.trialText.text = "Trial no. " + str(number)
         habTrial = False
-        if ttype[0:3] == 'hab' and type(eval(ttype[3])) is int and '_' in ttype:  # Hab sub-trials.
-            localType = ttype[ttype.index('_') + 1:]
+        if ttype[0:3] == 'hab' and type(eval(ttype[3])) is int and '.' in ttype:  # Hab sub-trials.
+            localType = ttype[ttype.index('.') + 1:]
             # Safety check: Make sure that it was really a hab sub trial!
-            dataType = 'hab_' + localType
+            dataType = 'hab.' + localType
             habTrial = True
             if dataType not in self.habTrialList:
                 localType = ttype

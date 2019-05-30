@@ -552,7 +552,13 @@ class PyHabBuilder:
                             warnDlg.addText("New trial type label matches an existing trial type! Please choose a different name for this trial type.")
                             warnDlg.show()
                             skip = True
-                            self.trialTypeDlg(typeInfo[0], makeNew,typeInfo)
+                            self.trialTypeDlg(typeInfo[0], makeNew, typeInfo)
+                        elif '.' in typeInfo[0]:
+                            warnDlg = gui.Dlg(title="llegal character!")
+                            warnDlg.addText("The '.' character cannot be used as part of a trial type name. Please rename your trial type")
+                            warnDlg.show()
+                            skip = True
+                            self.trialTypeDlg(typeInfo[0], makeNew, typeInfo)
                         trialType = typeInfo[0]
                     if not skip:
 
@@ -809,7 +815,7 @@ class PyHabBuilder:
                 tempList = []
                 for i in range(0, len(subBlockInfo)):
                     if subBlockInfo[i] != 'Hab':
-                        tempList.append('hab_' + subBlockInfo[i])
+                        tempList.append('hab.' + subBlockInfo[i])
                     else:
                         tempList.append(subBlockInfo[i])
                 self.settings['habTrialList'] = tempList
@@ -845,9 +851,9 @@ class PyHabBuilder:
             del self.settings['maxDur'][dType]  # remove from maxdur
             if dType in self.settings['playThrough']:  # if it was in playThrough, remove it from there too.
                 self.settings['playThrough'].pop(dType, None)
-            if ('hab_' + dType) in self.settings['habTrialList']: #If it was in a hab meta-trial.  TODO: CHECK
-                while ('hab_' + dType) in self.settings['habTrialList']:
-                    self.settings['habTrialList'].remove(('hab_' + dType))
+            if ('hab.' + dType) in self.settings['habTrialList']: #If it was in a hab meta-trial.  TODO: CHECK
+                while ('hab.' + dType) in self.settings['habTrialList']:
+                    self.settings['habTrialList'].remove(('hab.' + dType))
             self.trialTypesArray=self.loadTypes()  # easiest to just reload the trial types.
             # For the study flow, it's easiest just to remove it from the trial order and reload the study flow.
             if dType in self.settings['trialOrder']:
