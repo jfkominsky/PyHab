@@ -126,6 +126,13 @@ class PyHab:
             for [i,j] in self.stimNames.items():
                 tempISI[i] = self.ISI
             self.ISI = tempISI
+        try:
+            self.expScreenIndex = eval(settingsDict['expScreenIndex'])
+        except:
+            if self.screenIndex == 1:
+                self.expScreenIndex = 0
+            else:
+                self.expScreenIndex = 1
 
         # Secondary evals to make sure everything in the dictionaries that needs to be a number is one.
         # maxDur, maxOff, minOn, ISI
@@ -1973,7 +1980,7 @@ class PyHab:
                                      units='pix', color=self.screenColor)
             self.dummyThing = visual.Circle(self.win, size=1, color=self.win.color) # This is for fixing a display glitch in PsychoPy3 involving multiple windows of different sizes.
         # Coder window
-        self.win2 = visual.Window((400, 400), fullscr=False, screen=0, allowGUI=True, units='pix', waitBlanking=False,
+        self.win2 = visual.Window((400, 400), fullscr=False, screen=self.expScreenIndex, allowGUI=True, units='pix', waitBlanking=False,
                                   rgb=[-1, -1, -1])
         if self.stimPres:
             tempText = visual.TextStim(self.win2, text="Loading Stimuli", pos=[0, 0], color='white', bold=True, height=40)

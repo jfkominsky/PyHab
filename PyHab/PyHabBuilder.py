@@ -3,6 +3,7 @@ from psychopy.app import coder
 import wx, random, csv, shutil, os, sys, threading
 from math import *
 from copy import deepcopy
+import pyglet
 
 
 class PyHabBuilder:
@@ -110,7 +111,8 @@ class PyHabBuilder:
                                                         'screenColor': 'black',
                                                         'movieWidth': 800, 
                                                         'movieHeight': 600, 
-                                                        'screenIndex': '1', 
+                                                        'screenIndex': '1',
+                                                        'expScreenIndex': '0',
                                                         'ISI': {},
                                                         'freezeFrame': '0.0',
                                                         'playAttnGetter': {},
@@ -498,7 +500,7 @@ class PyHabBuilder:
                     chz3.insert(0, 'PyHabDefault')
                     chz3.insert(0, 'None') # Only default to default if this is a new trial type, not if "none" was selected before.
             elif trialType in self.settings['playAttnGetter']:
-                chz3 = [x for x in list(self.settings['attnGetterList'].keys()) if x is not self.settings['playAttnGetter'][trialType]]
+                chz3 = [x for x in list(self.settings['attnGetterList'].keys()) if x != self.settings['playAttnGetter'][trialType]]
                 chz3.insert(0, 'None')
                 chz3.insert(0, self.settings['playAttnGetter'][trialType])
             typeDlg.addField("Attention-getter for this trial type (Stim presentation mode only)", choices = chz3)
@@ -1170,10 +1172,14 @@ class PyHabBuilder:
 
         4 = movieWidth: Height of movieStim3 object inside stim window
 
-        5 = screenIndex: Which screen to display the stim window on.
+        5 = freezeFrame: If the attention-getter is used (for a given trial type), this is the minimum time the first frame
+        of the movie will be displayed after the attention-getter finishes. TODO: Move to trial settings.
 
-        6 = freezeFrame: If the attention-getter is used (for this trial type), this is the minimum time the first frame
-        of the movie will be displayed after the attention-getter finishes.
+        6 = screenIndex: Which screen to display the stim window on.
+
+        7 = expScreenIndex: Which screen to display the experimenter window on
+
+
 
         :param lastSet: Optional. Last entered settings, in case dialog needs to be presented again to fix bad entries.
         :type lastSet: list
@@ -1199,8 +1205,9 @@ class PyHabBuilder:
             lastSet.append(self.settings['screenColor'])
             lastSet.append(self.settings['movieWidth'])
             lastSet.append(self.settings['movieHeight'])
-            lastSet.append(self.settings['screenIndex'])
             lastSet.append(self.settings['freezeFrame'])
+            lastSet.append(self.settings['screenIndex'])
+            lastSet.append(self.settings['expScreenIndex'])
         colors = ['black', 'white', 'gray']
         colorchz = [x for x in colors if x != lastSet[2]]
         colorchz.insert(0, lastSet[2])
@@ -1209,17 +1216,27 @@ class PyHabBuilder:
         sDlg.addField("Stimulus display background color", choices=colorchz)
         sDlg.addField("Width of movie stimuli in pixels", lastSet[3])
         sDlg.addField("Height of movie stimuli in pixels", lastSet[4])
-        if lastSet[5] in [1, '1']:
-            scrchz = [1, 0]
+        sDlg.addField("Freeze first frame for how many seconds after attention-getter?", lastSet[5])
+        # Get a list of all screens. Requires us to import pyglet, assuming we are using pyglet displays (until glfw works)
+        defDisp = pyglet.window.get_platform().get_default_display()
+        allScrs = defDisp.get_screens()
+        if len(allScrs) > 1:
+            screenList = list(range(0, len(allScrs)))
         else:
-            scrchz = [0, 1]
-        sDlg.addField("Screen index of presentation screen (0 = primary display, 1 = secondary screen)", choices=scrchz)
-        sDlg.addField("Freeze first frame for how many seconds after attention-getter?", lastSet[6])
+            screenList = [0, 1]  # Because even if you don't have a second screen now, you presumably will later.
+        if isinstance(lastSet[6],str):
+            lastSet[6] = eval(lastSet[6])
+        scrchz = [x for x in screenList if x != lastSet[6]]
+        scrchz.insert(0, lastSet[6])
+        sDlg.addField("Screen index of presentation window (0 = primary display, 1-N = secondary screens)", choices=scrchz)
+        escrchz = [x for x in screenList if x != lastSet[7]]
+        escrchz.insert(0, lastSet[7])
+        sDlg.addField("Screen index of experimenter window", choices=escrchz)
 
         stimfo = sDlg.show()
         if sDlg.OK:
             problem = False
-            for i in [0, 1, 3, 4, 5, 6]:
+            for i in [0, 1, 3, 4, 5, 6, 7]:
                 if not isinstance(stimfo[i], float) and not isinstance(stimfo[i], int):
                     try:
                         stimfo[i] = eval(stimfo[i])
@@ -1231,8 +1248,9 @@ class PyHabBuilder:
                 self.settings['screenColor'] = stimfo[2]
                 self.settings['movieWidth'] = stimfo[3]
                 self.settings['movieHeight'] = stimfo[4]
-                self.settings['screenIndex'] = stimfo[5]
-                self.settings['freezeFrame'] = stimfo[6]
+                self.settings['freezeFrame'] = stimfo[5]
+                self.settings['screenIndex'] = stimfo[6]
+                self.settings['expScreenIndex'] = stimfo[7]
             else:
                 warnDlg = gui.Dlg(title="Warning!")
                 warnDlg.addText(
