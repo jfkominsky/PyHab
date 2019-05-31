@@ -362,15 +362,18 @@ class PyHabBuilder:
                             pass
                         self.win.winHandle.set_visible(visible=False)
                     # Determine whether we're dealing with a trial or block, launch appropriate interface
-                    if self.trialTypesArray['labels'][j] in self.settings['blockList'].keys(): # TODO: Does not allow changing number....
-                        self.blockMaker(self.trialTypesArray['labels'][j], new=False)
+                    if self.trialTypesArray['labels'][j] in self.settings['blockList'].keys():
+                        self.makeBlockDlg(self.trialTypesArray['labels'][j], new=False)
                     else:
                         self.trialTypeDlg(trialType=self.trialTypesArray['labels'][j], makeNew=False)
                     if os.name is not 'posix':
                         self.win.winHandle.set_visible(visible=True)
             for k in range(0, len(self.studyFlowArray['shapes'])):
                 if self.mouse.isPressedIn(self.studyFlowArray['shapes'][k]):
-                    self.moveTrialInFlow(k)
+                    # Move the trial within the study flow, reload the modified flow array
+                    self.settings['trialOrder'] = self.moveTrialInFlow(k, self.settings['trialOrder'], self.flowArea,
+                                                                       self.UI, self.studyFlowArray, self.trialTypesArray)
+                    self.studyFlowArray = self.loadFlow(self.settings['trialOrder'], self.flowLocs, self.overFlowLocs)
                     break
         self.win.close()
         
@@ -850,10 +853,11 @@ class PyHabBuilder:
                 self.studyFlowArray = self.loadFlow(self.settings['trialOrder'], self.flowLocs, self.overFlowLocs)
                 self.habSettingsDlg()  # Immediately load hab settings so they can set the trials over which it is computed.
 
-    def makeBlockDlg(self):
+    def makeBlockDlg(self, name='', new=True):
         """
         Creates a new 'block' structure, which basically masquerades as a trial type in most regards, but consists of
         several sub-trials, much like how habituation blocks work.
+        TODO: Changing name of blocks
 
         :return:
         :rtype:
@@ -864,96 +868,28 @@ class PyHabBuilder:
             self.workingText.draw()
             self.win.flip()
             newBlockDlg = gui.Dlg(title="Create new block")
-            newBlockDlg.addField("Block name: ")
-            newBlockDlg.addField("Number of trials in block: ")
+            newBlockDlg.addField("Block name: ", initial=name)
             newBlockDlg.addText("Hit OK to select trials for this block")
             newBlock = newBlockDlg.show()
             if newBlockDlg.OK:
-                if newBlock[0] == '' or newBlock[1] == '':
+                if newBlock[0] == '':
                     errDlg = gui.Dlg(title="Missing information!")
-                    errDlg.addText("Field left blank, please fill in both fields or press 'cancel'")
+                    errDlg.addText("Name cannot be blank!")
                     irrel = errDlg.show()
                     self.makeBlockDlg()
-                if not isinstance(newBlock[1], float) and not isinstance(newBlock[1], int):
-                    try:
-                        newBlock[1] = eval(newBlock[1])
-                    except:
-                        warnDlg = gui.Dlg(title="!")
-                        warnDlg.addText("Number of trials must be a number!")
-                        warnDlg.show()
-                        skip = True
-                        self.makeBlockDlg()
-                if newBlock[0] in self.trialTypesArray['labels'] or newBlock[0] == 'Hab' or '.' in newBlock[0]:
+                elif newBlock[0] in self.trialTypesArray['labels'] or newBlock[0] == 'Hab' or '.' in newBlock[0]:
                     errDlg = gui.Dlg(title="Illegal block name!")
                     errDlg.addText("Name is already in use, contains illegal character, or is reserved. Please rename!")
-                    errDlg.addText("To create habituation blocks, use the 'Add Habituation' button.")
-                    irrel = errDlg.show()
-                    self.makeBlockDlg()
-                elif isinstance(newBlock[1], str) and not isinstance(eval(newBlock[1]), int):
-                    errDlg = gui.Dlg(title="Number expected")
-                    errDlg.addText("Number of trials must be a number! Please re-enter")
+                    errDlg.addText("To create habituation blocks, please use the 'Add Habituation' button.")
                     irrel = errDlg.show()
                     self.makeBlockDlg()
                 else:
-                    self.blockMaker(newBlock[0])
-                    self.settings['blockList'][newBlock[0]] = self.blockTrialSelect(newBlock[0], newBlock[1])
-                    # Add the block to the trial type palette, as we would a trial type.
-                    i = len(self.trialTypesArray['labels'])  # Grab length before adding, conveniently the index we need for position info etc.
-                    self.trialTypesArray['labels'].append(newBlock[0])
-                    tempObj = visual.Rect(self.win, width=self.typeWidthObj, height=self.typeHeightObj,
-                                          fillColor=self.colorsArray[i], pos=self.typeLocs[i])
-                    numChar = len(newBlock[0])
-                    if numChar <= 3:
-                        numChar = 4  # Maximum height
-                    tempTxt = visual.TextStim(self.win, alignHoriz='center', alignVert='center', bold=True,
-                                              height=self.typeHeightObj / (.38 * numChar), text=newBlock[0],
-                                              pos=self.typeLocs[i])
-                    self.trialTypesArray['shapes'].append(tempObj)
-                    self.trialTypesArray['text'].append(tempTxt)
-                    self.settings['trialTypes'].append(newBlock[0])  # Note that this does get added to trialTypes, confusingly...
-
+                    self.blockMaker(newBlock[0], new)
         else:
             errDlg = gui.Dlg(title="No trials to make blocks with!")
             errDlg.addText("Make some trial types before trying to add them to a block.")
             irrel = errDlg.show()
 
-
-    def blockTrialSelect(self, name, number, new=True):
-        """
-        A short-term solution for constructing blocks, that just gives you a list of trials. Ultimately it will have
-        a better UI implementation.
-
-        :param name: Name of block
-        :type name: str
-        :param number: number of trials in block
-        :type number: int
-        :param new: new block or modifying existing?
-        :type new: bool
-        :return: A list of trials in the block, to be fed into the "blockList" dict in the settings.
-        :rtype: list
-        """
-
-        subBlockDlg = gui.Dlg(title="Select trials")
-        if new:
-            if not isinstance(number, int):
-                number = eval(number)
-            for i in range(0, number):
-                subBlockDlg.addField('Trial ' + str(i + 1), choices=self.settings['trialTypes'])
-        else:
-            oldList = self.settings['blockList'][name]
-
-            if len(oldList) < number:
-                for k in range(len(oldList),number):
-                    oldList.append(self.settings['trialTypes'][0])
-            for q in range(0, len(oldList)):
-                tempList = [x for x in self.settings['trialTypes'] if x != oldList[q]]
-                tempList.insert(0,oldList[q])
-                subBlockDlg.addField('Trial ' + str(q+1), choicse=tempList)
-        trialList = subBlockDlg.show()
-        if subBlockDlg.OK:
-            for i in range(0, len(trialList)):
-                trialList[i] = name + '.' + trialList[i]
-            return trialList
 
     def blockMaker(self, blockName, new=True, hab=False):
         """
@@ -962,6 +898,7 @@ class PyHabBuilder:
         We can actually completely overlay the regular UI. Problem is, if the regular UI continues to draw, the mouse
         detection will still work, even if a shape is behind another shape. So, like with conditions, we need a totally
         parallel UI
+        TODO: Integrating hab block design.
 
         :param blockName: Name of new block
         :type blockName: str
@@ -975,6 +912,7 @@ class PyHabBuilder:
         self.showMainUI(self.UI,self.studyFlowArray, self.trialTypesArray)  # Draw the usual UI under the new one...
         # Define new flow UI. We can reuse a lot of the base UI, happily.
         blockUI = {'bg':[],'buttons':{'shapes':[],'text':[],'functions':[]}}
+        blockOrder = []  # This will be what contains the order for the block!
         end = False
         newFlowArea = [-.95, .95, .97, -.97]  # X,X,Y,Y
         newFlowRect = visual.Rect(self.win, width=newFlowArea[1] - newFlowArea[0],
@@ -1024,19 +962,62 @@ class PyHabBuilder:
             del trialTypes['shapes'][delIndex[j]]
             del trialTypes['text'][delIndex[j]]
         if not new:
-            fixedNames = deepcopy(self.settings['blockList'][blockName])
-            for z in range(0, len(fixedNames)):
-                fixedNames[z] = fixedNames[z][fixedNames[z].index('.')+1:]
-            blockFlow = self.loadFlow(tOrd=fixedNames, locs=newFlowLocs, overflow=newFlowLocs)
+            blockOrder = deepcopy(self.settings['blockList'][blockName])
+            for z in range(0, len(blockOrder)):
+                blockOrder[z] = blockOrder[z][blockOrder[z].index('.')+1:]
+            blockFlow = self.loadFlow(tOrd=blockOrder, locs=newFlowLocs, overflow=newFlowLocs)
         else:
             blockFlow = {'lines': [], 'shapes': [], 'text': [], 'labels': [], 'extras': []}
 
         done = False
-        while not done:
+        while not done:  # A heavily pared-down version of mainLoop that only allows trial flow editing and 'done'/'cancel'
             self.showMainUI(blockUI, blockFlow, trialTypes)
             self.win.flip()
-            event.waitKeys()
-            done = True
+            for i in range(0, len(blockUI['buttons']['shapes'])):
+                if self.mouse.isPressedIn(blockUI['buttons']['shapes'][i]):
+                    if blockUI['buttons']['text'][i].text == 'Done':
+                        if len(blockFlow['labels']) == 0:
+                            errDlg = gui.Dlg(title="Empty block!")
+                            errDlg.addText("Block must contain at least one trial! Use cancel to stop block construction")
+                            errDlg.show()
+                        else:  # Create our new block!
+                            for z in range(0, len(blockOrder)):
+                                blockOrder[z] = blockName + '.' + blockOrder[z]
+                            self.settings['blockList'][blockName] = blockOrder
+                            if new:
+                                z = len(self.trialTypesArray['labels'])  # Grab length before adding, conveniently the index we need for position info etc.
+                                self.trialTypesArray['labels'].append(blockName)
+                                tempObj = visual.Rect(self.win, width=self.typeWidthObj, height=self.typeHeightObj,
+                                                      fillColor=self.colorsArray[z], pos=self.typeLocs[z])
+                                numChar = len(blockName)
+                                if numChar <= 3:
+                                    numChar = 4  # Maximum height
+                                tempTxt = visual.TextStim(self.win, alignHoriz='center', alignVert='center', bold=True,
+                                                          height=self.typeHeightObj / (.38 * numChar), text=blockName,
+                                                          pos=self.typeLocs[z])
+                                self.trialTypesArray['shapes'].append(tempObj)
+                                self.trialTypesArray['text'].append(tempTxt)
+                                self.settings['trialTypes'].append(blockName)
+
+                            done = True
+                            while self.mouse.isPressedIn(blockUI['buttons']['shapes'][i], buttons=[0]):  # waits until the mouse is released before continuing.
+                                pass
+                    elif blockUI['buttons']['text'][i].text == 'Cancel':
+                        done = True  # Just break the loop and that's that.
+                        while self.mouse.isPressedIn(blockUI['buttons']['shapes'][i], buttons=[0]):  # waits until the mouse is released before continuing.
+                            pass
+            for j in range(0, len(trialTypes['shapes'])):  # Only need to worry about adding trials, no modding them from here!
+                if self.mouse.isPressedIn(trialTypes['shapes'][j], buttons=[0]):
+                    blockOrder.append(trialTypes['labels'][j])
+                    blockFlow = self.loadFlow(tOrd=blockOrder, locs=newFlowLocs, overflow=newFlowLocs)
+                    while self.mouse.isPressedIn(trialTypes['shapes'][j],buttons=[0]):  # waits until the mouse is released before continuing.
+                        pass
+            for k in range(0, len(blockFlow['shapes'])):  # Rearrange or remove, as in the usual loop!
+                if self.mouse.isPressedIn(blockFlow['shapes'][k], buttons=[0]):
+                    blockOrder = self.moveTrialInFlow(k, blockOrder, newFlowArea, blockUI, blockFlow, trialTypes)
+                    blockFlow = self.loadFlow(tOrd=blockOrder, locs=newFlowLocs, overflow=newFlowLocs)
+                    break
+
 
 
     def delTrialTypeDlg(self):
@@ -1079,47 +1060,63 @@ class PyHabBuilder:
                     self.settings['trialOrder'].remove(dType)
             self.studyFlowArray=self.loadFlow(self.settings['trialOrder'], self.flowLocs, self.overFlowLocs) #To update colors if needed.
 
-    def moveTrialInFlow(self,flowIndex):
+    def moveTrialInFlow(self, flowIndex, tOrd, flowSpace, UI, flow, types):
         """
-        A function for when a trial is clicked in the study flow, allowing you to either swap it or remove it.
+        A function for when a trial is clicked in a trial flow, allowing you to either swap it or remove it.
 
         :param flowIndex: The index in the flowArray of the trial being modified
         :type flowIndex: int
-        :return:
-        :rtype:
+        :param tOrd: The trial order being modified, either the main one or a block order
+        :type tOrd: list
+        :param flowSpace: The shape that makes up the flow UI, which varies from typical usage to block construction
+        :type flowSpace: visual.Rect object
+        :param UI: A dictionary containing the currently active UI
+        :type UI: dict
+        :param flow: A dictionary containing the currently active trial flow
+        :type flow: dict
+        :param types: A dictionary containing the currently active trial pallette (mostly for showMainUI)
+        :type types: dict
+        :return: The modified trial order
+        :rtype: list
         """
+
         #Display a text tooltip at the bottom of the flow area.
-        instrText = visual.TextStim(self.win, text="Click another trial to swap positions, or click the remove button to delete from the study flow, click anywhere else to cancel.", bold=True,
-                    height = abs(self.flowArea[3]-self.flowArea[2])*.05, pos=[-.5, self.flowArea[3]+.12*float(abs(self.flowArea[3]-self.flowArea[2]))],alignHoriz='center',alignVert='center')
+        # TODO rearrange tooltip and button for generic
+        instrText = visual.TextStim(self.win, text="Click another trial to swap positions, click a trial type to replace, or click the remove button to delete from the study flow, click anywhere else to cancel.", bold=True,
+                    height=abs(flowSpace[3]-flowSpace[2])*.04, pos=[-.2, flowSpace[3]+.12*float(abs(flowSpace[3]-flowSpace[2]))], alignHoriz='center', alignVert='center')
         #highlight the selected object.
-        removeTrialShape = visual.Rect(self.win, fillColor='red', width=.1*float(abs(self.flowArea[1]-self.flowArea[0])), height=.1*float(abs(self.flowArea[3]-self.flowArea[2])), 
-                    pos=[self.flowArea[0]+float(abs(self.flowArea[1]-self.flowArea[0]))*.85,self.flowArea[3]+float(abs(self.flowArea[3]-self.flowArea[2]))/9])
-        removeTrialText = visual.TextStim(self.win, text = "REMOVE", bold=True, height=removeTrialShape.height*.7,pos=removeTrialShape.pos)
-        self.studyFlowArray['shapes'][flowIndex].lineColor="yellow"
-        self.studyFlowArray['shapes'][flowIndex].lineWidth=5
+        removeTrialShape = visual.Rect(self.win, fillColor='red', width=.1*float(abs(flowSpace[1]-flowSpace[0])), height=.1*float(abs(flowSpace[3]-flowSpace[2])),
+                    pos=[flowSpace[0]+float(abs(flowSpace[1]-flowSpace[0]))*.85,flowSpace[3]+float(abs(flowSpace[3]-flowSpace[2]))/9])
+        removeTrialText = visual.TextStim(self.win, text="REMOVE", bold=True, height=removeTrialShape.height*.5,pos=removeTrialShape.pos)
+        flow['shapes'][flowIndex].lineColor = "yellow"
+        flow['shapes'][flowIndex].lineWidth = 5
         core.wait(.1) #Short delay to clear any old mouse press.
         #loop until mouse press
         while 1 not in self.mouse.getPressed():
-            self.showMainUI(self.UI, self.studyFlowArray, self.trialTypesArray)
+            self.showMainUI(UI, flow, types)
             instrText.draw()
             removeTrialShape.draw()
             removeTrialText.draw()
             self.win.flip()
-        for i in range(0, len(self.studyFlowArray['shapes'])):
-            if self.mouse.isPressedIn(self.studyFlowArray['shapes'][i]) and not i == flowIndex: #clicked a different thing in the study flow
-                #Swap the selected trial and the clicked trial, reload study flow.
-                tempTrial=self.settings['trialOrder'][i]
-                self.settings['trialOrder'][i] = self.settings['trialOrder'][flowIndex]
-                self.settings['trialOrder'][flowIndex] = tempTrial
-                self.studyFlowArray = self.loadFlow(self.settings['trialOrder'], self.flowLocs, self.overFlowLocs)
+        for i in range(0, len(flow['shapes'])):
+            if self.mouse.isPressedIn(flow['shapes'][i]) and not i == flowIndex:
+                # Clicked a different thing in the study flow
+                # Swap the selected trial and the clicked trial, reload study flow.
+                tempTrial = deepcopy(tOrd[i])
+                tOrd[i] = tOrd[flowIndex]
+                tOrd[flowIndex] = tempTrial
+        for j in range(0, len(types['shapes'])):
+            # Clicked a different trial type from the palette, swapping it with the current trial
+            if self.mouse.isPressedIn(types['shapes'][j]) and types['labels'][j] != tOrd[flowIndex]:
+                tOrd[flowIndex] = types['labels'][j]
         if self.mouse.isPressedIn(removeTrialShape):
-            #pop that trial out of trial order, reload flow.
-            del self.settings['trialOrder'][flowIndex]
-            self.studyFlowArray=self.loadFlow(self.settings['trialOrder'], self.flowLocs, self.overFlowLocs)
+            # Pop that trial out of trial order
+            del tOrd[flowIndex]
         else:
-            self.studyFlowArray['shapes'][flowIndex].lineColor="white"
-            self.studyFlowArray['shapes'][flowIndex].lineWidth=1.5
+            flow['shapes'][flowIndex].lineColor="white"
+            flow['shapes'][flowIndex].lineWidth=1.5
         core.wait(.1)
+        return tOrd
 
     
     def loadFlow(self, tOrd, locs, overflow, specNumItems=0):
@@ -1190,8 +1187,8 @@ class PyHabBuilder:
                             outputDict['extras'].append(tempPip)
                 elif tOrd[i] in self.settings['autoAdvance'] and j not in [0, 10, 20, 30]:
                     # Make it adjacent to the last one, unless it would start a row, in which case leave it.
-                    loc = [flowSpace[j][0]-abs(self.flowArea[1]-self.flowArea[0])*((self.flowGap-self.flowWidMult)/2), flowSpace[j][1]]
-                    tempObj = visual.Rect(self.win, width=abs(self.flowArea[1]-self.flowArea[0])*(self.flowWidMult + (self.flowGap-self.flowWidMult)), height=self.flowHeightObj, fillColor=self.colorsArray[c], pos=loc)
+                    loc = [flowSpace[j][0]-abs(flowSpace[1]-flowSpace[0])*((self.flowGap-self.flowWidMult)/2), flowSpace[j][1]]
+                    tempObj = visual.Rect(self.win, width=abs(flowSpace[1]-flowSpace[0])*(self.flowWidMult + (self.flowGap-self.flowWidMult)), height=self.flowHeightObj, fillColor=self.colorsArray[c], pos=loc)
                 else:
                     tempObj = visual.Rect(self.win, width=self.flowWidthObj, height=self.flowHeightObj, fillColor=self.colorsArray[c], pos=flowSpace[j])
                 numChar = len(tOrd[i])
