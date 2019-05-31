@@ -45,6 +45,7 @@ base_settings = {
     'movieWidth': '800',
     'movieHeight': '600',
     'screenIndex': '1',
+    'expScreenIndex': 0,
     'ISI': "{'A':0.0,'B':0.0,'C':0.0,'D':0.0}",
     'freezeFrame': '0.0',
     'playAttnGetter': "{'A':'PyHabDefault','B':'PyHabDefault'}",
