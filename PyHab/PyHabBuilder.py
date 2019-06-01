@@ -486,7 +486,7 @@ class PyHabBuilder:
                 for i in range(0,len(self.studyFlowArray['labels'])):
                     if self.studyFlowArray['labels'][i] == trialType:
                         flowIndexes.append(i) 
-                typeIndex =self.trialTypesArray['labels'].index(trialType)
+                typeIndex = self.trialTypesArray['labels'].index(trialType)
                 if self.settings['playThrough'][trialType] == 2:
                     chz = ["No", "OnOnly", "Yes"]
                 elif self.settings['playThrough'][trialType] == 1:
@@ -576,6 +576,15 @@ class PyHabBuilder:
                             self.trialTypesArray['text'][typeIndex].height=self.typeHeightObj/(.33*numChar)
                             self.settings['trialTypes'] = [typeInfo[0] if x == trialType else x for x in self.settings['trialTypes']]
                             self.settings['trialOrder'] = [typeInfo[0] if x == trialType else x for x in self.settings['trialOrder']]
+                            if len(self.settings['habTrialList']) > 0:
+                                for z in range(0, len(self.settings['habTrialList'])):
+                                    if self.settings['habTrialList'][z] == 'hab.' + trialType:
+                                        self.settings['habTrialList'][z] = 'hab.' + typeInfo[0]
+                            for a, b in self.settings['blockList'].items():
+                                for c in range(0, len(b)):
+                                    if b[c] == str(a) + '.' + trialType:
+                                        b[c] = str(a) + '.' + typeInfo[0]
+
                         elif typeInfo[0] in self.trialTypesArray['labels']:
                             #warning dialog, start over with all info entered so far.
                             warnDlg = gui.Dlg(title="Warning!")
@@ -857,8 +866,11 @@ class PyHabBuilder:
         """
         Creates a new 'block' structure, which basically masquerades as a trial type in most regards, but consists of
         several sub-trials, much like how habituation blocks work.
-        TODO: Changing name of blocks
 
+        :param name: Name of existing trial type. '' by default
+        :type name: str
+        :param new: Making a new block, or modifying an existing one?
+        :type new: bool
         :return:
         :rtype:
         """
@@ -872,6 +884,7 @@ class PyHabBuilder:
             newBlockDlg.addText("Hit OK to select trials for this block")
             newBlock = newBlockDlg.show()
             if newBlockDlg.OK:
+                newBlock[0] = str(newBlock[0])  # In case PyQT does something weird
                 if newBlock[0] == '':
                     errDlg = gui.Dlg(title="Missing information!")
                     errDlg.addText("Name cannot be blank!")
@@ -889,7 +902,37 @@ class PyHabBuilder:
                     irrel = errDlg.show()
                     self.makeBlockDlg(name, new)
                 else:
-                    self.blockMaker(newBlock[0], new)
+                    if not new and name != newBlock[0]:
+                        # Change the name of the extant block.
+                        blockIndex = self.trialTypesArray['labels'].index(name)
+                        numChar = len(newBlock[0])
+                        if numChar <= 3:
+                            numChar = 4  # Maximum height
+                        self.settings['blockList'][newBlock[0]] = self.settings['blockList'].pop(name)
+                        flowIndexes = []
+                        for i in range(0, len(self.studyFlowArray['labels'])):
+                            if self.studyFlowArray['labels'][i] == name:
+                                flowIndexes.append(i)
+                        for i in flowIndexes:
+                            self.studyFlowArray['labels'][i] = newBlock[0]
+                            self.studyFlowArray['text'][i].text = newBlock[0]
+                            self.studyFlowArray['text'][i].height = self.flowHeightObj / (
+                                        .42 * numChar)  # Update text height for new length
+                        self.trialTypesArray['labels'][blockIndex] = newBlock[0]
+                        self.trialTypesArray['text'][blockIndex].text = newBlock[0]
+                        self.trialTypesArray['text'][blockIndex].height = self.typeHeightObj / (.33 * numChar)
+                        self.settings['trialTypes'] = [newBlock[0] if x == name else x for x in self.settings['trialTypes']]
+                        self.settings['trialOrder'] = [newBlock[0] if x == name else x for x in self.settings['trialOrder']]
+                        if len(self.settings['habTrialList']) > 0:
+                            for z in range(0, len(self.settings['habTrialList'])):
+                                if self.settings['habTrialList'][z] == 'hab.' + name:
+                                    self.settings['habTrialList'][z] = 'hab.' + newBlock[0]
+                        for a, b in self.settings['blockList'].items():
+                            for c in range(0, len(b)):
+                                if b[c] == str(a) + '.' + name:
+                                    b[c] = str(a) + '.' + newBlock[0]
+
+                self.blockMaker(newBlock[0], new)
         else:
             errDlg = gui.Dlg(title="No trials to make blocks with!")
             errDlg.addText("Make some trial types before trying to add them to a block.")
