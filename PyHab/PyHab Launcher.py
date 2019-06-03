@@ -63,12 +63,10 @@ def checkIfStim(setDict, tempOrd):
                 if len(tempMovs[i]) == 0:
                     stPres = False
             elif i == 'Hab' and len(tempHabList) > 0:
-                z = [x[x.index('.')+1:] for x in tempHabList]
-                if not checkIfStim(setDict, z):
+                if not checkIfStim(setDict, tempHabList):
                     stPres = False
             elif i in tempBlocks.keys():
-                z = [x[x.index('.')+1:] for x in tempBlocks[i]]
-                if not checkIfStim(setDict, z):
+                if not checkIfStim(setDict, tempBlocks[i]):
                     stPres = False
     return stPres
 

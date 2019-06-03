@@ -576,12 +576,12 @@ class PyHabBuilder:
                             self.settings['trialOrder'] = [typeInfo[0] if x == trialType else x for x in self.settings['trialOrder']]
                             if len(self.settings['habTrialList']) > 0:
                                 for z in range(0, len(self.settings['habTrialList'])):
-                                    if self.settings['habTrialList'][z] == 'hab.' + trialType:
-                                        self.settings['habTrialList'][z] = 'hab.' + typeInfo[0]
+                                    if self.settings['habTrialList'][z] == trialType:
+                                        self.settings['habTrialList'][z] = typeInfo[0]
                             for a, b in self.settings['blockList'].items():
                                 for c in range(0, len(b)):
-                                    if b[c] == str(a) + '.' + trialType:
-                                        b[c] = str(a) + '.' + typeInfo[0]
+                                    if b[c] == trialType:
+                                        b[c] = typeInfo[0]
 
                         elif typeInfo[0] in self.trialTypesArray['labels']:
                             #warning dialog, start over with all info entered so far.
@@ -590,9 +590,9 @@ class PyHabBuilder:
                             warnDlg.show()
                             skip = True
                             self.trialTypeDlg(typeInfo[0], makeNew, typeInfo)
-                        elif '.' in typeInfo[0]:
+                        elif '.' in typeInfo[0] or '^' in typeInfo[0]:
                             warnDlg = gui.Dlg(title="llegal character!")
-                            warnDlg.addText("The '.' character cannot be used as part of a trial type name. Please rename your trial type")
+                            warnDlg.addText("The '.' and '^' characters cannot be used as part of a trial type name. Please rename your trial type")
                             warnDlg.show()
                             skip = True
                             self.trialTypeDlg(typeInfo[0], makeNew, typeInfo)
@@ -673,7 +673,6 @@ class PyHabBuilder:
     def addHabBlock(self, makeNew = True):
         """
         Creates either a hab trial type, or a hab trial block.
-        TODO: What if they make one and then want to switch to the other? Wipe extant, only way to preserve back-compat.
 
         Trial type dialog:
 
@@ -877,7 +876,7 @@ class PyHabBuilder:
                     errDlg.addText("Name cannot be blank!")
                     irrel = errDlg.show()
                     self.makeBlockDlg(name, new)
-                elif newBlock[0] == 'Hab' or '.' in newBlock[0]:
+                elif newBlock[0] == 'Hab' or '.' in newBlock[0] or '^' in newBlock[0]:
                     errDlg = gui.Dlg(title="Illegal block name!")
                     errDlg.addText("Name contains illegal character, or is reserved. Please rename!")
                     errDlg.addText("To create habituation blocks, please use the 'Add Habituation' button.")
@@ -912,12 +911,12 @@ class PyHabBuilder:
                         self.settings['trialOrder'] = [newBlock[0] if x == name else x for x in self.settings['trialOrder']]
                         if len(self.settings['habTrialList']) > 0:
                             for z in range(0, len(self.settings['habTrialList'])):
-                                if self.settings['habTrialList'][z] == 'hab.' + name:
-                                    self.settings['habTrialList'][z] = 'hab.' + newBlock[0]
+                                if self.settings['habTrialList'][z] == name:
+                                    self.settings['habTrialList'][z] = newBlock[0]
                         for a, b in self.settings['blockList'].items():
                             for c in range(0, len(b)):
-                                if b[c] == str(a) + '.' + name:
-                                    b[c] = str(a) + '.' + newBlock[0]
+                                if b[c] == name:
+                                    b[c] = newBlock[0]
 
                 self.blockMaker(newBlock[0], new)
         else:
@@ -998,13 +997,9 @@ class PyHabBuilder:
             del trialTypes['text'][delIndex[j]]
         if not new and not hab:
             blockOrder = deepcopy(self.settings['blockList'][blockName])
-            for z in range(0, len(blockOrder)):
-                blockOrder[z] = blockOrder[z][blockOrder[z].index('.')+1:]
             blockFlow = self.loadFlow(tOrd=blockOrder, space=newFlowArea, locs=newFlowLocs, overflow=newFlowLocs)
         elif not new:  # Modifying existing hab meta-trials
             blockOrder = deepcopy(self.settings['habTrialList'])
-            for z in range(0, len(blockOrder)):
-                blockOrder[z] = blockOrder[z][blockOrder[z].index('.')+1:]
             blockFlow = self.loadFlow(tOrd=blockOrder, space=newFlowArea, locs=newFlowLocs, overflow=newFlowLocs)
         else:
             blockFlow = {'lines': [], 'shapes': [], 'text': [], 'labels': [], 'extras': []}
@@ -1024,7 +1019,7 @@ class PyHabBuilder:
                         elif hab:  # Create or modify hab block. Special rules apply.
                             for z in range(0, len(blockOrder)):
                                 if blockOrder[z] != 'Hab':
-                                    blockOrder[z] = 'hab.' + blockOrder[z]
+                                    blockOrder[z] = blockOrder[z]
                             self.settings['habTrialList'] = blockOrder
                             if new:
                                 self.settings['calcHabOver'] = [blockOrder[-1]]  # Default to last trial.
@@ -1048,8 +1043,6 @@ class PyHabBuilder:
                             done = True
                             self.habSettingsDlg()  # For setting which things to hab over.
                         else:  # Create our new block!
-                            for z in range(0, len(blockOrder)):
-                                blockOrder[z] = blockName + '.' + blockOrder[z]
                             self.settings['blockList'][blockName] = blockOrder
                             if new:
                                 z = len(self.trialTypesArray['labels'])  # Grab length before adding, conveniently the index we need for position info etc.
@@ -1133,14 +1126,14 @@ class PyHabBuilder:
             del self.settings['ISI'][dType]
             if dType in self.settings['playThrough']:  # if it was in playThrough, remove it from there too.
                 self.settings['playThrough'].pop(dType, None)
-        if ('hab.' + dType) in self.settings['habTrialList']:  # If it was in a hab meta-trial.
-            while ('hab.' + dType) in self.settings['habTrialList']:
-                self.settings['habTrialList'].remove(('hab.' + dType))
-            if ('hab.'+dType) in self.settings['calcHabOver']:
-                self.settings['calcHabOver'].remove(('hab.'+dType))
+        if dType in self.settings['habTrialList']:  # If it was in a hab meta-trial.
+            while dType in self.settings['habTrialList']:
+                self.settings['habTrialList'].remove(dType)
+            if dType in self.settings['calcHabOver']:
+                self.settings['calcHabOver'].remove(dType)
         for i, j in self.settings['blockList'].items():  # If it's part of a block
-            while i+'.'+dType in j:
-                j.remove((i+'.'+dType))
+            while dType in j:
+                j.remove(dType)
         self.trialTypesArray = self.loadTypes(self.typeLocs)  # easiest to just reload the trial types.
         # For the study flow, it's easiest just to remove it from the trial order and reload the study flow.
         if dType in self.settings['trialOrder']:
@@ -1274,7 +1267,6 @@ class PyHabBuilder:
                     elif tOrd[i] in self.settings['blockList'].keys():
                         for q in range(0, len(self.settings['blockList'][tOrd[i]])):
                             tempStr = self.settings['blockList'][tOrd[i]][q]
-                            tempStr = tempStr[tempStr.index('.')+1:]
                             newwidth = self.flowWidthObj/len(self.settings['blockList'][tOrd[i]])
                             tempPip = visual.Rect(self.win, width=newwidth, height=self.flowHeightObj / 2.5,
                                                   fillColor=self.colorsArray[tTypes.index(tempStr)],

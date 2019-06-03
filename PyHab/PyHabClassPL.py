@@ -17,7 +17,6 @@ class PyHabPL(PyHab):
     """
     A new preferential-looking version of PyHab that extends the base class rather than being a wholly separate class.
     There's still a lot of redundant code here, which will require significant restructuring of the base class to fix.
-    TODO: Need to redo a few things (notably doTrial and checkStop) for new hab block tricks.
     """
     def __init__(self, settingsDict):
         PyHab.__init__(self, settingsDict)
@@ -138,25 +137,16 @@ class PyHabPL(PyHab):
         """
         self.trialText.text = "Trial no. " + str(number)
         habTrial = False
-        if ttype[0:3] == 'hab' and type(eval(ttype[3])) is int and '.' in ttype:  # Hab sub-trials.
-            localType = ttype[ttype.index('.') + 1:]
-            # Safety check: Make sure that it was really a hab sub trial!
-            dataType = 'hab.' + localType
-            habTrial = True
-            if dataType not in self.habTrialList:
-                localType = ttype
-                dataType = ttype
-                habTrial = False
-        elif ttype == 'Hab^':  # A common irregular case, when 'Hab' is the last trial in a sub-block.
-            localType = 'Hab'
-            dataType = localType
+        localType = deepcopy(ttype)
+        while '.' in localType:
+            localType = localType[localType.index('.') + 1:]
+        if ttype[0:3] == 'hab' and '.' in ttype:  # Hab sub-trials.
+            dataType = 'hab' + ttype[ttype.index('.'):]  # Collapses down the number and ^ markings for the data file
             habTrial = True
         elif len(self.habTrialList) == 0 and ttype == 'Hab':
-            localType = ttype
             dataType = ttype
             habTrial = True
         else:
-            localType = ttype
             dataType = ttype
         self.frameCount = 0 #reset display
         self.pauseCount = 0 #needed for ISI
