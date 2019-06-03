@@ -231,6 +231,7 @@ class TestDataFunc(object):
         self.dataInst.verbDatList = copy.deepcopy(self.testDatList)
         self.dataInst.badTrials = []
         self.dataInst.verbBadList = {'verboseOn': [], 'verboseOff': [], 'verboseOn2': [], 'verboseOff2': []}
+        self.dataInst.actualTrialOrder = ['A','B','hab1.B','hab1^.C','hab2.B','hab2^.C','hab3.B','hab3^.C','hab4.B','hab4^.C','hab5.B','hab5^.C']
 
         self.dataInst.habTrialList = ['B','C']
         # Expands into 'Hab', 'hab1^.C' etc.
