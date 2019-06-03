@@ -17,10 +17,24 @@ def run():
     launcherDlg.addField('Run study or open builder?', choices=['Run','Builder'])
     tempOrd = eval(setDict['trialOrder'])
     tempMovs = eval(setDict['stimNames'])
+    tempBlocks = eval(setDict['blockList'])
+    tempHabList = eval(setDict['habTrialList'])
     stPres = True
     if len(tempMovs) > 0:
         for i in tempOrd:
-            if len(tempMovs[i]) == 0:
+            if i == 'Hab' and len(tempHabList) > 0:
+                for j in tempHabList:
+                    tt = j[j.index('.') + 1:]
+                    if tt in tempMovs.keys():
+                        if len(tempMovs[tt]) == 0: # TODO: Needs fix for embedded blocks. Recursive!
+                            stPres = False
+            elif i in tempBlocks.keys():
+                for j in tempBlocks[i]:
+                    tt = j[j.index('.') + 1:]
+                    if tt in tempMovs.keys():
+                        if len(tempMovs[tt]) == 0:
+                            stPres = False
+            elif len(tempMovs[i]) == 0:
                 stPres = False
     if stPres:
         ch = ['On','Off']
