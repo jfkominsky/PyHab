@@ -1675,7 +1675,7 @@ class PyHabBuilder:
                 e = errDlg.show()
             # When we are done with this dialog, if we have actually added anything, create the "add to types" dlg.
             if len(list(self.settings['stimList'].keys())) > 0 and self.addStimToTypesDlg not in self.buttonList['functions']:
-                addMovButton = visual.Rect(self.win, width=.3, height=.5 * (.2 / self.aspect), pos=[.75, -.6],
+                addMovButton = visual.Rect(self.win, width=.3, height=.5 * (.2 / self.aspect), pos=[.75, -.65],
                                            fillColor="white")
                 addMovText = visual.TextStim(self.win, text="Add stimulus files \nto trial types", color="black",
                                              height=addMovButton.height * .3, alignHoriz='center', pos=addMovButton.pos)
@@ -1759,9 +1759,14 @@ class PyHabBuilder:
 
         if len(self.trialTypesArray['labels']) > 0:
             d1 = gui.Dlg(title="Select trial type to add stimuli to")
-            choiceList=[]
+            choiceList = []
             for i in range(0, len(self.trialTypesArray['labels'])): # Not just copying list b/c it would add start/end to it
-                choiceList.append(self.trialTypesArray['labels'][i])
+                if self.trialTypesArray['labels'][i] in self.settings['blockList'].keys():
+                    pass
+                elif self.trialTypesArray['labels'][i] == 'Hab' and len(self.settings['habTrialList'])>0:
+                    pass
+                else:
+                    choiceList.append(self.trialTypesArray['labels'][i])
             choiceList.append('Start and end of experiment screens')
             d1.addField("Trial type to add stimulus file to", choices=choiceList)
             d1.addField("Number of stimuli to add (you will select them in the next window)",1)

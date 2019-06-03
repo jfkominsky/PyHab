@@ -16,26 +16,7 @@ def run():
     launcherDlg.addText('Current settings file: ' + setName)
     launcherDlg.addField('Run study or open builder?', choices=['Run','Builder'])
     tempOrd = eval(setDict['trialOrder'])
-    tempMovs = eval(setDict['stimNames'])
-    tempBlocks = eval(setDict['blockList'])
-    tempHabList = eval(setDict['habTrialList'])
-    stPres = True
-    if len(tempMovs) > 0:
-        for i in tempOrd:
-            if i == 'Hab' and len(tempHabList) > 0:
-                for j in tempHabList:
-                    tt = j[j.index('.') + 1:]
-                    if tt in tempMovs.keys():
-                        if len(tempMovs[tt]) == 0: # TODO: Needs fix for embedded blocks. Recursive!
-                            stPres = False
-            elif i in tempBlocks.keys():
-                for j in tempBlocks[i]:
-                    tt = j[j.index('.') + 1:]
-                    if tt in tempMovs.keys():
-                        if len(tempMovs[tt]) == 0:
-                            stPres = False
-            elif len(tempMovs[i]) == 0:
-                stPres = False
+    stPres = checkIfStim(setDict, tempOrd)
     if stPres:
         ch = ['On','Off']
         launcherDlg.addField('Stimulus presentation mode (Run only): ', choices=ch)
@@ -60,6 +41,37 @@ def run():
         run()
     else:
         core.quit()
+
+def checkIfStim(setDict, tempOrd):
+    """
+    Checks recursively if there are stimuli associated with everything in the study flow. If anything in the flow
+    does not have stimuli associated with it, return false.
+    :param setDict: The settings dictionary, for reading off the relevant lists
+    :type setDict: dict
+    :param tempOrd: The current trial order being evaluated (block or overall)
+    :type tempOrd: list
+    :return: False if anything in the study flow has no stimuli associated with it, True otherwise.
+    :rtype: bool
+    """
+    tempMovs = eval(setDict['stimNames'])
+    tempBlocks = eval(setDict['blockList'])
+    tempHabList = eval(setDict['habTrialList'])
+    stPres = True
+    if len(tempMovs) > 0:
+        for i in tempOrd:
+            if i in tempMovs:
+                if len(tempMovs[i]) == 0:
+                    stPres = False
+            elif i == 'Hab' and len(tempHabList) > 0:
+                z = [x[x.index('.')+1:] for x in tempHabList]
+                if not checkIfStim(setDict, z):
+                    stPres = False
+            elif i in tempBlocks.keys():
+                z = [x[x.index('.')+1:] for x in tempBlocks[i]]
+                if not checkIfStim(setDict, z):
+                    stPres = False
+    return stPres
+
 
 run()
 
