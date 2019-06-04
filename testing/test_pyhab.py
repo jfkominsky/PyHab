@@ -853,7 +853,7 @@ class TestCommands(object):
         [x, y] = self.commandInst.insertHab(7)
         assert x == 0
         assert y == 'B'
-        assert self.commandInst.actualTrialOrder == ['A', 'A', 'B', 'B', 'hab1.B', 'hab1^.C','hab1.B','hab2^.C','D']
+        assert self.commandInst.actualTrialOrder == ['A', 'A', 'B', 'B', 'hab1.B', 'hab1^.C','hab2.B','hab2^.C','D']
 
         # Test something down the line!
         self.commandInst.stimPres = True

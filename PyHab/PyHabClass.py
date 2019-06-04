@@ -852,7 +852,7 @@ class PyHab:
             hn = self.habCount
         habNum = hn
         if len(self.habTrialList) > 0:
-            self.blockExpander(self.habTrialList, 'hab', hab=True, habNum=habNum, insert=trialNum-1)
+            self.blockExpander(self.habTrialList, 'hab', hab=True, habNum=habNum+1, insert=trialNum-1)
             # reset self.maxHabIndex based on last instance of '^'
             for n in range(trialNum, len(self.actualTrialOrder)):
                 if '^' in self.actualTrialOrder[n]:
