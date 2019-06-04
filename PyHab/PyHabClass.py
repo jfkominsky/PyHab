@@ -35,10 +35,6 @@ class PyHab:
     On2 and Off2 (for the optional secondary coder)
     Each coder's on and off are recorded in a separate dict with trial, gaze on/off, start, end, and duration.
 
-    TODO: New block system. Making it work, you know, at all. Most of the action will be in 'run', but some things will have to be adapted the way 'Hab' was adapted.
-    TODO: Accounting for 'Hab' being EITHER a block OR a trial
-    TODO: Accounting for recursive blocks.
-
     """
 
     def __init__(self, settingsDict):
@@ -954,9 +950,9 @@ class PyHab:
                     while '.' in trialType:
                         trialType = trialType[trialType.index('.') + 1:]
                     didRedo = True
-                elif self.keyboard[self.key.J] and 'Hab' in self.actualTrialOrder[trialNum:]: # TODO FIX COND  # jump to test in a hab design
+                elif self.keyboard[self.key.J] and self.habMetWhen == -1 and 'Hab' in self.trialOrder:  # jump to test in a hab design
                     [disMovie, trialType] = self.jumpToTest(trialNum)
-                elif trialType != 'Hab' and self.keyboard[self.key.I] and 'Hab' in self.trialOrder and self.habMetWhen > 0: # insert additional hab trial
+                elif self.actualTrialOrder[trialNum-1][0:3] not in ['Hab', 'hab'] and self.keyboard[self.key.I] and 'Hab' in self.trialOrder and self.habMetWhen > 0: # insert additional hab trial
                     [disMovie, trialType] = self.insertHab(trialNum)
                     while '.' in trialType:
                         trialType = trialType[trialType.index('.') + 1:]
@@ -1025,7 +1021,7 @@ class PyHab:
                         while '.' in trialType:
                             trialType = trialType[trialType.index('.') + 1:]
                         didRedo = True
-                    elif self.keyboard[self.key.J] and 'Hab' in self.actualTrialOrder and self.habMetWhen == -1:  # TODO FIX COND jump to test in a hab design.
+                    elif self.keyboard[self.key.J] and 'Hab' in self.trialOrder and self.habMetWhen == -1:  # jump to test in a hab design.
                         [disMovie,trialType] = self.jumpToTest(trialNum)
                     elif self.keyboard[self.key.I] and self.habMetWhen > 0:  # insert additional hab trial
                         [disMovie,trialType] = self.insertHab(trialNum)

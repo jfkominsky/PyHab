@@ -10,6 +10,10 @@ class PyHabBuilder:
     """
     Graphical interface for constructing PyHab experiments. Runs mostly on a Pyglet window and qtGUI dialogs.
     Saves a settings file in .csv form which can then be read by PyHab Launcher, PyHabClass, and PyHabClassPL.
+    TODO: Paginate trial type pallette
+    TODO: New condition setup, allowing randomization of order of movies AND order of trials w/in blocks
+    TODO: Auto-randomization of conditions, allowing you to choose to counterbalance-randomize trials, randomize conditions, etc.
+    TODO: 'Base' conditions versus 'actual' conditions
 
     """
     def __init__(self, loadedSaved=False, settingsDict={}):
