@@ -16,6 +16,7 @@
 /.vscode
 /.cache
 /.idea
+/.pytest_cache
 
 # Compiled source #
 ###################
