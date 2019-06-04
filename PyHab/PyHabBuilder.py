@@ -129,9 +129,10 @@ class PyHabBuilder:
                 self.settings['habThresh'] = '1.0'
             self.settings['dataloc'] = ''.join([self.dirMarker if x == otherOS else x for x in self.settings['dataloc']])
             self.settings['stimPath'] = ''.join([self.dirMarker if x == otherOS else x for x in self.settings['stimPath']])
+            self.settings['folderPath'] = os.getcwd()+self.dirMarker  # On load, reset the folder path to wherever you are now.
             # Get conditions!
             if self.settings['randPres'] in [1,'1','True',True] or len(self.settings['condFile'])>0:  # If there is a condition file
-                if os.path.exists(self.settings['condFile']):
+                if os.path.exists(self.settings['folderPath'] + self.settings['condFile']):
                     testReader=csv.reader(open(self.settings['condFile'],'rU'))
                     testStuff=[]
                     for row in testReader:
@@ -142,7 +143,7 @@ class PyHabBuilder:
                     self.condDict = testDict
                 else:
                     self.condDict = {}
-                if os.path.exists(self.settings['baseCondFile']):
+                if os.path.exists(self.settings['folderPath'] + self.settings['baseCondFile']):
                     testReader2 = csv.reader(open(self.settings['baseCondFile'],'rU'))
                     testStuff2 = []
                     for row in testReader2:
@@ -153,7 +154,6 @@ class PyHabBuilder:
                     self.baseCondDict = newDict
                 else:
                     self.baseCondDict = {}
-            self.settings['folderPath'] = os.getcwd()+self.dirMarker  # On load, reset the folder path to wherever you are now.
         self.folderPath = self.settings['folderPath']  # The location where all the pieces are saved.
         self.allDataColumns = ['sNum', 'sID', 'months', 'days', 'sex', 'cond','condLabel', 'trial','GNG','trialType','stimName','habCrit','habTrialNo','sumOnA','numOnA','sumOffA','numOffA','sumOnB','numOnB','sumOffB','numOffB']
         self.allDataColumnsPL = ['sNum', 'sID', 'months', 'days', 'sex', 'cond','condLabel', 'trial','GNG','trialType','stimName','habCrit','habTrialNo', 'sumOnL','numOnL','sumOnR','numOnR','sumOff','numOff']
@@ -191,8 +191,6 @@ class PyHabBuilder:
         self.flowLocs = []
         self.overFlowLocs = []  # For >20 trials, go up to 40
         self.flowGap = .09  # A easy reference for the horizontal spacing of items in the flow
-        self.condDict = {}  # For creating conditions
-        self.baseCondDict = {}  # For remembering the original conditions...?
         self.mouse = event.Mouse()
         for x in [.25, .75]:  # Two columns of trial types, up to 10 as of 0.8. TODO: Paginate?
             for z in range(1, 5):  # Trying to leave space for buttons...
@@ -2589,7 +2587,7 @@ class PyHabBuilder:
         :rtype:
         """
         if not os.path.exists(self.folderPath):
-            os.makedirs(self.folderPath) # creates the initial folder if it did not exist.
+            os.makedirs(self.folderPath)  # creates the initial folder if it did not exist.
         success = True  # Assume it's going to work.
         # Structure: Top-level folder contains script, then you have data and stimuli.
         dataPath = self.folderPath+'data'+self.dirMarker
@@ -2602,7 +2600,7 @@ class PyHabBuilder:
         if not os.path.exists(codePath):
             os.makedirs(codePath)
         srcDir = 'PyHab'+self.dirMarker
-        # Condition file! Save if there are any conditions created.
+        # Condition file! Save if there are any conditions created. TODO: The bug is in saving, with save-as, not reading...
         # Convoluted mess because the dict won't necessarily be in order and we want the file to be.
         if len(self.condDict) > 0:
             tempArray = []
