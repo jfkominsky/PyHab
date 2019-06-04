@@ -57,3 +57,6 @@ Thumbs.db
 nonSVN
 .hg*
 *.log
+testing/.pytest_cache/README.md
+testing/.pytest_cache/v/cache/lastfailed
+testing/.pytest_cache/v/cache/nodeids
