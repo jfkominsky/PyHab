@@ -640,6 +640,21 @@ class TestRunSetup(object):
         assert len([x for x in self.trialInst.actualTrialOrder if '^.B' in x]) == 14
         assert len([x for x in self.trialInst.actualTrialOrder if '.C' in x]) == 14
 
+    def test_block_expansion(self):
+        testOne = [99, 'Test', 'NB', '7', '2', '18', 'testcond', '8', '2', '18']
+        self.trialInst.trialOrder = ['A', 'A', 'B', 'B', 'C', 'D']
+        self.trialInst.blockList = {'C':['X','E','B'], 'E':['Z','Y','X']}
+        self.trialInst.run(testMode=testOne)
+        assert len(self.trialInst.actualTrialOrder) == 10
+        assert self.trialInst.actualTrialOrder == ['A', 'A', 'B', 'B', 'C.X', 'C.E.Z','C.E.Y','C.E.X','C.B', 'D']
+        self.trialInst.actualTrialOrder = []
+        self.trialInst.trialOrder = ['A', 'A', 'B', 'B', 'Hab', 'D']
+        self.trialInst.habTrialList = ['B', 'C']
+        self.trialInst.run(testMode=testOne)
+        # Length is going to be...big...5+14+14*5 = 19+70=89. Recursion gets out of hand pretty quickly!
+        assert len(self.trialInst.actualTrialOrder) == 89
+        assert len([x for x in self.trialInst.actualTrialOrder if '^.C.B' in x]) == 14
+
 
     def test_multiyear_age(self):
         testOne = [99, 'Test', 'NB', '7', '2', '16', 'testcond', '8', '2', '18']
@@ -837,14 +852,14 @@ class TestCommands(object):
         self.commandInst.habCount = 1
         [x, y] = self.commandInst.insertHab(7)
         assert x == 0
-        assert y == 'Hab'
+        assert y == 'B'
         assert self.commandInst.actualTrialOrder == ['A', 'A', 'B', 'B', 'hab1.B', 'hab1^.C','hab1.B','hab2^.C','D']
 
         # Test something down the line!
         self.commandInst.stimPres = True
         [x, y] = self.commandInst.insertHab(9, 2)
         assert x == 0
-        assert y == 'Hab'
+        assert y == 'B'
         assert self.commandInst.actualTrialOrder == ['A', 'A', 'B', 'B', 'hab1.B', 'hab1^.C','hab2.B','hab2^.C','hab3.B','hab3^.C','D']
 
 
