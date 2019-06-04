@@ -634,7 +634,7 @@ class TestRunSetup(object):
         self.trialInst.run(testMode=testOne)
         assert len(self.trialInst.actualTrialOrder) == 19
         assert len([x for x in self.trialInst.actualTrialOrder if x == 'Hab']) == 14
-        self.trialInst.habTrialList = ['hab.C','B']
+        self.trialInst.habTrialList = ['C','B']
         self.trialInst.run(testMode=testOne)
         assert len(self.trialInst.actualTrialOrder) == 33
         assert len([x for x in self.trialInst.actualTrialOrder if '^.B' in x]) == 14
@@ -823,7 +823,7 @@ class TestCommands(object):
         assert y == 'Hab'
 
         self.commandInst.stimPres = True
-        self.commandInst.habTrialList = ['B','hab.C']
+        self.commandInst.habTrialList = ['B','C']
         self.commandInst.trialOrder = ['A', 'A', 'B', 'B', 'Hab', 'D']
         self.commandInst.counters = {'A': 2, 'B': 2, 'C': 1, 'D': 0,'Hab':1}
         self.commandInst.calcHabOver=['B']
@@ -861,16 +861,18 @@ class TestCommands(object):
                                       'B': ['Movie5', 'Movie6', 'Movie7', 'Movie8'],
                                       'C': ['Movie1', 'Movie2', 'Movie3', 'Movie4'],
                                       'D': ['Movie9', 'Movie10'],
+                                      'H': ['Movie11'],
                                       'Hab': ['Movie12']}
         self.commandInst.stimDict = {'A': ['Movie1', 'Movie2'],
                                      'B': ['Movie5', 'Movie6'],
                                      'C': ['Movie1', 'Movie2'],
                                      'D': ['Movie9', 'Movie10'],
+                                     'H': ['Movie11'],
                                      'Hab': ['Movie12']}
         self.commandInst.trialOrder = ['A', 'A', 'B', 'B', 'Hab', 'D']
-        self.commandInst.habTrialList = ['H','hab.C']
+        self.commandInst.habTrialList = ['H','C']
         self.commandInst.autoAdvance = ['B','C']
-        self.commandInst.calcHabOver = ['H','hab.C']
+        self.commandInst.calcHabOver = ['H','C']
         self.commandInst.counters = {'A': 2, 'B': 2, 'C': 0, 'D': 0, 'H': 0}
         self.commandInst.run(testMode=testOne)
         self.commandInst.verbDatList = copy.deepcopy(self.testDatList)
