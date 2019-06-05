@@ -172,7 +172,8 @@ class PyHabBuilder:
                                     height=self.flowArea[3] - self.flowArea[2], fillColor='grey',
                                     pos=[self.flowArea[0] + float(abs(self.flowArea[1] - self.flowArea[0])) / 2,
                                          self.flowArea[2] - float(abs(self.flowArea[3] - self.flowArea[2])) / 2])
-        self.paletteArea = [.75, float(1), float(1), -.15]  # a trial type pallette, top right
+        self.paletteArea = [.75, float(1), float(1), -.30]  # a trial type pallette, top right
+        self.standardPaletteHeight = 1.15  # For certain text elements.
         self.paletteRect = visual.Rect(self.win, width=self.paletteArea[1] - self.paletteArea[0],
                                        height=self.paletteArea[3] - self.paletteArea[2], fillColor='white',
                                        pos=[self.paletteArea[0] + float(abs(self.paletteArea[1] - self.paletteArea[0])) / 2,
@@ -192,20 +193,20 @@ class PyHabBuilder:
         self.overFlowLocs = []  # For >20 trials, go up to 40
         self.flowGap = .09  # A easy reference for the horizontal spacing of items in the flow
         self.mouse = event.Mouse()
+        self.trialPalettePage = 1  # A page tracker for the trial type palette. Much like one that exists for conditions.
+        self.totalPalettePages = 1  # The maximum number of pages.
         for x in [.25, .75]:  # Two columns of trial types, up to 10 as of 0.8. TODO: Paginate?
             for z in range(1, 5):  # Trying to leave space for buttons...
                 self.typeLocs.append([self.paletteArea[0] + x * (self.paletteArea[1] - self.paletteArea[0]),
-                                      self.paletteArea[2] + .3 * (self.paletteArea[3] - self.paletteArea[2]) + z * .12 * (self.paletteArea[3] - self.paletteArea[2])])
+                                      self.paletteArea[2] + .3 * -self.standardPaletteHeight + z * .12 * -self.standardPaletteHeight])
         for y in [.25, .75]:  # two rows for the study flow.
             for z in range(1, 11):
                 self.flowLocs.append([self.flowArea[0] + z * (self.flowArea[1] - self.flowArea[0]) * self.flowGap,
                                       self.flowArea[2] + y * (self.flowArea[3] - self.flowArea[2])])
-        for y in [.2, .4, .6, .8]:  # two rows for the study flow.
+        for y in [.2, .4, .6, .8]:  # four rows for the longer study flows.
             for z in range(1, 11):
                 self.overFlowLocs.append([self.flowArea[0] + z * (self.flowArea[1] - self.flowArea[0]) * self.flowGap,
                                           self.flowArea[2] + y * (self.flowArea[3] - self.flowArea[2])])
-        self.trialTypesArray = self.loadTypes(self.typeLocs)
-        self.studyFlowArray = self.loadFlow(self.settings['trialOrder'], self.flowArea, self.flowLocs, self.overFlowLocs)
         # Various main UI buttons, put into a dict of lists for easy looping through.
         self.buttonList={'shapes':[],'text':[],'functions':[]}  # Yes, python means we can put the functions in there too.
         if len(self.folderPath) > 0:
@@ -220,20 +221,39 @@ class PyHabBuilder:
         self.buttonList['shapes'].append(saveAsButton)
         self.buttonList['text'].append(saveAsText)
         self.buttonList['functions'].append(self.saveDlg)
-        newTrialTypeButton = visual.Rect(self.win, width=.9*(self.paletteArea[1]-self.paletteArea[0]),height=abs(self.paletteArea[3]-self.paletteArea[2])*.10, fillColor="yellow", lineColor="black",
-                pos=[self.paletteArea[0]+float(abs(self.paletteArea[1]-self.paletteArea[0]))/2,self.paletteArea[2]-float(abs(self.paletteArea[3]-self.paletteArea[2])*.07)])
+        newTrialTypeButton = visual.Rect(self.win, width=.9*(self.paletteArea[1]-self.paletteArea[0]), height=self.standardPaletteHeight*.10, fillColor="yellow", lineColor="black",
+                pos=[self.paletteArea[0]+float(abs(self.paletteArea[1]-self.paletteArea[0]))/2, self.paletteArea[2]-self.standardPaletteHeight*.07])
         newTrialTypeText=visual.TextStim(self.win, alignHoriz='center', alignVert='center', text = "New Trial Type",height=.5*newTrialTypeButton.height, pos=newTrialTypeButton.pos,color="black")
         self.buttonList['shapes'].append(newTrialTypeButton)
         self.buttonList['text'].append(newTrialTypeText)
         self.buttonList['functions'].append(self.trialTypeDlg)
-        delTrialTypeButton = visual.Rect(self.win, width=.9*(self.paletteArea[1]-self.paletteArea[0]),height=abs(self.paletteArea[3]-self.paletteArea[2])*.10, fillColor="lightcoral", lineColor = "black",
-                pos=[self.paletteArea[0]+float(abs(self.paletteArea[1]-self.paletteArea[0]))/2,self.paletteArea[3]+float(abs(self.paletteArea[3]-self.paletteArea[2])*.07)])
-        delTrialTypeText=visual.TextStim(self.win, alignHoriz='center', alignVert='center', text = "Delete trial/block",height=.45*delTrialTypeButton.height, pos=delTrialTypeButton.pos,color="black")
+        delTrialTypeButton = visual.Rect(self.win, width=.9*(self.paletteArea[1]-self.paletteArea[0]),height=self.standardPaletteHeight*.10, fillColor="lightcoral", lineColor = "black",
+                pos=[self.paletteArea[0]+float(abs(self.paletteArea[1]-self.paletteArea[0]))/2,self.paletteArea[3]+self.standardPaletteHeight*.07])
+        delTrialTypeText=visual.TextStim(self.win, alignHoriz='center', alignVert='center', text="Delete trial/block",height=.45*delTrialTypeButton.height, pos=delTrialTypeButton.pos,color="black")
         self.buttonList['shapes'].append(delTrialTypeButton)
         self.buttonList['text'].append(delTrialTypeText)
         self.buttonList['functions'].append(self.delTrialTypeDlg)
-        addHabButton = visual.Rect(self.win, width=.9*(self.paletteArea[1]-self.paletteArea[0]),height=abs(self.paletteArea[3]-self.paletteArea[2])*.10, fillColor="yellow", lineColor="black",
-                pos=[self.paletteArea[0]+float(abs(self.paletteArea[1]-self.paletteArea[0]))/2,self.paletteArea[2]-float(abs(self.paletteArea[3]-self.paletteArea[2])*.18)])
+        rightArrowVerts = [(-.25, 0.05), (-.15, 0.05), (-0.15, 0.15), (0, 0), (-0.15, -0.15), (-0.15, -0.05),(-0.25,-0.05)]
+        self.nextPaletteArrow = visual.ShapeStim(self.win, vertices=rightArrowVerts, size=.25, lineColor='black',
+                                         fillColor='black', pos=[self.paletteArea[0]+float(abs(self.paletteArea[1]-self.paletteArea[0]))*.9,self.paletteArea[3]+self.standardPaletteHeight*.2])
+        self.nextPaletteText = visual.TextStim(self.win, text='', pos=self.nextPaletteArrow.pos)
+        leftArrowVerts = [(.25, 0.05), (.15, 0.05), (0.15, 0.15), (0, 0), (0.15, -0.15), (0.15, -0.05),(0.25,-0.05)]
+        self.lastPaletteArrow = visual.ShapeStim(self.win, vertices=leftArrowVerts, size=.25, lineColor='black', fillColor='black',
+                                         pos=[self.paletteArea[0]+float(abs(self.paletteArea[1]-self.paletteArea[0]))*.05,self.paletteArea[3]+self.standardPaletteHeight*.2])
+        self.lastPaletteText = visual.TextStim(self.win, text='', pos=self.lastPaletteArrow.pos)
+        self.palettePageText = visual.TextStim(self.win, height=self.standardPaletteHeight*.045, text=str(self.trialPalettePage)+'/'+str(self.totalPalettePages), color='black',
+                                               pos=[self.paletteArea[0]+float(abs(self.paletteArea[1]-self.paletteArea[0]))*.5,self.paletteArea[3]+self.standardPaletteHeight*.2])
+        self.buttonList['shapes'].append(self.nextPaletteArrow)
+        self.buttonList['text'].append(self.palettePageText)
+        self.buttonList['functions'].append(self.nextPalettePage)
+        self.buttonList['shapes'].append(self.lastPaletteArrow)
+        self.buttonList['text'].append(self.lastPaletteText)
+        self.buttonList['functions'].append(self.lastPalettePage)
+        self.trialTypesArray = self.loadTypes(self.typeLocs, self.trialPalettePage)
+        self.studyFlowArray = self.loadFlow(self.settings['trialOrder'], self.flowArea, self.flowLocs,self.overFlowLocs)
+
+        addHabButton = visual.Rect(self.win, width=.9*(self.paletteArea[1]-self.paletteArea[0]),height=self.standardPaletteHeight*.10, fillColor="yellow", lineColor="black",
+                pos=[self.paletteArea[0]+float(abs(self.paletteArea[1]-self.paletteArea[0]))/2,self.paletteArea[2]-self.standardPaletteHeight*.18])
         if 'Hab' in self.settings['trialTypes'] or len(self.settings['habTrialList']) > 0:
             txt = 'Mod Hab Block'
         else:
@@ -242,8 +262,8 @@ class PyHabBuilder:
         self.buttonList['shapes'].append(addHabButton)
         self.buttonList['text'].append(addHabText)
         self.buttonList['functions'].append(self.addHabBlock)
-        addBlockButton = visual.Rect(self.win, width=.9*(self.paletteArea[1]-self.paletteArea[0]),height=abs(self.paletteArea[3]-self.paletteArea[2])*.10, fillColor="yellow", lineColor="black",
-                pos=[self.paletteArea[0]+float(abs(self.paletteArea[1]-self.paletteArea[0]))/2,self.paletteArea[2]-float(abs(self.paletteArea[3]-self.paletteArea[2])*.29)])
+        addBlockButton = visual.Rect(self.win, width=.9*(self.paletteArea[1]-self.paletteArea[0]),height=self.standardPaletteHeight*.10, fillColor="yellow", lineColor="black",
+                pos=[self.paletteArea[0]+float(abs(self.paletteArea[1]-self.paletteArea[0]))/2,self.paletteArea[2]-self.standardPaletteHeight*.29])
         addBlockText = visual.TextStim(self.win, alignHoriz='center', alignVert='center', text="Create Block", height=.5*addBlockButton.height, pos=addBlockButton.pos,color="black")
         self.buttonList['shapes'].append(addBlockButton)
         self.buttonList['text'].append(addBlockText)
@@ -254,46 +274,46 @@ class PyHabBuilder:
         self.buttonList['text'].append(quitText)
         self.buttonList['functions'].append(self.quitFunc)
         # The eight "main" buttons
-        USetButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect),pos=[-.75,-.3], fillColor="white")
+        USetButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect),pos=[-.8,-.3], fillColor="white")
         USetText = visual.TextStim(self.win, text="Universal \nsettings",color="black",height=USetButton.height*.3, alignHoriz='center', pos=USetButton.pos)
         self.buttonList['shapes'].append(USetButton)
         self.buttonList['text'].append(USetText)
         self.buttonList['functions'].append(self.univSettingsDlg)
-        dataSetButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect),pos=[-.75,-.65], fillColor="white")
+        dataSetButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect),pos=[-.8,-.65], fillColor="white")
         dataSetText = visual.TextStim(self.win, text="Data \nsettings",color="black",height=dataSetButton.height*.3, alignHoriz='center', pos=dataSetButton.pos)
         self.buttonList['shapes'].append(dataSetButton)
         self.buttonList['text'].append(dataSetText)
         self.buttonList['functions'].append(self.dataSettingsDlg)
-        stimSetButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect),pos=[-.25,-.3], fillColor="white")
+        stimSetButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect),pos=[-.4,-.3], fillColor="white")
         stimSetText = visual.TextStim(self.win, text="Stimuli \nsettings",color="black",height=stimSetButton.height*.3, alignHoriz='center', pos=stimSetButton.pos)
         self.buttonList['shapes'].append(stimSetButton)
         self.buttonList['text'].append(stimSetText)
         self.buttonList['functions'].append(self.stimSettingsDlg)
-        condSetButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect),pos=[-.25,-.65], fillColor="white")
+        condSetButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect),pos=[-.4,-.65], fillColor="white")
         condSetText = visual.TextStim(self.win, text="Condition \nsettings",color="black",height=condSetButton.height*.3, alignHoriz='center', pos=condSetButton.pos)
         self.buttonList['shapes'].append(condSetButton)
         self.buttonList['text'].append(condSetText)
         self.buttonList['functions'].append(self.condSettingsDlg)
-        habSetButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect),pos=[.25,-.3], fillColor="white")
+        habSetButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect),pos=[0,-.3], fillColor="white")
         habSetText = visual.TextStim(self.win, text="Habituation \nsettings",color="black",height=habSetButton.height*.3, alignHoriz='center', pos=habSetButton.pos)
         self.buttonList['shapes'].append(habSetButton)
         self.buttonList['text'].append(habSetText)
         self.buttonList['functions'].append(self.habSettingsDlg)
 
-        attnGetterButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect), pos=[.75, -.3], fillColor = "white")
+        attnGetterButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect), pos=[.4, -.3], fillColor = "white")
         attnGetterText = visual.TextStim(self.win, text="Customize \nattention-getters",color="black",height=attnGetterButton.height*.3,alignHoriz='center', pos=attnGetterButton.pos)
         self.buttonList['shapes'].append(attnGetterButton)
         self.buttonList['text'].append(attnGetterText)
         self.buttonList['functions'].append(self.attnGetterDlg)
 
-        stimLibraryButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect), pos=[.25, -.65], fillColor = "white")
+        stimLibraryButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect), pos=[0, -.65], fillColor = "white")
         stimLibraryText = visual.TextStim(self.win, text="Add/remove stimuli \nto/from exp. library",color="black",height=stimLibraryButton.height*.3,alignHoriz='center', pos=stimLibraryButton.pos)
         self.buttonList['shapes'].append(stimLibraryButton)
         self.buttonList['text'].append(stimLibraryText)
         self.buttonList['functions'].append(self.addStimToLibraryDlg)
 
         if len(list(self.settings['stimList'].keys())) > 0:
-            addMovButton = visual.Rect(self.win, width=.3, height=.5 * (.2 / self.aspect), pos=[.75, -.65],
+            addMovButton = visual.Rect(self.win, width=.3, height=.5 * (.2 / self.aspect), pos=[.4, -.65],
                                        fillColor="white")
             addMovText = visual.TextStim(self.win, text="Add stimulus files \nto trial types", color="black",
                                          height=addMovButton.height * .3, alignHoriz='center', pos=addMovButton.pos)
@@ -305,6 +325,14 @@ class PyHabBuilder:
         self.workingText = visual.TextStim(self.win, text="Working...", height= .3, bold=True, alignHoriz='center', pos=[0,0])
 
         self.UI = {'bg':[self.flowRect, self.paletteRect], 'buttons': self.buttonList}
+
+    def doathing(self):
+        """
+        TODO: REMOVE. This is a debug function.
+        :return:
+        :rtype:
+        """
+        pass
 
     def run(self):
         """
@@ -455,9 +483,9 @@ class PyHabBuilder:
         self.win.flip()
         #For when a trial is right-clicked, or a new one created, open a dialog with info about it.
         skip = False
-        if len(self.trialTypesArray['labels']) == 7:
+        if len(self.settings['trialTypes']) == len(self.colorsArray):
             errDlg = gui.Dlg(title="Max trial types reached!")
-            errDlg.addText("PyHab's builder currently supports a maximum of 8 trial types incl. hab trials.")
+            errDlg.addText("PyHab's builder currently supports a maximum of " + str(len(self.colorsArray)) + " trial or block types.")
             errDlg.show()
         else:
             typeDlg = gui.Dlg(title="Trial Type " + trialType)
@@ -571,11 +599,9 @@ class PyHabBuilder:
                                 self.studyFlowArray['labels'][i] = typeInfo[0]
                                 self.studyFlowArray['text'][i].text = typeInfo[0]
                                 self.studyFlowArray['text'][i].height = self.flowHeightObj/(.42*numChar) #Update text height for new length
-                            self.trialTypesArray['labels'][typeIndex] = typeInfo[0]
-                            self.trialTypesArray['text'][typeIndex].text = typeInfo[0]
-                            self.trialTypesArray['text'][typeIndex].height=self.typeHeightObj/(.33*numChar)
                             self.settings['trialTypes'] = [typeInfo[0] if x == trialType else x for x in self.settings['trialTypes']]
                             self.settings['trialOrder'] = [typeInfo[0] if x == trialType else x for x in self.settings['trialOrder']]
+                            self.trialTypesArray = self.loadTypes(self.typeLocs,self.trialPalettePage)
                             if len(self.settings['habTrialList']) > 0:
                                 for z in range(0, len(self.settings['habTrialList'])):
                                     if self.settings['habTrialList'][z] == trialType:
@@ -652,17 +678,12 @@ class PyHabBuilder:
 
                         # If we need to update the flow pane, it's taken care of above. Here we update the type pallette.
                         if makeNew:
-                            i = len(self.trialTypesArray['labels']) #Grab length before adding, conveniently the index we need for position info etc.
-                            self.trialTypesArray['labels'].append(typeInfo[0])
-                            tempObj = visual.Rect(self.win,width=self.typeWidthObj, height=self.typeHeightObj, fillColor=self.colorsArray[i], pos=self.typeLocs[i])
-                            numChar = len(typeInfo[0])
-                            if numChar <= 3:
-                                numChar = 4 #Maximum height
-                            tempTxt = visual.TextStim(self.win, alignHoriz='center', alignVert='center', bold=True, height=self.typeHeightObj/(.38*numChar), text=typeInfo[0], pos=self.typeLocs[i])
-                            self.trialTypesArray['shapes'].append(tempObj)
-                            self.trialTypesArray['text'].append(tempTxt)
                             self.settings['trialTypes'].append(typeInfo[0])
                             self.settings['stimNames'][typeInfo[0]] = []
+                            if len(self.settings['trialTypes']) in [9, 17]:
+                                self.totalPalettePages += 1
+                                self.trialPalettePage = deepcopy(self.totalPalettePages)
+                            self.trialTypesArray = self.loadTypes(self.typeLocs, self.trialPalettePage)
                             # If there exists a condition file or condition settings, warn the user that they will need to be updated!
                             if self.settings['condFile'] is not '':
                                 warnDlg = gui.Dlg(title="Update conditions")
@@ -671,7 +692,7 @@ class PyHabBuilder:
                 self.studyFlowArray = self.loadFlow(self.settings['trialOrder'], self.flowArea, self.flowLocs, self.overFlowLocs)
                 self.showMainUI(self.UI, self.studyFlowArray, self.trialTypesArray)
                 self.win.flip()
-    
+
     def addHabBlock(self, makeNew = True):
         """
         Creates either a hab trial type, or a hab trial block.
@@ -1136,7 +1157,7 @@ class PyHabBuilder:
         for i, j in self.settings['blockList'].items():  # If it's part of a block
             while dType in j:
                 j.remove(dType)
-        self.trialTypesArray = self.loadTypes(self.typeLocs)  # easiest to just reload the trial types.
+        self.trialTypesArray = self.loadTypes(self.typeLocs,self.trialPalettePage)  # easiest to just reload the trial types.
         # For the study flow, it's easiest just to remove it from the trial order and reload the study flow.
         if dType in self.settings['trialOrder']:
             while dType in self.settings['trialOrder']:
@@ -1327,8 +1348,29 @@ class PyHabBuilder:
             tempText = visual.TextStim(self.win, text="+" + str(numItems-39) + " more", pos=overflow[39])
             outputDict['lines'].append(tempText)
         return outputDict
-    
-    def loadTypes(self, typeLocations): #A "pallette" of trial types on one side, only needed when loading from save.
+
+    def nextPalettePage(self):
+        """
+        Simple function for moving to the next page of the trial type palette.
+        :return:
+        :rtype:
+        """
+
+        if self.trialPalettePage < self.totalPalettePages:
+            self.trialPalettePage += 1
+        self.trialTypesArray = self.loadTypes(self.typeLocs, self.trialPalettePage)
+
+    def lastPalettePage(self):
+        """
+        Simple function for moving to the previous page of the trial type palette
+        :return:
+        :rtype:
+        """
+        if self.trialPalettePage > 1:
+            self.trialPalettePage -= 1
+        self.trialTypesArray = self.loadTypes(self.typeLocs, self.trialPalettePage)
+
+    def loadTypes(self, typeLocations, page=1): #A "pallette" of trial types on one side, only needed when loading from save.
         """
         This function creates the trial types palette.
 
@@ -1337,6 +1379,7 @@ class PyHabBuilder:
         'text': visual.TextStim objects
         'labels': A sort of index for the other two, a plain string labeling the trial or block type.
 
+        TODO: Make page-specific using self.trialPalettePage.
         :param typeLocations: The array of coordinates on which buttons can be placed. Usually self.typeLocs
         :type typeLocations: list
         :return:
@@ -1352,16 +1395,18 @@ class PyHabBuilder:
             tTypes = self.settings['trialTypes'] 
         outputDict=  {'shapes':[],'text':[],'labels':[]} #Dicts ain't ordered but lists within dicts sure are!
         #Create the same trial type squares we see in the flow, but wholly independent objects for drawing purposes (allowing one to change w/out the other)
-        for i in range(0, len(tTypes)):
+        for i in range(0+8*(page-1), min(8*page,len(tTypes))):
             #Now, actually build the list of objects to render.
-            tempObj = visual.Rect(self.win,width=self.typeWidthObj, height=self.typeHeightObj, fillColor=self.colorsArray[i], pos=typeLocations[i])
+            tempObj = visual.Rect(self.win,width=self.typeWidthObj, height=self.typeHeightObj, fillColor=self.colorsArray[i], pos=typeLocations[i%len(typeLocations)])
             numChar = len(tTypes[i])
             if numChar <= 3:
                 numChar = 4 #Maximum height
-            tempTxt = visual.TextStim(self.win, alignHoriz='center', alignVert='center',bold=True,height=self.typeHeightObj/(.32*numChar),text=tTypes[i], pos=typeLocations[i])
+            tempTxt = visual.TextStim(self.win, alignHoriz='center', alignVert='center',bold=True,height=self.typeHeightObj/(.32*numChar),text=tTypes[i], pos=typeLocations[i%len(typeLocations)])
             outputDict['shapes'].append(tempObj)
             outputDict['text'].append(tempTxt)
             outputDict['labels'].append(tTypes[i])
+        x = self.buttonList['functions'].index(self.nextPalettePage)  # TODO: Fix properly.
+        self.buttonList['text'][x].text = str(self.trialPalettePage) + '/' + str(self.totalPalettePages)
         return(outputDict)
     
     def quitFunc(self):
@@ -1669,7 +1714,7 @@ class PyHabBuilder:
                 e = errDlg.show()
             # When we are done with this dialog, if we have actually added anything, create the "add to types" dlg.
             if len(list(self.settings['stimList'].keys())) > 0 and self.addStimToTypesDlg not in self.buttonList['functions']:
-                addMovButton = visual.Rect(self.win, width=.3, height=.5 * (.2 / self.aspect), pos=[.75, -.65],
+                addMovButton = visual.Rect(self.win, width=.3, height=.5 * (.2 / self.aspect), pos=[.4, -.65],
                                            fillColor="white")
                 addMovText = visual.TextStim(self.win, text="Add stimulus files \nto trial types", color="black",
                                              height=addMovButton.height * .3, alignHoriz='center', pos=addMovButton.pos)
@@ -2071,7 +2116,8 @@ class PyHabBuilder:
             self.condDict = testDict
             self.settings['condList'] = condLabels # Problem: This creates a local copy.
             numPages = ceil(float(len(self.settings['condList'])) / 4)  # use math.ceil to round up.
-            '''if bc:
+            # TODO: Figure this nonsense out
+            '''if bc: 
                 self.baseCondDict = testDict
                 self.settings['baseCondList'] = condLabels
                 numPages = ceil(float(len(self.settings['condList'])) / 4)  # use math.ceil to round up.
