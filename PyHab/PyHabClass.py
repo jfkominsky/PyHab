@@ -34,6 +34,7 @@ class PyHab:
     Off (for gaze-off events)
     On2 and Off2 (for the optional secondary coder)
     Each coder's on and off are recorded in a separate dict with trial, gaze on/off, start, end, and duration.
+    TODO: Block condensed save files?
 
     """
 
@@ -51,6 +52,10 @@ class PyHab:
             self.dirMarker = '\\'
             otherOS = '/'
         self.dataColumns = eval(settingsDict['dataColumns'])
+        if 'dataFiles' in settingsDict.keys():
+            self.dataFiles = eval(settingsDict['dataFiles'])
+        else:
+            self.dataFiles = ['Block','Trial']
         self.prefix = settingsDict['prefix']  # prefix for data files. All data filenames will start with this text.
         self.dataFolder = settingsDict['dataloc']  # datafolder, condpath,stimPath are the ones that need modification.
         if len(self.dataFolder) > 0 and self.dataFolder[-1] is not self.dirMarker:

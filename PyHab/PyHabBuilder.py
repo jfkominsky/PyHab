@@ -1,6 +1,6 @@
 from psychopy import visual, event, core, gui, monitors, tools, sound,__version__
 from psychopy.app import coder
-import wx, random, csv, shutil, os, sys, threading
+import wx, random, csv, shutil, os, sys, threading, itertools
 from math import *
 from copy import deepcopy
 import pyglet
@@ -10,10 +10,7 @@ class PyHabBuilder:
     """
     Graphical interface for constructing PyHab experiments. Runs mostly on a Pyglet window and qtGUI dialogs.
     Saves a settings file in .csv form which can then be read by PyHab Launcher, PyHabClass, and PyHabClassPL.
-    TODO: Paginate trial type pallette
-    TODO: New condition setup, allowing randomization of order of movies AND order of trials w/in blocks
-    TODO: Auto-randomization of conditions, allowing you to choose to counterbalance-randomize trials, randomize conditions, etc.
-    TODO: 'Base' conditions versus 'actual' conditions
+    TODO: Block condensed save files?
 
     """
     def __init__(self, loadedSaved=False, settingsDict={}):
@@ -35,6 +32,7 @@ class PyHabBuilder:
         if not loadedSaved:  # A new blank experiment
             # Load some defaults to start with.
             self.settings = {'dataColumns': ['sNum', 'sID', 'months', 'days', 'sex', 'cond','condLabel', 'trial','GNG','trialType','stimName','habCrit','habTrialNo','sumOnA','numOnA','sumOffA','numOffA','sumOnB','numOnB','sumOffB','numOffB'],
+                                                        'dataFiles':['Block','Trial'],
                                                         'prefix': 'PyHabExperiment',
                                                         'dataloc':'data'+self.dirMarker,
                                                         'maxDur': {},
@@ -88,6 +86,8 @@ class PyHabBuilder:
                                                         'startImage': '',
                                                         'endImage': '',
                                                         'nextFlash': '0'}
+            self.condDict = {}
+            self.baseCondDict = {}
         else:
             self.settings = settingsDict
             if 'nextFlash' not in self.settings.keys():
@@ -102,10 +102,12 @@ class PyHabBuilder:
                     self.settings['calcHabOver'] = "['Hab']"  # Default to old behavior.
                 else:
                     self.settings['calcHabOver'] = "[]"
+            if 'dataFiles' not in self.settings.keys():
+                self.settings['dataFile'] = "['Block','Trial']"
             # Settings requiring evaluation to get sensible values. Mostly dicts.
-            evalList = ['dataColumns','maxDur','condList','baseCondList','movieEnd','playThrough','trialOrder','stimNames', 'stimList', 'ISI',
-                        'maxOff','minOn','autoAdvance','playAttnGetter','attnGetterList','trialTypes','habTrialList', 'calcHabOver', 'nextFlash',
-                        'blockList']
+            evalList = ['dataColumns','dataFiles','maxDur','condList','baseCondList','movieEnd','playThrough','trialOrder',
+                        'stimNames', 'stimList', 'ISI', 'maxOff','minOn','autoAdvance','playAttnGetter','attnGetterList',
+                        'trialTypes','habTrialList', 'calcHabOver', 'nextFlash', 'blockList']
             for i in evalList:
                 self.settings[i] = eval(self.settings[i])
                 if i in ['stimList','attnGetterList']:
@@ -143,7 +145,7 @@ class PyHabBuilder:
                     self.condDict = testDict
                 else:
                     self.condDict = {}
-                if os.path.exists(self.settings['folderPath'] + self.settings['baseCondFile']):
+                if len(self.settings['baseCondFile'])>0 and os.path.exists(self.settings['folderPath'] + self.settings['baseCondFile']):
                     testReader2 = csv.reader(open(self.settings['baseCondFile'],'rU'))
                     testStuff2 = []
                     for row in testReader2:
@@ -154,6 +156,9 @@ class PyHabBuilder:
                     self.baseCondDict = newDict
                 else:
                     self.baseCondDict = {}
+            else:
+                self.condDict = {}
+                self.baseCondDict = {}
         self.folderPath = self.settings['folderPath']  # The location where all the pieces are saved.
         self.allDataColumns = ['sNum', 'sID', 'months', 'days', 'sex', 'cond','condLabel', 'trial','GNG','trialType','stimName','habCrit','habTrialNo','sumOnA','numOnA','sumOffA','numOffA','sumOnB','numOnB','sumOffB','numOffB']
         self.allDataColumnsPL = ['sNum', 'sID', 'months', 'days', 'sex', 'cond','condLabel', 'trial','GNG','trialType','stimName','habCrit','habTrialNo', 'sumOnL','numOnL','sumOnR','numOnR','sumOff','numOff']
@@ -1511,6 +1516,11 @@ class PyHabBuilder:
         self.workingText.draw()
         self.win.flip()
         dDlg = gui.Dlg(title="Data settings")
+        dDlg.addText("Select which summary files to save.")
+        dDlg.addText("Block-level means one line per block instance (e.g., each loop of a hab block),")
+        dDlg.addText("trial-level means one line for each individual trial (the verbose file will always have this)")
+        dDlg.addField("Block-level", initial=True)
+        dDlg.addField("Trial-level", initial=True)
         dDlg.addText("Check all columns you would like to be recorded in your data files. ")
         dDlg.addText("ANYTHING UNCHECKED WILL NOT BE STORED IN ANY WAY!")
         if self.settings['prefLook'] in [1,'1',True,'True']:
@@ -2038,13 +2048,14 @@ class PyHabBuilder:
                 else:
                     baseConds = False
                 allReady = True
-                if len(self.trialTypesArray['labels']) == 0: # If there are no trial types
+                if len(self.settings['trialTypes']) == 0: # If there are no trial types
                     allReady = False
-                for i in range(0,len(self.trialTypesArray['labels'])):
-                    if self.trialTypesArray['labels'][i] not in self.settings['stimNames'].keys(): # If a trial type has no movies associated with it
+                for i in range(0,len(self.settings['trialTypes'])):
+                    if self.settings['trialTypes'][i] not in self.settings['blockList'].keys() and self.settings['trialTypes'][i] not in self.settings['stimNames'].keys(): # If a trial type has no movies associated with it
                         allReady = False
-                    elif len(self.settings['stimNames'][self.trialTypesArray['labels'][i]]) == 0: # Another way that it can have no movies associated with it.
-                        allReady = False
+                    elif self.settings['trialTypes'][i] not in self.settings['blockList'].keys():
+                        if len(self.settings['stimNames'][self.trialTypesArray['labels'][i]]) == 0:  # Another way that it can have no movies associated with it.
+                            allReady = False
                 if allReady:
                     if len(condInfo[1]) > 0:
                         self.settings['condFile'] = condInfo[1]
@@ -2052,14 +2063,17 @@ class PyHabBuilder:
                         self.settings['condFile'] = "conditions.csv"
                     if os.name is not 'posix':
                         self.win.winHandle.set_visible(visible=True)
-                    self.condMaker(bc=baseConds)
+                    if baseConds:
+                        self.condMaker(bc=baseConds, resetDict=deepcopy(self.baseCondDict))
+                    else:
+                        self.condMaker(resetDict=deepcopy(self.condDict))
                 else:
                     #Create err dlg.
                     errDlg = gui.Dlg(title="No stimuli!")
                     errDlg.addText("Not all trial types have stimuli!")
                     errDlg.addText("Please add stimuli to all trial types first and then set conditions for randomized presentation.")
                     errDlg.addField("For studies without stimuli, enter list of arbitrary condition labels here, each one in quotes, separated by commas, all inside the square brackets",self.settings['condList'])
-                    # Make this less shit
+                    # This is non-ideal but a reasonable temporary patch.
                     e = errDlg.show()
                     if errDlg.OK:
                         self.settings['condList'] = e[0]
@@ -2068,7 +2082,7 @@ class PyHabBuilder:
                 self.settings['condList'] = []  # Gets rid of existing condition list to save trouble.
                 self.condDict = {}  # Gets rid of conditions altogether.
 
-    def condMaker(self, rep=False, currPage=1, bc=False):
+    def condMaker(self, rep=False, currPage=1, bc=False, trialMode=True, resetDict={}):
         """
         A whole separate interface for managing condition creation.
 
@@ -2081,6 +2095,8 @@ class PyHabBuilder:
         :type currPage: int
         :param bc: Are we displaying the raw conditions, or the 'base' (pre-randomization) conditions?
         :type bc: bool
+        :param trialMode: A toggle between 'trial mode' (use conditions for order of stimuli in trial types) and 'block mode' (use conditions to change order of trials within blocks)
+        :type trialMode: bool
         :return:
         :rtype:
         """
@@ -2092,8 +2108,7 @@ class PyHabBuilder:
         condContent = [] # The content of each condition (a list of dicts).
         drawConds = [] # The text things for drawing.
         numPages = 1
-        # TODO: Loading base conditions - totally separate? or do we overwrite conddict?
-        # TODO: We're going to have to rethink this from the ground up for blocks.
+        # TODO: Loading base conditions - totally separate
         if bc:
             condPath = self.settings['baseCondFile']
             condDict = self.baseCondDict
@@ -2102,8 +2117,8 @@ class PyHabBuilder:
             condPath = self.settings['condFile']
             condDict = self.condDict
             condList = self.settings['condList']
-        if os.path.exists(self.settings['condFile']) and not rep:  # If we already have a pre-existing cond file and aren't in the process of looping.
-            testReader=csv.reader(open(self.settings['condFile'], 'rU'))
+        if os.path.exists(condPath) and not rep:  # If we already have a pre-existing cond file and aren't in the process of looping.
+            testReader=csv.reader(open(condPath, 'rU'))
             testStuff=[]
             for row in testReader:
                 testStuff.append(row)
@@ -2113,40 +2128,57 @@ class PyHabBuilder:
             testDict = dict(testStuff) 
             for i in testDict.keys():
                 testDict[i]=eval(testDict[i])
-            self.condDict = testDict
-            self.settings['condList'] = condLabels # Problem: This creates a local copy.
-            numPages = ceil(float(len(self.settings['condList'])) / 4)  # use math.ceil to round up.
-            # TODO: Figure this nonsense out
-            '''if bc: 
+            if bc:
                 self.baseCondDict = testDict
+                condDict = self.baseCondDict
                 self.settings['baseCondList'] = condLabels
-                numPages = ceil(float(len(self.settings['condList'])) / 4)  # use math.ceil to round up.
+                numPages = ceil(float(len(self.settings['baseCondList'])) / 4)
             else:
-                self.condDict=testDict
-                self.settings['condList'] = condLabels
-                numPages = ceil(float(len(self.settings['condList'])) / 4)  # use math.ceil to round up.'''
-        elif len(self.condDict) > 0:  # If we already have something to build on
-            numPages = ceil(float(len(self.condDict.keys()))/4)  # use math.ceil to round up.
-            for i in range(0, len(self.settings['condList'])):
-                if list[i] in self.condDict.keys():
-                    condContent.append(self.condDict[self.settings['condList'][i]])
+                self.condDict = testDict
+                condDict = self.condDict
+                self.settings['condList'] = condLabels # Problem: This creates a local copy.
+                numPages = ceil(float(len(self.settings['condList'])) / 4)  # use math.ceil to round up.
+        elif len(condDict) > 0:  # If we already have something to build on
+            numPages = ceil(float(len(condDict.keys()))/4)  # use math.ceil to round up.
+            for i in range(0, len(condList)):
+                if condList[i] in condDict.keys():
+                    condContent.append(condDict[condList[i]])
                 else:
                     condContent.append({})
-        doneButton = visual.Rect(self.win, width=.25, height=.67*(.15/self.aspect),fillColor="green",pos=[.82,-.85])
-        doneText = visual.TextStim(self.win, text="DONE", bold=True, pos=doneButton.pos)
-        addCondButton = visual.Rect(self.win, width=.3, height=.67*(.15/self.aspect),fillColor="blue",pos=[-.82,-.85])
+        # TODO: swap sides, done button on left, add cancel button.
+        doneButton = visual.Rect(self.win, width=.2, height=.67*(.15/self.aspect),fillColor="green",pos=[-.87,-.85])
+        doneText = visual.TextStim(self.win, text="Done", bold=True, pos=doneButton.pos)
+        cancelButton = visual.Rect(self.win, width=.2, height=.67*(.15/self.aspect), fillColor="red", pos=[-.62, -.85])
+        cancelText = visual.TextStim(self.win, text="Cancel", bold=True, pos=cancelButton.pos)
+        addCondButton = visual.Rect(self.win, width=.25, height=.65*(.15/self.aspect),fillColor="blue",pos=[.82,-.85])
         addCondText = visual.TextStim(self.win, text="Add condition", bold=True, height=addCondButton.height*.3, pos=addCondButton.pos)
-        deleteCondButton = visual.Rect(self.win, width=.3, height=.67*(.15/self.aspect),fillColor="red",pos=[-.5,-.85])
+        deleteCondButton = visual.Rect(self.win, width=.25, height=.65*(.15/self.aspect),fillColor="red",pos=[.56,-.85])
         deleteCondText = visual.TextStim(self.win, text="Delete condition", bold=True, height=deleteCondButton.height*.3, pos=deleteCondButton.pos)
-        randomCondsButton = visual.Rect(self.win, width=.4, height=.67*(.15/self.aspect),fillColor="purple",pos=[-.13,-.85])
-        randomCondsText = visual.TextStim(self.win, text="Randomize over subjects", bold=True, height=randomCondsButton.height*.3, pos=randomCondsButton.pos)
-        instrText = visual.TextStim(self.win, text="Page: 1/"+str(numPages), height=.1, pos=[.4,-.9])
-        downArrowVerts = [(0.05,0.3),(-.05,0.3),(-0.05,0.15),(-0.1,0.15),(0,0),(0.1,0.15),(0.05,0.15)]
-        nextPageArrow = visual.ShapeStim(self.win, vertices=downArrowVerts, size=.5, lineColor='white', fillColor='white', pos=[.6,-.95])
-        upArrowVerts = [(0.05,-0.3),(-.05,-0.3),(-0.05,-0.15),(-0.1,-0.15),(0,0),(0.1,-0.15),(0.05,-0.15)]
-        lastPageArrow = visual.ShapeStim(self.win, vertices=upArrowVerts, size=.5, lineColor='white', fillColor='white', pos=[.2,-.8])
+        blockModeButton = visual.Rect(self.win, width=.25, height=.65*(.15/self.aspect),fillColor="darkorange",pos=[.3,-.85])
+        if trialMode:
+            txt = 'Block mode'
+        else:
+            txt = 'Trial mode'
+        blockModeText = visual.TextStim(self.win, text=txt, bold=True, height=blockModeButton.height*.3, pos=blockModeButton.pos)
+        randomCondsButton = visual.Rect(self.win, width=.25, height=.67*(.15/self.aspect),fillColor="purple",pos=[.04,-.85])
+        if len(self.settings['condList']) > 0:
+            txt2 = "Randomize\nover subjects"
+        else:
+            txt2 = "Auto-generate\nconditions"
+        randomCondsText = visual.TextStim(self.win, text=txt2, bold=True, height=randomCondsButton.height*.3, pos=randomCondsButton.pos)
 
-        intervalHoriz = 1.5/(len(self.trialTypesArray['labels']))
+        if trialMode:
+            typeList = [x for x in self.settings['trialTypes'] if x not in self.settings['blockList'].keys()]
+        else:
+            typeList = list(self.settings['blockList'].keys())
+
+        instrText = visual.TextStim(self.win, text="Page: " + str(currPage) + "/"+str(numPages), height=.07, pos=[-.3,-.87])
+        downArrowVerts = [(0.05,0.3),(-.05,0.3),(-0.05,0.15),(-0.1,0.15),(0,0),(0.1,0.15),(0.05,0.15)]
+        nextPageArrow = visual.ShapeStim(self.win, vertices=downArrowVerts, size=.3, lineColor='white', fillColor='white', pos=[-.15,-.92])
+        upArrowVerts = [(0.05,-0.3),(-.05,-0.3),(-0.05,-0.15),(-0.1,-0.15),(0,0),(0.1,-0.15),(0.05,-0.15)]
+        lastPageArrow = visual.ShapeStim(self.win, vertices=upArrowVerts, size=.3, lineColor='white', fillColor='white', pos=[-.45,-.82])
+
+        intervalHoriz = 1.5/len(typeList)
         intervalVert = 1.5/4  # Locked at this interval because pages of 4 conditions each.
         startH = -.5
         startV = .8
@@ -2155,36 +2187,38 @@ class PyHabBuilder:
         tempLineV = visual.Rect(self.win, width=.01, height=2, fillColor="white", pos=[-.65,.3])
         divLinesV.append(tempLineV)
         clickRanges=[] # For making it easier ot detect if a line was clicked in. Y only (horizontal doesn't matter)
-        for i in range(0,len(self.trialTypesArray['labels'])):
+
+
+        for i in range(0,len(typeList)):
             # populate column headers and lines.
             hpos = (i)*intervalHoriz + startH+intervalHoriz/3
-            tempText = visual.TextStim(self.win, alignHoriz='center', text=self.trialTypesArray['labels'][i],height=(1-startV)*.3, pos=[hpos, .94])
+            tempText = visual.TextStim(self.win, alignHoriz='center', text=typeList[i],height=(1-startV)*.3, pos=[hpos, .94])
             tTypeHeaders.append(tempText)
             tempLineV = visual.Line(self.win, start=[hpos+intervalHoriz/2,.99], end=[hpos+intervalHoriz/2,-.675])
             divLinesV.append(tempLineV)
-        if len(self.settings['condList']) >= 4:
+        if len(condList) >= 4:
             q = 4
         else:
-            q = len(self.settings['condList'])
+            q = len(condList)
         for i in range(0, q):
             vpos = startV - (i + 1) * intervalVert + intervalVert / 1.5
             tempLineH = visual.Line(self.win, start=[-.99, vpos - intervalVert / 2], end=[.99, vpos - intervalVert / 2])
             divLinesH.append(tempLineH)
 
-        for j in range(0, len(self.settings['condList'])): #condition labels. Here's where rubber meets road!
+        for j in range(0, len(condList)):  # condition labels. Here's where rubber meets road!
             block = (j+1)%4
             if block == 0:
                 block = 4
             vpos = startV - block * intervalVert + intervalVert/1.5
-            tempText = visual.TextStim(self.win, text=self.settings['condList'][j], alignHoriz='center',height=intervalVert*.35, pos=[condHeader.pos[0],vpos])
+            tempText = visual.TextStim(self.win, text=condList[j], alignHoriz='center',height=intervalVert*.35, pos=[condHeader.pos[0],vpos])
             drawConds.append(tempText)
             # And now, finally, we have to populate each of those conditions.
-            for q in range(0,len(self.trialTypesArray['labels'])):
-                if self.trialTypesArray['labels'][q] in condContent[j].keys():
-                    txt = condContent[j][self.trialTypesArray['labels'][q]]
+            for q in range(0,len(typeList)):
+                if typeList[q] in condContent[j].keys():
+                    txt = condContent[j][typeList[q]]
                 else:
                     txt = []
-                tempText = visual.TextStim(self.win, text=txt, height=sqrt(intervalVert)*.4*(1/(len(txt)+1))*(sqrt(2)/(sqrt(len(self.trialTypesArray['labels'])+1))), wrapWidth=intervalHoriz*.9,pos=[tTypeHeaders[q].pos[0],vpos], alignHoriz='center')
+                tempText = visual.TextStim(self.win, text=txt, height=sqrt(intervalVert)*.4*(1/(len(txt)+1))*(sqrt(2)/(sqrt(len(typeList)+1))), wrapWidth=intervalHoriz*.9,pos=[tTypeHeaders[q].pos[0],vpos], alignHoriz='center')
                 drawConds.append(tempText)
             tempRange = [vpos+intervalVert/2,vpos-intervalVert/2]
             clickRanges.append(tempRange)
@@ -2193,13 +2227,18 @@ class PyHabBuilder:
         while 1 in self.mouse.getPressed():
             pass
         while not done:
+            instrText.text = "Page: " + str(currPage) + "/" + str(numPages)
             condHeader.draw()
             doneButton.draw()
             doneText.draw()
+            cancelButton.draw()
+            cancelText.draw()
             addCondButton.draw()
             addCondText.draw()
             deleteCondButton.draw()
             deleteCondText.draw()
+            blockModeButton.draw()
+            blockModeText.draw()
             randomCondsButton.draw()
             randomCondsText.draw()
             instrText.draw()
@@ -2216,23 +2255,27 @@ class PyHabBuilder:
                 divLinesH[j].draw()
             for k in range(0, len(tTypeHeaders)):
                 tTypeHeaders[k].draw()
-            if len(drawConds) <= 4*(len(self.trialTypesArray['labels'])+1):  # Each row has one column for each trial type plus one for the label, so rows of n trial types + 1
+            if len(drawConds) <= 4*(len(typeList)+1):  # Each row has one column for each trial type plus one for the label, so rows of n trial types + 1
                 for l in range(0, len(drawConds)):
                     drawConds[l].draw()
             else:
-                for l in range((currPage-1)*4*(len(self.trialTypesArray['labels'])+1), currPage*4*(len(self.trialTypesArray['labels'])+1)):
+                for l in range((currPage-1)*4*(len(typeList)+1), currPage*4*(len(typeList)+1)):
                     if l < len(drawConds):  # Easy safety cutoff for when we can't fill a page, so we don't go out of bounds
                         drawConds[l].draw()
             self.win.flip()
             if 1 in self.mouse.getPressed():
                 for i in range((currPage-1)*4, currPage*4):
-                    p=self.mouse.getPos()
+                    p = self.mouse.getPos()
                     if i < len(clickRanges) and p[1] <= clickRanges[i][0] and p[1] >= clickRanges[i][1]:
                         if os.name is not 'posix':
-                            while 1 in self.mouse.getPressed(): # Work on mouseup, impt. for windows.
+                            while 1 in self.mouse.getPressed():  # Work on mouseup, impt. for windows.
                                 pass
-                            self.win.winHandle.set_visible(visible = False)
-                        self.condSetter(cond=self.settings['condList'][i],ex=True)
+                            self.win.winHandle.set_visible(visible=False)
+                        if trialMode:
+                            thisDict = self.settings['stimNames']
+                        else:
+                            thisDict = self.settings['blockList']
+                        self.condSetter(thisDict, cond=condList[i],ex=True)
                         if os.name is not 'posix':
                             self.win.winHandle.set_visible(visible=True)
                         while 1 in self.mouse.getPressed():
@@ -2240,21 +2283,30 @@ class PyHabBuilder:
                             pass
                         done = True
                         # Refresh the condition display
-                        self.condMaker(rep=True,currPage=currPage)
+                        self.condMaker(rep=True, currPage=currPage, trialMode=trialMode, resetDict=resetDict)
                 if self.mouse.isPressedIn(addCondButton):
                     if os.name is not 'posix':
                         while 1 in self.mouse.getPressed():
                             pass
-                        self.win.winHandle.set_visible(visible = False)
-                    self.condSetter(ex=False)
+                        self.win.winHandle.set_visible(visible=False)
+                    if trialMode:
+                        thisDict = self.settings['stimNames']
+                    else:
+                        thisDict = self.settings['blockList']
+                    self.condSetter(thisDict, ex=False)
                     if os.name is not 'posix':
-                        self.win.winHandle.set_visible(visible = True)
+                        self.win.winHandle.set_visible(visible=True)
                     while 1 in self.mouse.getPressed():
                         pass
                     done = True
                     # Start this over...
-                    self.condMaker(rep=True,currPage=currPage)
-                if self.mouse.isPressedIn(deleteCondButton) and len(self.settings['condList'])>0:
+                    self.condMaker(rep=True, currPage=currPage, bc=bc, trialMode=trialMode, resetDict=resetDict)
+                if self.mouse.isPressedIn(blockModeButton):
+                    while 1 in self.mouse.getPressed():
+                        pass
+                    done = True
+                    self.condMaker(rep=True, currPage=currPage, bc=bc, trialMode=not trialMode, resetDict=resetDict)
+                if self.mouse.isPressedIn(deleteCondButton) and len(condList)>0:
                     if os.name is not 'posix':
                         while 1 in self.mouse.getPressed():
                             pass
@@ -2266,8 +2318,8 @@ class PyHabBuilder:
                         pass
                     done = True
                     # Start this over...
-                    self.condMaker(rep=True, currPage=currPage)
-                if self.mouse.isPressedIn(randomCondsButton) and len(self.settings['condList'])>0:
+                    self.condMaker(rep=True, currPage=currPage, bc=bc, trialMode=trialMode, resetDict=resetDict)
+                if self.mouse.isPressedIn(randomCondsButton) and len(condList)>0:
                     if os.name is not 'posix':
                         while 1 in self.mouse.getPressed():
                             pass
@@ -2278,6 +2330,18 @@ class PyHabBuilder:
                     while len(self.mouse.getPressed()) < 0:
                         pass
                     done = True
+                elif self.mouse.isPressedIn(randomCondsButton) and len(condList) == 0:
+                    if os.name is not 'posix':
+                        while 1 in self.mouse.getPressed():
+                            pass
+                        self.win.winHandle.set_visible(visible=False)
+                    self.autoCondSetup()
+                    if os.name is not 'posix':
+                        self.win.winHandle.set_visible(visible=True)
+                    while len(self.mouse.getPressed()) < 0:
+                        pass
+                    done = True
+                    self.condMaker(rep=True, currPage=currPage, bc=bc, trialMode=trialMode, resetDict=resetDict)
                 if self.mouse.isPressedIn(nextPageArrow):
                     currPage = currPage + 1
                     if currPage > numPages:
@@ -2294,15 +2358,23 @@ class PyHabBuilder:
                     done = True
                     while 1 in self.mouse.getPressed():
                         pass  # Just to make it not auto-click something on return to the main window
+                if self.mouse.isPressedIn(cancelButton):
+                    self.condDict = resetDict
+                    self.settings['condList']=list(self.condDict.keys()) # Note: Will get scrambled, in all likelihood.
+                    done = True
+                    while 1 in self.mouse.getPressed():
+                        pass  # Just to make it not auto-click something on return to the main window
                 
     
-    def condSetter(self, cond='NEW', ex=False):
+    def condSetter(self, shuffleList, cond='NEW', ex=False):
         """
         One dialog per trial type. Each dialog has a list of all the movies in that type
         This is not intuitive under the hood. The output of this is a dict with a list of movies, in order, for each
         trial type. This makes it slightly more human-intelligible than the previous system, which had a list of indexes
 
 
+        :param shuffleList: Either the stimNames dict or the blockList dict. Defines which one we are modifying.
+        :type shuffleList: dict
         :param cond: Condition name
         :type cond: str
         :param ex: Whether the condition already exists
@@ -2323,29 +2395,32 @@ class PyHabBuilder:
             cond = condDinfo[0]
             outputDict = {}
             i = 0
-            while i < len(self.trialTypesArray['labels']):
-                tempType = self.trialTypesArray['labels'][i]
-                condTyDlg = gui.Dlg(title="Trial type " + tempType)
-                condTyDlg.addText("Enter order in which you want movies to appear. If you do not want a movie to appear in this condition, leave blank or put 0.")
+            labelList = list(shuffleList.keys())
+            while i < len(labelList):
+                tempType = labelList[i]
+                condTyDlg = gui.Dlg(title="Order for " + tempType)
+                condTyDlg.addText("Enter order in which you want items to appear. If you do not want an item to appear in this condition, leave blank or put 0.")
                 if ex:  # If there is an existing condition that we are modifying.
                     try:
                         movieOrder = self.condDict[cond][tempType]
                         for z in range(0, len(movieOrder)):
-                            if type(movieOrder[z]) is int: # Convert old condition files
+                            if type(movieOrder[z]) is int:  # Convert old condition files
                                 tempNum = movieOrder[z]
-                                movieOrder[z] = self.settings['stimNames'][tempType][tempNum-1]
+                                movieOrder[z] = shuffleList[tempType][tempNum-1]
                     except:
                         movieOrder = []
-                        for k in range(0, len(self.settings['stimNames'][tempType])):
-                            movieOrder.append(self.settings['stimNames'][tempType][k])  # default order.
+                        for k in range(0, len(shuffleList[tempType])):
+                            movieOrder.append(shuffleList[tempType][k])  # default order.
                 else:
                     movieOrder = []
-                    for k in range(0, len(self.settings['stimNames'][tempType])):
-                        movieOrder.append(self.settings['stimNames'][tempType][k])  # default order.
-                for x in range(0, len(self.settings['stimNames'][tempType])):  # Yeah we gotta loop it again.
-                    thisMov = self.settings['stimNames'][tempType][x]
-                    if thisMov in movieOrder:  # If that movie appears in the movie order.
+                    for k in range(0, len(shuffleList[tempType])):
+                        movieOrder.append(shuffleList[tempType][k])  # default order.
+                movieOrder = deepcopy(movieOrder)
+                for x in range(0, len(shuffleList[tempType])):  # Yeah we gotta loop it again.
+                    thisMov = shuffleList[tempType][x]
+                    if movieOrder.count(thisMov) >= 1:  # If that movie appears in the movie order already.
                         condTyDlg.addField(thisMov, movieOrder.index(thisMov)+1)
+                        movieOrder[movieOrder.index(thisMov)] = ''
                     else:
                         condTyDlg.addField(thisMov)
                 condTyInfo = condTyDlg.show()
@@ -2386,7 +2461,7 @@ class PyHabBuilder:
                         for q in range(1, maxNum+1):
                             try:
                                 tMov = condTyInfo.index(q) # Finds the movie index to add the movie to the order
-                                tempOrder.append(self.settings['stimNames'][tempType][tMov])
+                                tempOrder.append(shuffleList[tempType][tMov])
                             except ValueError:
                                 errDlg = gui.Dlg(title="Warning, invalid order!")
                                 errDlg.addText("Non-consecutive numbering (e.g. 1,2,5). Please re-enter with consecutive numbering!")
@@ -2394,9 +2469,19 @@ class PyHabBuilder:
                                 irrel = errDlg.show()
                                 stop = True
                                 break
-                        if not stop: # Stops it from accidentally saving bad orders due to non-consecutive numbering.
-                            outputDict[tempType] = tempOrder
-           #Finally, rewrite everything that needs rewriting.
+                    if not stop: # Stops it from accidentally saving bad orders due to non-consecutive numbering.
+                        outputDict[tempType] = tempOrder
+            # Finally, rewrite everything that needs rewriting.
+            # This includes making sure that blocks or trial types, whichever were left blank, are not left blank.
+            listAll = list(self.settings['stimNames'].keys()) + list(self.settings['blockList'].keys())
+            for q in listAll:
+                if q not in outputDict.keys() and not ex:
+                    if q in self.settings['blockList'].keys():
+                        outputDict[q] = self.settings['blockList'][q]
+                    elif q in self.settings['stimNames'].keys():
+                        outputDict[q] = self.settings['stimNames'][q]
+                elif q not in outputDict.keys():  # Implied: ex == True
+                    outputDict[q] = self.condDict[cond][q]
             self.condDict[cond] = outputDict
             if not ex:
                 self.settings['condList'].append(str(cond))
@@ -2411,6 +2496,142 @@ class PyHabBuilder:
         if dCondDlg.OK:
             self.settings['condList'].remove(str(delCond[0]))
             del self.condDict[delCond[0]]          
+
+    def autoCondSetup(self):
+        """
+        Function for getting the parameters for automatically generating conditions.
+        A series of dialogs. The first one, whatGenDlg, determines whether we are doing stim within trials, trials
+        within blocks, or both. It also determines whether we are keeping all items, which shortcuts the second dialog.
+        whatGenDlg:
+        0 (if blocks): Randomize order of stimuli in trials y/n
+        1 (if blocks): Randomize order of trials in blocks y/n
+        -1: Keep all items in all conditions y/n
+
+        If not keeping all items in all conditions, another dialog is needed to determine size of subset for each
+        trial/block. This produces a dictionary that tracks how many
+        :return:
+        :rtype:
+        """
+        abort = False
+        # First, determine if we are doing autogeneration of random orders for trial types, blocks, or both.
+        whatGenDlg = gui.Dlg("Automatic condition generation")
+        if len(list(self.settings['blockList'].keys())) > 0:
+            whatGenDlg.addText("Select whether to generate counterbalanced orders of stimuli within trial types, of trials within blocks, or both")
+            whatGenDlg.addField("Order of stimuli in trials", initial=True)
+            whatGenDlg.addField("Order of trials in blocks", initial=True)
+        whatGenDlg.addText("Select whether to keep all items in all conditions, or control which items are shown at all by condition")
+        whatGenDlg.addField("Keep all items in blocks/trials in all conditions?", initial=True)
+        whatGenInfo = whatGenDlg.show()
+        if whatGenDlg.OK:
+            if len(list(self.settings['blockList'].keys())) > 0:
+                trialGen = whatGenInfo[0]
+                blockGen = whatGenInfo[1]
+            else:
+                trialGen = True
+                blockGen = False
+            if not trialGen and not blockGen:
+                abort = True
+                errDlg=gui.Dlg("Nothing to randomize!")
+                errDlg.addText("Check at least one, trials or blocks, to randomize.")
+                errDlg.show()
+            keepAll = whatGenInfo[-1]
+            counterDict = {}
+            # This dict is how we track how many things should be in each condition.
+            # Defaults to 'all items assigned to that block/trial'
+            if trialGen:
+                for i, j in self.settings['stimNames'].items():
+                    counterDict[i] = len(j)
+            if blockGen:  # This is only true if there are blocks to start with, so no risk of errors
+                for k, l in self.settings['blockList'].items():
+                    counterDict[k] = len(l)
+            # Next step: Give the option to 'lock' some blocks and/or trials so they are constant across conditions
+            if not abort:
+                lockDlg = gui.Dlg("Select trials/blocks to generate conditions over")
+                lockDlg.addText("Any UNCHECKED trial/block will be 'locked' and its order and content will be constant across conditions.")
+                lockDlg.addText("Make sure there is a check next to every block/trial you want to vary by condition, then hit OK to generate conditions")
+                tempList = list(counterDict.keys())
+                for k in tempList:
+                    lockDlg.addField(k, initial=True)
+                lockInfo = lockDlg.show()
+                if lockDlg.OK:
+                    if lockInfo.count(True) == 0:
+                        abort = True
+                        errDlg = gui.Dlg("Error: No trials/blocks selected!")
+                        errDlg.addText("Nothing to randomize! Check all trials/blocks to randomize.")
+                        errDlg.show()
+                    else:
+                        for i in range(0, len(tempList)):
+                            if not lockInfo[i]:
+                                counterDict.pop(tempList[i])  # Remove any 'locked' trials or blocks.
+                else:
+                    abort = True
+            if not keepAll and not abort:
+                # Using the trial type palette order we can order this dictionary despite them typically being unordered
+                # But first, we need to make sure that we only get the ones that we want.
+                tempTypes = [x for x in self.settings['trialTypes'] if x in counterDict.keys()]
+                howManyKeep = gui.DlgFromDict(counterDict, title="How many items for each trial/block type per condition?",
+                                              order=tempTypes, copyDict=False)
+                ctrInfo = howManyKeep.show()
+                if not howManyKeep.OK:
+                    abort = True
+            # Finally, we should have all the information we need to start actually creating conditions.
+            if not abort:
+                self.autoCond(trialGen,blockGen,counterDict)
+
+    def autoCond(self, genTrials, genBlocks, counters):
+        """
+        The function that actually creates conditions automatically, given what it is generating conditions for, and how
+        many items from each trial/block it should have in each condition.
+        Simply sets condDict and condList.
+
+        :param genTrials: Are we generating conditions for movies within trial types?
+        :type genTrials: bool
+        :param genBlocks: Are we generating conditions for trials within blocks?
+        :type genBlocks: bool
+        :param counters: A dictionary of each block or trial type that needs to be randomized and the number of items
+            that thing should have in each condition
+        :type counters: dict
+        :return:
+        :rtype:
+        """
+
+        outputDict = {}
+        template = {} # A base template for a condition
+        permutates = [] # A list of every possible order of every permuted item.
+        mutKeys = []
+        for i in counters.keys():
+            if i in self.settings['stimNames'].keys():
+                template[i] = deepcopy(self.settings['stimNames'][i])
+            elif i in self.settings['blockList'].keys():
+                template[i] = deepcopy(self.settings['blockList'][i])
+        # Python has this beautiful thing called itertools, which can permute automatically.
+        for i, j in counters.items():
+            permutates.append(list(itertools.permutations(template[i],j)))
+            mutKeys.append(i)
+            # This creates a list of lists of 'tuples' (which are a lot like lists in most regards). Each item in the
+            # sub-list is a permutation with j items from the list of all possible items.
+        # Then we just go through permutates and combine THOSE. The 'product' function is a godsend here, but we need
+        # to do it to the entire permutation dictionary at once, which must be defined procedurally. Python is amazing.
+        outputList = list(itertools.product(*permutates))  # The * makes it take a dynamic list of arguments.
+        for i in range(0, len(outputList)):
+            outputList[i] = list(outputList[i])
+            tmpDict = {}
+            for j in range(0, len(outputList[i])):
+                outputList[i][j] = list(outputList[i][j])
+                tmpDict[mutKeys[j]] = outputList[i][j]
+            outputDict[str(i+1)] = tmpDict
+        # Once that's done we need to fill in any 'gaps' from things that weren't auto-generated.
+        excludes = [x for x in self.settings['trialTypes'] if x not in counters.keys()]
+        for i, j in outputDict.items():
+            for y in excludes:
+                if y in self.settings['blockList'].keys():
+                    j[y] = self.settings['blockList'][y]
+                elif y in self.settings['stimNames'].keys():
+                    j[y] = self.settings['stimNames'][y]
+
+        self.condDict = deepcopy(outputDict)
+        self.settings['condList'] = list(outputDict.keys())
+
 
     def condRandomizer(self):
         """
