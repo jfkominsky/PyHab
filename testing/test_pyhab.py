@@ -660,11 +660,14 @@ class TestRunSetup(object):
         self.trialInst.trialOrder = ['A', 'A', 'B', 'B', 'C', 'D']
         self.trialInst.blockList = {'C': ['X', 'E', 'B'], 'E': ['Z', 'Y', 'X']}
         self.trialInst.actualTrialOrder = []
-        self.trialInst.blockDataList=['E']
+        self.trialInst.blockDataList = ['E']
+        self.trialInst.blockDataTags['E'] = []
         self.trialInst.run(testMode=testOne)
         assert self.trialInst.blockDataTags=={'E':[[6,7,8]]}
         self.trialInst.blockDataList=['C']
         self.trialInst.actualTrialOrder=[]
+        self.trialInst.blockDataTags = {}
+        self.trialInst.blockDataTags['C'] = []
         self.trialInst.run(testMode=testOne)
         assert self.trialInst.blockDataTags=={'C':[[5,6,7,8,9]]}
 
