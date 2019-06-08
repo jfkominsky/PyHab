@@ -2507,8 +2507,10 @@ class PyHabBuilder:
         1 (if blocks): Randomize order of trials in blocks y/n
         -1: Keep all items in all conditions y/n
 
+        A second dialog then asks whether there are any trial/block types the user does not want to randomize.
+
         If not keeping all items in all conditions, another dialog is needed to determine size of subset for each
-        trial/block. This produces a dictionary that tracks how many
+        trial/block. This produces a dictionary that tracks how many items will be in each condition.
         :return:
         :rtype:
         """

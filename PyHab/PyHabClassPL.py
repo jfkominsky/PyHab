@@ -486,6 +486,7 @@ class PyHabPL(PyHab):
     def endExperiment(self):
         """
         End experiment, save all data, calculate reliability if needed, close up shop
+        TODO: Block-level data
         :return:
         :rtype:
         """
