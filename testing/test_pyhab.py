@@ -431,6 +431,212 @@ class TestDataFunc(object):
         assert self.dataInst.dataMatrix[0] == self.testMatrix[0]
         assert len(self.dataInst.badTrials) == 0
 
+    def test_blockSave(self):
+        self.dataInst.dataMatrix = copy.deepcopy(self.testMatrix)
+        self.dataInst.verbDatList = copy.deepcopy(self.testDatList)
+        self.dataInst.badTrials = []
+        self.dataInst.blockList = {'C':['A','B']}
+        self.dataInst.actualTrialOrder = ['A','B','C.A','C.B','C.A','C.B']
+        self.dataInst.blockDataList=['C']
+        self.dataInst.blockDataTags={'C':[[3,4],[5,6]]}
+        self.dataInst.dataMatrix.append(
+            {'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+             'condLabel': 'dataTest', 'trial': 3, 'GNG': 1, 'trialType': 'C.A', 'stimName': 'movie1.mov',
+             'habCrit': 0, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
+             'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
+             'numOffB': 2})
+        self.dataInst.dataMatrix.append(
+            {'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+             'condLabel': 'dataTest', 'trial': 4, 'GNG': 1, 'trialType': 'C.B', 'stimName': 'movie1.mov',
+             'habCrit': 0, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
+             'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
+             'numOffB': 2})
+        self.dataInst.dataMatrix.append(
+            {'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+             'condLabel': 'dataTest', 'trial': 5, 'GNG': 1, 'trialType': 'C.A', 'stimName': 'movie1.mov',
+             'habCrit': 0, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
+             'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
+             'numOffB': 2})
+        self.dataInst.dataMatrix.append(
+            {'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+             'condLabel': 'dataTest', 'trial': 6, 'GNG': 1, 'trialType': 'C.B', 'stimName': 'movie1.mov',
+             'habCrit': 0, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
+             'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
+             'numOffB': 2})
+
+        testMatrix = self.dataInst.saveBlockFile()
+        assert len(testMatrix) == 4
+        assert testMatrix[2]['trialType'] == 'C'
+        assert testMatrix[2]['sumOnA'] == 20.0
+        assert testMatrix[2]['numOnA'] == 4
+        assert testMatrix[3]['sumOnA'] == 20.0
+        assert testMatrix[3]['numOnA'] == 4
+        assert testMatrix[2]['stimName'] == 'movie1.mov+movie1.mov'
+        assert testMatrix[3]['trial'] == 4
+
+    def test_blockSave_incomplete_data(self):
+        # Now try it again, but the study finished early
+        self.dataInst.dataMatrix = copy.deepcopy(self.testMatrix)
+        self.dataInst.verbDatList = copy.deepcopy(self.testDatList)
+        self.dataInst.badTrials = []
+        self.dataInst.blockList = {'C': ['A', 'B']}
+        self.dataInst.actualTrialOrder = ['A', 'B', 'C.A', 'C.B', 'C.A', 'C.B']
+        self.dataInst.blockDataList = ['C']
+        self.dataInst.blockDataTags = {'C': [[3, 4], [5, 6]]}
+        self.dataInst.dataMatrix.append(
+            {'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+             'condLabel': 'dataTest', 'trial': 3, 'GNG': 1, 'trialType': 'C.A', 'stimName': 'movie1.mov',
+             'habCrit': 0, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
+             'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
+             'numOffB': 2})
+        self.dataInst.dataMatrix.append(
+            {'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+             'condLabel': 'dataTest', 'trial': 4, 'GNG': 1, 'trialType': 'C.B', 'stimName': 'movie1.mov',
+             'habCrit': 0, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
+             'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
+             'numOffB': 2})
+        self.dataInst.dataMatrix.append(
+            {'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+             'condLabel': 'dataTest', 'trial': 5, 'GNG': 1, 'trialType': 'C.A', 'stimName': 'movie1.mov',
+             'habCrit': 0, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
+             'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
+             'numOffB': 2})
+
+        testMatrix = self.dataInst.saveBlockFile()
+        assert len(testMatrix) == 4 # Should still have the first half of the last block.
+        assert testMatrix[2]['trialType'] == 'C'
+        assert testMatrix[2]['sumOnA'] == 20.0
+        assert testMatrix[2]['numOnA'] == 4
+        assert testMatrix[3]['sumOnA'] == 10.0
+        assert testMatrix[3]['numOnA'] == 2
+        assert testMatrix[2]['stimName'] == 'movie1.mov+movie1.mov'
+        assert testMatrix[3]['trial'] == 4
+
+    def test_blockSave_nested_blocks(self):
+        # Now redo for a block-in-block setup, save the lower block.
+        self.dataInst.dataMatrix = copy.deepcopy(self.testMatrix)
+        self.dataInst.verbDatList = copy.deepcopy(self.testDatList)
+        self.dataInst.badTrials = []
+        self.dataInst.blockList = {'C': ['A', 'B'], 'D':['B','C']}
+        self.dataInst.actualTrialOrder = ['A', 'B', 'C.A', 'C.B', 'C.A', 'C.B','D.B','D.C.A','D.C.B']
+        self.dataInst.blockDataList = ['C']
+        self.dataInst.blockDataTags = {'C': [[3, 4], [5, 6], [8,9]]}
+        self.dataInst.dataMatrix.append(
+            {'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+             'condLabel': 'dataTest', 'trial': 3, 'GNG': 1, 'trialType': 'C.A', 'stimName': 'movie1.mov',
+             'habCrit': 0, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
+             'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
+             'numOffB': 2})
+        self.dataInst.dataMatrix.append(
+            {'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+             'condLabel': 'dataTest', 'trial': 4, 'GNG': 1, 'trialType': 'C.B', 'stimName': 'movie1.mov',
+             'habCrit': 0, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
+             'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
+             'numOffB': 2})
+        self.dataInst.dataMatrix.append(
+            {'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+             'condLabel': 'dataTest', 'trial': 5, 'GNG': 1, 'trialType': 'C.A', 'stimName': 'movie1.mov',
+             'habCrit': 0, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
+             'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
+             'numOffB': 2})
+        self.dataInst.dataMatrix.append(
+            {'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+             'condLabel': 'dataTest', 'trial': 6, 'GNG': 1, 'trialType': 'C.B', 'stimName': 'movie1.mov',
+             'habCrit': 0, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
+             'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
+             'numOffB': 2})
+        self.dataInst.dataMatrix.append(
+            {'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+             'condLabel': 'dataTest', 'trial': 7, 'GNG': 1, 'trialType': 'D.B', 'stimName': 'movie1.mov',
+             'habCrit': 0, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
+             'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
+             'numOffB': 2})
+        self.dataInst.dataMatrix.append(
+            {'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+             'condLabel': 'dataTest', 'trial': 8, 'GNG': 1, 'trialType': 'D.C.A', 'stimName': 'movie1.mov',
+             'habCrit': 0, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
+             'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
+             'numOffB': 2})
+        self.dataInst.dataMatrix.append(
+            {'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+             'condLabel': 'dataTest', 'trial': 9, 'GNG': 1, 'trialType': 'D.C.B', 'stimName': 'movie1.mov',
+             'habCrit': 0, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
+             'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
+             'numOffB': 2})
+
+        testMatrix = self.dataInst.saveBlockFile()
+        assert len(testMatrix) == 6
+        assert testMatrix[2]['trialType'] == 'C'
+        assert testMatrix[5]['trialType'] == 'D.C'
+        assert testMatrix[2]['sumOnA'] == 20.0
+        assert testMatrix[2]['numOnA'] == 4
+        assert testMatrix[3]['sumOnA'] == 20.0
+        assert testMatrix[3]['numOnA'] == 4
+        assert testMatrix[5]['sumOnA'] == 20.0
+        assert testMatrix[5]['numOnA'] == 4
+        assert testMatrix[2]['stimName'] == 'movie1.mov+movie1.mov'
+        assert testMatrix[3]['trial'] == 4
+        assert testMatrix[5]['trial'] == 6
+
+    def test_habSave(self):
+        """
+        For testing saving hab files
+        :return:
+        :rtype:
+        """
+        habMatrix = copy.deepcopy(self.testMatrix)
+        habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                          'condLabel': 'dataTest', 'trial': 3, 'GNG': 1, 'trialType': 'hab.A', 'stimName': 'movie1.mov',
+                          'habCrit': 0,'habTrialNo':1, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
+                          'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
+                          'numOffB': 2})
+        habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                          'condLabel': 'dataTest', 'trial': 4, 'GNG': 1, 'trialType': 'hab.B', 'stimName': 'movie1.mov',
+                          'habCrit': 0, 'habTrialNo':1, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
+                          'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
+                          'numOffB': 2})
+        habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                          'condLabel': 'dataTest', 'trial': 5, 'GNG': 1, 'trialType': 'hab.A', 'stimName': 'movie1.mov',
+                          'habCrit': 0, 'habTrialNo': 2, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
+                          'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
+                          'numOffB': 2})
+        habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                          'condLabel': 'dataTest', 'trial': 6, 'GNG': 1, 'trialType': 'hab.B', 'stimName': 'movie1.mov',
+                          'habCrit': 0, 'habTrialNo': 2, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
+                          'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
+                          'numOffB': 2})
+        habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                          'condLabel': 'dataTest', 'trial': 7, 'GNG': 1, 'trialType': 'hab.A', 'stimName': 'movie1.mov',
+                          'habCrit': 0, 'habTrialNo': 3, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
+                          'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
+                          'numOffB': 2})
+        habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                          'condLabel': 'dataTest', 'trial': 8, 'GNG': 1, 'trialType': 'hab.B', 'stimName': 'movie1.mov',
+                          'habCrit': 0, 'habTrialNo': 3, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
+                          'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
+                          'numOffB': 2})
+
+        self.dataInst.dataMatrix = habMatrix  # We can actually use python's pointer thing to our advantage here: dataMatrix will update with habMatrix
+        self.dataInst.badTrials = []
+        self.dataInst.habTrialList = ['A','B']  # Resetting from the 'redo' tests above.
+        self.dataInst.calcHabOver = ['A']
+        self.dataInst.habSetWhen = 3
+
+        habSaveData = self.dataInst.saveHabFile()
+        assert len(habSaveData) == 5
+        assert habSaveData[3]['trialType'] == 'Hab'
+        assert habSaveData[3]['sumOnA'] == 10.0
+
+        self.dataInst.calcHabOver = ['A', 'B']
+        habSaveData = self.dataInst.saveHabFile()
+        assert len(habSaveData) == 5
+        assert habSaveData[3]['trialType'] == 'Hab'
+        assert habSaveData[3]['sumOnA'] == 20.0
+        assert habSaveData[3]['stimName'] == 'movie1.mov+movie1.mov'
+
+
+
+
     def test_checkstop(self):
         """
         This one's a little trickier than the others because it requires creating fake hab data and testing all of the
@@ -447,7 +653,7 @@ class TestDataFunc(object):
                           'numOffB': 2})
         self.dataInst.dataMatrix = habMatrix  # We can actually use python's pointer thing to our advantage here: dataMatrix will update with habMatrix
         self.dataInst.badTrials = []
-        self.dataInst.habTrialList = []  # Resetting from the 'redo' tests above.
+        self.dataInst.habTrialList = []  # Resetting from the tests above
         self.dataInst.calcHabOver = []
         self.dataInst.habDataCompiled = [0]*self.dataInst.maxHabTrials
         self.dataInst.stimPres = True  # Temporary, so it doesn't try to play the end-hab sound.
@@ -605,6 +811,7 @@ class TestDataFunc(object):
         # Hab sub-trial tracking does not need its own tests here because data from habituation trials are recorded in
         # their own data structure, which is compiled during doTrial.
 
+
 class TestRunSetup(object):
     """
     Tests initialization functions that build the trial order and read participant info, calculate age, etc.
@@ -663,6 +870,7 @@ class TestRunSetup(object):
         self.trialInst.blockDataList = ['E']
         self.trialInst.blockDataTags['E'] = []
         self.trialInst.run(testMode=testOne)
+        assert self.trialInst.actualTrialOrder == ['A', 'A', 'B', 'B', 'C.X', 'C.E.Z','C.E.Y','C.E.X','C.B', 'D']
         assert self.trialInst.blockDataTags=={'E':[[6,7,8]]}
         self.trialInst.blockDataList=['C']
         self.trialInst.actualTrialOrder=[]
@@ -670,8 +878,13 @@ class TestRunSetup(object):
         self.trialInst.blockDataTags['C'] = []
         self.trialInst.run(testMode=testOne)
         assert self.trialInst.blockDataTags=={'C':[[5,6,7,8,9]]}
-
-
+        self.trialInst.trialOrder = ['A', 'A', 'B', 'B', 'C', 'D','E']
+        self.trialInst.actualTrialOrder = []
+        self.trialInst.blockDataList = ['E']
+        self.trialInst.blockDataTags['E'] = []
+        self.trialInst.run(testMode=testOne)
+        assert self.trialInst.actualTrialOrder == ['A', 'A', 'B', 'B', 'C.X', 'C.E.Z','C.E.Y','C.E.X','C.B', 'D','E.Z','E.Y','E.X']
+        assert self.trialInst.blockDataTags=={'E':[[6,7,8],[11,12,13]]}
 
     def test_multiyear_age(self):
         testOne = [99, 'Test', 'NB', '7', '2', '16', 'testcond', '8', '2', '18']

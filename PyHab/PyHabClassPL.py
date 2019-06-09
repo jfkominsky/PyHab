@@ -486,7 +486,6 @@ class PyHabPL(PyHab):
     def endExperiment(self):
         """
         End experiment, save all data, calculate reliability if needed, close up shop
-        TODO: Block-level data
         :return:
         :rtype:
         """
@@ -498,6 +497,51 @@ class PyHabPL(PyHab):
             if self.endImageObject is not None:
                 self.endImageObject.draw()
             self.win.flip()
+
+        # Block-level summary data. Omits bad trials.
+        if len(self.blockDataList > 0):
+            tempMatrix = self.saveBlockFile()
+            # Now write the actual data file
+            nDupe = ''  # This infrastructure eliminates the risk of overwriting existing data
+            o = 1
+            blockfilename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(
+                self.sID) + nDupe + '_BlockSumm_' + str(
+                self.today.month) + str(self.today.day) + str(self.today.year) + '.csv'
+            while os.path.exists(blockfilename):
+                o += 1
+                nDupe = str(o)
+                blockfilename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(
+                    self.sID) + nDupe + '_BlockSumm_' + str(
+                    self.today.month) + str(self.today.day) + str(self.today.year) + '.csv'
+            with open(blockfilename, 'w') as b:
+                blockWriter = csv.DictWriter(b, fieldnames=self.dataColumns, extrasaction='ignore',
+                                             lineterminator='\n')
+                blockWriter.writeheader()
+                for z in range(0, len(tempMatrix)):
+                    blockWriter.writerow(tempMatrix[z])
+
+        # If there is habituation data, create hab summary file. Similar to the block one, but a little easier thanks to
+        # the tagging of habituation trial numbers.
+        if self.habSetWhen > 0 and len(self.habTrialList) > 0:  # If there's a 'Hab' trial type, the main summary file does the trick just fine.
+            habMatrix = self.saveHabFile()
+            # Now, actually write the file
+            nDupe = ''  # This infrastructure eliminates the risk of overwriting existing data
+            o = 1
+            habfilename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(
+                self.sID) + nDupe + '_HabSumm_' + str(
+                self.today.month) + str(self.today.day) + str(self.today.year) + '.csv'
+            while os.path.exists(habfilename):
+                o += 1
+                nDupe = str(o)
+                habfilename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(
+                    self.sID) + nDupe + '_HabSumm_' + str(
+                    self.today.month) + str(self.today.day) + str(self.today.year) + '.csv'
+            with open(habfilename, 'w') as h:
+                habWriter = csv.DictWriter(h, fieldnames=self.dataColumns, extrasaction='ignore',
+                                           lineterminator='\n')
+                habWriter.writeheader()
+                for z in range(0, len(habMatrix)):
+                    habWriter.writerow(habMatrix[z])
 
         #sort the data matrices and shuffle them together.
         if len(self.badTrials) > 0: #if there are any redos, they need to be shuffled in appropriately.
@@ -616,8 +660,8 @@ class PyHabPL(PyHab):
                     verboseMatrix.extend(trialVerbose2)
         headers2 = ['snum', 'sID', 'months', 'days', 'sex', 'cond', 'GNG', 'gazeOnOff', 'trial', 'trialType',
                                 'startTime', 'endTime', 'duration']
-        with open(self.dataFolder+self.prefix+str(self.sNum)+'_'+str(self.sID)+nDupe+'_'+str(self.today.month)+str(self.today.day)+str(self.today.year)+'_VERBOSE.csv','w') as f:
-            outputWriter2 = csv.DictWriter(f, fieldnames = headers2, extrasaction = 'ignore', lineterminator ='\n') #careful! this OVERWRITES the existing file. Fills from snum.
+        with open(self.verboseFolder+self.prefix+str(self.sNum)+'_'+str(self.sID)+nDupe+'_'+str(self.today.month)+str(self.today.day)+str(self.today.year)+'_VERBOSE.csv','w') as f:
+            outputWriter2 = csv.DictWriter(f, fieldnames=headers2, extrasaction = 'ignore', lineterminator ='\n') #careful! this OVERWRITES the existing file. Fills from snum.
             outputWriter2.writeheader()
             for z in range(0,len(verboseMatrix)):
                 outputWriter2.writerow(verboseMatrix[z])

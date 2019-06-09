@@ -61,6 +61,11 @@ class PyHab:
         if len(self.dataFolder) > 0 and self.dataFolder[-1] is not self.dirMarker:
             self.dataFolder = [self.dirMarker if x == otherOS else x for x in self.dataFolder]
             self.dataFolder = ''.join(self.dataFolder)
+        # Create verbose data sub-folder. New in 0.8.
+        self.verboseFolder = self.dataFolder + 'verbose' + self.dirMarker
+        if not os.path.isdir(self.verboseFolder):
+            os.makedirs(self.verboseFolder)
+
 
         # UNIVERSAL SETTINGS
         self.maxDur = eval(settingsDict['maxDur'])  # maximum number of seconds in a trial - can be a constant or a dictionary with different times for EACH trial type (must include every type). {'A':20,'B':60} etc.
@@ -1404,9 +1409,47 @@ class PyHab:
             self.win.flip()
 
         # Block-level summary data. Omits bad trials.
-        # TODO: Settings for which blocks get block-level files, considering recursion.
+        if len(self.blockDataList > 0):
+            tempMatrix = self.saveBlockFile()
+            # Now write the actual data file
+            nDupe = ''  # This infrastructure eliminates the risk of overwriting existing data
+            o = 1
+            blockfilename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(
+                self.sID) + nDupe + '_BlockSumm_' + str(
+                self.today.month) + str(self.today.day) + str(self.today.year) + '.csv'
+            while os.path.exists(blockfilename):
+                o += 1
+                nDupe = str(o)
+                blockfilename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(
+                    self.sID) + nDupe + '_BlockSumm_' + str(
+                    self.today.month) + str(self.today.day) + str(self.today.year) + '.csv'
+            with open(blockfilename, 'w') as b:
+                blockWriter = csv.DictWriter(b, fieldnames=self.dataColumns, extrasaction='ignore', lineterminator='\n')
+                blockWriter.writeheader()
+                for z in range(0, len(tempMatrix)):
+                    blockWriter.writerow(tempMatrix[z])
 
-
+        # If there is habituation data, create hab summary file. Similar to the block one, but a little easier thanks to
+        # the tagging of habituation trial numbers.
+        if self.habSetWhen > 0 and len(self.habTrialList) > 0:  # If there's a 'Hab' trial type, the main summary file does the trick just fine.
+            habMatrix = self.saveHabFile()
+            # Now, actually write the file
+            nDupe = ''  # This infrastructure eliminates the risk of overwriting existing data
+            o = 1
+            habfilename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(
+                self.sID) + nDupe + '_HabSumm_' + str(
+                self.today.month) + str(self.today.day) + str(self.today.year) + '.csv'
+            while os.path.exists(habfilename):
+                o += 1
+                nDupe = str(o)
+                habfilename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(
+                    self.sID) + nDupe + '_HabSumm_' + str(
+                    self.today.month) + str(self.today.day) + str(self.today.year) + '.csv'
+            with open(habfilename, 'w') as h:
+                habWriter = csv.DictWriter(h, fieldnames=self.dataColumns, extrasaction='ignore', lineterminator='\n')
+                habWriter.writeheader()
+                for z in range(0, len(habMatrix)):
+                    habWriter.writerow(habMatrix[z])
 
         # Shuffle together bad data and good data into the appropriate order.
         if len(self.badTrials) > 0:  # if there are any redos, they need to be shuffled in appropriately.
@@ -1419,7 +1462,7 @@ class PyHab:
                 self.dataMatrix.insert(x, self.badTrials[i])  # python makes this stupid easy
         nDupe = '' # This infrastructure eliminates the risk of overwriting existing data
         o = 1
-        filename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe +'_' + str(self.today.month) + str(
+        filename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(self.today.month) + str(
                 self.today.day) + str(self.today.year) + '.csv'
         while os.path.exists(filename):
             o += 1
@@ -1503,7 +1546,7 @@ class PyHab:
                     trialVerbose2 = sorted(trialVerbose, key=lambda trialVerbose: trialVerbose['startTime'])  # this is the magic bullet, in theory.
                     verboseMatrix.extend(trialVerbose2)
         headers2 = ['snum', 'months', 'days', 'sex', 'cond', 'GNG', 'gazeOnOff', 'trial', 'trialType', 'startTime', 'endTime', 'duration']
-        with open(self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '_VERBOSE.csv', 'w') as f:
+        with open(self.verboseFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '_VERBOSE.csv', 'w') as f:
             outputWriter2 = csv.DictWriter(f, fieldnames=headers2, extrasaction='ignore', lineterminator='\n')
             outputWriter2.writeheader()
             for z in range(0, len(verboseMatrix)):
@@ -1570,7 +1613,7 @@ class PyHab:
                                 offIndex2 += 1
                         trialVerbose2 = sorted(trialVerbose, key=lambda trialVerbose: trialVerbose['startTime'])
                         verboseMatrix2.extend(trialVerbose2)
-            with open(self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '_VERBOSEb.csv', 'w') as f:
+            with open(self.verboseFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '_VERBOSEb.csv', 'w') as f:
                 outputWriter3 = csv.DictWriter(f, fieldnames=headers2, extrasaction='ignore', lineterminator='\n')
                 outputWriter3.writeheader()
                 for k in range(0, len(verboseMatrix2)):
@@ -1598,6 +1641,96 @@ class PyHab:
         self.win2.close()
         if self.stimPres:
             self.win.close()
+
+    def saveBlockFile(self):
+        """
+        A function that create a block-level summary file and saves it. Copies the primary data matrix (only good trials)
+        and loops over it, compressing all blocks. Does not work for habs, which follow their own rules.
+
+        :return: A condensed copy of dataMatrix with all blocks of the relevant types condensed to one line.
+        :rtype: list
+        """
+        tempMatrix = deepcopy(self.dataMatrix)
+        tempIndex = 0
+        blockDone = False
+        lastTrialNumber = tempMatrix[-1]['trial']
+        # Making this generalizeable for preferential looking studies.
+        if 'sumOnL' in self.dataMatrix[0].keys():
+            sumFields = ['sumOnL','numOnL','sumOnR', 'numOnR', 'sumOff', 'numOff']
+        else:
+            sumFields = ['sumOnA', 'numOnA', 'sumOffA', 'numOffA', 'sumOnB', 'numOnB', 'sumOffB', 'numOffB']
+        while not blockDone:
+            nt = tempMatrix[tempIndex]['trial']
+            for i, j in self.blockDataTags.items():
+                for k in range(0, len(j)):
+                    if nt in j[k]:
+                        tempType = tempMatrix[tempIndex]['trialType']
+                        if tempType[0:tempType.index('.')] == i:
+                            tempMatrix[tempIndex]['trialType'] = i  # Rename the type line for the block as a whole.
+                        else: # If it's nested, maintain the prefixes.
+                            nestType = deepcopy(tempType)
+                            prefix = ''
+                            while nestType[0:nestType.index('.')] != i:
+                                prefix = prefix+nestType[0:nestType.index('.')]+'.'
+                                nestType = nestType[nestType.index('.')+1:]
+                            tempMatrix[tempIndex]['trialType'] = prefix+i  # Rename the type line for the block as a whole.
+                        for l in range(1, len(j[k])):  # Taking advantage of continguity of blocks.
+                            if j[k][l] <= lastTrialNumber:  # For studies that end early.
+                                # Fields to modify: sum and num on/off a/b, append stimnames.
+                                tempLine = tempMatrix.pop(tempIndex + 1)  # Because we'll be sequentially popping them off, it'll always be the next one
+                                tempMatrix[tempIndex]['stimName'] = tempMatrix[tempIndex]['stimName'] + '+' + tempLine['stimName']
+                                for z in range(0, len(sumFields)):
+                                    tempMatrix[tempIndex][sumFields[z]] = tempMatrix[tempIndex][sumFields[z]] + tempLine[sumFields[z]]
+            tempIndex += 1
+            if tempIndex >= len(tempMatrix):
+                blockDone = True
+        for i in range(0, len(tempMatrix)):
+            tempMatrix[i]['trial'] = i+1
+        return tempMatrix
+
+    def saveHabFile(self):
+        """
+        Creates a habituation summary data file, which has one line per hab trial, and only looks at parts of the hab
+        trial that were included in calcHabOver. This is notably easier in some ways because the hab trials are already
+        tagged in dataMatrix
+
+        :return: A condensed copy of dataMatrix with all hab trials condensed only to those that were used to compute habituation.
+        :rtype: list
+        """
+        habMatrix = []
+        # Making this generalizeable for preferential looking studies.
+        if 'sumOnL' in self.dataMatrix[0].keys():
+            sumFields = ['sumOnL', 'numOnL', 'sumOnR', 'numOnR', 'sumOff', 'numOff']
+        else:
+            sumFields = ['sumOnA', 'numOnA', 'sumOffA', 'numOffA', 'sumOnB', 'numOnB', 'sumOffB', 'numOffB']
+        for i in range(0, len(self.dataMatrix)):
+            if isinstance(self.dataMatrix[i]['habTrialNo'], int):
+                tempType = deepcopy(self.dataMatrix[i]['trialType'])
+                while '.' in tempType:
+                    tempType = tempType[tempType.index('.') + 1:]
+                if tempType in self.calcHabOver:  # If not, this should specifically be ignored.
+                    tempNo = self.dataMatrix[i]['habTrialNo']
+                    addTo = False
+                    addIndex = -1
+                    tempLine = deepcopy(self.dataMatrix[i])
+                    tempLine['trialType'] == 'Hab'
+                    for j in range(0, len(habMatrix)):
+                        if habMatrix[j]['habTrialNo'] == tempNo:
+                            addTo = True
+                            addIndex = deepcopy(j)
+                    if addTo:
+                        habMatrix[addIndex]['stimName'] = habMatrix[addIndex]['stimName'] + '+' + tempLine['stimName']
+                        for z in range(0, len(sumFields)):
+                            habMatrix[addIndex][sumFields[z]] = habMatrix[addIndex][sumFields[z]] + tempLine[sumFields[z]]
+                    else:
+                        habMatrix.append(tempLine)
+                else:
+                    pass
+            else:  # For all non-habituation trials.
+                habMatrix.append(deepcopy(self.dataMatrix[i]))
+        for i in range(0, len(habMatrix)):
+            habMatrix[i]['trial'] = i+1
+        return habMatrix
 
     def wPA(self, timewarp, timewarp2):
         """

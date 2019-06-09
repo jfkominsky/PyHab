@@ -11,6 +11,7 @@ class PyHabBuilder:
     Graphical interface for constructing PyHab experiments. Runs mostly on a Pyglet window and qtGUI dialogs.
     Saves a settings file in .csv form which can then be read by PyHab Launcher, PyHabClass, and PyHabClassPL.
     TODO: Block condensed save files?
+    TODO: Test calcHabOver with blocks in hab.
 
     """
     def __init__(self, loadedSaved=False, settingsDict={}):
