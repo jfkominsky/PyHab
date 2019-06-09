@@ -620,7 +620,6 @@ class TestDataFunc(object):
         self.dataInst.badTrials = []
         self.dataInst.habTrialList = ['A','B']  # Resetting from the 'redo' tests above.
         self.dataInst.calcHabOver = ['A']
-        self.dataInst.habSetWhen = 3
 
         habSaveData = self.dataInst.saveHabFile()
         assert len(habSaveData) == 5
@@ -881,6 +880,7 @@ class TestRunSetup(object):
         self.trialInst.trialOrder = ['A', 'A', 'B', 'B', 'C', 'D','E']
         self.trialInst.actualTrialOrder = []
         self.trialInst.blockDataList = ['E']
+        self.trialInst.blockDataTags={}
         self.trialInst.blockDataTags['E'] = []
         self.trialInst.run(testMode=testOne)
         assert self.trialInst.actualTrialOrder == ['A', 'A', 'B', 'B', 'C.X', 'C.E.Z','C.E.Y','C.E.X','C.B', 'D','E.Z','E.Y','E.X']

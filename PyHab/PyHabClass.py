@@ -1713,7 +1713,7 @@ class PyHab:
                     addTo = False
                     addIndex = -1
                     tempLine = deepcopy(self.dataMatrix[i])
-                    tempLine['trialType'] == 'Hab'
+                    tempLine['trialType'] = 'Hab'
                     for j in range(0, len(habMatrix)):
                         if habMatrix[j]['habTrialNo'] == tempNo:
                             addTo = True
