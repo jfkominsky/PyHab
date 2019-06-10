@@ -499,7 +499,7 @@ class PyHabPL(PyHab):
             self.win.flip()
 
         # Block-level summary data. Omits bad trials.
-        if len(self.blockDataList > 0):
+        if len(self.blockDataList)>0:
             tempMatrix = self.saveBlockFile()
             # Now write the actual data file
             nDupe = ''  # This infrastructure eliminates the risk of overwriting existing data

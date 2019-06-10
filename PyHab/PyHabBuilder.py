@@ -10,7 +10,6 @@ class PyHabBuilder:
     """
     Graphical interface for constructing PyHab experiments. Runs mostly on a Pyglet window and qtGUI dialogs.
     Saves a settings file in .csv form which can then be read by PyHab Launcher, PyHabClass, and PyHabClassPL.
-    TODO: Block condensed save files?
 
     """
     def __init__(self, loadedSaved=False, settingsDict={}):
@@ -32,7 +31,6 @@ class PyHabBuilder:
         if not loadedSaved:  # A new blank experiment
             # Load some defaults to start with.
             self.settings = {'dataColumns': ['sNum', 'sID', 'months', 'days', 'sex', 'cond','condLabel', 'trial','GNG','trialType','stimName','habCrit','habTrialNo','sumOnA','numOnA','sumOffA','numOffA','sumOnB','numOnB','sumOffB','numOffB'],
-                                                        'dataFiles':['Block','Trial'],
                                                         'prefix': 'PyHabExperiment',
                                                         'dataloc':'data'+self.dirMarker,
                                                         'maxDur': {},
@@ -51,6 +49,7 @@ class PyHabBuilder:
                                                         'trialTypes': [],
                                                         'trialOrder': [],
                                                         'blockList': {},  # 0.8, create blocks of trials (hab remains special)
+                                                        'blockDataList':[],
                                                         'maxHabTrials': '14',
                                                         'setCritWindow': '3', 
                                                         'setCritDivisor': '2.0',
@@ -102,8 +101,8 @@ class PyHabBuilder:
                     self.settings['calcHabOver'] = "['Hab']"  # Default to old behavior.
                 else:
                     self.settings['calcHabOver'] = "[]"
-            if 'dataFiles' not in self.settings.keys():
-                self.settings['dataFile'] = "['Block','Trial']"
+            if 'blockDataList' not in self.settings.keys():
+                self.settings['blockDataList'] = "[]"
             # Settings requiring evaluation to get sensible values. Mostly dicts.
             evalList = ['dataColumns','dataFiles','maxDur','condList','baseCondList','movieEnd','playThrough','trialOrder',
                         'stimNames', 'stimList', 'ISI', 'maxOff','minOn','autoAdvance','playAttnGetter','attnGetterList',
@@ -200,7 +199,7 @@ class PyHabBuilder:
         self.mouse = event.Mouse()
         self.trialPalettePage = 1  # A page tracker for the trial type palette. Much like one that exists for conditions.
         self.totalPalettePages = 1  # The maximum number of pages.
-        for x in [.25, .75]:  # Two columns of trial types, up to 10 as of 0.8. TODO: Paginate?
+        for x in [.25, .75]:  # Two columns of trial types, on one page.
             for z in range(1, 5):  # Trying to leave space for buttons...
                 self.typeLocs.append([self.paletteArea[0] + x * (self.paletteArea[1] - self.paletteArea[0]),
                                       self.paletteArea[2] + .3 * -self.standardPaletteHeight + z * .12 * -self.standardPaletteHeight])
@@ -325,19 +324,20 @@ class PyHabBuilder:
             self.buttonList['shapes'].append(addMovButton)
             self.buttonList['text'].append(addMovText)
             self.buttonList['functions'].append(self.addStimToTypesDlg)
-        
+
+        if len(list(self.settings['blockList'].keys())) > 0:  # Add button for block data settings
+            blockDataButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect), pos=[.8, -.65],
+                                          fillColor="white")
+            blockDataText = visual.TextStim(self.win, text="Save block summary \nfile?", color="black",
+                                            height=blockDataButton.height*.3, alignHoriz='center',pos=blockDataButton.pos)
+            self.buttonList['shapes'].append(blockDataButton)
+            self.buttonList['text'].append(blockDataText)
+            self.buttonList['functions'].append(self.blockDataDlg)
+
         self.workingRect = visual.Rect(self.win, width=1, height=.5, pos=[0,0], fillColor = 'green') #Because there are certain things that take a while.
         self.workingText = visual.TextStim(self.win, text="Working...", height= .3, bold=True, alignHoriz='center', pos=[0,0])
 
         self.UI = {'bg':[self.flowRect, self.paletteRect], 'buttons': self.buttonList}
-
-    def doathing(self):
-        """
-        TODO: REMOVE. This is a debug function.
-        :return:
-        :rtype:
-        """
-        pass
 
     def run(self):
         """
@@ -912,7 +912,7 @@ class PyHabBuilder:
                     errDlg.addText("To create habituation blocks, please use the 'Add Habituation' button.")
                     irrel = errDlg.show()
                     self.makeBlockDlg(name, new)
-                elif new and newBlock[0] in self.trialTypesArray['labels']:
+                elif new and newBlock[0] in self.settings['trialTypes']:
                     errDlg = gui.Dlg(title="Name already in use!")
                     errDlg.addText("Name is already in use for another trial or block. Please rename!")
                     irrel = errDlg.show()
@@ -990,7 +990,7 @@ class PyHabBuilder:
         cancelText = visual.TextStim(self.win, text="Cancel", height=.45 * doneButton.height, pos=cancelButton.pos,
                                    color='white')
         instrText = visual.TextStim(self.win, text="Construct block trial order", pos=[.1, -.9], color='black', height=.1)
-        bigPaletteArea = [.75,.95,.97,-.97]  # temporary, bigger palette, without trial type maker buttons!
+        bigPaletteArea = [.7,.95,.97,-.97]  # temporary, bigger palette, without trial type maker buttons!
         bigPaletteRect = visual.Rect(self.win, width=bigPaletteArea[1] - bigPaletteArea[0],
                                        height=bigPaletteArea[3] - bigPaletteArea[2], fillColor='white', lineColor='black',
                                        pos=[bigPaletteArea[0] + float(abs(bigPaletteArea[1] - bigPaletteArea[0])) / 2,
@@ -1060,41 +1060,27 @@ class PyHabBuilder:
                                 self.settings['calcHabOver'] = [blockOrder[-1]]  # Default to last trial.
                                 if 'Hab' in self.settings['trialTypes']:
                                     self.deleteType('Hab')  # It's that simple. It'll shuffle 'hab' to the end of the pallette, but it won't change the color or anything.
-                                z = len(self.trialTypesArray['labels'])  # Grab length before adding, conveniently the index we need for position info etc.
-                                self.trialTypesArray['labels'].append('Hab')
-                                tempObj = visual.Rect(self.win, width=self.typeWidthObj, height=self.typeHeightObj,
-                                                      fillColor=self.colorsArray[z], pos=self.typeLocs[z])
-                                numChar = len(blockName)
-                                if numChar <= 3:
-                                    numChar = 4  # Maximum height
-                                tempTxt = visual.TextStim(self.win, alignHoriz='center', alignVert='center',
-                                                          bold=True,
-                                                          height=self.typeHeightObj / (.32 * numChar),
-                                                          text=blockName,
-                                                          pos=self.typeLocs[z])
-                                self.trialTypesArray['shapes'].append(tempObj)
-                                self.trialTypesArray['text'].append(tempTxt)
                                 self.settings['trialTypes'].append('Hab')
+                                self.trialTypesArray = self.loadTypes(self.typeLocs, self.trialPalettePage)
                             done = True
                             self.habSettingsDlg()  # For setting which things to hab over.
                         else:  # Create our new block!
                             self.settings['blockList'][blockName] = blockOrder
                             if new:
-                                z = len(self.trialTypesArray['labels'])  # Grab length before adding, conveniently the index we need for position info etc.
-                                self.trialTypesArray['labels'].append(blockName)
-                                tempObj = visual.Rect(self.win, width=self.typeWidthObj, height=self.typeHeightObj,
-                                                      fillColor=self.colorsArray[z], pos=self.typeLocs[z])
-                                numChar = len(blockName)
-                                if numChar <= 3:
-                                    numChar = 4  # Maximum height
-                                tempTxt = visual.TextStim(self.win, alignHoriz='center', alignVert='center', bold=True,
-                                                          height=self.typeHeightObj / (.32 * numChar), text=blockName,
-                                                          pos=self.typeLocs[z])
-                                self.trialTypesArray['shapes'].append(tempObj)
-                                self.trialTypesArray['text'].append(tempTxt)
                                 self.settings['trialTypes'].append(blockName)
-
+                                self.trialTypesArray = self.loadTypes(self.typeLocs, self.trialPalettePage)
                             done = True
+                            if self.blockDataDlg not in self.buttonList['functions']:
+                                blockDataButton = visual.Rect(self.win, width=.3, height=.5 * (.2 / self.aspect),
+                                                              pos=[.8, -.65],
+                                                              fillColor="white")
+                                blockDataText = visual.TextStim(self.win, text="Save block summary \nfile?",
+                                                                color="black",
+                                                                height=blockDataButton.height * .3, alignHoriz='center',
+                                                                pos=blockDataButton.pos)
+                                self.buttonList['shapes'].append(blockDataButton)
+                                self.buttonList['text'].append(blockDataText)
+                                self.buttonList['functions'].append(self.blockDataDlg)
                             while self.mouse.isPressedIn(blockUI['buttons']['shapes'][i], buttons=[0]):  # waits until the mouse is released before continuing.
                                 pass
                     elif blockUI['buttons']['text'][i].text == 'Cancel':
@@ -1113,6 +1099,118 @@ class PyHabBuilder:
                     blockFlow = self.loadFlow(tOrd=blockOrder, space=newFlowArea, locs=newFlowLocs, overflow=newFlowLocs)
                     break
 
+
+    def blockDataDlg(self):
+        """
+        A dialog for determining whether you save a block data file, and if so which blocks to compress.
+
+        Procedurally constructs a set of options such that, for any nested blocks, they are mutually exclusive, but any
+        blocks that are not part of other blocks and other blocks are not part of them are just check-boxes.
+
+        Excludes hab because habituation data files are saved by default.
+
+        :return:
+        :rtype:
+        """
+
+        tempBlockList = list(self.settings['blockList'].keys())
+        fieldList = []
+        doneLoop = False
+        iteration = 0
+
+        while not doneLoop:
+            # This complex, messy loop is identifying all nested blocks, and inserting them into the eventual
+            # dialog as lists from which you can pick one, while leaving the stand-alone blocks as check boxes.
+            blockName = tempBlockList[iteration]
+            delIndex = []
+            forbid = []
+            for q in range(0, len(self.settings['blockList'][blockName])):
+                if self.settings['blockList'][blockName][q] in self.settings['blockList'].keys():
+                    # Identifies any nested blocks
+                    forbid.append(self.settings['blockList'][blockName][q])
+            if len(forbid) > 0:
+                # This ultimately becomes the list that will appear in the dialog
+                forbid.insert(0, blockName)
+                forbid.insert(0, 'None')
+                delIndex2=[]
+                for i in range(0, len(tempBlockList)):
+                    if tempBlockList[i] in forbid:
+                        delIndex.insert(0, deepcopy(i))  # In reverse order, because it makes the next part way simpler
+                for j in range(0, len(delIndex)):
+                    del tempBlockList[delIndex[j]]
+                    if delIndex[j] <= iteration:
+                        # Rewind as far as you need to rewind.
+                        iteration -= 1
+                for k in range(0, len(fieldList)):
+                    if isinstance(fieldList[k],list):
+                        # Find any lists which already exists and incorporate them if needed.
+                        addAll = False
+                        for q in range(0, len(fieldList[k])):
+                            if fieldList[k][q] in forbid:
+                                delIndex2.insert(0, deepcopy(k))
+                                addAll = True
+                        if addAll:
+                            for q in range(0, len(fieldList[k])):
+                                forbid.append(fieldList[k][q])
+                            forbid = list(dict.fromkeys(forbid)) # Removes all duplicate entries. It's a cute move.
+                    elif fieldList[k] in forbid:
+                        # Otherwise just get rid of any previous instance of the block in the list of fields.
+                        delIndex2.insert(0, deepcopy(k))
+                for l in range(0, len(delIndex2)):
+                    del fieldList[delIndex2[l]]
+                fieldList.append(forbid)
+                if iteration < 0:
+                    iteration = 0
+            else:
+                fieldList.append(blockName)
+                iteration += 1
+            print(fieldList)
+            if iteration >= len(tempBlockList):
+                doneLoop = True
+
+        blockDataDlg = gui.Dlg("Pick blocks for block data summary file")
+        blockDataDlg.addText("For nested blocks, pick which one you want to condense in the summary file (one line per instance of this block).")
+        blockDataDlg.addText("Check all non-nested blocks you want to condense.")
+        for a in range(0, len(fieldList)):
+            if isinstance(fieldList[a], list):
+                blockDataDlg.addField("Pick one of these nested blocks to record data for", choices=fieldList[a])
+            else:
+                blockDataDlg.addField(fieldList[a], initial=False)
+
+        blockDataInfo = blockDataDlg.show()
+        if blockDataDlg.OK:
+            finalList = []
+            for i in range(0, len(fieldList)):
+                if isinstance(fieldList[i], list):
+                    if blockDataInfo[i] is not 'None':
+                        finalList.append(blockDataInfo[i])
+                else:
+                    if blockDataInfo[i]:
+                        finalList.append(fieldList[i])
+            self.settings['blockDataList'] = finalList
+
+
+
+
+
+
+
+        """
+        blockType = self.settings['habTrialList'][q]
+        prfx = blockType + '.'
+        while not doneBlock:
+            for i in self.settings['blockList'][blockType]:
+                if i in self.settings['blockList'].keys():
+                    listBlocks.append(i)
+                else:
+                    listThings.append(prfx + i)
+            if len(listBlocks) == 0:
+                doneBlock = True
+            else:
+                blockType = listBlocks.pop(0)  # Pull out the next block and repeat until empty.
+                prfx = prfx + blockType + '.'
+
+        """
 
 
     def delTrialTypeDlg(self):
@@ -1138,7 +1236,7 @@ class PyHabBuilder:
     def deleteType(self, dType):
         """
         Performs the actual deletion of a trial or block type.
-        TODO: Need to do something about conditions
+        TODO: More sophisticated handling of conditions.
 
         :param dType: String indicating the name of the trial or block to be deleted
         :type dType: str
@@ -1175,6 +1273,11 @@ class PyHabBuilder:
             while dType in self.settings['trialOrder']:
                 self.settings['trialOrder'].remove(dType)
         self.studyFlowArray = self.loadFlow(self.settings['trialOrder'], self.flowArea, self.flowLocs, self.overFlowLocs)  # To update colors if needed.
+        if self.settings['condFile'] is not '':
+            warnDlg = gui.Dlg(title="Update conditions")
+            warnDlg.addText(
+                "WARNING! UPDATE CONDITION SETTINGS AFTER REMOVING THIS TRIAL TYPE! \nIf you do not update conditions, the experiment may crash when you try to run it.")
+            warnDlg.show()
 
     def moveTrialInFlow(self, flowIndex, tOrd, flowSpace, UI, flow, types):
         """
@@ -1380,7 +1483,7 @@ class PyHabBuilder:
             self.trialPalettePage -= 1
         self.trialTypesArray = self.loadTypes(self.typeLocs, self.trialPalettePage)
 
-    def loadTypes(self, typeLocations, page=1): #A "pallette" of trial types on one side, only needed when loading from save.
+    def loadTypes(self, typeLocations, page=1):
         """
         This function creates the trial types palette.
 
@@ -1389,7 +1492,6 @@ class PyHabBuilder:
         'text': visual.TextStim objects
         'labels': A sort of index for the other two, a plain string labeling the trial or block type.
 
-        TODO: Make page-specific using self.trialPalettePage.
         :param typeLocations: The array of coordinates on which buttons can be placed. Usually self.typeLocs
         :type typeLocations: list
         :return:
@@ -1405,7 +1507,7 @@ class PyHabBuilder:
             tTypes = self.settings['trialTypes'] 
         outputDict=  {'shapes':[],'text':[],'labels':[]} #Dicts ain't ordered but lists within dicts sure are!
         #Create the same trial type squares we see in the flow, but wholly independent objects for drawing purposes (allowing one to change w/out the other)
-        for i in range(0+8*(page-1), min(8*page,len(tTypes))):
+        for i in range(0+len(typeLocations)*(page-1), min(len(typeLocations)*page,len(tTypes))):
             #Now, actually build the list of objects to render.
             tempObj = visual.Rect(self.win,width=self.typeWidthObj, height=self.typeHeightObj, fillColor=self.colorsArray[i], pos=typeLocations[i%len(typeLocations)])
             numChar = len(tTypes[i])
@@ -1415,7 +1517,7 @@ class PyHabBuilder:
             outputDict['shapes'].append(tempObj)
             outputDict['text'].append(tempTxt)
             outputDict['labels'].append(tTypes[i])
-        x = self.buttonList['functions'].index(self.nextPalettePage)  # TODO: Fix properly.
+        x = self.buttonList['functions'].index(self.nextPalettePage)  # TODO: This is inelegant. Find a better fix later.
         self.buttonList['text'][x].text = str(self.trialPalettePage) + '/' + str(self.totalPalettePages)
         return(outputDict)
     
@@ -2025,9 +2127,6 @@ class PyHabBuilder:
         condition randomization is used at all, a separate interface is used to
         define the conditions themselves.
 
-        TODO: Add option to reload base conditions instead of randomized
-        TODO: Block system? Auto-randomize?
-
         :return:
         :rtype:
         """
@@ -2113,7 +2212,6 @@ class PyHabBuilder:
         condContent = [] # The content of each condition (a list of dicts).
         drawConds = [] # The text things for drawing.
         numPages = 1
-        # TODO: Loading base conditions - totally separate
         if bc:
             condPath = self.settings['baseCondFile']
             condDict = self.baseCondDict
@@ -2150,7 +2248,6 @@ class PyHabBuilder:
                     condContent.append(condDict[condList[i]])
                 else:
                     condContent.append({})
-        # TODO: swap sides, done button on left, add cancel button.
         doneButton = visual.Rect(self.win, width=.2, height=.67*(.15/self.aspect),fillColor="green",pos=[-.87,-.85])
         doneText = visual.TextStim(self.win, text="Done", bold=True, pos=doneButton.pos)
         cancelButton = visual.Rect(self.win, width=.2, height=.67*(.15/self.aspect), fillColor="red", pos=[-.62, -.85])
@@ -2818,7 +2915,6 @@ class PyHabBuilder:
                 self.settings['metCritStatic'] = habDat[7]
                 if len(self.settings['habTrialList']) > 0:
                     tempArr = []
-                    # TODO: This either needs to be saving only the trials or we need more block processing on the other end.
                     for i in range(0, len(expandedHabList)):
                         if habDat[i+8]:
                            tempArr.append(expandedHabList[i])
@@ -2902,7 +2998,7 @@ class PyHabBuilder:
         if not os.path.exists(codePath):
             os.makedirs(codePath)
         srcDir = 'PyHab'+self.dirMarker
-        # Condition file! Save if there are any conditions created. TODO: The bug is in saving, with save-as, not reading...
+        # Condition file! Save if there are any conditions created.
         # Convoluted mess because the dict won't necessarily be in order and we want the file to be.
         if len(self.condDict) > 0:
             tempArray = []

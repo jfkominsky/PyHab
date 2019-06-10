@@ -34,7 +34,6 @@ class PyHab:
     Off (for gaze-off events)
     On2 and Off2 (for the optional secondary coder)
     Each coder's on and off are recorded in a separate dict with trial, gaze on/off, start, end, and duration.
-    TODO: Block condensed save files?
 
     """
 
@@ -52,10 +51,6 @@ class PyHab:
             self.dirMarker = '\\'
             otherOS = '/'
         self.dataColumns = eval(settingsDict['dataColumns'])
-        if 'dataFiles' in settingsDict.keys(): # TODO: MAke this work proper
-            self.dataFiles = eval(settingsDict['dataFiles'])
-        else:
-            self.dataFiles = ['Block','Trial']
         self.prefix = settingsDict['prefix']  # prefix for data files. All data filenames will start with this text.
         self.dataFolder = settingsDict['dataloc']  # datafolder, condpath,stimPath are the ones that need modification.
         if len(self.dataFolder) > 0 and self.dataFolder[-1] is not self.dirMarker:
@@ -864,7 +859,7 @@ class PyHab:
         habNum = hn
         if len(self.habTrialList) > 0:
             self.blockExpander(self.habTrialList, 'hab', hab=True, habNum=habNum+1, insert=trialNum-1)
-            # reset self.maxHabIndex based on last instance of '^'. TODO: No longer hab only?
+            # reset self.maxHabIndex based on last instance of '^'.
             for n in range(trialNum, len(self.actualTrialOrder)):
                 if '^' in self.actualTrialOrder[n]:
                     self.maxHabIndex = n
@@ -1043,7 +1038,6 @@ class PyHab:
                         while '.' in trialType:
                             trialType = trialType[trialType.index('.') + 1:]
                     elif self.keyboard[self.key.S] and trialType != 'Hab' and '^' not in trialType:  #  Skip trial. Doesn't work on things required for habituation.
-                        # TODO: No longer hab only? Actually this may be fine.
                         skip = True
                     else:
                         self.dispCoderWindow(0)
@@ -1189,7 +1183,6 @@ class PyHab:
             elif core.getTime() - startTrial >= .5 and self.keyboard[self.key.S] and ttype != 'Hab' and '^' not in ttype:
                 # New feature: End trial and go forward manually. Disabled for hab trials and meta-trials.
                 # Disabled for the first half-second to stop you from skipping through multiple auto-advancing trials
-                # TODO: No longer hab only?
                 if localType in self.movieEnd:
                     endFlag = True
                 else:
@@ -1414,7 +1407,7 @@ class PyHab:
             self.win.flip()
 
         # Block-level summary data. Omits bad trials.
-        if len(self.blockDataList > 0):
+        if len(self.blockDataList)>0:
             tempMatrix = self.saveBlockFile()
             # Now write the actual data file
             nDupe = ''  # This infrastructure eliminates the risk of overwriting existing data
@@ -2037,7 +2030,6 @@ class PyHab:
                                 self.actualTrialOrder.append('Hab')
                         self.maxHabIndex = len(self.actualTrialOrder) - 1  # Tracks the very last hab trial.
                     elif self.trialOrder[i] in self.blockList.keys():
-                        #TODO block data structure
                         if self.trialOrder[i] in self.blockDataList:
                             start = len(self.actualTrialOrder)
                         self.blockExpander(self.blockList[self.trialOrder[i]], self.trialOrder[i])
