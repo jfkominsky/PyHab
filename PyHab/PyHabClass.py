@@ -365,15 +365,14 @@ class PyHab:
         newTempData['GNG'] = 0
         if self.dataMatrix[trialIndex]['trialType'][0:4] == 'hab.':  # Redoing a habituation trial
             tempName = deepcopy(self.dataMatrix[trialIndex]['trialType'])
-            while '.' in tempName:
-                tempName = tempName[tempName.index('.')+1:]
+            tempName = tempName[4:] # Just removing 'hab.'
             # Subtract data from self.habDataCompiled before checking whether we reduce the hab count, do make indexing
             # the correct part of habDataCompiled easier. Notably, reduces but does not inherently zero out.
             if tempName in self.calcHabOver:  # Make sure it's part of the hab calc
                 self.habDataCompiled[self.habCount-1] = self.habDataCompiled[self.habCount-1] - self.dataMatrix[trialIndex]['sumOnA']
                 if self.habDataCompiled[self.habCount-1] < 0:  # For rounding errors
                     self.habDataCompiled[self.habCount-1] = 0
-            # If it's the end of the hab iteration, then reduce the hab count. TODO: No longer hab only?
+            # If it's the end of the hab iteration, then reduce the hab count.
             if '^' in self.actualTrialOrder[trialNum-1]:  # This is kind of a dangerous kludge that hopefully won't come up that often.
                 self.habCount -= 1
         elif newTempData['trialType'] == 'Hab':
@@ -1120,9 +1119,15 @@ class PyHab:
         localType = deepcopy(ttype)
         while '.' in localType:
             localType = localType[localType.index('.')+1:]
-        if ttype[0:3] == 'hab' and '.' in ttype:  # Hab sub-trials.
-            dataType = 'hab' + ttype[ttype.index('.'):]  # Collapses down the number and ^ markings for the data file
-            habTrial = True
+        if ttype[0:3] == 'hab' and '.' in ttype:  # Hab sub-trials. Hard to ID definitively, actually.
+            spliceType = ttype[ttype.index('.')+1:]
+            if '.' in spliceType:
+                spliceType = spliceType[0:spliceType.index('.')] # Isolate the part between '.'s, which will be what shows up in habtriallist.
+            if spliceType in self.habTrialList:
+                dataType = 'hab' + ttype[ttype.index('.'):]  # Collapses down the number and ^ markings for the data file
+                habTrial = True
+            else:
+                dataType = ttype
         elif len(self.habTrialList) == 0 and ttype == 'Hab':
             dataType = ttype
             habTrial = True
@@ -1352,12 +1357,12 @@ class PyHab:
         else:
             self.dataRec(onArray, offArray, number, dataType, onArray2, offArray2, self.stimName, habDataRec)
         if self.habMetWhen == -1 and len(self.habTrialList) > 0 and not abort:   # if still during habituation
-            if dataType[0:4] == 'hab.' and localType in self.calcHabOver:
+            if dataType[0:4] == 'hab.' and dataType[4:] in self.calcHabOver:
                 tempSum = 0
                 for c in range(0, len(onArray)):
                     tempSum += onArray[c]['duration']
                 self.habDataCompiled[self.habCount] += tempSum
-            if '^' in ttype: # TODO: No longer hab only?
+            if '^' in ttype:
                 self.habCount += 1  # Note: Occurs after data recording, making recording hab trial number hard.
                 # Check if criteria need to be set or have been met
                 if self.checkStop():  # If criteria met
@@ -1706,8 +1711,7 @@ class PyHab:
         for i in range(0, len(self.dataMatrix)):
             if isinstance(self.dataMatrix[i]['habTrialNo'], int):
                 tempType = deepcopy(self.dataMatrix[i]['trialType'])
-                while '.' in tempType:
-                    tempType = tempType[tempType.index('.') + 1:]
+                tempType = tempType[4:] # to remove 'hab.'
                 if tempType in self.calcHabOver:  # If not, this should specifically be ignored.
                     tempNo = self.dataMatrix[i]['habTrialNo']
                     addTo = False

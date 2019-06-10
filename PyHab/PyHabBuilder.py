@@ -11,7 +11,6 @@ class PyHabBuilder:
     Graphical interface for constructing PyHab experiments. Runs mostly on a Pyglet window and qtGUI dialogs.
     Saves a settings file in .csv form which can then be read by PyHab Launcher, PyHabClass, and PyHabClassPL.
     TODO: Block condensed save files?
-    TODO: Test calcHabOver with blocks in hab.
 
     """
     def __init__(self, loadedSaved=False, settingsDict={}):
@@ -398,6 +397,8 @@ class PyHabBuilder:
                     # Determine whether we're dealing with a trial or block, launch appropriate interface
                     if self.trialTypesArray['labels'][j] in self.settings['blockList'].keys():
                         self.makeBlockDlg(self.trialTypesArray['labels'][j], new=False)
+                    elif self.trialTypesArray['labels'][j] == 'Hab' and len(self.settings['habTrialList']) > 0:
+                        self.addHabBlock(makeNew=False)
                     else:
                         self.trialTypeDlg(trialType=self.trialTypesArray['labels'][j], makeNew=False)
                     if os.name is not 'posix':
@@ -1015,15 +1016,20 @@ class PyHabBuilder:
         trialTypes = self.loadTypes(bigPaletteLocs)
         delIndex = []
         forbid = ['Hab', blockName]  # If we're using this to make hab blocks, we need to allow (indeed mandate) Hab trials.
+        for q,z in self.settings['blockList'].items(): # Attempt to eliminate infinite loops
+            if blockName in z and blockName != q:
+                forbid.append(q)
         for i in range(0, len(trialTypes['labels'])):
             if trialTypes['labels'][i] in forbid:
                 delIndex.insert(0,deepcopy(i))  # In reverse order, because it makes the next part way simpler
         for j in range(0, len(delIndex)):
-            for q in range (delIndex[j], len(trialTypes['labels'])):
-                trialTypes['shapes'][q].pos = trialTypes['shapes'][q-1].pos  # Move everything back one. A little inelegant.
             del trialTypes['labels'][delIndex[j]]
             del trialTypes['shapes'][delIndex[j]]
             del trialTypes['text'][delIndex[j]]
+        # Go through and update positions
+        for k in range(0, len(trialTypes['labels'])):
+            trialTypes['shapes'][k].pos = bigPaletteLocs[k]
+            trialTypes['text'][k].pos = bigPaletteLocs[k]
         if not new and not hab:
             blockOrder = deepcopy(self.settings['blockList'][blockName])
             blockFlow = self.loadFlow(tOrd=blockOrder, space=newFlowArea, locs=newFlowLocs, overflow=newFlowLocs)
@@ -1055,7 +1061,7 @@ class PyHabBuilder:
                                 if 'Hab' in self.settings['trialTypes']:
                                     self.deleteType('Hab')  # It's that simple. It'll shuffle 'hab' to the end of the pallette, but it won't change the color or anything.
                                 z = len(self.trialTypesArray['labels'])  # Grab length before adding, conveniently the index we need for position info etc.
-                                self.trialTypesArray['labels'].append(blockName)
+                                self.trialTypesArray['labels'].append('Hab')
                                 tempObj = visual.Rect(self.win, width=self.typeWidthObj, height=self.typeHeightObj,
                                                       fillColor=self.colorsArray[z], pos=self.typeLocs[z])
                                 numChar = len(blockName)
@@ -1063,7 +1069,7 @@ class PyHabBuilder:
                                     numChar = 4  # Maximum height
                                 tempTxt = visual.TextStim(self.win, alignHoriz='center', alignVert='center',
                                                           bold=True,
-                                                          height=self.typeHeightObj / (.38 * numChar),
+                                                          height=self.typeHeightObj / (.32 * numChar),
                                                           text=blockName,
                                                           pos=self.typeLocs[z])
                                 self.trialTypesArray['shapes'].append(tempObj)
@@ -1082,7 +1088,7 @@ class PyHabBuilder:
                                 if numChar <= 3:
                                     numChar = 4  # Maximum height
                                 tempTxt = visual.TextStim(self.win, alignHoriz='center', alignVert='center', bold=True,
-                                                          height=self.typeHeightObj / (.38 * numChar), text=blockName,
+                                                          height=self.typeHeightObj / (.32 * numChar), text=blockName,
                                                           pos=self.typeLocs[z])
                                 self.trialTypesArray['shapes'].append(tempObj)
                                 self.trialTypesArray['text'].append(tempTxt)
@@ -1286,8 +1292,6 @@ class PyHabBuilder:
                     if tOrd[i] == 'Hab' and len(self.settings['habTrialList']) > 1:  # If there are hab sub-trials, add pips to the hab block object
                         for q in range(0, len(self.settings['habTrialList'])):
                             tempStr = self.settings['habTrialList'][q]
-                            if tempStr != 'Hab':
-                                tempStr = tempStr[4:]
                             newwidth = self.flowWidthObj/len(self.settings['habTrialList'])
                             tempPip = visual.Rect(self.win, width=newwidth, height=self.flowHeightObj/2.5,
                                                   fillColor=self.colorsArray[tTypes.index(tempStr)],
@@ -2745,14 +2749,41 @@ class PyHabBuilder:
         hDlg.addField("Evaluate criterion over moving window or fixed windows?", choices=evalChz)
         if len(self.settings['habTrialList']) > 0:
             hDlg.addText("Check which trial types criteria should be computed over (both setting and checking)")
+            expandedHabList = []
             for q in range(0, len(self.settings['habTrialList'])):
-                if self.settings['habTrialList'][q] == 'Hab' and len(self.settings['calcHabOver']) == 0:
-                    chk = True
-                elif self.settings['habTrialList'][q] in self.settings['calcHabOver']:
-                    chk = True
+                if self.settings['habTrialList'][q] in self.settings['blockList'].keys():
+                    doneBlock = False
+                    listThings = []
+                    listBlocks = [] # A list of all blocks that need to go into the thing.
+                    blockType = self.settings['habTrialList'][q]
+                    prfx = blockType + '.'
+                    while not doneBlock:
+                        for i in self.settings['blockList'][blockType]:
+                            if i in self.settings['blockList'].keys():
+                                listBlocks.append(i)
+                            else:
+                                listThings.append(prfx + i)
+                        if len(listBlocks) == 0:
+                            doneBlock = True
+                        else:
+                            blockType = listBlocks.pop(0) # Pull out the next block and repeat until empty.
+                            prfx = prfx + blockType+'.'
+                    for z in range(0,len(listThings)):
+                        if listThings[z] in self.settings['calcHabOver']:
+                            chk=True
+                        else:
+                            chk = False
+                        hDlg.addField(listThings[z], initial=chk)
+                        expandedHabList.append(listThings[z])
                 else:
-                    chk = False
-                hDlg.addField(self.settings['habTrialList'][q], initial=chk)
+                    if self.settings['habTrialList'][q] == 'Hab' and len(self.settings['calcHabOver']) == 0:
+                        chk = True
+                    elif self.settings['habTrialList'][q] in self.settings['calcHabOver']:
+                        chk = True
+                    else:
+                        chk = False
+                    hDlg.addField(self.settings['habTrialList'][q], initial=chk)
+                    expandedHabList.append(self.settings['habTrialList'][q])
         habDat=hDlg.show()
         if hDlg.OK:
             skip = False
@@ -2787,9 +2818,10 @@ class PyHabBuilder:
                 self.settings['metCritStatic'] = habDat[7]
                 if len(self.settings['habTrialList']) > 0:
                     tempArr = []
-                    for i in range(0, len(self.settings['habTrialList'])):
+                    # TODO: This either needs to be saving only the trials or we need more block processing on the other end.
+                    for i in range(0, len(expandedHabList)):
                         if habDat[i+8]:
-                           tempArr.append(self.settings['habTrialList'][i])
+                           tempArr.append(expandedHabList[i])
                     if len(tempArr) > 0:
                         self.settings['calcHabOver'] = tempArr
                     else:
