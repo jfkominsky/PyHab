@@ -938,8 +938,6 @@ class TestRunSetup(object):
         assert self.trialInst.stimNames['Intro'] == ['3x2_1_1_1-converted.mp4', '3x2_1_2_1_1-converted.mp4']
         assert self.trialInst.stimNames['Fam'] == ['3x2_1_3_1_1-converted.mp4', '3x2_2_1_1_1-converted.mp4']
         assert self.trialInst.stimNames['Test'] == ['3x2_2_2_1_1-converted.mp4']
-        assert self.trialInst.blockList['blockA'] == ['Intro','Fam']
-
 
 class TestCommands(object):
     """
