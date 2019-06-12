@@ -1,23 +1,16 @@
 from psychopy import visual, event, core, gui, monitors, tools, sound,__version__
 from psychopy.app import coder
-import wx, random, csv, shutil, os, sys, threading
+import wx, random, csv, shutil, os, sys, threading, itertools
 from math import *
+from copy import deepcopy
+import pyglet
 
 
 class PyHabBuilder:
     """
-    Changelist from 0.4:
+    Graphical interface for constructing PyHab experiments. Runs mostly on a Pyglet window and qtGUI dialogs.
+    Saves a settings file in .csv form which can then be read by PyHab Launcher, PyHabClass, and PyHabClassPL.
 
-    MaxOff and minOn are now trial-type-specific
-
-    Now supports dynamic peak habituation criteiron and moving vs. fixed-window habituation evaluation.
-
-    Now supports different types of stimuli - Movies, images, audio, and images with audio.
-
-    Changed how stimuli are added to experiment - you now create a "stim library" and separately associate items in it
-    with different trial types.
-
-    TODO: Option for habituation over whole meta-trials not just the "hab" portion
     """
     def __init__(self, loadedSaved=False, settingsDict={}):
         """
@@ -34,46 +27,10 @@ class PyHabBuilder:
             otherOS = '\\'
         elif os.name is 'nt': #Nonsensical Windows-based contrarianism
             otherOS = '/'
-        #The base window
-        width = 1080
-        height = 600
-        self.win = visual.Window((width,height),fullscr=False, allowGUI=True, rgb=[-1,-1,-1], units='norm') #Using normalized units.
-        self.flowArea = [-1,.75,1,0] #norm units go from -1 to +1. To cover the top half of the screen would be -1 to 1, and 1 to 0. X,X,Y,Y
-        self.flowRect = visual.Rect(self.win, width=self.flowArea[1]-self.flowArea[0],height=self.flowArea[3]-self.flowArea[2], fillColor='grey',
-                pos=[self.flowArea[0]+float(abs(self.flowArea[1]-self.flowArea[0]))/2,self.flowArea[2]-float(abs(self.flowArea[3]-self.flowArea[2]))/2])
-        self.paletteArea = [.75,float(1),float(1),0] #a trial type pallette, bottom right for now.
-        self.paletteRect = visual.Rect(self.win, width=self.paletteArea[1]-self.paletteArea[0],height=self.paletteArea[3]-self.paletteArea[2], fillColor='white',
-                pos=[self.paletteArea[0]+float(abs(self.paletteArea[1]-self.paletteArea[0]))/2,self.paletteArea[2]-float(abs(self.paletteArea[3]-self.paletteArea[2]))/2])
-        self.aspect = float(height)/float(width) #Determine aspect ratio width/height. Impt. for using norm.
-        #A bunch of useful stuff for drawing the interface
-        self.colorsArray= ['red','blue','green','purple','brown','LightSeaGreen','gold','Magenta'] #colors for dif trial types. Will eventually need an arbitrary number...
-        self.flowWidMult = .07
-        self.flowWidthObj = self.flowWidMult*float(abs(self.flowArea[1]-self.flowArea[0])) #Width of one item in the flow, though this will possibly have to change...
-        self.flowHeightObj = (self.flowWidthObj/self.aspect)*.8
-        self.typeWidthObj = .4*float(abs(self.paletteArea[1]-self.paletteArea[0])) #Width of one item in the flow, though this will possibly have to change...
-        self.typeHeightObj = (self.typeWidthObj/self.aspect)*.6
-        self.typeLocs =[]
-        self.flowLocs =[]
-        self.overFlowLocs = [] # For >20 trials, go up to 40
-        self.flowGap = .09 # A easy reference for the horizontal spacing of items in the flow
-        self.condDict = {} #For creating conditions
-        self.mouse = event.Mouse()
-        for x in [.25,.75]: #Two columns of trial types
-            for z in range(1,5):
-                self.typeLocs.append([self.paletteArea[0]+x*(self.paletteArea[1]-self.paletteArea[0]),
-                                      self.paletteArea[2]+.2*(self.paletteArea[3]-self.paletteArea[2])+z*.15*(self.paletteArea[3]-self.paletteArea[2])])
-        for y in [.25,.75]: #two rows for the study flow.
-            for z in range(1,11):
-                    self.flowLocs.append([self.flowArea[0]+z*(self.flowArea[1]-self.flowArea[0])*self.flowGap,
-                                          self.flowArea[2]+y*(self.flowArea[3]-self.flowArea[2])])
-        for y in [.2, .4, .6, .8]:  # two rows for the study flow.
-            for z in range(1, 11):
-                self.overFlowLocs.append([self.flowArea[0] + z * (self.flowArea[1] - self.flowArea[0]) * self.flowGap,
-                                      self.flowArea[2] + y * (self.flowArea[3] - self.flowArea[2])])
         # loadedSaved is "is this a new experiment or are we operating inside an existing experiment's folder?"
         if not loadedSaved:  # A new blank experiment
             # Load some defaults to start with.
-            self.settings = {'dataColumns': ['sNum', 'months', 'days', 'sex', 'cond','condLabel', 'trial','GNG','trialType','stimName','habCrit','sumOnA','numOnA','sumOffA','numOffA','sumOnB','numOnB','sumOffB','numOffB'],
+            self.settings = {'dataColumns': ['sNum', 'sID', 'months', 'days', 'sex', 'cond','condLabel', 'trial','GNG','trialType','stimName','habCrit','habTrialNo','sumOnA','numOnA','sumOffA','numOffA','sumOnB','numOnB','sumOffB','numOffB'],
                                                         'prefix': 'PyHabExperiment',
                                                         'dataloc':'data'+self.dirMarker,
                                                         'maxDur': {},
@@ -87,7 +44,12 @@ class PyHabBuilder:
                                                         'condPath': '', 
                                                         'condFile': '', 
                                                         'condList': [],
-                                                        'trialOrder': [], 
+                                                        'baseCondFile': '',
+                                                        'baseCondList': [],  # 0.8 New, for remembering pre-counterbalancing
+                                                        'trialTypes': [],
+                                                        'trialOrder': [],
+                                                        'blockList': {},  # 0.8, create blocks of trials (hab remains special)
+                                                        'blockDataList':[],
                                                         'maxHabTrials': '14',
                                                         'setCritWindow': '3', 
                                                         'setCritDivisor': '2.0',
@@ -96,8 +58,9 @@ class PyHabBuilder:
                                                         'metCritWindow': '3', 
                                                         'metCritDivisor': '1.0',
                                                         'metCritStatic': 'Moving',
-                                                        'habTrialList':[],
-                                                        'stimPres': 0,  #Will be set on each run anyways.
+                                                        'habTrialList': [],
+                                                        'calcHabOver': [],
+                                                        'stimPres': 0,  # Will be set on each run anyways.
                                                         'stimPath': 'stimuli'+self.dirMarker,
                                                         'stimNames': {},
                                                         'stimList': {},
@@ -106,31 +69,44 @@ class PyHabBuilder:
                                                         'screenColor': 'black',
                                                         'movieWidth': 800, 
                                                         'movieHeight': 600, 
-                                                        'screenIndex': '1', 
+                                                        'screenIndex': '1',
+                                                        'expScreenIndex': '0',
                                                         'ISI': {},
                                                         'freezeFrame': '0.0',
                                                         'playAttnGetter': {},
-                                                        'attnGetterList':{'PyHabDefault':{'stimType':'Audio',
+                                                        'attnGetterList': {'PyHabDefault':{'stimType':'Audio',
                                                                                           'stimName':'upchime1.wav',
                                                                                           'stimDur':2,
                                                                                           'stimLoc':'PyHab' + self.dirMarker + 'upchime1.wav',
                                                                                           'shape':'Rectangle',
                                                                                           'color':'yellow'}},
-                                                        'folderPath':'',
-                                                        'trialTypes':[],
-                                                        'prefLook':'0',
-                                                        'startImage':'',
-                                                        'endImage':'',
-                                                        'nextFlash':'0'}
-            self.studyFlowArray={'lines':[],'shapes':[],'text':[],'labels':[]} # an array of objects for the study flow.
-            self.trialTypesArray={'shapes':[],'text':[],'labels':[]}
+                                                        'folderPath': '',
+                                                        'prefLook': '0',
+                                                        'startImage': '',
+                                                        'endImage': '',
+                                                        'nextFlash': '0'}
+            self.condDict = {}
+            self.baseCondDict = {}
         else:
             self.settings = settingsDict
             if 'nextFlash' not in self.settings.keys():
                 self.settings['nextFlash'] = '0'
+            if 'baseCondList' not in self.settings.keys():
+                self.settings['baseCondList'] = '[]'
+                self.settings['baseCondFile'] = ''
+            if 'blockList' not in self.settings.keys():
+                self.settings['blockList'] = '{}'
+            if 'calcHabOver' not in self.settings.keys():
+                if len(self.settings['habTrialList'])>0:
+                    self.settings['calcHabOver'] = "['Hab']"  # Default to old behavior.
+                else:
+                    self.settings['calcHabOver'] = "[]"
+            if 'blockDataList' not in self.settings.keys():
+                self.settings['blockDataList'] = "[]"
             # Settings requiring evaluation to get sensible values. Mostly dicts.
-            evalList = ['dataColumns','maxDur','condList','movieEnd','playThrough','trialOrder','stimNames', 'stimList', 'ISI',
-                        'maxOff','minOn','autoAdvance','playAttnGetter','attnGetterList','trialTypes','habTrialList','nextFlash']
+            evalList = ['dataColumns','maxDur','condList','baseCondList','movieEnd','playThrough','trialOrder',
+                        'stimNames', 'stimList', 'ISI', 'maxOff','minOn','autoAdvance','playAttnGetter','attnGetterList',
+                        'trialTypes','habTrialList', 'calcHabOver', 'nextFlash', 'blockList']
             for i in evalList:
                 self.settings[i] = eval(self.settings[i])
                 if i in ['stimList','attnGetterList']:
@@ -154,11 +130,10 @@ class PyHabBuilder:
                 self.settings['habThresh'] = '1.0'
             self.settings['dataloc'] = ''.join([self.dirMarker if x == otherOS else x for x in self.settings['dataloc']])
             self.settings['stimPath'] = ''.join([self.dirMarker if x == otherOS else x for x in self.settings['stimPath']])
-            self.trialTypesArray = self.loadTypes()
-            self.studyFlowArray = self.loadFlow()
+            self.settings['folderPath'] = os.getcwd()+self.dirMarker  # On load, reset the folder path to wherever you are now.
             # Get conditions!
-            if self.settings['randPres'] in [1,'1','True',True] or len(self.settings['condFile'])>0: #If there is a random presentation file...
-                if os.path.exists(self.settings['condFile']):
+            if self.settings['randPres'] in [1,'1','True',True] or len(self.settings['condFile'])>0:  # If there is a condition file
+                if os.path.exists(self.settings['folderPath'] + self.settings['condFile']):
                     testReader=csv.reader(open(self.settings['condFile'],'rU'))
                     testStuff=[]
                     for row in testReader:
@@ -168,105 +143,201 @@ class PyHabBuilder:
                         testDict[i] = eval(testDict[i])
                     self.condDict = testDict
                 else:
-                    self.condDict={}
-            self.settings['folderPath'] = os.getcwd()+self.dirMarker  # On load, reset the folder path to wherever you are now.
+                    self.condDict = {}
+                if len(self.settings['baseCondFile'])>0 and os.path.exists(self.settings['folderPath'] + self.settings['baseCondFile']):
+                    testReader2 = csv.reader(open(self.settings['baseCondFile'],'rU'))
+                    testStuff2 = []
+                    for row in testReader2:
+                        testStuff2.append(row)
+                    newDict = dict(testStuff2)
+                    for i in newDict.keys():
+                        newDict[i] = eval(newDict[i])
+                    self.baseCondDict = newDict
+                else:
+                    self.baseCondDict = {}
+            else:
+                self.condDict = {}
+                self.baseCondDict = {}
         self.folderPath = self.settings['folderPath']  # The location where all the pieces are saved.
-        self.allDataColumns = ['sNum', 'months', 'days', 'sex', 'cond','condLabel', 'trial','GNG','trialType','stimName','habCrit','sumOnA','numOnA','sumOffA','numOffA','sumOnB','numOnB','sumOffB','numOffB']
-        self.allDataColumnsPL = ['sNum', 'months', 'days', 'sex', 'cond','condLabel','trial','GNG','trialType','stimName','habCrit', 'sumOnL','numOnL','sumOnR','numOnR','sumOff','numOff']
+        self.allDataColumns = ['sNum', 'sID', 'months', 'days', 'sex', 'cond','condLabel', 'trial','GNG','trialType','stimName','habCrit','habTrialNo','sumOnA','numOnA','sumOffA','numOffA','sumOnB','numOnB','sumOffB','numOffB']
+        self.allDataColumnsPL = ['sNum', 'sID', 'months', 'days', 'sex', 'cond','condLabel', 'trial','GNG','trialType','stimName','habCrit','habTrialNo', 'sumOnL','numOnL','sumOnR','numOnR','sumOff','numOff']
         self.stimSource={}  # A list of the source folder(s) for each stimulus file, a dict where each key is the filename in stimNames?
         self.delList=[] # A list of stimuli to delete if they are removed from the experiment library.
         self.allDone=False
+
+        # BEGIN UI CONSTRUCTION
+        # The base window
+        width = 1080
+        height = 600
+        self.win = visual.Window((width, height), fullscr=False, allowGUI=True, rgb=[-1, -1, -1],
+                                 units='norm')  # Using normalized units.
+        self.flowArea = [float(-1), .75, float(1), -.15]  # norm units go from -1 to +1. To cover the top half of the screen would be -1 to 1, and 1 to 0. X,X,Y,Y
+        self.flowRect = visual.Rect(self.win, width=self.flowArea[1] - self.flowArea[0],
+                                    height=self.flowArea[3] - self.flowArea[2], fillColor='grey',
+                                    pos=[self.flowArea[0] + float(abs(self.flowArea[1] - self.flowArea[0])) / 2,
+                                         self.flowArea[2] - float(abs(self.flowArea[3] - self.flowArea[2])) / 2])
+        self.paletteArea = [.75, float(1), float(1), -.30]  # a trial type pallette, top right
+        self.standardPaletteHeight = 1.15  # For certain text elements.
+        self.paletteRect = visual.Rect(self.win, width=self.paletteArea[1] - self.paletteArea[0],
+                                       height=self.paletteArea[3] - self.paletteArea[2], fillColor='white',
+                                       pos=[self.paletteArea[0] + float(abs(self.paletteArea[1] - self.paletteArea[0])) / 2,
+                                            self.paletteArea[2] - float(abs(self.paletteArea[3] - self.paletteArea[2])) / 2])
+        self.aspect = float(height) / float(width)  # Determine aspect ratio width/height. Impt. for using norm.
+        # A bunch of useful stuff for drawing the interface
+        self.colorsArray = ['red', 'blue', 'green', 'purple', 'brown', 'LightSeaGreen', 'darkgoldenrod',
+                            'Magenta','orange','cornflowerblue','aquamarine','plum','tomato','deepskyblue','lime',
+                            'orchid','hotpink','mediumslateblue','lawngreen','fuchsia']  # colors for dif trial types. Will eventually need an arbitrary number...
+        self.flowWidMult = .07
+        self.flowWidthObj = self.flowWidMult * float(abs(self.flowArea[1] - self.flowArea[0]))  # Width of one item in the flow, though this will possibly have to change...
+        self.flowHeightObj = (self.flowWidthObj / self.aspect) * .8
+        self.typeWidthObj = .4 * float(abs(self.paletteArea[1] - self.paletteArea[0]))  # Width of one item in the palette, though this will possibly have to change...
+        self.typeHeightObj = (self.typeWidthObj / self.aspect) * .6
+        self.typeLocs = []
+        self.flowLocs = []
+        self.overFlowLocs = []  # For >20 trials, go up to 40
+        self.flowGap = .09  # A easy reference for the horizontal spacing of items in the flow
+        self.mouse = event.Mouse()
+        self.trialPalettePage = 1  # A page tracker for the trial type palette. Much like one that exists for conditions.
+        self.totalPalettePages = 1  # The maximum number of pages.
+        for x in [.25, .75]:  # Two columns of trial types, on one page.
+            for z in range(1, 5):  # Trying to leave space for buttons...
+                self.typeLocs.append([self.paletteArea[0] + x * (self.paletteArea[1] - self.paletteArea[0]),
+                                      self.paletteArea[2] + .3 * -self.standardPaletteHeight + z * .12 * -self.standardPaletteHeight])
+        for y in [.25, .75]:  # two rows for the study flow.
+            for z in range(1, 11):
+                self.flowLocs.append([self.flowArea[0] + z * (self.flowArea[1] - self.flowArea[0]) * self.flowGap,
+                                      self.flowArea[2] + y * (self.flowArea[3] - self.flowArea[2])])
+        for y in [.2, .4, .6, .8]:  # four rows for the longer study flows.
+            for z in range(1, 11):
+                self.overFlowLocs.append([self.flowArea[0] + z * (self.flowArea[1] - self.flowArea[0]) * self.flowGap,
+                                          self.flowArea[2] + y * (self.flowArea[3] - self.flowArea[2])])
         # Various main UI buttons, put into a dict of lists for easy looping through.
-        self.buttonList={'shapes':[],'text':[],'functions':[]}#Yes, python means we can put the functions in there too.
+        self.buttonList={'shapes':[],'text':[],'functions':[]}  # Yes, python means we can put the functions in there too.
         if len(self.folderPath) > 0:
             #Make a "save" button, not just a "save as" button, but only if there is a place to save to!
-            saveButton = visual.Rect(self.win,width=.15, height=.67*(.15/self.aspect), pos=[-.52,-.9],fillColor="green")
+            saveButton = visual.Rect(self.win,width=.15, height=.67*(.15/self.aspect), pos=[-.52,-.9],fillColor="springgreen")
             saveText = visual.TextStim(self.win, text="SAVE",color="black",height=saveButton.height*.5, pos=saveButton.pos)
             self.buttonList['shapes'].append(saveButton)
             self.buttonList['text'].append(saveText)
             self.buttonList['functions'].append(self.saveEverything)
-        saveAsButton = visual.Rect(self.win,width=.15, height=.67*(.15/self.aspect), pos=[-.22,-.9],fillColor="green")
+        saveAsButton = visual.Rect(self.win,width=.15, height=.67*(.15/self.aspect), pos=[-.22,-.9],fillColor="springgreen")
         saveAsText = visual.TextStim(self.win, text="Save as",color="black",height=saveAsButton.height*.3, pos=saveAsButton.pos)
         self.buttonList['shapes'].append(saveAsButton)
         self.buttonList['text'].append(saveAsText)
         self.buttonList['functions'].append(self.saveDlg)
-        newTrialTypeButton = visual.Rect(self.win, width=.9*(self.paletteArea[1]-self.paletteArea[0]),height=abs(self.paletteArea[3]-self.paletteArea[2])*.10, fillColor="yellow", lineColor="black",
-                pos=[self.paletteArea[0]+float(abs(self.paletteArea[1]-self.paletteArea[0]))/2,self.paletteArea[2]-float(abs(self.paletteArea[3]-self.paletteArea[2])/12)])
-        newTrialTypeText=visual.TextStim(self.win, alignHoriz='center', alignVert='center', text = "New Trial Type",height=.55*newTrialTypeButton.height, pos=newTrialTypeButton.pos,color="black")
+        newTrialTypeButton = visual.Rect(self.win, width=.9*(self.paletteArea[1]-self.paletteArea[0]), height=self.standardPaletteHeight*.10, fillColor="yellow", lineColor="black",
+                pos=[self.paletteArea[0]+float(abs(self.paletteArea[1]-self.paletteArea[0]))/2, self.paletteArea[2]-self.standardPaletteHeight*.07])
+        newTrialTypeText=visual.TextStim(self.win, alignHoriz='center', alignVert='center', text = "New Trial Type",height=.5*newTrialTypeButton.height, pos=newTrialTypeButton.pos,color="black")
         self.buttonList['shapes'].append(newTrialTypeButton)
         self.buttonList['text'].append(newTrialTypeText)
         self.buttonList['functions'].append(self.trialTypeDlg)
-        delTrialTypeButton = visual.Rect(self.win, width=.9*(self.paletteArea[1]-self.paletteArea[0]),height=abs(self.paletteArea[3]-self.paletteArea[2])*.10, fillColor="red", lineColor = "black",
-                pos=[self.paletteArea[0]+float(abs(self.paletteArea[1]-self.paletteArea[0]))/2,self.paletteArea[3]+float(abs(self.paletteArea[3]-self.paletteArea[2])/12)])
-        delTrialTypeText=visual.TextStim(self.win, alignHoriz='center', alignVert='center', text = "Delete a trial type",height=.45*delTrialTypeButton.height, pos=delTrialTypeButton.pos,color="black")
+        delTrialTypeButton = visual.Rect(self.win, width=.9*(self.paletteArea[1]-self.paletteArea[0]),height=self.standardPaletteHeight*.10, fillColor="lightcoral", lineColor = "black",
+                pos=[self.paletteArea[0]+float(abs(self.paletteArea[1]-self.paletteArea[0]))/2,self.paletteArea[3]+self.standardPaletteHeight*.07])
+        delTrialTypeText=visual.TextStim(self.win, alignHoriz='center', alignVert='center', text="Delete trial/block",height=.45*delTrialTypeButton.height, pos=delTrialTypeButton.pos,color="black")
         self.buttonList['shapes'].append(delTrialTypeButton)
         self.buttonList['text'].append(delTrialTypeText)
         self.buttonList['functions'].append(self.delTrialTypeDlg)
-        addHabButton = visual.Rect(self.win, width=.9*(self.paletteArea[1]-self.paletteArea[0]),height=abs(self.paletteArea[3]-self.paletteArea[2])*.10, fillColor="yellow", lineColor="black",
-                pos=[self.paletteArea[0]+float(abs(self.paletteArea[1]-self.paletteArea[0]))/2,self.paletteArea[2]-float(abs(self.paletteArea[3]-self.paletteArea[2])*.2)])
-        if 'Hab' in self.settings['trialTypes']:
+        rightArrowVerts = [(-.25, 0.05), (-.15, 0.05), (-0.15, 0.15), (0, 0), (-0.15, -0.15), (-0.15, -0.05),(-0.25,-0.05)]
+        self.nextPaletteArrow = visual.ShapeStim(self.win, vertices=rightArrowVerts, size=.25, lineColor='black',
+                                         fillColor='black', pos=[self.paletteArea[0]+float(abs(self.paletteArea[1]-self.paletteArea[0]))*.9,self.paletteArea[3]+self.standardPaletteHeight*.2])
+        self.nextPaletteText = visual.TextStim(self.win, text='', pos=self.nextPaletteArrow.pos)
+        leftArrowVerts = [(.25, 0.05), (.15, 0.05), (0.15, 0.15), (0, 0), (0.15, -0.15), (0.15, -0.05),(0.25,-0.05)]
+        self.lastPaletteArrow = visual.ShapeStim(self.win, vertices=leftArrowVerts, size=.25, lineColor='black', fillColor='black',
+                                         pos=[self.paletteArea[0]+float(abs(self.paletteArea[1]-self.paletteArea[0]))*.05,self.paletteArea[3]+self.standardPaletteHeight*.2])
+        self.lastPaletteText = visual.TextStim(self.win, text='', pos=self.lastPaletteArrow.pos)
+        self.palettePageText = visual.TextStim(self.win, height=self.standardPaletteHeight*.045, text=str(self.trialPalettePage)+'/'+str(self.totalPalettePages), color='black',
+                                               pos=[self.paletteArea[0]+float(abs(self.paletteArea[1]-self.paletteArea[0]))*.5,self.paletteArea[3]+self.standardPaletteHeight*.2])
+        self.buttonList['shapes'].append(self.nextPaletteArrow)
+        self.buttonList['text'].append(self.palettePageText)
+        self.buttonList['functions'].append(self.nextPalettePage)
+        self.buttonList['shapes'].append(self.lastPaletteArrow)
+        self.buttonList['text'].append(self.lastPaletteText)
+        self.buttonList['functions'].append(self.lastPalettePage)
+        self.trialTypesArray = self.loadTypes(self.typeLocs, self.trialPalettePage)
+        self.studyFlowArray = self.loadFlow(self.settings['trialOrder'], self.flowArea, self.flowLocs,self.overFlowLocs)
+
+        addHabButton = visual.Rect(self.win, width=.9*(self.paletteArea[1]-self.paletteArea[0]),height=self.standardPaletteHeight*.10, fillColor="yellow", lineColor="black",
+                pos=[self.paletteArea[0]+float(abs(self.paletteArea[1]-self.paletteArea[0]))/2,self.paletteArea[2]-self.standardPaletteHeight*.18])
+        if 'Hab' in self.settings['trialTypes'] or len(self.settings['habTrialList']) > 0:
             txt = 'Mod Hab Block'
         else:
-            txt = 'Add Hab Block'
-        addHabText=visual.TextStim(self.win, alignHoriz='center', alignVert='center', text = txt,height=.55*addHabButton.height, pos=addHabButton.pos,color="black")
+            txt = 'Add Habituation'
+        addHabText = visual.TextStim(self.win, alignHoriz='center', alignVert='center', text = txt,height=.5*addHabButton.height, pos=addHabButton.pos,color="black")
         self.buttonList['shapes'].append(addHabButton)
         self.buttonList['text'].append(addHabText)
         self.buttonList['functions'].append(self.addHabBlock)
+        addBlockButton = visual.Rect(self.win, width=.9*(self.paletteArea[1]-self.paletteArea[0]),height=self.standardPaletteHeight*.10, fillColor="yellow", lineColor="black",
+                pos=[self.paletteArea[0]+float(abs(self.paletteArea[1]-self.paletteArea[0]))/2,self.paletteArea[2]-self.standardPaletteHeight*.29])
+        addBlockText = visual.TextStim(self.win, alignHoriz='center', alignVert='center', text="Create Block", height=.5*addBlockButton.height, pos=addBlockButton.pos,color="black")
+        self.buttonList['shapes'].append(addBlockButton)
+        self.buttonList['text'].append(addBlockText)
+        self.buttonList['functions'].append(self.makeBlockDlg)
         quitButton = visual.Rect(self.win,width=.15, height=.67*(.15/self.aspect), pos=[-.82,-.9],fillColor="red")
         quitText = visual.TextStim(self.win, text="QUIT",color="black",height=quitButton.height*.5, pos=quitButton.pos)
         self.buttonList['shapes'].append(quitButton)
         self.buttonList['text'].append(quitText)
         self.buttonList['functions'].append(self.quitFunc)
-        USetButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect),pos=[-.75,-.2], fillColor="white")
+        # The eight "main" buttons
+        USetButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect),pos=[-.8,-.3], fillColor="white")
         USetText = visual.TextStim(self.win, text="Universal \nsettings",color="black",height=USetButton.height*.3, alignHoriz='center', pos=USetButton.pos)
         self.buttonList['shapes'].append(USetButton)
         self.buttonList['text'].append(USetText)
         self.buttonList['functions'].append(self.univSettingsDlg)
-        dataSetButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect),pos=[-.75,-.6], fillColor="white")
+        dataSetButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect),pos=[-.8,-.65], fillColor="white")
         dataSetText = visual.TextStim(self.win, text="Data \nsettings",color="black",height=dataSetButton.height*.3, alignHoriz='center', pos=dataSetButton.pos)
         self.buttonList['shapes'].append(dataSetButton)
         self.buttonList['text'].append(dataSetText)
         self.buttonList['functions'].append(self.dataSettingsDlg)
-        stimSetButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect),pos=[-.25,-.2], fillColor="white")
+        stimSetButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect),pos=[-.4,-.3], fillColor="white")
         stimSetText = visual.TextStim(self.win, text="Stimuli \nsettings",color="black",height=stimSetButton.height*.3, alignHoriz='center', pos=stimSetButton.pos)
         self.buttonList['shapes'].append(stimSetButton)
         self.buttonList['text'].append(stimSetText)
         self.buttonList['functions'].append(self.stimSettingsDlg)
-        condSetButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect),pos=[-.25,-.6], fillColor="white")
+        condSetButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect),pos=[-.4,-.65], fillColor="white")
         condSetText = visual.TextStim(self.win, text="Condition \nsettings",color="black",height=condSetButton.height*.3, alignHoriz='center', pos=condSetButton.pos)
         self.buttonList['shapes'].append(condSetButton)
         self.buttonList['text'].append(condSetText)
         self.buttonList['functions'].append(self.condSettingsDlg)
-        habSetButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect),pos=[.25,-.2], fillColor="white")
+        habSetButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect),pos=[0,-.3], fillColor="white")
         habSetText = visual.TextStim(self.win, text="Habituation \nsettings",color="black",height=habSetButton.height*.3, alignHoriz='center', pos=habSetButton.pos)
         self.buttonList['shapes'].append(habSetButton)
         self.buttonList['text'].append(habSetText)
         self.buttonList['functions'].append(self.habSettingsDlg)
 
-        attnGetterButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect), pos=[.75, -.2], fillColor = "white")
+        attnGetterButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect), pos=[.4, -.3], fillColor = "white")
         attnGetterText = visual.TextStim(self.win, text="Customize \nattention-getters",color="black",height=attnGetterButton.height*.3,alignHoriz='center', pos=attnGetterButton.pos)
         self.buttonList['shapes'].append(attnGetterButton)
         self.buttonList['text'].append(attnGetterText)
         self.buttonList['functions'].append(self.attnGetterDlg)
 
-        stimLibraryButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect), pos=[.25, -.6], fillColor = "white")
+        stimLibraryButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect), pos=[0, -.65], fillColor = "white")
         stimLibraryText = visual.TextStim(self.win, text="Add/remove stimuli \nto/from exp. library",color="black",height=stimLibraryButton.height*.3,alignHoriz='center', pos=stimLibraryButton.pos)
         self.buttonList['shapes'].append(stimLibraryButton)
         self.buttonList['text'].append(stimLibraryText)
         self.buttonList['functions'].append(self.addStimToLibraryDlg)
 
         if len(list(self.settings['stimList'].keys())) > 0:
-            addMovButton = visual.Rect(self.win, width=.3, height=.5 * (.2 / self.aspect), pos=[.75, -.6],
+            addMovButton = visual.Rect(self.win, width=.3, height=.5 * (.2 / self.aspect), pos=[.4, -.65],
                                        fillColor="white")
             addMovText = visual.TextStim(self.win, text="Add stimulus files \nto trial types", color="black",
                                          height=addMovButton.height * .3, alignHoriz='center', pos=addMovButton.pos)
             self.buttonList['shapes'].append(addMovButton)
             self.buttonList['text'].append(addMovText)
             self.buttonList['functions'].append(self.addStimToTypesDlg)
-        
+
+        if len(list(self.settings['blockList'].keys())) > 0:  # Add button for block data settings
+            blockDataButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect), pos=[.8, -.65],
+                                          fillColor="white")
+            blockDataText = visual.TextStim(self.win, text="Save block summary \nfile?", color="black",
+                                            height=blockDataButton.height*.3, alignHoriz='center',pos=blockDataButton.pos)
+            self.buttonList['shapes'].append(blockDataButton)
+            self.buttonList['text'].append(blockDataText)
+            self.buttonList['functions'].append(self.blockDataDlg)
+
         self.workingRect = visual.Rect(self.win, width=1, height=.5, pos=[0,0], fillColor = 'green') #Because there are certain things that take a while.
         self.workingText = visual.TextStim(self.win, text="Working...", height= .3, bold=True, alignHoriz='center', pos=[0,0])
 
+        self.UI = {'bg':[self.flowRect, self.paletteRect], 'buttons': self.buttonList}
 
     def run(self):
         """
@@ -284,13 +355,13 @@ class PyHabBuilder:
         :return:
         :rtype:
         """
-        while self.allDone==False:        
-            self.showMainUI()
+        while self.allDone==False:
+            self.showMainUI(self.UI, self.studyFlowArray, self.trialTypesArray)
             self.win.flip()
             #Check all the stand-alone buttons
             for i in range(0, len(self.buttonList['shapes'])):
                 if self.mouse.isPressedIn(self.buttonList['shapes'][i],buttons=[0]): #left-click only
-                    self.showMainUI()
+                    self.showMainUI(self.UI, self.studyFlowArray, self.trialTypesArray)
                     self.workingRect.draw()
                     self.workingText.draw()
                     self.win.flip()
@@ -299,7 +370,7 @@ class PyHabBuilder:
                             pass
                         self.win.winHandle.set_visible(visible=False)
                     if self.buttonList['functions'][i] == self.addHabBlock: #one special case
-                        if self.buttonList['text'][i].text == "Mod Hab Block":
+                        if self.buttonList['text'][i].text == "Mod Habituation":
                             self.addHabBlock(makeNew=False)
                         else:
                             self.addHabBlock()
@@ -311,11 +382,11 @@ class PyHabBuilder:
             for j in range(0,len(self.trialTypesArray['shapes'])):
                 if self.mouse.isPressedIn(self.trialTypesArray['shapes'][j],buttons=[0]): #Left-click, add to study flow, at end.
                     self.settings['trialOrder'].append(self.trialTypesArray['labels'][j])
-                    self.studyFlowArray=self.loadFlow() #Reloads the study flow with the new thing added.
+                    self.studyFlowArray=self.loadFlow(self.settings['trialOrder'], self.flowArea, self.flowLocs, self.overFlowLocs) #Reloads the study flow with the new thing added.
                     while self.mouse.isPressedIn(self.trialTypesArray['shapes'][j],buttons=[0]): #waits until the mouse is released before continuing.
                         pass
                 elif self.mouse.isPressedIn(self.trialTypesArray['shapes'][j],buttons=[1,2]): #Right-click, modify trial type info.
-                    self.showMainUI()
+                    self.showMainUI(self.UI, self.studyFlowArray, self.trialTypesArray)
                     self.workingRect.draw()
                     self.workingText.draw()
                     self.win.flip()
@@ -323,39 +394,60 @@ class PyHabBuilder:
                         while 1 in self.mouse.getPressed():
                             pass
                         self.win.winHandle.set_visible(visible=False)
-                    self.trialTypeDlg(trialType = self.trialTypesArray['labels'][j],makeNew = False)
+                    # Determine whether we're dealing with a trial or block, launch appropriate interface
+                    if self.trialTypesArray['labels'][j] in self.settings['blockList'].keys():
+                        self.makeBlockDlg(self.trialTypesArray['labels'][j], new=False)
+                    elif self.trialTypesArray['labels'][j] == 'Hab' and len(self.settings['habTrialList']) > 0:
+                        self.addHabBlock(makeNew=False)
+                    elif self.trialTypesArray['labels'][j] == 'Hab':
+                        self.makeHabTypeDlg(makeNew=False)
+                    else:
+                        self.trialTypeDlg(trialType=self.trialTypesArray['labels'][j], makeNew=False)
                     if os.name is not 'posix':
                         self.win.winHandle.set_visible(visible=True)
             for k in range(0, len(self.studyFlowArray['shapes'])):
                 if self.mouse.isPressedIn(self.studyFlowArray['shapes'][k]):
-                    self.moveTrialInFlow(k)
+                    # Move the trial within the study flow, reload the modified flow array
+                    self.settings['trialOrder'] = self.moveTrialInFlow(k, self.settings['trialOrder'], self.flowArea,
+                                                                       self.UI, self.studyFlowArray, self.trialTypesArray)
+                    self.studyFlowArray = self.loadFlow(self.settings['trialOrder'], self.flowArea, self.flowLocs, self.overFlowLocs)
                     break
         self.win.close()
         
             
-    def showMainUI(self):
+    def showMainUI(self, UI, flow, types):
         """
-        Main draw loop of the primary builder interface
+        A simple function that draws everything and flips the display. Generalized to work for block mode and general mode.
 
+        :param UI: a dictionary of everything to be drawn in the new UI. Contains a list, 'bg' (background), and a dict,
+        'buttons', that has itself 'shapes' and 'text' (and usually 'functions' but this doesn't need to know that)
+        :type UI: dict
+        :param flow: A dict of everything in the  block flow. Contains five lists, 'lines', 'shapes', 'text', 'labels', and 'extra'
+        :type flow: dict
+        :param types: A dict of the trial type buttons for this block. Contains three lists: 'shapes', 'text', and 'labels'
+        :type types: dict
         :return:
         :rtype:
         """
-        self.flowRect.draw()        #Draw flow area and study flow
-        for i in range(0, len(self.studyFlowArray['lines'])):
-            self.studyFlowArray['lines'][i].draw()
-        for j in range(0,len(self.studyFlowArray['labels'])):
-            self.studyFlowArray['shapes'][j].draw()
-            self.studyFlowArray['text'][j].draw()
-        #Buttons for trial types, etc.
-        self.paletteRect.draw() #Palette of trial types.
-        for i in range(0, len(self.trialTypesArray['labels'])):
-            self.trialTypesArray['shapes'][i].draw()
-            self.trialTypesArray['text'][i].draw()
-        #General buttons
-        for i in range(0, len(self.buttonList['shapes'])):
-            self.buttonList['shapes'][i].draw()
-            self.buttonList['text'][i].draw()
-    
+
+        for i in range(0, len(UI['bg'])):
+            UI['bg'][i].draw()
+        for j in range(0, len(UI['buttons']['shapes'])):
+            UI['buttons']['shapes'][j].draw()
+            UI['buttons']['text'][j].draw()
+        for k in range(0, len(flow['lines'])):
+            flow['lines'][k].draw()
+        for l in range(0, len(flow['labels'])):
+            flow['shapes'][l].draw()
+        for m in range(0, len(flow['extras'])):
+            flow['extras'][m].draw()
+        for n in range(0, len(flow['labels'])):
+            flow['text'][n].draw()
+        for o in range(0, len(types['labels'])):
+            types['shapes'][o].draw()
+            types['text'][o].draw()
+
+
     def trialTypeDlg(self, trialType="TrialTypeNew", makeNew=True, prevInfo=[]):
         """
         Dialog for creating OR modifying a trial type. Allows you to set
@@ -394,15 +486,15 @@ class PyHabBuilder:
         :return:
         :rtype:
         """
-        self.showMainUI()
+        self.showMainUI(self.UI, self.studyFlowArray, self.trialTypesArray)
         self.workingRect.draw()
         self.workingText.draw()
         self.win.flip()
         #For when a trial is right-clicked, or a new one created, open a dialog with info about it.
         skip = False
-        if len(self.trialTypesArray['labels']) == 7:
+        if len(self.settings['trialTypes']) == len(self.colorsArray):
             errDlg = gui.Dlg(title="Max trial types reached!")
-            errDlg.addText("PyHab's builder currently supports a maximum of 7 trial types + hab trials.")
+            errDlg.addText("PyHab's builder currently supports a maximum of " + str(len(self.colorsArray)) + " trial or block types.")
             errDlg.show()
         else:
             typeDlg = gui.Dlg(title="Trial Type " + trialType)
@@ -431,7 +523,7 @@ class PyHabBuilder:
                 for i in range(0,len(self.studyFlowArray['labels'])):
                     if self.studyFlowArray['labels'][i] == trialType:
                         flowIndexes.append(i) 
-                typeIndex =self.trialTypesArray['labels'].index(trialType)
+                typeIndex = self.trialTypesArray['labels'].index(trialType)
                 if self.settings['playThrough'][trialType] == 2:
                     chz = ["No", "OnOnly", "Yes"]
                 elif self.settings['playThrough'][trialType] == 1:
@@ -442,6 +534,7 @@ class PyHabBuilder:
                 typeDlg.addField("Max duration", prevInfo[1])
                 maxOff = prevInfo[-5]
                 minOn = prevInfo[-4]
+                ISI = prevInfo[-1]
                 if prevInfo[4] == 2:
                     chz = ["No", "OnOnly", "Yes"]
                 elif prevInfo[4] == 1:
@@ -472,7 +565,7 @@ class PyHabBuilder:
                     chz3.insert(0, 'PyHabDefault')
                     chz3.insert(0, 'None') # Only default to default if this is a new trial type, not if "none" was selected before.
             elif trialType in self.settings['playAttnGetter']:
-                chz3 = [x for x in list(self.settings['attnGetterList'].keys()) if x is not self.settings['playAttnGetter'][trialType]]
+                chz3 = [x for x in list(self.settings['attnGetterList'].keys()) if x != self.settings['playAttnGetter'][trialType]]
                 chz3.insert(0, 'None')
                 chz3.insert(0, self.settings['playAttnGetter'][trialType])
             typeDlg.addField("Attention-getter for this trial type (Stim presentation mode only)", choices = chz3)
@@ -515,18 +608,31 @@ class PyHabBuilder:
                                 self.studyFlowArray['labels'][i] = typeInfo[0]
                                 self.studyFlowArray['text'][i].text = typeInfo[0]
                                 self.studyFlowArray['text'][i].height = self.flowHeightObj/(.42*numChar) #Update text height for new length
-                            self.trialTypesArray['labels'][typeIndex] = typeInfo[0]
-                            self.trialTypesArray['text'][typeIndex].text = typeInfo[0]
-                            self.trialTypesArray['text'][typeIndex].height=self.typeHeightObj/(.33*numChar)
                             self.settings['trialTypes'] = [typeInfo[0] if x == trialType else x for x in self.settings['trialTypes']]
                             self.settings['trialOrder'] = [typeInfo[0] if x == trialType else x for x in self.settings['trialOrder']]
+                            self.trialTypesArray = self.loadTypes(self.typeLocs,self.trialPalettePage)
+                            if len(self.settings['habTrialList']) > 0:
+                                for z in range(0, len(self.settings['habTrialList'])):
+                                    if self.settings['habTrialList'][z] == trialType:
+                                        self.settings['habTrialList'][z] = typeInfo[0]
+                            for a, b in self.settings['blockList'].items():
+                                for c in range(0, len(b)):
+                                    if b[c] == trialType:
+                                        b[c] = typeInfo[0]
+
                         elif typeInfo[0] in self.trialTypesArray['labels']:
                             #warning dialog, start over with all info entered so far.
                             warnDlg = gui.Dlg(title="Warning!")
                             warnDlg.addText("New trial type label matches an existing trial type! Please choose a different name for this trial type.")
                             warnDlg.show()
                             skip = True
-                            self.trialTypeDlg(typeInfo[0], makeNew,typeInfo)
+                            self.trialTypeDlg(typeInfo[0], makeNew, typeInfo)
+                        elif '.' in typeInfo[0] or '^' in typeInfo[0]:
+                            warnDlg = gui.Dlg(title="llegal character!")
+                            warnDlg.addText("The '.' and '^' characters cannot be used as part of a trial type name. Please rename your trial type")
+                            warnDlg.show()
+                            skip = True
+                            self.trialTypeDlg(typeInfo[0], makeNew, typeInfo)
                         trialType = typeInfo[0]
                     if not skip:
 
@@ -581,30 +687,26 @@ class PyHabBuilder:
 
                         # If we need to update the flow pane, it's taken care of above. Here we update the type pallette.
                         if makeNew:
-                            i = len(self.trialTypesArray['labels']) #Grab length before adding, conveniently the index we need for position info etc.
-                            self.trialTypesArray['labels'].append(typeInfo[0])
-                            tempObj = visual.Rect(self.win,width=self.typeWidthObj, height=self.typeHeightObj, fillColor=self.colorsArray[i], pos=self.typeLocs[i])
-                            numChar = len(typeInfo[0])
-                            if numChar <= 3:
-                                numChar = 4 #Maximum height
-                            tempTxt = visual.TextStim(self.win, alignHoriz='center', alignVert='center', bold=True, height=self.typeHeightObj/(.38*numChar), text=typeInfo[0], pos=self.typeLocs[i])
-                            self.trialTypesArray['shapes'].append(tempObj)
-                            self.trialTypesArray['text'].append(tempTxt)
                             self.settings['trialTypes'].append(typeInfo[0])
                             self.settings['stimNames'][typeInfo[0]] = []
+                            if len(self.settings['trialTypes']) in [9, 17]:
+                                self.totalPalettePages += 1
+                                self.trialPalettePage = deepcopy(self.totalPalettePages)
+                            self.trialTypesArray = self.loadTypes(self.typeLocs, self.trialPalettePage)
                             # If there exists a condition file or condition settings, warn the user that they will need to be updated!
                             if self.settings['condFile'] is not '':
                                 warnDlg = gui.Dlg(title="Update conditions")
                                 warnDlg.addText("WARNING! UPDATE CONDITION SETTINGS AFTER ADDING STIMULI TO THIS TRIAL TYPE! \nIf you do not update conditions, the experiment will crash whenever it reaches this trial type.")
                                 warnDlg.show()
-                self.studyFlowArray = self.loadFlow()
-                self.showMainUI()
+                self.studyFlowArray = self.loadFlow(self.settings['trialOrder'], self.flowArea, self.flowLocs, self.overFlowLocs)
+                self.showMainUI(self.UI, self.studyFlowArray, self.trialTypesArray)
                 self.win.flip()
-    
+
     def addHabBlock(self, makeNew = True):
         """
-        Creates a hab trial type, which consists of a hab trial plus, now, some other number of trials
-        It essentially needs to create a sub-flow.
+        Creates either a hab trial type, or a hab trial block.
+
+        Trial type dialog:
 
         0 = Maximum duration
 
@@ -614,25 +716,61 @@ class PyHabBuilder:
 
         [If stimulus files associated with type, these occupy 3-N]
 
-        3/-5 = Auto-advance into trial
+        3/-3 = Auto-advance into trial
 
-        4/-4 = Select attention-getter
+        4/-2 = Select attention-getter
 
-        5/-3 = Inter-stimulus interval (ISI)
+        5/-1 = Inter-stimulus interval (ISI)
 
-        6/-2 = Use sub-block structure?
-
-        7/-1 = Number of trial types in sub-block, including hab
-
-        TODO: Compute hab over whole thing versus just 'hab' trial.
-
-
+        :param makeNew: Making a new  or modifying
         :return:
         :rtype:
         """
-        #Some stuff is predetermined, specifically name and gaze-contingency
-        typeDlg = gui.Dlg(title="Hab block creator")
-        typeDlg.addText("Hab trial settings")
+        # Type or block?
+        habInitDlg = gui.Dlg("One trial type, or multi-trial block?")
+        if len(self.settings['habTrialList']) > 0:
+            initchz = ['Multi-trial block', 'Single trial type']
+        else:
+            initchz = ['Single trial type', 'Multi-trial block']
+        habInitDlg.addField("Habituation trial type, or block?", choices=initchz)
+        if len(self.settings['habTrialList']) > 0:
+            habInitDlg.addText("NOTE: Changing to single trial type will delete block!")
+        elif len(self.settings['habTrialList']) == 0 and 'Hab' in self.settings['trialTypes']:
+            habInitDlg.addText("NOTE: Changing to block will delete Hab trial type!")
+        habInitInfo = habInitDlg.show()
+        if habInitDlg.OK:
+            habInitInfo[0] = str(habInitInfo[0])  # Safety for PyQt malarky
+            if habInitInfo[0] == 'Single trial type':
+                self.makeHabTypeDlg(makeNew)
+            elif habInitInfo[0] == 'Multi-trial block':
+                if makeNew or len(self.settings['habTrialList']) == 0:
+                    # Neatly accounts for swapping in a block for a single trial type.
+                    self.blockMaker('Hab', new=True, hab=True)
+                else:
+                    self.blockMaker('Hab', new=False, hab=True)
+
+    def makeHabTypeDlg(self, makeNew, prevSet=[]):
+        """
+        A function for creating a habituation trial type, rather than multi-trial block.
+
+        0: Maximum duration
+        1: Maximum off-time
+        2: Minimum on-time
+        3-N: Stimuli added to trial type
+        -3: Auto-advance
+        -2: Attention-getter
+        -1: ISI
+
+        :param makeNew: Making a new trial or revising an existing one?
+        :type makeNew: bool
+        :return:
+        :rtype:
+        """
+        if len(self.settings['habTrialList']) > 0:
+            makeNew = True
+        # Some stuff is predetermined, specifically name and gaze-contingency
+        typeDlg = gui.Dlg(title="Hab trial type creator")
+        typeDlg.addText("Hab trial type settings")
         if not makeNew:
             typeDlg.addField("Maximum duration", self.settings['maxDur']['Hab'])
             typeDlg.addField("Number of continuous seconds looking away to end trial", self.settings['maxOff']['Hab'])
@@ -644,6 +782,12 @@ class PyHabBuilder:
                 for i in range(0, len(self.settings['stimNames']['Hab'])):
                     typeDlg.addField(self.settings['stimNames']['Hab'][i], initial=True)
 
+        elif len(prevSet) > 0:
+            typeDlg.addField("Maximum duration", prevSet[0])
+            typeDlg.addField("Number of continuous seconds looking away to end trial", prevSet[1])
+            typeDlg.addField("Minimum time looking at screen before stimuli can be ended (not consecutive)",
+                             prevSet[2])
+            ISI = prevSet[-1]
         else:
             typeDlg.addField("Maximum duration", 60.0)
             typeDlg.addField("Number of continuous seconds looking away to end trial", 2.0)
@@ -651,79 +795,78 @@ class PyHabBuilder:
             ISI = 0.0
         if 'Hab' in self.settings['autoAdvance']:
             chz2 = True
+        elif len(prevSet) > 0:
+            if prevSet[-3] in [1, '1', True, 'True']:
+                chz2 = True
+            else:
+                chz2 = False
         else:
             chz2 = False
-        typeDlg.addField("Auto-advance INTO trial without waiting for expeirmenter?", initial=chz2)
-        if 'Hab' not in self.settings['playAttnGetter']:
-            ags = list(self.settings['attnGetterList'].keys())
-            chz3 = [x for x in ags if x is not 'PyHabDefault']
-            chz3.insert(0, 'None')
-            chz3.insert(0, 'PyHabDefault')  # Defaults to...well, the default
-        elif 'Hab' in self.settings['playAttnGetter']:
+        typeDlg.addField("Auto-advance INTO trial without waiting for experimenter?", initial=chz2)
+        if 'Hab' in self.settings['playAttnGetter']:
             chz3 = [x for x in list(self.settings['attnGetterList'].keys()) if
                     x is not self.settings['playAttnGetter']['Hab']]
             chz3.insert(0, 'None')
             chz3.insert(0, self.settings['playAttnGetter']['Hab'])
+        elif len(prevSet) == 0:
+            ags = list(self.settings['attnGetterList'].keys())
+            chz3 = [x for x in ags if x is not 'PyHabDefault']
+            chz3.insert(0, 'None')
+            chz3.insert(0, 'PyHabDefault')  # Defaults to...well, the default
+        else:
+            chz3 = [x for x in list(self.settings['attnGetterList'].keys()) if
+                    x is not prevSet[-2]]
+            chz3.insert(0, 'None')
+            chz3.insert(0, prevSet[-2])
         typeDlg.addField("Attention-getter for this trial type (Stim presentation mode only)", choices=chz3)
         typeDlg.addField("Inter-stimulus interval on loops (pause between end of one loop and start of next)", ISI)
-        typeDlg.addText("Hab block sub-trials")
-        if not makeNew:
-            if len(self.settings['habTrialList']) > 0:
-                chz = True
-                numSub = len(self.settings['habTrialList'])
-            else:
-                chz = False
-                numSub = 1
-        else:
-            chz = False
-            numSub = 1
-        typeDlg.addField("Use sub-trials? (If checked, new dialog will open)", initial=chz)
-        typeDlg.addField("Number of sub-trials (INCLUDING Hab trial; only matters if box is checked)", numSub)
         habInfo = typeDlg.show()
 
         if typeDlg.OK:
+            if len(self.settings['habTrialList']) > 0:
+                self.settings['habTrialList'] = []  # If the sub-block functionality was on and is now off
+                self.settings['calcHabOver'] = []
+                self.deleteType('Hab')
             skip = False
             # On OK, create a new ui with a drop-down from trialtypes that includes hab.
-            for i in [0,1,2]:
+            for i in [0, 1, 2]:
                 if not isinstance(habInfo[i], float) and not isinstance(habInfo[i], int):
                     try:
-                        habInfo[i]=eval(habInfo[i])
+                        habInfo[i] = eval(habInfo[i])
                     except:
                         warnDlg = gui.Dlg(title="Warning!")
-                        warnDlg.addText(
-                            "Number expected, got text instead. \nPlease make sure maximum duration, minimum on-time, and maximum off-time are all numbers!")
+                        warnDlg.addText("Number expected, got text instead. \nPlease make sure maximum duration, minimum on-time, and maximum off-time are all numbers!")
                         warnDlg.show()
                         skip = True
-                        self.addHabBlock(makeNew)
+                        self.makeHabTypeDlg(makeNew, prevSet=habInfo)
             if not skip:
                 # Need to change text of hab button
-                self.settings['playThrough']['Hab'] = 0 # This will always be the case
-                x = self.buttonList['functions'].index(self.addHabBlock) # gets index
-                self.buttonList['text'][x].text="Mod Hab Block" #Updates button text
+                self.settings['playThrough']['Hab'] = 0  # This will always be the case
+                x = self.buttonList['functions'].index(self.addHabBlock)  # gets index
+                self.buttonList['text'][x].text = "Mod Habituation"  # Updates button text
                 self.settings['maxDur']['Hab'] = habInfo[0]
                 self.settings['maxOff']['Hab'] = habInfo[1]
                 self.settings['minOn']['Hab'] = habInfo[2]
-                self.settings['ISI']['Hab'] = habInfo[len(habInfo) - 3]
-                if habInfo[len(habInfo) - 5] in [False,0,'False','0'] and 'Hab' in self.settings['autoAdvance']:
+                self.settings['ISI']['Hab'] = habInfo[len(habInfo) - 1]
+                if habInfo[len(habInfo) - 3] in [False, 0, 'False', '0'] and 'Hab' in self.settings['autoAdvance']:
                     self.settings['autoAdvance'].remove('Hab')
-                elif habInfo[len(habInfo) - 5] in [True, 1, 'True', '1'] and not 'Hab' in self.settings['autoAdvance']:
+                elif habInfo[len(habInfo) - 3] in [True, 1, 'True', '1'] and not 'Hab' in self.settings['autoAdvance']:
                     self.settings['autoAdvance'].append('Hab')
 
-                if habInfo[len(habInfo) - 4] == 'None':
+                if habInfo[len(habInfo) - 2] == 'None':
                     if 'Hab' in self.settings['playAttnGetter']:
                         del self.settings['playAttnGetter']['Hab']
                 else:
                     if 'Hab' not in self.settings['playAttnGetter']:  # If it did not have an attngetter before.
-                        agname = habInfo[len(habInfo) - 4]
+                        agname = habInfo[len(habInfo) - 2]
                         self.settings['playAttnGetter']['Hab'] = agname
-                    elif habInfo[len(habInfo) - 4] is not self.settings['playAttnGetter']['Hab']:
+                    elif habInfo[len(habInfo) - 2] is not self.settings['playAttnGetter']['Hab']:
                         # If a different attention-getter has been selected
-                        agname = habInfo[len(habInfo) - 4]
+                        agname = habInfo[len(habInfo) - 2]
                         self.settings['playAttnGetter']['Hab'] = agname
-
 
                 if makeNew:
-                    i = len(self.trialTypesArray['labels'])  # Grab length before adding, conveniently the index we need for position info etc.
+                    i = len(self.trialTypesArray['labels'])  # Conveniently the index we need for position info etc.
                     self.trialTypesArray['labels'].append('Hab')
                     tempObj = visual.Rect(self.win, width=self.typeWidthObj, height=self.typeHeightObj,
                                           fillColor=self.colorsArray[i], pos=self.typeLocs[i])
@@ -737,57 +880,351 @@ class PyHabBuilder:
                     self.trialTypesArray['text'].append(tempTxt)
                     self.settings['trialTypes'].append('Hab')
                     self.settings['stimNames']['Hab'] = []
-                #Check about movies.
-                if len(habInfo) > 7:  # Again, if there were movies to list.
+                # Check about movies.
+                if len(habInfo) > 6:  # Again, if there were movies to list.
                     tempMovies = []  # This will just replace the stimNames list
                     for i in range(0, len(self.settings['stimNames']['Hab'])):
                         if habInfo[i + 3]:
                             tempMovies.append(self.settings['stimNames']['Hab'][i])
                     self.settings['stimNames']['Hab'] = tempMovies
-                #Check if we need to make a set of sub-trials.
-                if habInfo[-2] in [True, 1, 'True', '1'] and habInfo[-1] > 1:
-                   self.setHabSubTrials(habInfo[-1])
-                elif habInfo[-2] in [True, 1, 'True', '1'] and habInfo[-1] <= 1:
-                    errDlg = gui.Dlg("No sub-block created")
-                    errDlg.addText("Sub-block of 1 or 0 defaults to single hab trial. Hab trial saved.")
-                    errDlg.show()
-                elif len(self.settings['habTrialList']) > 0 and habInfo[-2] in [False,0,'False','0'] :
-                    self.settings['habTrialList'] = [] #If the sub-block functionality was on and is now off
 
-    def setHabSubTrials(self,numHab):
+    def makeBlockDlg(self, name='', new=True):
         """
-        Groups trial types into hab blocks. Hab blocks can have multiple trial types, but one must always be Hab.
-        This function doesn't care if you've made a hab block before, it just overwrites whatever exists. This is under
-        the assumption that hab blocks will have few trials.
+        Creates a new 'block' structure, which basically masquerades as a trial type in most regards, but consists of
+        several sub-trials, much like how habituation blocks work.
 
-        :param numHab: Number of trials in a hab block
-        :type numHab: int
+        :param name: Name of existing trial type. '' by default
+        :type name: str
+        :param new: Making a new block, or modifying an existing one?
+        :type new: bool
         :return:
         :rtype:
         """
-        subBlockDlg = gui.Dlg("Hab Sub-trials")
-        subBlockDlg.addText("EXACTLY ONE must be set to Hab")
-        for i in range(0, numHab):
-            subBlockDlg.addField('sub-trial ' + str(i + 1), choices=self.settings['trialTypes'])
-        subBlockInfo = subBlockDlg.show()
-        if subBlockDlg.OK:
-            if 'Hab' not in subBlockInfo:
-                errDlg = gui.Dlg("Invalid sub-trials!")
-                errDlg.addText("Sub-trials must include AT LEAST one Hab trial!")
-                errDlg.show()
-                self.setHabSubTrials(numHab)
-            elif subBlockInfo.count('Hab') > 1:
-                errDlg = gui.Dlg("Invalid sub-trials!")
-                errDlg.addText("Sub-trials must include NO MORE THAN one Hab trial!")
-                errDlg.show()
-                self.setHabSubTrials(numHab)
-            else:
-                tempList = []
-                for i in range(0, len(subBlockInfo)):
-                    tempList.append(subBlockInfo[i])
-                self.settings['habTrialList'] = tempList
+        if len(self.settings['trialTypes']) > 0:
+            self.showMainUI(self.UI, self.studyFlowArray, self.trialTypesArray)
+            self.workingRect.draw()
+            self.workingText.draw()
+            self.win.flip()
+            newBlockDlg = gui.Dlg(title="Create new block")
+            newBlockDlg.addField("Block name: ", initial=name)
+            newBlockDlg.addText("Hit OK to select trials for this block")
+            newBlock = newBlockDlg.show()
+            if newBlockDlg.OK:
+                newBlock[0] = str(newBlock[0])  # In case PyQT does something weird
+                if newBlock[0] == '':
+                    errDlg = gui.Dlg(title="Missing information!")
+                    errDlg.addText("Name cannot be blank!")
+                    irrel = errDlg.show()
+                    self.makeBlockDlg(name, new)
+                elif newBlock[0] == 'Hab' or '.' in newBlock[0] or '^' in newBlock[0]:
+                    errDlg = gui.Dlg(title="Illegal block name!")
+                    errDlg.addText("Name contains illegal character, or is reserved. Please rename!")
+                    errDlg.addText("To create habituation blocks, please use the 'Add Habituation' button.")
+                    irrel = errDlg.show()
+                    self.makeBlockDlg(name, new)
+                elif new and newBlock[0] in self.settings['trialTypes']:
+                    errDlg = gui.Dlg(title="Name already in use!")
+                    errDlg.addText("Name is already in use for another trial or block. Please rename!")
+                    irrel = errDlg.show()
+                    self.makeBlockDlg(name, new)
+                else:
+                    if not new and name != newBlock[0]:
+                        # Change the name of the extant block.
+                        blockIndex = self.trialTypesArray['labels'].index(name)
+                        numChar = len(newBlock[0])
+                        if numChar <= 3:
+                            numChar = 4  # Maximum height
+                        self.settings['blockList'][newBlock[0]] = self.settings['blockList'].pop(name)
+                        flowIndexes = []
+                        for i in range(0, len(self.studyFlowArray['labels'])):
+                            if self.studyFlowArray['labels'][i] == name:
+                                flowIndexes.append(i)
+                        for i in flowIndexes:
+                            self.studyFlowArray['labels'][i] = newBlock[0]
+                            self.studyFlowArray['text'][i].text = newBlock[0]
+                            self.studyFlowArray['text'][i].height = self.flowHeightObj / (
+                                        .42 * numChar)  # Update text height for new length
+                        self.trialTypesArray['labels'][blockIndex] = newBlock[0]
+                        self.trialTypesArray['text'][blockIndex].text = newBlock[0]
+                        self.trialTypesArray['text'][blockIndex].height = self.typeHeightObj / (.33 * numChar)
+                        self.settings['trialTypes'] = [newBlock[0] if x == name else x for x in self.settings['trialTypes']]
+                        self.settings['trialOrder'] = [newBlock[0] if x == name else x for x in self.settings['trialOrder']]
+                        if len(self.settings['habTrialList']) > 0:
+                            for z in range(0, len(self.settings['habTrialList'])):
+                                if self.settings['habTrialList'][z] == name:
+                                    self.settings['habTrialList'][z] = newBlock[0]
+                        for a, b in self.settings['blockList'].items():
+                            for c in range(0, len(b)):
+                                if b[c] == name:
+                                    b[c] = newBlock[0]
 
-    
+                self.blockMaker(newBlock[0], new)
+        else:
+            errDlg = gui.Dlg(title="No trials to make blocks with!")
+            errDlg.addText("Make some trial types before trying to add them to a block.")
+            irrel = errDlg.show()
+
+
+    def blockMaker(self, blockName, new=True, hab=False):
+        """
+        For making multi-trial blocks. Or multi-block-blocks. You can make blocks of other blocks!
+        Creates a kind of sub-UI that overlays over the main UI. Because it's just for blocks, we can ditch some things.
+        We can actually completely overlay the regular UI. Problem is, if the regular UI continues to draw, the mouse
+        detection will still work, even if a shape is behind another shape. So, like with conditions, we need a totally
+        parallel UI
+
+        :param blockName: Name of new block
+        :type blockName: str
+        :param new: Is this a new block or a modification of an existing one?
+        :type new: bool
+        :param hab: Is this for a habituation meta-trial?
+        :type hab: bool
+        :return:
+        :rtype:
+        """
+        self.showMainUI(self.UI,self.studyFlowArray, self.trialTypesArray)  # Draw the usual UI under the new one...
+        # Define new flow UI. We can reuse a lot of the base UI, happily.
+        blockUI = {'bg':[],'buttons':{'shapes':[],'text':[],'functions':[]}}
+        blockOrder = []  # This will be what contains the order for the block!
+        end = False
+        newFlowArea = [-.97, .75, .97, -.97]  # X,X,Y,Y
+        newFlowRect = visual.Rect(self.win, width=newFlowArea[1] - newFlowArea[0],
+                                    height=newFlowArea[3] - newFlowArea[2], fillColor='lightgrey', lineColor='black',
+                                    pos=[newFlowArea[0] + float(abs(newFlowArea[1] - newFlowArea[0])) / 2,
+                                         newFlowArea[2] - float(abs(newFlowArea[3] - newFlowArea[2])) / 2])
+
+        doneButton = visual.Rect(self.win,width=.15, height=.67*(.15/self.aspect), pos=[-.72,-.8],fillColor="springgreen")
+        doneText = visual.TextStim(self.win, text="Done", height=.5*doneButton.height, pos=doneButton.pos, color='black')
+        cancelButton = visual.Rect(self.win, width=.15, height=.67 * (.15 / self.aspect), pos=[-.52, -.8],
+                                 fillColor="red")
+        cancelText = visual.TextStim(self.win, text="Cancel", height=.45 * doneButton.height, pos=cancelButton.pos,
+                                   color='white')
+        instrText = visual.TextStim(self.win, text="Construct block trial order", pos=[.1, -.9], color='black', height=.1)
+        bigPaletteArea = [.7,.95,.97,-.97]  # temporary, bigger palette, without trial type maker buttons!
+        bigPaletteRect = visual.Rect(self.win, width=bigPaletteArea[1] - bigPaletteArea[0],
+                                       height=bigPaletteArea[3] - bigPaletteArea[2], fillColor='white', lineColor='black',
+                                       pos=[bigPaletteArea[0] + float(abs(bigPaletteArea[1] - bigPaletteArea[0])) / 2,
+                                            bigPaletteArea[2] - float(abs(bigPaletteArea[3] - bigPaletteArea[2])) / 2])
+        blockUI['bg'].append(newFlowRect)
+        blockUI['bg'].append(bigPaletteRect)
+        blockUI['bg'].append(instrText)
+        blockUI['buttons']['shapes'].append(doneButton)
+        blockUI['buttons']['text'].append(doneText)
+        blockUI['buttons']['shapes'].append(cancelButton)
+        blockUI['buttons']['text'].append(cancelText)
+
+        bigPaletteLocs = []
+        newFlowLocs = []
+        for x in [.27, .73]:  # Two columns of trial types
+            for z in range(0, 10):
+                bigPaletteLocs.append([bigPaletteArea[0] + x * (bigPaletteArea[1] - bigPaletteArea[0]),
+                                      bigPaletteArea[2] + .05 * (bigPaletteArea[3] - bigPaletteArea[2]) + z * .09 * (bigPaletteArea[3] - bigPaletteArea[2])])
+        for y in [.2, .4, .6, .8]:  # four rows for the block flow.
+            for z in range(1,11):
+                newFlowLocs.append([newFlowArea[0] + z * (newFlowArea[1] - newFlowArea[0]) * self.flowGap,
+                                    newFlowArea[2] + y * (newFlowArea[3] - newFlowArea[2])])
+        trialTypes = self.loadTypes(bigPaletteLocs)
+        delIndex = []
+        forbid = ['Hab', blockName]  # If we're using this to make hab blocks, we need to allow (indeed mandate) Hab trials.
+        for q,z in self.settings['blockList'].items(): # Attempt to eliminate infinite loops
+            if blockName in z and blockName != q:
+                forbid.append(q)
+        for i in range(0, len(trialTypes['labels'])):
+            if trialTypes['labels'][i] in forbid:
+                delIndex.insert(0,deepcopy(i))  # In reverse order, because it makes the next part way simpler
+        for j in range(0, len(delIndex)):
+            del trialTypes['labels'][delIndex[j]]
+            del trialTypes['shapes'][delIndex[j]]
+            del trialTypes['text'][delIndex[j]]
+        # Go through and update positions
+        for k in range(0, len(trialTypes['labels'])):
+            trialTypes['shapes'][k].pos = bigPaletteLocs[k]
+            trialTypes['text'][k].pos = bigPaletteLocs[k]
+        if not new and not hab:
+            blockOrder = deepcopy(self.settings['blockList'][blockName])
+            blockFlow = self.loadFlow(tOrd=blockOrder, space=newFlowArea, locs=newFlowLocs, overflow=newFlowLocs)
+        elif not new:  # Modifying existing hab meta-trials
+            blockOrder = deepcopy(self.settings['habTrialList'])
+            blockFlow = self.loadFlow(tOrd=blockOrder, space=newFlowArea, locs=newFlowLocs, overflow=newFlowLocs)
+        else:
+            blockFlow = {'lines': [], 'shapes': [], 'text': [], 'labels': [], 'extras': []}
+
+        done = False
+        while not done:  # A heavily pared-down version of mainLoop that only allows trial flow editing and 'done'/'cancel'
+            self.showMainUI(self.UI, self.studyFlowArray, self.trialTypesArray)  # Draw the usual UI under the new one. Just aesthetic
+            self.showMainUI(blockUI, blockFlow, trialTypes)
+            self.win.flip()
+            for i in range(0, len(blockUI['buttons']['shapes'])):
+                if self.mouse.isPressedIn(blockUI['buttons']['shapes'][i]):
+                    if blockUI['buttons']['text'][i].text == 'Done':
+                        if len(blockFlow['labels']) == 0:
+                            errDlg = gui.Dlg(title="Empty block!")
+                            errDlg.addText("Block must contain at least one trial! Use cancel to stop block construction")
+                            errDlg.show()
+                        elif hab:  # Create or modify hab block. Special rules apply.
+                            for z in range(0, len(blockOrder)):
+                                if blockOrder[z] != 'Hab':
+                                    blockOrder[z] = blockOrder[z]
+                            self.settings['habTrialList'] = blockOrder
+                            if new:
+                                self.settings['calcHabOver'] = [blockOrder[-1]]  # Default to last trial.
+                                if 'Hab' in self.settings['trialTypes']:
+                                    self.deleteType('Hab')  # It's that simple. It'll shuffle 'hab' to the end of the pallette, but it won't change the color or anything.
+                                self.settings['trialTypes'].append('Hab')
+                                self.trialTypesArray = self.loadTypes(self.typeLocs, self.trialPalettePage)
+                            done = True
+                            self.habSettingsDlg()  # For setting which things to hab over.
+                        else:  # Create our new block or modify existing
+                            self.settings['blockList'][blockName] = blockOrder
+                            if new:
+                                self.settings['trialTypes'].append(blockName)
+                                self.trialTypesArray = self.loadTypes(self.typeLocs, self.trialPalettePage)
+                            else:
+                                self.studyFlowArray=self.loadFlow(self.settings['trialOrder'], self.flowArea, self.flowLocs, self.overFlowLocs)
+                            done = True
+                            if self.blockDataDlg not in self.buttonList['functions']:
+                                blockDataButton = visual.Rect(self.win, width=.3, height=.5 * (.2 / self.aspect),
+                                                              pos=[.8, -.65],
+                                                              fillColor="white")
+                                blockDataText = visual.TextStim(self.win, text="Save block summary \nfile?",
+                                                                color="black",
+                                                                height=blockDataButton.height * .3, alignHoriz='center',
+                                                                pos=blockDataButton.pos)
+                                self.buttonList['shapes'].append(blockDataButton)
+                                self.buttonList['text'].append(blockDataText)
+                                self.buttonList['functions'].append(self.blockDataDlg)
+                            while self.mouse.isPressedIn(blockUI['buttons']['shapes'][i], buttons=[0]):  # waits until the mouse is released before continuing.
+                                pass
+                    elif blockUI['buttons']['text'][i].text == 'Cancel':
+                        done = True  # Just break the loop and that's that.
+                        while self.mouse.isPressedIn(blockUI['buttons']['shapes'][i], buttons=[0]):  # waits until the mouse is released before continuing.
+                            pass
+            for j in range(0, len(trialTypes['shapes'])):  # Only need to worry about adding trials, no modding them from here!
+                if self.mouse.isPressedIn(trialTypes['shapes'][j], buttons=[0]):
+                    blockOrder.append(trialTypes['labels'][j])
+                    blockFlow = self.loadFlow(tOrd=blockOrder, space=newFlowArea, locs=newFlowLocs, overflow=newFlowLocs)
+                    while self.mouse.isPressedIn(trialTypes['shapes'][j],buttons=[0]):  # waits until the mouse is released before continuing.
+                        pass
+            for k in range(0, len(blockFlow['shapes'])):  # Rearrange or remove, as in the usual loop!
+                if self.mouse.isPressedIn(blockFlow['shapes'][k], buttons=[0]):
+                    blockOrder = self.moveTrialInFlow(k, blockOrder, newFlowArea, blockUI, blockFlow, trialTypes)
+                    blockFlow = self.loadFlow(tOrd=blockOrder, space=newFlowArea, locs=newFlowLocs, overflow=newFlowLocs)
+                    break
+
+
+    def blockDataDlg(self):
+        """
+        A dialog for determining whether you save a block data file, and if so which blocks to compress.
+
+        Procedurally constructs a set of options such that, for any nested blocks, they are mutually exclusive, but any
+        blocks that are not part of other blocks and other blocks are not part of them are just check-boxes.
+
+        Excludes hab because habituation data files are saved by default.
+
+        :return:
+        :rtype:
+        """
+
+        tempBlockList = list(self.settings['blockList'].keys())
+        fieldList = []
+        doneLoop = False
+        iteration = 0
+
+        while not doneLoop:
+            # This complex, messy loop is identifying all nested blocks, and inserting them into the eventual
+            # dialog as lists from which you can pick one, while leaving the stand-alone blocks as check boxes.
+            blockName = tempBlockList[iteration]
+            delIndex = []
+            forbid = []
+            for q in range(0, len(self.settings['blockList'][blockName])):
+                if self.settings['blockList'][blockName][q] in self.settings['blockList'].keys():
+                    # Identifies any nested blocks
+                    forbid.append(self.settings['blockList'][blockName][q])
+            if len(forbid) > 0:
+                # This ultimately becomes the list that will appear in the dialog
+                forbid.insert(0, blockName)
+                forbid.insert(0, 'None')
+                delIndex2=[]
+                for i in range(0, len(tempBlockList)):
+                    if tempBlockList[i] in forbid:
+                        delIndex.insert(0, deepcopy(i))  # In reverse order, because it makes the next part way simpler
+                for j in range(0, len(delIndex)):
+                    del tempBlockList[delIndex[j]]
+                    if delIndex[j] <= iteration:
+                        # Rewind as far as you need to rewind.
+                        iteration -= 1
+                for k in range(0, len(fieldList)):
+                    if isinstance(fieldList[k],list):
+                        # Find any lists which already exists and incorporate them if needed.
+                        addAll = False
+                        for q in range(0, len(fieldList[k])):
+                            if fieldList[k][q] in forbid:
+                                delIndex2.insert(0, deepcopy(k))
+                                addAll = True
+                        if addAll:
+                            for q in range(0, len(fieldList[k])):
+                                forbid.append(fieldList[k][q])
+                            forbid = list(dict.fromkeys(forbid)) # Removes all duplicate entries. It's a cute move.
+                    elif fieldList[k] in forbid:
+                        # Otherwise just get rid of any previous instance of the block in the list of fields.
+                        delIndex2.insert(0, deepcopy(k))
+                for l in range(0, len(delIndex2)):
+                    del fieldList[delIndex2[l]]
+                fieldList.append(forbid)
+                if iteration < 0:
+                    iteration = 0
+            else:
+                fieldList.append(blockName)
+                iteration += 1
+            print(fieldList)
+            if iteration >= len(tempBlockList):
+                doneLoop = True
+
+        blockDataDlg = gui.Dlg("Pick blocks for block data summary file")
+        blockDataDlg.addText("For nested blocks, pick which one you want to condense in the summary file (one line per instance of this block).")
+        blockDataDlg.addText("Check all non-nested blocks you want to condense.")
+        for a in range(0, len(fieldList)):
+            if isinstance(fieldList[a], list):
+                blockDataDlg.addField("Pick one of these nested blocks to record data for", choices=fieldList[a])
+            else:
+                blockDataDlg.addField(fieldList[a], initial=False)
+
+        blockDataInfo = blockDataDlg.show()
+        if blockDataDlg.OK:
+            finalList = []
+            for i in range(0, len(fieldList)):
+                if isinstance(fieldList[i], list):
+                    if blockDataInfo[i] is not 'None':
+                        finalList.append(blockDataInfo[i])
+                else:
+                    if blockDataInfo[i]:
+                        finalList.append(fieldList[i])
+            self.settings['blockDataList'] = finalList
+
+
+
+
+
+
+
+        """
+        blockType = self.settings['habTrialList'][q]
+        prfx = blockType + '.'
+        while not doneBlock:
+            for i in self.settings['blockList'][blockType]:
+                if i in self.settings['blockList'].keys():
+                    listBlocks.append(i)
+                else:
+                    listThings.append(prfx + i)
+            if len(listBlocks) == 0:
+                doneBlock = True
+            else:
+                blockType = listBlocks.pop(0)  # Pull out the next block and repeat until empty.
+                prfx = prfx + blockType + '.'
+
+        """
+
+
     def delTrialTypeDlg(self):
         """
         Dialog for deleting a trial type, and all instances of that trial type in the study flow
@@ -795,114 +1232,200 @@ class PyHabBuilder:
         :return:
         :rtype:
         """
-        self.showMainUI()
+        self.showMainUI(self.UI, self.studyFlowArray, self.trialTypesArray)
         self.workingRect.draw()
         self.workingText.draw()
         self.win.flip()
-        delTypeDlg = gui.Dlg(title="Choose trial type to delete.")
-        delTypeDlg.addText("Warning: Cannot be undone. All instances of this trial type in study flow will also be removed!")
-        delTypeDlg.addField("Choose trial type to delete, then hit OK.", choices=self.trialTypesArray['labels'])
+        delTypeDlg = gui.Dlg(title="Choose trial type or block to delete.")
+        delTypeDlg.addText("Warning: Cannot be undone. All instances of this trial or block in study flow will also be removed!")
+        delTypeDlg.addField("Choose trial type or block to delete, then hit OK.", choices=self.trialTypesArray['labels'])
         delInfo=delTypeDlg.show()
         if delTypeDlg.OK:
             dType=delInfo[0]
-            #Reassign colors if neccessary.
-            if self.settings['trialTypes'].index(dType) < len(self.settings['trialTypes']):
-                nowColor = self.colorsArray.pop(self.settings['trialTypes'].index(dType))
-                self.colorsArray.insert(len(self.settings['trialTypes'])-1, nowColor)
-            self.settings['trialTypes'].remove(dType)  # remove the type from the list of trial types.
-            del self.settings['stimNames'][dType]  # remove from stimNames
-            del self.settings['maxDur'][dType]  # remove from maxdur
-            if dType in self.settings['playThrough']:  # if it was in playThrough, remove it from there too.
-                self.settings['playThrough'].pop(dType, None)
-            if dType in self.settings['habTrialList']: #If it was in a hab meta-trial.
-                while dType in self.settings['habTrialList']:
-                    self.settings['habTrialList'].remove(dType)
-            self.trialTypesArray=self.loadTypes()  # easiest to just reload the trial types.
-            # For the study flow, it's easiest just to remove it from the trial order and reload the study flow.
-            if dType in self.settings['trialOrder']:
-                while dType in self.settings['trialOrder']:
-                    self.settings['trialOrder'].remove(dType)
-            self.studyFlowArray=self.loadFlow() #To update colors if needed.
+            self.deleteType(dType)
 
-    def moveTrialInFlow(self,flowIndex):
+
+    def deleteType(self, dType):
         """
-        A function for when a trial is clicked in the study flow, allowing you to either swap it or remove it.
+        Performs the actual deletion of a trial or block type.
+        TODO: More sophisticated handling of conditions.
 
-        :param flowIndex: The index in the flowArray of the trial being modified
-        :type flowIndex: int
+        :param dType: String indicating the name of the trial or block to be deleted
+        :type dType: str
         :return:
         :rtype:
         """
-        #Display a text tooltip at the bottom of the flow area.
-        instrText = visual.TextStim(self.win, text="Click another trial to swap positions, or click the remove button to delete from the study flow, click anywhere else to cancel.", bold=True,
-                    height = abs(self.flowArea[3]-self.flowArea[2])*.05, pos=[-.5, self.flowArea[3]+.12*float(abs(self.flowArea[3]-self.flowArea[2]))],alignHoriz='center',alignVert='center')
+        # Reassign colors if neccessary.
+        if self.settings['trialTypes'].index(dType) < len(self.settings['trialTypes']):
+            nowColor = self.colorsArray.pop(self.settings['trialTypes'].index(dType))
+            self.colorsArray.insert(len(self.settings['trialTypes']) - 1, nowColor)
+        self.settings['trialTypes'].remove(dType)  # remove the type from the list of trial types.
+        if dType in self.settings['blockList'].keys():  # Block vs. trial
+            del self.settings['blockList'][dType]
+        else:
+            if dType in self.settings['stimNames'].keys():
+                del self.settings['stimNames'][dType]  # remove from stimNames
+            del self.settings['maxDur'][dType]  # remove from maxDur and other trial-type-specific settings
+            del self.settings['minOn'][dType]
+            del self.settings['maxOff'][dType]
+            del self.settings['ISI'][dType]
+            if dType in self.settings['playThrough']:  # if it was in playThrough, remove it from there too.
+                self.settings['playThrough'].pop(dType, None)
+        if dType in self.settings['habTrialList']:  # If it was in a hab meta-trial.
+            while dType in self.settings['habTrialList']:
+                self.settings['habTrialList'].remove(dType)
+            if dType in self.settings['calcHabOver']:
+                self.settings['calcHabOver'].remove(dType)
+        for i, j in self.settings['blockList'].items():  # If it's part of a block
+            while dType in j:
+                j.remove(dType)
+        self.trialTypesArray = self.loadTypes(self.typeLocs,self.trialPalettePage)  # easiest to just reload the trial types.
+        # For the study flow, it's easiest just to remove it from the trial order and reload the study flow.
+        if dType in self.settings['trialOrder']:
+            while dType in self.settings['trialOrder']:
+                self.settings['trialOrder'].remove(dType)
+        self.studyFlowArray = self.loadFlow(self.settings['trialOrder'], self.flowArea, self.flowLocs, self.overFlowLocs)  # To update colors if needed.
+        if self.settings['condFile'] is not '':
+            warnDlg = gui.Dlg(title="Update conditions")
+            warnDlg.addText(
+                "WARNING! UPDATE CONDITION SETTINGS AFTER REMOVING THIS TRIAL TYPE! \nIf you do not update conditions, the experiment may crash when you try to run it.")
+            warnDlg.show()
+
+    def moveTrialInFlow(self, flowIndex, tOrd, flowSpace, UI, flow, types):
+        """
+        A function for when a trial is clicked in a trial flow, allowing you to either swap it or remove it.
+
+        :param flowIndex: The index in the flowArray of the trial being modified
+        :type flowIndex: int
+        :param tOrd: The trial order being modified, either the main one or a block order
+        :type tOrd: list
+        :param flowSpace: The shape that makes up the flow UI, which varies from typical usage to block construction
+        :type flowSpace: visual.Rect object
+        :param UI: A dictionary containing the currently active UI
+        :type UI: dict
+        :param flow: A dictionary containing the currently active trial flow
+        :type flow: dict
+        :param types: A dictionary containing the currently active trial pallette (mostly for showMainUI)
+        :type types: dict
+        :return: The modified trial order
+        :rtype: list
+        """
+
+        # Display a text tooltip at the top of the flow area. Not sensitive to size of flow area because bluntly it looked better to lock it to the default size
+        instrText = visual.TextStim(self.win, text="Click another trial to swap positions, click a trial type to replace, or click the remove button to delete from the study flow, click anywhere else to cancel.", bold=True,
+                    height=abs(self.flowArea[3]-self.flowArea[2])*.04, pos=[-.2, flowSpace[2]-.05*float(abs(flowSpace[3]-flowSpace[2]))], alignHoriz='center', alignVert='center')
         #highlight the selected object.
-        removeTrialShape = visual.Rect(self.win, fillColor='red', width=.1*float(abs(self.flowArea[1]-self.flowArea[0])), height=.1*float(abs(self.flowArea[3]-self.flowArea[2])), 
-                    pos=[self.flowArea[0]+float(abs(self.flowArea[1]-self.flowArea[0]))*.85,self.flowArea[3]+float(abs(self.flowArea[3]-self.flowArea[2]))/9])
-        removeTrialText = visual.TextStim(self.win, text = "REMOVE", bold=True, height=removeTrialShape.height*.7,pos=removeTrialShape.pos)
-        self.studyFlowArray['shapes'][flowIndex].lineColor="yellow"
-        self.studyFlowArray['shapes'][flowIndex].lineWidth=5
+        removeTrialShape = visual.Rect(self.win, fillColor='red', width=.1*float(abs(self.flowArea[1]-self.flowArea[0])), height=.1*float(abs(self.flowArea[3]-self.flowArea[2])),
+                    pos=[flowSpace[0]+float(abs(flowSpace[1]-flowSpace[0]))*.85,flowSpace[3]+float(abs(flowSpace[3]-flowSpace[2]))/9])
+        removeTrialText = visual.TextStim(self.win, text="REMOVE", bold=True, height=removeTrialShape.height*.5,pos=removeTrialShape.pos)
+        flow['shapes'][flowIndex].lineColor = "yellow"
+        flow['shapes'][flowIndex].lineWidth = 5
         core.wait(.1) #Short delay to clear any old mouse press.
         #loop until mouse press
         while 1 not in self.mouse.getPressed():
-            self.showMainUI()
+            self.showMainUI(UI, flow, types)
             instrText.draw()
             removeTrialShape.draw()
             removeTrialText.draw()
             self.win.flip()
-        for i in range(0, len(self.studyFlowArray['shapes'])):
-            if self.mouse.isPressedIn(self.studyFlowArray['shapes'][i]) and not i == flowIndex: #clicked a different thing in the study flow
-                #Swap the selected trial and the clicked trial, reload study flow.
-                tempTrial=self.settings['trialOrder'][i]
-                self.settings['trialOrder'][i] = self.settings['trialOrder'][flowIndex]
-                self.settings['trialOrder'][flowIndex] = tempTrial
-                self.studyFlowArray = self.loadFlow()
+        for i in range(0, len(flow['shapes'])):
+            if self.mouse.isPressedIn(flow['shapes'][i]) and not i == flowIndex:
+                # Clicked a different thing in the study flow
+                # Swap the selected trial and the clicked trial, reload study flow.
+                tempTrial = deepcopy(tOrd[i])
+                tOrd[i] = tOrd[flowIndex]
+                tOrd[flowIndex] = tempTrial
+        for j in range(0, len(types['shapes'])):
+            # Clicked a different trial type from the palette, swapping it with the current trial
+            if self.mouse.isPressedIn(types['shapes'][j]) and types['labels'][j] != tOrd[flowIndex]:
+                tOrd[flowIndex] = types['labels'][j]
         if self.mouse.isPressedIn(removeTrialShape):
-            #pop that trial out of trial order, reload flow.
-            del self.settings['trialOrder'][flowIndex]
-            self.studyFlowArray=self.loadFlow()
+            # Pop that trial out of trial order
+            del tOrd[flowIndex]
         else:
-            self.studyFlowArray['shapes'][flowIndex].lineColor="white"
-            self.studyFlowArray['shapes'][flowIndex].lineWidth=1.5
+            flow['shapes'][flowIndex].lineColor="white"
+            flow['shapes'][flowIndex].lineWidth=1.5
         core.wait(.1)
+        return tOrd
 
     
-    def loadFlow(self):
+    def loadFlow(self, tOrd, space, locs, overflow, specNumItems=0):
         """
-        This creates the array of objects in the study flow display
+        Creates the array of objects to be drawn for a study flow or block flow.
 
-        :return:
-        :rtype:
+        Flow dictionary components:
+        'lines': Lines that go between items in the flow, drawn first
+        'shapes': visual.Rect objects
+        'text': visual.textStim objects
+        'labels': Strings that label each trial. Shapes and text are indexted to these, so you can do easy lookup.
+        'extras': Special category for trial pips for blocks.
+
+        :param tOrd: Extant order of trials, either the overall trial order or the block order
+        :type tOrd: list
+        :param space: The dimensions of the flow part of the UI, typically self.flowArea
+        :type space: list
+        :param locs: List of locations to draw the items in the flow, if less than 21 items to be drawn
+        :type locs: list
+        :param overflow: List of locations to use when there are more than 21 items, which compacts the rendering.
+        :type overflow: list
+        :param specNumItems: A special argument for cases where there are weird line overlaps that change the length of things. Defaults to 0, only used when calling recursively.
+        :type specNumItems: int
+        :return: A dictionary of all of the entities to draw into the block or study flow
+        :rtype: dict
         """
-        tOrd = self.settings['trialOrder']
+
         numItems = len(tOrd)
         tTypes = self.settings['trialTypes']
         for i in range(0,len(tOrd)):
             if tOrd[i] == 'Hab':
-                numItems += 1 #Double-size for habs
-        outputDict = {'lines':[],'shapes':[],'text':[],'labels':[]}  #Labels allows us to index the others while still keeping order.
+                numItems += 1 #Double-size for blocks
+        outputDict = {'lines':[],'shapes':[],'text':[],'labels':[], 'extras':[]}  #Labels allows us to index the others while still keeping order.
         j = 0 # This serves a purpose, trust me. It's for rendering hab blocks.
-        if len(tOrd) < 21:  # Past 20 we can't render it, but it won't crash.
-            flowSpace = self.flowLocs
+        if specNumItems > 0:
+            numItems = specNumItems  # Currently this deals with the edge of edge cases, a hab in position 20 looping into the second line.
+        if numItems < 21:  # Past 20 we can't render it, but it won't crash.
+            flowSpace = locs
         else:
-            flowSpace = self.overFlowLocs
+            flowSpace = overflow
         for i in range(0, len(tOrd)):
             #Now, actually build the list of objects to render.
-            if i < 39 or (i == 39 and len(tOrd) == 40):
-                c=tTypes.index(tOrd[i]) # find the trial type, get color index
+            if j < 39 or (j == 39 and numItems == 40):
+                c = tTypes.index(tOrd[i])  # find the trial type, get color index
                 if tOrd[i] == 'Hab': # The special category
-                    if j+1 % 10 == 0 and j < 40:
+                    if j % 10 == 9:
                         j += 1 # Just in case we're at the point where it would loop around to the second row. We don't want that.
+                        if numItems == 20 or numItems == 39:  # Special case of breaking flowLocs limits.
+                            #TODO: BF: if there are multiple hab blocks or if there are precisely 41 items when you have a line skip like this it doesn't count them correctly in the study flow interface.
+                            #But, having more than one hab block breaks the whole program anyways. Will become an issue with generic blocks
+                            return self.loadFlow(tOrd, space, locs, overflow, specNumItems=numItems+1)
                     lx1 = flowSpace[j][0]
                     j += 1
                     lx2 = flowSpace[j][0]
                     lx = (lx2+lx1)/2 # Ideally putting it square in between the two places.
                     loc = [lx,flowSpace[j][1]]
                     tempObj = visual.Rect(self.win,width=self.flowWidthObj*2, height=self.flowHeightObj, fillColor=self.colorsArray[c], pos=loc)
+                    if tOrd[i] == 'Hab' and len(self.settings['habTrialList']) > 1:  # If there are hab sub-trials, add pips to the hab block object
+                        for q in range(0, len(self.settings['habTrialList'])):
+                            tempStr = self.settings['habTrialList'][q]
+                            newwidth = self.flowWidthObj/len(self.settings['habTrialList'])
+                            tempPip = visual.Rect(self.win, width=newwidth, height=self.flowHeightObj/2.5,
+                                                  fillColor=self.colorsArray[tTypes.index(tempStr)],
+                                                  pos=[lx+newwidth*(q-(len(self.settings['habTrialList'])-1)/2), flowSpace[j][1]-self.flowHeightObj/2.25])
+                            outputDict['extras'].append(tempPip)
+                elif tOrd[i] in self.settings['blockList'].keys():
+                    tempObj = visual.Rect(self.win, width=self.flowWidthObj, height=self.flowHeightObj, fillColor=self.colorsArray[c], pos=flowSpace[j])
+                    for q in range(0, len(self.settings['blockList'][tOrd[i]])):
+                        tempStr = self.settings['blockList'][tOrd[i]][q]
+                        newwidth = self.flowWidthObj/(2*len(self.settings['blockList'][tOrd[i]]))
+                        tempPip = visual.Rect(self.win, width=newwidth, height=self.flowHeightObj / 2.5,
+                                              fillColor=self.colorsArray[tTypes.index(tempStr)],
+                                              pos=[flowSpace[j][0] + newwidth * (q - (len(self.settings['blockList'][tOrd[i]]) - 1) / 2),
+                                                   flowSpace[j][1] - self.flowHeightObj / 2.25])
+                        outputDict['extras'].append(tempPip)
                 elif tOrd[i] in self.settings['autoAdvance'] and j not in [0, 10, 20, 30]:
                     # Make it adjacent to the last one, unless it would start a row, in which case leave it.
-                    loc = [flowSpace[j][0]-abs(self.flowArea[1]-self.flowArea[0])*((self.flowGap-self.flowWidMult)/2), flowSpace[j][1]]
-                    tempObj = visual.Rect(self.win, width=abs(self.flowArea[1]-self.flowArea[0])*(self.flowWidMult + (self.flowGap-self.flowWidMult)), height=self.flowHeightObj, fillColor=self.colorsArray[c], pos=loc)
+                    loc = [flowSpace[j][0]-abs(space[1]-space[0])*((self.flowGap-self.flowWidMult)/2), flowSpace[j][1]]
+                    tempObj = visual.Rect(self.win, width=abs(space[1]-space[0])*(self.flowWidMult + (self.flowGap-self.flowWidMult)), height=self.flowHeightObj, fillColor=self.colorsArray[c], pos=loc)
                 else:
                     tempObj = visual.Rect(self.win, width=self.flowWidthObj, height=self.flowHeightObj, fillColor=self.colorsArray[c], pos=flowSpace[j])
                 numChar = len(tOrd[i])
@@ -916,50 +1439,78 @@ class PyHabBuilder:
         if numItems == 0:
             pass #So we do not add a line if there is no line to draw!
         elif numItems < 11:
-            tempLine = visual.Line(self.win, start=self.flowLocs[0], end=outputDict['shapes'][-1].pos)
+            tempLine = visual.Line(self.win, start=locs[0], end=outputDict['shapes'][-1].pos)
             outputDict['lines'].append(tempLine)
         elif numItems < 21:
-            tempLine = visual.Line(self.win, start=self.flowLocs[0], end=self.flowLocs[9])
-            tempLine2 = visual.Line(self.win, start=self.flowLocs[10], end=outputDict['shapes'][-1].pos)
+            tempLine = visual.Line(self.win, start=locs[0], end=locs[9])
+            tempLine2 = visual.Line(self.win, start=locs[10], end=outputDict['shapes'][-1].pos)
             outputDict['lines'].append(tempLine)
             outputDict['lines'].append(tempLine2)
         elif numItems < 31:
-            tempLine = visual.Line(self.win, start=self.overFlowLocs[0], end=self.overFlowLocs[9])
-            tempLine2 = visual.Line(self.win, start=self.overFlowLocs[10], end=self.overFlowLocs[19])
-            tempLine3 = visual.Line(self.win, start=self.overFlowLocs[20], end=outputDict['shapes'][-1].pos)
+            tempLine = visual.Line(self.win, start=overflow[0], end=overflow[9])
+            tempLine2 = visual.Line(self.win, start=overflow[10], end=overflow[19])
+            tempLine3 = visual.Line(self.win, start=overflow[20], end=outputDict['shapes'][-1].pos)
             outputDict['lines'].append(tempLine)
             outputDict['lines'].append(tempLine2)
             outputDict['lines'].append(tempLine3)
         elif numItems < 41:
-            tempLine = visual.Line(self.win, start=self.overFlowLocs[0], end=self.overFlowLocs[9])
-            tempLine2 = visual.Line(self.win, start=self.overFlowLocs[10], end=self.overFlowLocs[19])
-            tempLine3 = visual.Line(self.win, start=self.overFlowLocs[20], end=self.overFlowLocs[29])
-            tempLine4 = visual.Line(self.win, start=self.overFlowLocs[30], end=outputDict['shapes'][-1].pos)
+            tempLine = visual.Line(self.win, start=overflow[0], end=overflow[9])
+            tempLine2 = visual.Line(self.win, start=overflow[10], end=overflow[19])
+            tempLine3 = visual.Line(self.win, start=overflow[20], end=overflow[29])
+            tempLine4 = visual.Line(self.win, start=overflow[30], end=outputDict['shapes'][-1].pos)
             outputDict['lines'].append(tempLine)
             outputDict['lines'].append(tempLine2)
             outputDict['lines'].append(tempLine3)
             outputDict['lines'].append(tempLine4)
         else:
-            tempLine = visual.Line(self.win, start=self.overFlowLocs[0], end=self.overFlowLocs[9])
-            tempLine2 = visual.Line(self.win, start=self.overFlowLocs[10], end=self.overFlowLocs[19])
-            tempLine3 = visual.Line(self.win, start=self.overFlowLocs[20], end=self.overFlowLocs[29])
-            tempLine4 = visual.Line(self.win, start=self.overFlowLocs[30], end=outputDict['shapes'][38].pos)
+            tempLine = visual.Line(self.win, start=overflow[0], end=self.overFlowLocs[9])
+            tempLine2 = visual.Line(self.win, start=overflow[10], end=self.overFlowLocs[19])
+            tempLine3 = visual.Line(self.win, start=overflow[20], end=overflow[29])
+            tempLine4 = visual.Line(self.win, start=overflow[30], end=outputDict['shapes'][-1].pos)
             outputDict['lines'].append(tempLine)
             outputDict['lines'].append(tempLine2)
             outputDict['lines'].append(tempLine3)
             outputDict['lines'].append(tempLine4)
-            tempText = visual.TextStim(self.win, text="+" + str(numItems-39) + " more", pos=self.overFlowLocs[39])
+            tempText = visual.TextStim(self.win, text="+" + str(numItems-39) + " more", pos=overflow[39])
             outputDict['lines'].append(tempText)
         return outputDict
-    
-    def loadTypes(self): #A "pallette" of trial types on one side, only needed when loading from save.
-        """
-        This function creates the trial types palette
 
+    def nextPalettePage(self):
+        """
+        Simple function for moving to the next page of the trial type palette.
         :return:
         :rtype:
         """
-        if len(self.settings['trialTypes']) == 0:#if working w/ an old settings file or one that for w/e reason has no ttypes.
+
+        if self.trialPalettePage < self.totalPalettePages:
+            self.trialPalettePage += 1
+        self.trialTypesArray = self.loadTypes(self.typeLocs, self.trialPalettePage)
+
+    def lastPalettePage(self):
+        """
+        Simple function for moving to the previous page of the trial type palette
+        :return:
+        :rtype:
+        """
+        if self.trialPalettePage > 1:
+            self.trialPalettePage -= 1
+        self.trialTypesArray = self.loadTypes(self.typeLocs, self.trialPalettePage)
+
+    def loadTypes(self, typeLocations, page=1):
+        """
+        This function creates the trial types palette.
+
+        Type pallette dictionary components:
+        'shapes': visual.Rect objects
+        'text': visual.TextStim objects
+        'labels': A sort of index for the other two, a plain string labeling the trial or block type.
+
+        :param typeLocations: The array of coordinates on which buttons can be placed. Usually self.typeLocs
+        :type typeLocations: list
+        :return:
+        :rtype:
+        """
+        if len(self.settings['trialTypes']) == 0:  # if working w/ an old settings file or one that for w/e reason has no ttypes.
             tOrd = self.settings['trialOrder']
             tTypes = []#list of trial types
             for i in range(0,len(tOrd)):
@@ -969,16 +1520,18 @@ class PyHabBuilder:
             tTypes = self.settings['trialTypes'] 
         outputDict=  {'shapes':[],'text':[],'labels':[]} #Dicts ain't ordered but lists within dicts sure are!
         #Create the same trial type squares we see in the flow, but wholly independent objects for drawing purposes (allowing one to change w/out the other)
-        for i in range(0, len(tTypes)):
+        for i in range(0+len(typeLocations)*(page-1), min(len(typeLocations)*page,len(tTypes))):
             #Now, actually build the list of objects to render.
-            tempObj = visual.Rect(self.win,width=self.typeWidthObj, height=self.typeHeightObj, fillColor=self.colorsArray[i], pos=self.typeLocs[i])
+            tempObj = visual.Rect(self.win,width=self.typeWidthObj, height=self.typeHeightObj, fillColor=self.colorsArray[i], pos=typeLocations[i%len(typeLocations)])
             numChar = len(tTypes[i])
             if numChar <= 3:
                 numChar = 4 #Maximum height
-            tempTxt = visual.TextStim(self.win, alignHoriz='center', alignVert='center',bold=True,height=self.typeHeightObj/(.32*numChar),text=tTypes[i], pos=self.typeLocs[i])
-            outputDict['shapes'].append(tempObj) #Might need to change this to be a dict of shapes and text, to make click-in-shape easier to manage later.
+            tempTxt = visual.TextStim(self.win, alignHoriz='center', alignVert='center',bold=True,height=self.typeHeightObj/(.34*numChar),text=tTypes[i], pos=typeLocations[i%len(typeLocations)])
+            outputDict['shapes'].append(tempObj)
             outputDict['text'].append(tempTxt)
             outputDict['labels'].append(tTypes[i])
+        x = self.buttonList['functions'].index(self.nextPalettePage)  # TODO: This is inelegant. Find a better fix later.
+        self.buttonList['text'][x].text = str(self.trialPalettePage) + '/' + str(self.totalPalettePages)
         return(outputDict)
     
     def quitFunc(self):
@@ -1021,7 +1574,7 @@ class PyHabBuilder:
         :return:
         :rtype:
         """
-        self.showMainUI()
+        self.showMainUI(self.UI, self.studyFlowArray, self.trialTypesArray)
         self.workingRect.draw()
         self.workingText.draw()
         self.win.flip()
@@ -1078,11 +1631,16 @@ class PyHabBuilder:
         :return:
         :rtype:
         """
-        self.showMainUI()
+        self.showMainUI(self.UI, self.studyFlowArray, self.trialTypesArray)
         self.workingRect.draw()
         self.workingText.draw()
         self.win.flip()
         dDlg = gui.Dlg(title="Data settings")
+        dDlg.addText("Select which summary files to save.")
+        dDlg.addText("Block-level means one line per block instance (e.g., each loop of a hab block),")
+        dDlg.addText("trial-level means one line for each individual trial (the verbose file will always have this)")
+        dDlg.addField("Block-level", initial=True)
+        dDlg.addField("Trial-level", initial=True)
         dDlg.addText("Check all columns you would like to be recorded in your data files. ")
         dDlg.addText("ANYTHING UNCHECKED WILL NOT BE STORED IN ANY WAY!")
         if self.settings['prefLook'] in [1,'1',True,'True']:
@@ -1117,10 +1675,14 @@ class PyHabBuilder:
 
         4 = movieWidth: Height of movieStim3 object inside stim window
 
-        5 = screenIndex: Which screen to display the stim window on.
-
-        6 = freezeFrame: If the attention-getter is used (for this trial type), this is the minimum time the first frame
+        5 = freezeFrame: If the attention-getter is used (for a given trial type), this is the minimum time the first frame
         of the movie will be displayed after the attention-getter finishes.
+
+        6 = screenIndex: Which screen to display the stim window on.
+
+        7 = expScreenIndex: Which screen to display the experimenter window on
+
+
 
         :param lastSet: Optional. Last entered settings, in case dialog needs to be presented again to fix bad entries.
         :type lastSet: list
@@ -1130,7 +1692,7 @@ class PyHabBuilder:
         :rtype:
         """
 
-        self.showMainUI()
+        self.showMainUI(self.UI, self.studyFlowArray, self.trialTypesArray)
         self.workingRect.draw()
         self.workingText.draw()
         self.win.flip()
@@ -1146,8 +1708,9 @@ class PyHabBuilder:
             lastSet.append(self.settings['screenColor'])
             lastSet.append(self.settings['movieWidth'])
             lastSet.append(self.settings['movieHeight'])
-            lastSet.append(self.settings['screenIndex'])
             lastSet.append(self.settings['freezeFrame'])
+            lastSet.append(self.settings['screenIndex'])
+            lastSet.append(self.settings['expScreenIndex'])
         colors = ['black', 'white', 'gray']
         colorchz = [x for x in colors if x != lastSet[2]]
         colorchz.insert(0, lastSet[2])
@@ -1156,17 +1719,27 @@ class PyHabBuilder:
         sDlg.addField("Stimulus display background color", choices=colorchz)
         sDlg.addField("Width of movie stimuli in pixels", lastSet[3])
         sDlg.addField("Height of movie stimuli in pixels", lastSet[4])
-        if lastSet[5] in [1, '1']:
-            scrchz = [1, 0]
+        sDlg.addField("Freeze first frame for how many seconds after attention-getter?", lastSet[5])
+        # Get a list of all screens. Requires us to import pyglet, assuming we are using pyglet displays (until glfw works)
+        defDisp = pyglet.window.get_platform().get_default_display()
+        allScrs = defDisp.get_screens()
+        if len(allScrs) > 1:
+            screenList = list(range(0, len(allScrs)))
         else:
-            scrchz = [0, 1]
-        sDlg.addField("Screen index of presentation screen (0 = primary display, 1 = secondary screen)", choices=scrchz)
-        sDlg.addField("Freeze first frame for how many seconds after attention-getter?", lastSet[6])
+            screenList = [0, 1]  # Because even if you don't have a second screen now, you presumably will later.
+        if isinstance(lastSet[6],str):
+            lastSet[6] = eval(lastSet[6])
+        scrchz = [x for x in screenList if x != lastSet[6]]
+        scrchz.insert(0, lastSet[6])
+        sDlg.addField("Screen index of presentation window (0 = primary display, 1-N = secondary screens)", choices=scrchz)
+        escrchz = [x for x in screenList if x != lastSet[7]]
+        escrchz.insert(0, lastSet[7])
+        sDlg.addField("Screen index of experimenter window", choices=escrchz)
 
         stimfo = sDlg.show()
         if sDlg.OK:
             problem = False
-            for i in [0, 1, 3, 4, 5, 6]:
+            for i in [0, 1, 3, 4, 5, 6, 7]:
                 if not isinstance(stimfo[i], float) and not isinstance(stimfo[i], int):
                     try:
                         stimfo[i] = eval(stimfo[i])
@@ -1178,8 +1751,9 @@ class PyHabBuilder:
                 self.settings['screenColor'] = stimfo[2]
                 self.settings['movieWidth'] = stimfo[3]
                 self.settings['movieHeight'] = stimfo[4]
-                self.settings['screenIndex'] = stimfo[5]
-                self.settings['freezeFrame'] = stimfo[6]
+                self.settings['freezeFrame'] = stimfo[5]
+                self.settings['screenIndex'] = stimfo[6]
+                self.settings['expScreenIndex'] = stimfo[7]
             else:
                 warnDlg = gui.Dlg(title="Warning!")
                 warnDlg.addText(
@@ -1270,7 +1844,7 @@ class PyHabBuilder:
                 e = errDlg.show()
             # When we are done with this dialog, if we have actually added anything, create the "add to types" dlg.
             if len(list(self.settings['stimList'].keys())) > 0 and self.addStimToTypesDlg not in self.buttonList['functions']:
-                addMovButton = visual.Rect(self.win, width=.3, height=.5 * (.2 / self.aspect), pos=[.75, -.6],
+                addMovButton = visual.Rect(self.win, width=.3, height=.5 * (.2 / self.aspect), pos=[.4, -.65],
                                            fillColor="white")
                 addMovText = visual.TextStim(self.win, text="Add stimulus files \nto trial types", color="black",
                                              height=addMovButton.height * .3, alignHoriz='center', pos=addMovButton.pos)
@@ -1347,16 +1921,21 @@ class PyHabBuilder:
         :return:
         :rtype:
         """
-        self.showMainUI()
+        self.showMainUI(self.UI, self.studyFlowArray, self.trialTypesArray)
         self.workingRect.draw()
         self.workingText.draw()
         self.win.flip()
 
         if len(self.trialTypesArray['labels']) > 0:
             d1 = gui.Dlg(title="Select trial type to add stimuli to")
-            choiceList=[]
+            choiceList = []
             for i in range(0, len(self.trialTypesArray['labels'])): # Not just copying list b/c it would add start/end to it
-                choiceList.append(self.trialTypesArray['labels'][i])
+                if self.trialTypesArray['labels'][i] in self.settings['blockList'].keys():
+                    pass
+                elif self.trialTypesArray['labels'][i] == 'Hab' and len(self.settings['habTrialList'])>0:
+                    pass
+                else:
+                    choiceList.append(self.trialTypesArray['labels'][i])
             choiceList.append('Start and end of experiment screens')
             d1.addField("Trial type to add stimulus file to", choices=choiceList)
             d1.addField("Number of stimuli to add (you will select them in the next window)",1)
@@ -1364,7 +1943,7 @@ class PyHabBuilder:
             d1.addText("Note: You can only REMOVE stimuli from a trial type in the trial type's own settings, this will add to whatever is already there")
             d = d1.show()
             if d1.OK and isinstance(d[1], int):
-                self.showMainUI()
+                self.showMainUI(self.UI, self.studyFlowArray, self.trialTypesArray)
                 self.workingRect.draw()
                 self.workingText.draw()
                 self.win.flip()
@@ -1476,7 +2055,7 @@ class PyHabBuilder:
         :return:
         :rtype:
         """
-        self.showMainUI()
+        self.showMainUI(self.UI, self.studyFlowArray, self.trialTypesArray)
         self.workingRect.draw()
         self.workingText.draw()
         self.win.flip()
@@ -1512,7 +2091,7 @@ class PyHabBuilder:
                 if currAG['stimType'] is 'Audio':
                     chz = ['Audio', 'Video']
                 else:
-                    chz = ['Video, Audio']
+                    chz = ['Video', 'Audio']
                 aDlg2b.addField("Attention-getter type: ", choices=chz)
                 aDlg2b.addField("Change current file (%s)?" % currAG['stimName'], choices=["No","Yes"])
                 if currAG['stimType'] is 'Audio':
@@ -1524,11 +2103,14 @@ class PyHabBuilder:
                     colorChz = [x for x in allColors if x is not currAG['color']]
                     colorChz.insert(0, currAG['color']) # A more elegant shuffle because the words match
                     aDlg2b.addField("Looming shape color", choices=colorChz)
-                ans2b = aDlg2b.show
+                ans2b = aDlg2b.show()
                 if aDlg2b.OK:
                     if ans2b[0] is not ans1[0]:  # Did they change the name?
                         self.settings['attnGetterList'][ans2b[0]] = self.settings['attnGetterList'].pop(ans1[0])
                         currAG = self.settings['attnGetterList'][ans2b[0]]
+                        for i, j in self.settings['playAttnGetter'].items():
+                            if j == ans1[0]:
+                                self.settings['playAttnGetter'][i] = ans2b[0]
                     if ans2b[1] is not currAG['stimType']:  # if they change it from audio to video or the reverse...
                         tempGetter = {'stimType': ans2b[1]}
                         # 1. If going to audio, select shape then new file.
@@ -1551,7 +2133,7 @@ class PyHabBuilder:
                                                                               'stimName': namething,
                                                                               'stimDur': tempStim.duration})
                             del tempStim
-                    if len(ans2b) > 2:  # If we had shape/color settings
+                    if len(ans2b) > 3:  # If we had shape/color settings
                         self.settings['attnGetterList'][ans2b[0]].update({'shape': ans2b[3], 'color': ans2b[4]})
 
     def condSettingsDlg(self): #Settings relating to conditions and randomization
@@ -1572,20 +2154,28 @@ class PyHabBuilder:
             chkBox = True
         cDlg.addField("Use random presentation? If yes, a new interface will open",initial=chkBox)
         cDlg.addField("Pre-existing condition file (optional, leave blank to make new file called conditions.csv)", self.settings['condFile'])
+        if len(self.baseCondDict) > 0:
+            cDlg.addField("Reload base conditions instead of randomized conditions? (WARNING: You will need to re-randomize)", initial=False)
         condInfo = cDlg.show()
         if cDlg.OK:
             self.settings['randPres'] = condInfo[0]
             if condInfo[0]:
                 # A new interface that allows you to re-order things
                 # Check if there are movies to re-order.
+                if len(condInfo) == 3 and condInfo[2] == True:
+                    # Reload the 'base' conditions instead of randomized ones.
+                    baseConds = True
+                else:
+                    baseConds = False
                 allReady = True
-                if len(self.trialTypesArray['labels']) == 0: # If there are no trial types
+                if len(self.settings['trialTypes']) == 0: # If there are no trial types
                     allReady = False
-                for i in range(0,len(self.trialTypesArray['labels'])):
-                    if self.trialTypesArray['labels'][i] not in self.settings['stimNames'].keys(): # If a trial type has no movies associated with it
+                for i in range(0,len(self.settings['trialTypes'])):
+                    if self.settings['trialTypes'][i] not in self.settings['blockList'].keys() and self.settings['trialTypes'][i] not in self.settings['stimNames'].keys(): # If a trial type has no movies associated with it
                         allReady = False
-                    elif len(self.settings['stimNames'][self.trialTypesArray['labels'][i]]) == 0: # Another way that it can have no movies associated with it.
-                        allReady = False
+                    elif self.settings['trialTypes'][i] not in self.settings['blockList'].keys():
+                        if len(self.settings['stimNames'][self.trialTypesArray['labels'][i]]) == 0:  # Another way that it can have no movies associated with it.
+                            allReady = False
                 if allReady:
                     if len(condInfo[1]) > 0:
                         self.settings['condFile'] = condInfo[1]
@@ -1593,14 +2183,17 @@ class PyHabBuilder:
                         self.settings['condFile'] = "conditions.csv"
                     if os.name is not 'posix':
                         self.win.winHandle.set_visible(visible=True)
-                    self.condMaker()
+                    if baseConds:
+                        self.condMaker(bc=baseConds, resetDict=deepcopy(self.baseCondDict))
+                    else:
+                        self.condMaker(resetDict=deepcopy(self.condDict))
                 else:
                     #Create err dlg.
                     errDlg = gui.Dlg(title="No stimuli!")
                     errDlg.addText("Not all trial types have stimuli!")
                     errDlg.addText("Please add stimuli to all trial types first and then set conditions for randomized presentation.")
                     errDlg.addField("For studies without stimuli, enter list of arbitrary condition labels here, each one in quotes, separated by commas, all inside the square brackets",self.settings['condList'])
-                    # Make this less shit
+                    # This is non-ideal but a reasonable temporary patch.
                     e = errDlg.show()
                     if errDlg.OK:
                         self.settings['condList'] = e[0]
@@ -1609,7 +2202,7 @@ class PyHabBuilder:
                 self.settings['condList'] = []  # Gets rid of existing condition list to save trouble.
                 self.condDict = {}  # Gets rid of conditions altogether.
 
-    def condMaker(self, rep=False, currPage=1):
+    def condMaker(self, rep=False, currPage=1, bc=False, trialMode=True, resetDict={}):
         """
         A whole separate interface for managing condition creation.
 
@@ -1618,10 +2211,16 @@ class PyHabBuilder:
 
         :param rep: Basically whether we are recursing while editing conditions
         :type rep: bool
+        :param currPage: The current page number
+        :type currPage: int
+        :param bc: Are we displaying the raw conditions, or the 'base' (pre-randomization) conditions?
+        :type bc: bool
+        :param trialMode: A toggle between 'trial mode' (use conditions for order of stimuli in trial types) and 'block mode' (use conditions to change order of trials within blocks)
+        :type trialMode: bool
         :return:
         :rtype:
         """
-        condHeader = visual.TextStim(self.win, text="Conditions",height=.1, bold=True,pos=[-.83,.9])
+        condHeader = visual.TextStim(self.win, text="Conditions", height=.1, bold=True, pos=[-.83,.9])
         divLinesV = [] # Vertical dividing lines (actually very thin rects)
         divLinesH = [] # Horizontal dividing lines
         tTypeHeaders = [] # Heads of each column for trial types.
@@ -1629,8 +2228,16 @@ class PyHabBuilder:
         condContent = [] # The content of each condition (a list of dicts).
         drawConds = [] # The text things for drawing.
         numPages = 1
-        if os.path.exists(self.settings['condFile']) and not rep: #If we already have a pre-existing cond file and aren't in the process of looping.
-            testReader=csv.reader(open(self.settings['condFile'],'rU'))
+        if bc:
+            condPath = self.settings['baseCondFile']
+            condDict = self.baseCondDict
+            condList = self.settings['baseCondList']
+        else:
+            condPath = self.settings['condFile']
+            condDict = self.condDict
+            condList = self.settings['condList']
+        if os.path.exists(condPath) and not rep:  # If we already have a pre-existing cond file and aren't in the process of looping.
+            testReader=csv.reader(open(condPath, 'rU'))
             testStuff=[]
             for row in testReader:
                 testStuff.append(row)
@@ -1640,32 +2247,56 @@ class PyHabBuilder:
             testDict = dict(testStuff) 
             for i in testDict.keys():
                 testDict[i]=eval(testDict[i])
-            self.condDict=testDict 
-            self.settings['condList'] = condLabels
-            numPages = ceil(float(len(self.settings['condList']))/4) #use math.ceil to round up.
-            
-        elif len(self.condDict) > 0: #If we already have something to build on
-            numPages = ceil(float(len(self.condDict.keys()))/4) #use math.ceil to round up.
-            for i in range(0, len(self.settings['condList'])):
-                if self.settings['condList'][i] in self.condDict.keys():
-                    condContent.append(self.condDict[self.settings['condList'][i]])
+            if bc:
+                self.baseCondDict = testDict
+                condDict = self.baseCondDict
+                self.settings['baseCondList'] = condLabels
+                numPages = ceil(float(len(self.settings['baseCondList'])) / 4)
+            else:
+                self.condDict = testDict
+                condDict = self.condDict
+                self.settings['condList'] = condLabels # Problem: This creates a local copy.
+                numPages = ceil(float(len(self.settings['condList'])) / 4)  # use math.ceil to round up.
+        elif len(condDict) > 0:  # If we already have something to build on
+            numPages = ceil(float(len(condDict.keys()))/4)  # use math.ceil to round up.
+            for i in range(0, len(condList)):
+                if condList[i] in condDict.keys():
+                    condContent.append(condDict[condList[i]])
                 else:
-                    condContent.append({ })
-        doneButton = visual.Rect(self.win, width=.25, height=.67*(.15/self.aspect),fillColor="green",pos=[.82,-.85])
-        doneText = visual.TextStim(self.win, text="DONE", bold=True, pos=doneButton.pos)
-        addCondButton = visual.Rect(self.win, width=.3, height=.67*(.15/self.aspect),fillColor="blue",pos=[-.82,-.85])
+                    condContent.append({})
+        doneButton = visual.Rect(self.win, width=.2, height=.67*(.15/self.aspect),fillColor="green",pos=[-.87,-.85])
+        doneText = visual.TextStim(self.win, text="Done", bold=True, pos=doneButton.pos)
+        cancelButton = visual.Rect(self.win, width=.2, height=.67*(.15/self.aspect), fillColor="red", pos=[-.62, -.85])
+        cancelText = visual.TextStim(self.win, text="Cancel", bold=True, pos=cancelButton.pos)
+        addCondButton = visual.Rect(self.win, width=.25, height=.65*(.15/self.aspect),fillColor="blue",pos=[.82,-.85])
         addCondText = visual.TextStim(self.win, text="Add condition", bold=True, height=addCondButton.height*.3, pos=addCondButton.pos)
-        deleteCondButton = visual.Rect(self.win, width=.3, height=.67*(.15/self.aspect),fillColor="red",pos=[-.5,-.85])
+        deleteCondButton = visual.Rect(self.win, width=.25, height=.65*(.15/self.aspect),fillColor="red",pos=[.56,-.85])
         deleteCondText = visual.TextStim(self.win, text="Delete condition", bold=True, height=deleteCondButton.height*.3, pos=deleteCondButton.pos)
-        randomCondsButton = visual.Rect(self.win, width=.4, height=.67*(.15/self.aspect),fillColor="purple",pos=[-.13,-.85])
-        randomCondsText = visual.TextStim(self.win, text="Randomize over subjects", bold=True, height=randomCondsButton.height*.3, pos=randomCondsButton.pos)
-        instrText = visual.TextStim(self.win, text="Page: 1/"+str(numPages), height=.1, pos=[.4,-.9])
-        downArrowVerts = [(0.05,0.3),(-.05,0.3),(-0.05,0.15),(-0.1,0.15),(0,0),(0.1,0.15),(0.05,0.15)]
-        nextPageArrow = visual.ShapeStim(self.win, vertices=downArrowVerts, size=.5, lineColor='white', fillColor='white', pos=[.6,-.95])
-        upArrowVerts = [(0.05,-0.3),(-.05,-0.3),(-0.05,-0.15),(-0.1,-0.15),(0,0),(0.1,-0.15),(0.05,-0.15)]
-        lastPageArrow = visual.ShapeStim(self.win, vertices=upArrowVerts, size=.5, lineColor='white', fillColor='white', pos=[.2,-.8])
+        blockModeButton = visual.Rect(self.win, width=.25, height=.65*(.15/self.aspect),fillColor="darkorange",pos=[.3,-.85])
+        if trialMode:
+            txt = 'Block mode'
+        else:
+            txt = 'Trial mode'
+        blockModeText = visual.TextStim(self.win, text=txt, bold=True, height=blockModeButton.height*.3, pos=blockModeButton.pos)
+        randomCondsButton = visual.Rect(self.win, width=.25, height=.67*(.15/self.aspect),fillColor="purple",pos=[.04,-.85])
+        if len(self.settings['condList']) > 0:
+            txt2 = "Randomize\nover subjects"
+        else:
+            txt2 = "Auto-generate\nconditions"
+        randomCondsText = visual.TextStim(self.win, text=txt2, bold=True, height=randomCondsButton.height*.3, pos=randomCondsButton.pos)
 
-        intervalHoriz = 1.5/(len(self.trialTypesArray['labels']))
+        if trialMode:
+            typeList = [x for x in self.settings['trialTypes'] if x not in self.settings['blockList'].keys()]
+        else:
+            typeList = list(self.settings['blockList'].keys())
+
+        instrText = visual.TextStim(self.win, text="Page: " + str(currPage) + "/"+str(numPages), height=.07, pos=[-.3,-.87])
+        downArrowVerts = [(0.05,0.3),(-.05,0.3),(-0.05,0.15),(-0.1,0.15),(0,0),(0.1,0.15),(0.05,0.15)]
+        nextPageArrow = visual.ShapeStim(self.win, vertices=downArrowVerts, size=.3, lineColor='white', fillColor='white', pos=[-.15,-.92])
+        upArrowVerts = [(0.05,-0.3),(-.05,-0.3),(-0.05,-0.15),(-0.1,-0.15),(0,0),(0.1,-0.15),(0.05,-0.15)]
+        lastPageArrow = visual.ShapeStim(self.win, vertices=upArrowVerts, size=.3, lineColor='white', fillColor='white', pos=[-.45,-.82])
+
+        intervalHoriz = 1.5/len(typeList)
         intervalVert = 1.5/4  # Locked at this interval because pages of 4 conditions each.
         startH = -.5
         startV = .8
@@ -1674,36 +2305,38 @@ class PyHabBuilder:
         tempLineV = visual.Rect(self.win, width=.01, height=2, fillColor="white", pos=[-.65,.3])
         divLinesV.append(tempLineV)
         clickRanges=[] # For making it easier ot detect if a line was clicked in. Y only (horizontal doesn't matter)
-        for i in range(0,len(self.trialTypesArray['labels'])):
+
+
+        for i in range(0,len(typeList)):
             # populate column headers and lines.
             hpos = (i)*intervalHoriz + startH+intervalHoriz/3
-            tempText = visual.TextStim(self.win, alignHoriz='center', text=self.trialTypesArray['labels'][i],height=(1-startV)*.3, pos=[hpos, .94])
+            tempText = visual.TextStim(self.win, alignHoriz='center', text=typeList[i],height=(1-startV)*.3, pos=[hpos, .94])
             tTypeHeaders.append(tempText)
             tempLineV = visual.Line(self.win, start=[hpos+intervalHoriz/2,.99], end=[hpos+intervalHoriz/2,-.675])
             divLinesV.append(tempLineV)
-        if len(self.settings['condList']) >= 4:
+        if len(condList) >= 4:
             q = 4
         else:
-            q = len(self.settings['condList'])
+            q = len(condList)
         for i in range(0, q):
             vpos = startV - (i + 1) * intervalVert + intervalVert / 1.5
             tempLineH = visual.Line(self.win, start=[-.99, vpos - intervalVert / 2], end=[.99, vpos - intervalVert / 2])
             divLinesH.append(tempLineH)
 
-        for j in range(0, len(self.settings['condList'])): #condition labels. Here's where rubber meets road!
+        for j in range(0, len(condList)):  # condition labels. Here's where rubber meets road!
             block = (j+1)%4
             if block == 0:
                 block = 4
             vpos = startV - block * intervalVert + intervalVert/1.5
-            tempText = visual.TextStim(self.win, text=self.settings['condList'][j], alignHoriz='center',height=intervalVert*.35, pos=[condHeader.pos[0],vpos])
+            tempText = visual.TextStim(self.win, text=condList[j], alignHoriz='center',height=intervalVert*.35, pos=[condHeader.pos[0],vpos])
             drawConds.append(tempText)
             # And now, finally, we have to populate each of those conditions.
-            for q in range(0,len(self.trialTypesArray['labels'])):
-                if self.trialTypesArray['labels'][q] in condContent[j].keys():
-                    txt = condContent[j][self.trialTypesArray['labels'][q]]
+            for q in range(0,len(typeList)):
+                if typeList[q] in condContent[j].keys():
+                    txt = condContent[j][typeList[q]]
                 else:
                     txt = []
-                tempText = visual.TextStim(self.win, text=txt, height=sqrt(intervalVert)*.4*(1/(len(txt)+1))*(sqrt(2)/(sqrt(len(self.trialTypesArray['labels'])+1))), wrapWidth=intervalHoriz*.9,pos=[tTypeHeaders[q].pos[0],vpos], alignHoriz='center')
+                tempText = visual.TextStim(self.win, text=txt, height=sqrt(intervalVert)*.4*(1/(len(txt)+1))*(sqrt(2)/(sqrt(len(typeList)+1))), wrapWidth=intervalHoriz*.9,pos=[tTypeHeaders[q].pos[0],vpos], alignHoriz='center')
                 drawConds.append(tempText)
             tempRange = [vpos+intervalVert/2,vpos-intervalVert/2]
             clickRanges.append(tempRange)
@@ -1712,13 +2345,18 @@ class PyHabBuilder:
         while 1 in self.mouse.getPressed():
             pass
         while not done:
+            instrText.text = "Page: " + str(currPage) + "/" + str(numPages)
             condHeader.draw()
             doneButton.draw()
             doneText.draw()
+            cancelButton.draw()
+            cancelText.draw()
             addCondButton.draw()
             addCondText.draw()
             deleteCondButton.draw()
             deleteCondText.draw()
+            blockModeButton.draw()
+            blockModeText.draw()
             randomCondsButton.draw()
             randomCondsText.draw()
             instrText.draw()
@@ -1727,29 +2365,35 @@ class PyHabBuilder:
                     nextPageArrow.draw()
                 if currPage > 1:
                     lastPageArrow.draw()
+                while currPage > numPages:
+                    currPage = currPage - 1  # BF: Deleting while looking at last page could yield empty page.
             for i in range(0, len(divLinesV)):
                 divLinesV[i].draw()
             for j in range(0, len(divLinesH)):
                 divLinesH[j].draw()
             for k in range(0, len(tTypeHeaders)):
                 tTypeHeaders[k].draw()
-            if len(drawConds) <= 4*(len(self.trialTypesArray['labels'])+1):  # Each row has one column for each trial type plus one for the label, so rows of n trial types + 1
+            if len(drawConds) <= 4*(len(typeList)+1):  # Each row has one column for each trial type plus one for the label, so rows of n trial types + 1
                 for l in range(0, len(drawConds)):
                     drawConds[l].draw()
             else:
-                for l in range((currPage-1)*4*(len(self.trialTypesArray['labels'])+1), currPage*4*(len(self.trialTypesArray['labels'])+1)):
+                for l in range((currPage-1)*4*(len(typeList)+1), currPage*4*(len(typeList)+1)):
                     if l < len(drawConds):  # Easy safety cutoff for when we can't fill a page, so we don't go out of bounds
                         drawConds[l].draw()
             self.win.flip()
             if 1 in self.mouse.getPressed():
                 for i in range((currPage-1)*4, currPage*4):
-                    p=self.mouse.getPos()
+                    p = self.mouse.getPos()
                     if i < len(clickRanges) and p[1] <= clickRanges[i][0] and p[1] >= clickRanges[i][1]:
                         if os.name is not 'posix':
-                            while 1 in self.mouse.getPressed(): # Work on mouseup, impt. for windows.
+                            while 1 in self.mouse.getPressed():  # Work on mouseup, impt. for windows.
                                 pass
-                            self.win.winHandle.set_visible(visible = False)
-                        self.condSetter(cond=self.settings['condList'][i],ex=True)
+                            self.win.winHandle.set_visible(visible=False)
+                        if trialMode:
+                            thisDict = self.settings['stimNames']
+                        else:
+                            thisDict = self.settings['blockList']
+                        self.condSetter(thisDict, cond=condList[i],ex=True)
                         if os.name is not 'posix':
                             self.win.winHandle.set_visible(visible=True)
                         while 1 in self.mouse.getPressed():
@@ -1757,21 +2401,30 @@ class PyHabBuilder:
                             pass
                         done = True
                         # Refresh the condition display
-                        self.condMaker(rep=True,currPage=currPage)
+                        self.condMaker(rep=True, currPage=currPage, trialMode=trialMode, resetDict=resetDict)
                 if self.mouse.isPressedIn(addCondButton):
                     if os.name is not 'posix':
                         while 1 in self.mouse.getPressed():
                             pass
-                        self.win.winHandle.set_visible(visible = False)
-                    self.condSetter(ex=False)
+                        self.win.winHandle.set_visible(visible=False)
+                    if trialMode:
+                        thisDict = self.settings['stimNames']
+                    else:
+                        thisDict = self.settings['blockList']
+                    self.condSetter(thisDict, ex=False)
                     if os.name is not 'posix':
-                        self.win.winHandle.set_visible(visible = True)
+                        self.win.winHandle.set_visible(visible=True)
                     while 1 in self.mouse.getPressed():
                         pass
                     done = True
                     # Start this over...
-                    self.condMaker(rep=True,currPage=currPage)
-                if self.mouse.isPressedIn(deleteCondButton) and len(self.settings['condList'])>0:
+                    self.condMaker(rep=True, currPage=currPage, bc=bc, trialMode=trialMode, resetDict=resetDict)
+                if self.mouse.isPressedIn(blockModeButton):
+                    while 1 in self.mouse.getPressed():
+                        pass
+                    done = True
+                    self.condMaker(rep=True, currPage=currPage, bc=bc, trialMode=not trialMode, resetDict=resetDict)
+                if self.mouse.isPressedIn(deleteCondButton) and len(condList)>0:
                     if os.name is not 'posix':
                         while 1 in self.mouse.getPressed():
                             pass
@@ -1783,8 +2436,8 @@ class PyHabBuilder:
                         pass
                     done = True
                     # Start this over...
-                    self.condMaker(rep=True,currPage=currPage)
-                if self.mouse.isPressedIn(randomCondsButton) and len(self.settings['condList'])>0:
+                    self.condMaker(rep=True, currPage=currPage, bc=bc, trialMode=trialMode, resetDict=resetDict)
+                if self.mouse.isPressedIn(randomCondsButton) and len(condList)>0:
                     if os.name is not 'posix':
                         while 1 in self.mouse.getPressed():
                             pass
@@ -1795,6 +2448,18 @@ class PyHabBuilder:
                     while len(self.mouse.getPressed()) < 0:
                         pass
                     done = True
+                elif self.mouse.isPressedIn(randomCondsButton) and len(condList) == 0:
+                    if os.name is not 'posix':
+                        while 1 in self.mouse.getPressed():
+                            pass
+                        self.win.winHandle.set_visible(visible=False)
+                    self.autoCondSetup()
+                    if os.name is not 'posix':
+                        self.win.winHandle.set_visible(visible=True)
+                    while len(self.mouse.getPressed()) < 0:
+                        pass
+                    done = True
+                    self.condMaker(rep=True, currPage=currPage, bc=bc, trialMode=trialMode, resetDict=resetDict)
                 if self.mouse.isPressedIn(nextPageArrow):
                     currPage = currPage + 1
                     if currPage > numPages:
@@ -1810,16 +2475,24 @@ class PyHabBuilder:
                 if self.mouse.isPressedIn(doneButton):
                     done = True
                     while 1 in self.mouse.getPressed():
-                        pass # Just to make it not auto-click something on return to the main window
+                        pass  # Just to make it not auto-click something on return to the main window
+                if self.mouse.isPressedIn(cancelButton):
+                    self.condDict = resetDict
+                    self.settings['condList']=list(self.condDict.keys()) # Note: Will get scrambled, in all likelihood.
+                    done = True
+                    while 1 in self.mouse.getPressed():
+                        pass  # Just to make it not auto-click something on return to the main window
                 
     
-    def condSetter(self, cond='NEW', ex=False):
+    def condSetter(self, shuffleList, cond='NEW', ex=False):
         """
         One dialog per trial type. Each dialog has a list of all the movies in that type
         This is not intuitive under the hood. The output of this is a dict with a list of movies, in order, for each
-        trial type. This makes it slightly more human-intelligible than the previous system, which had a list of indexes.
+        trial type. This makes it slightly more human-intelligible than the previous system, which had a list of indexes
 
 
+        :param shuffleList: Either the stimNames dict or the blockList dict. Defines which one we are modifying.
+        :type shuffleList: dict
         :param cond: Condition name
         :type cond: str
         :param ex: Whether the condition already exists
@@ -1833,55 +2506,68 @@ class PyHabBuilder:
         condDinfo = condDlg2.show()
         if condDlg2.OK:
             condDinfo[0] = str(condDinfo[0])
-            if ex and condDinfo[0] != cond: # Renamed existing condition
+            if ex and condDinfo[0] != cond:  # Renamed existing condition
                 self.settings['condList'][self.settings['condList'].index(cond)] = condDinfo[0] 
                 if cond in self.condDict.keys():
                     self.condDict[condDinfo[0]] = self.condDict.pop(cond)
             cond = condDinfo[0]
             outputDict = {}
             i = 0
-            while i < len(self.trialTypesArray['labels']):
-                tempType = self.trialTypesArray['labels'][i]
-                condTyDlg = gui.Dlg(title="Trial type " + tempType)
-                condTyDlg.addText("Enter order in which you want movies to appear. If you do not want a movie to appear in this condition, leave blank or put 0.")
-                if ex: #If there is an existing trial that we are modifying.
+            labelList = list(shuffleList.keys())
+            while i < len(labelList):
+                tempType = labelList[i]
+                condTyDlg = gui.Dlg(title="Order for " + tempType)
+                condTyDlg.addText("Enter order in which you want items to appear. If you do not want an item to appear in this condition, leave blank or put 0.")
+                if ex:  # If there is an existing condition that we are modifying.
                     try:
                         movieOrder = self.condDict[cond][tempType]
                         for z in range(0, len(movieOrder)):
-                            if type(movieOrder[z]) is int: # Convert old condition files
+                            if type(movieOrder[z]) is int:  # Convert old condition files
                                 tempNum = movieOrder[z]
-                                movieOrder[z] = self.settings['stimNames'][tempType][tempNum-1]
+                                movieOrder[z] = shuffleList[tempType][tempNum-1]
                     except:
                         movieOrder = []
-                        for k in range(0, len(self.settings['stimNames'][tempType])):
-                            movieOrder.append(self.settings['stimNames'][tempType][k]) #default order.
+                        for k in range(0, len(shuffleList[tempType])):
+                            movieOrder.append(shuffleList[tempType][k])  # default order.
                 else:
                     movieOrder = []
-                    for k in range(0, len(self.settings['stimNames'][tempType])):
-                        movieOrder.append(self.settings['stimNames'][tempType][k]) #default order.
-                for x in range(0, len(self.settings['stimNames'][tempType])): #Yeah we gotta loop it again.
-                    thisMov = self.settings['stimNames'][tempType][x]
-                    if thisMov in movieOrder: #If that movie appears in the movie order.
+                    for k in range(0, len(shuffleList[tempType])):
+                        movieOrder.append(shuffleList[tempType][k])  # default order.
+                movieOrder = deepcopy(movieOrder)
+                for x in range(0, len(shuffleList[tempType])):  # Yeah we gotta loop it again.
+                    thisMov = shuffleList[tempType][x]
+                    if movieOrder.count(thisMov) >= 1:  # If that movie appears in the movie order already.
                         condTyDlg.addField(thisMov, movieOrder.index(thisMov)+1)
+                        movieOrder[movieOrder.index(thisMov)] = ''
                     else:
                         condTyDlg.addField(thisMov)
                 condTyInfo = condTyDlg.show()
                 if condTyDlg.OK:
+                    stop = False
                     i += 1
                     # Now we need to reinterpret all that input ot make the output.
-                    # First, code all non-numbers or invalid numbers as 0
-                    condTyInfo = [0 if type(x) is not int or x <= 0 else x for x in condTyInfo] 
+                    # First, try converting everything to ints to make sure no foolishness is happening.
+                    for x in range(0,len(condTyInfo)):
+                        if type(condTyInfo[x]) is str and len(condTyInfo[x]) > 0:  # If they have put something where there was nothing
+                            try:
+                                condTyInfo[x] = int(condTyInfo[x])
+                            except:
+                                errDlg = gui.Dlg(title="Warning, invalid input!")
+                                errDlg.addText("Non-number entered, please use only numbers or leave blank.")
+                                i -= 1  # This is why our for loop became a while loop. So we could go back and fix things.
+                                irrel = errDlg.show()
+                                stop = True
+                    condTyInfo = [0 if type(x) is not int or x <= 0 else x for x in condTyInfo]
                     # Identify any doubles other than 0s, if so error msg and redo
                     maxNum = max(condTyInfo)
-                    stop = False
                     for q in range(1, maxNum+1):
-                        if condTyInfo.count(q) > 1:
+                        if condTyInfo.count(q) > 1 and not stop:
                             errDlg = gui.Dlg(title="Warning, invalid order!")
                             errDlg.addText("Order has a repeat of the same number. Please re-enter.")
-                            i -= 1 # This is why our for loop became a while loop.
+                            i -= 1  # This is why our for loop became a while loop. So we could go back and fix things.
                             irrel = errDlg.show()
                             stop = True
-                    if maxNum == 0:
+                    if maxNum == 0 and not stop:
                         errDlg = gui.Dlg(title="Warning, invalid order!")
                         errDlg.addText("No stimuli selected. Please re-enter")
                         i -= 1
@@ -1893,7 +2579,7 @@ class PyHabBuilder:
                         for q in range(1, maxNum+1):
                             try:
                                 tMov = condTyInfo.index(q) # Finds the movie index to add the movie to the order
-                                tempOrder.append(self.settings['stimNames'][tempType][tMov])
+                                tempOrder.append(shuffleList[tempType][tMov])
                             except ValueError:
                                 errDlg = gui.Dlg(title="Warning, invalid order!")
                                 errDlg.addText("Non-consecutive numbering (e.g. 1,2,5). Please re-enter with consecutive numbering!")
@@ -1901,9 +2587,19 @@ class PyHabBuilder:
                                 irrel = errDlg.show()
                                 stop = True
                                 break
-                        if not stop: # Stops it from accidentally saving bad orders due to non-consecutive numbering.
-                            outputDict[tempType] = tempOrder
-           #Finally, rewrite everything that needs rewriting.
+                    if not stop: # Stops it from accidentally saving bad orders due to non-consecutive numbering.
+                        outputDict[tempType] = tempOrder
+            # Finally, rewrite everything that needs rewriting.
+            # This includes making sure that blocks or trial types, whichever were left blank, are not left blank.
+            listAll = list(self.settings['stimNames'].keys()) + list(self.settings['blockList'].keys())
+            for q in listAll:
+                if q not in outputDict.keys() and not ex:
+                    if q in self.settings['blockList'].keys():
+                        outputDict[q] = self.settings['blockList'][q]
+                    elif q in self.settings['stimNames'].keys():
+                        outputDict[q] = self.settings['stimNames'][q]
+                elif q not in outputDict.keys():  # Implied: ex == True
+                    outputDict[q] = self.condDict[cond][q]
             self.condDict[cond] = outputDict
             if not ex:
                 self.settings['condList'].append(str(cond))
@@ -1918,6 +2614,144 @@ class PyHabBuilder:
         if dCondDlg.OK:
             self.settings['condList'].remove(str(delCond[0]))
             del self.condDict[delCond[0]]          
+
+    def autoCondSetup(self):
+        """
+        Function for getting the parameters for automatically generating conditions.
+        A series of dialogs. The first one, whatGenDlg, determines whether we are doing stim within trials, trials
+        within blocks, or both. It also determines whether we are keeping all items, which shortcuts the second dialog.
+        whatGenDlg:
+        0 (if blocks): Randomize order of stimuli in trials y/n
+        1 (if blocks): Randomize order of trials in blocks y/n
+        -1: Keep all items in all conditions y/n
+
+        A second dialog then asks whether there are any trial/block types the user does not want to randomize.
+
+        If not keeping all items in all conditions, another dialog is needed to determine size of subset for each
+        trial/block. This produces a dictionary that tracks how many items will be in each condition.
+        :return:
+        :rtype:
+        """
+        abort = False
+        # First, determine if we are doing autogeneration of random orders for trial types, blocks, or both.
+        whatGenDlg = gui.Dlg("Automatic condition generation")
+        if len(list(self.settings['blockList'].keys())) > 0:
+            whatGenDlg.addText("Select whether to generate counterbalanced orders of stimuli within trial types, of trials within blocks, or both")
+            whatGenDlg.addField("Order of stimuli in trials", initial=True)
+            whatGenDlg.addField("Order of trials in blocks", initial=True)
+        whatGenDlg.addText("Select whether to keep all items in all conditions, or control which items are shown at all by condition")
+        whatGenDlg.addField("Keep all items in blocks/trials in all conditions?", initial=True)
+        whatGenInfo = whatGenDlg.show()
+        if whatGenDlg.OK:
+            if len(list(self.settings['blockList'].keys())) > 0:
+                trialGen = whatGenInfo[0]
+                blockGen = whatGenInfo[1]
+            else:
+                trialGen = True
+                blockGen = False
+            if not trialGen and not blockGen:
+                abort = True
+                errDlg=gui.Dlg("Nothing to randomize!")
+                errDlg.addText("Check at least one, trials or blocks, to randomize.")
+                errDlg.show()
+            keepAll = whatGenInfo[-1]
+            counterDict = {}
+            # This dict is how we track how many things should be in each condition.
+            # Defaults to 'all items assigned to that block/trial'
+            if trialGen:
+                for i, j in self.settings['stimNames'].items():
+                    counterDict[i] = len(j)
+            if blockGen:  # This is only true if there are blocks to start with, so no risk of errors
+                for k, l in self.settings['blockList'].items():
+                    counterDict[k] = len(l)
+            # Next step: Give the option to 'lock' some blocks and/or trials so they are constant across conditions
+            if not abort:
+                lockDlg = gui.Dlg("Select trials/blocks to generate conditions over")
+                lockDlg.addText("Any UNCHECKED trial/block will be 'locked' and its order and content will be constant across conditions.")
+                lockDlg.addText("Make sure there is a check next to every block/trial you want to vary by condition, then hit OK to generate conditions")
+                tempList = list(counterDict.keys())
+                for k in tempList:
+                    lockDlg.addField(k, initial=True)
+                lockInfo = lockDlg.show()
+                if lockDlg.OK:
+                    if lockInfo.count(True) == 0:
+                        abort = True
+                        errDlg = gui.Dlg("Error: No trials/blocks selected!")
+                        errDlg.addText("Nothing to randomize! Check all trials/blocks to randomize.")
+                        errDlg.show()
+                    else:
+                        for i in range(0, len(tempList)):
+                            if not lockInfo[i]:
+                                counterDict.pop(tempList[i])  # Remove any 'locked' trials or blocks.
+                else:
+                    abort = True
+            if not keepAll and not abort:
+                # Using the trial type palette order we can order this dictionary despite them typically being unordered
+                # But first, we need to make sure that we only get the ones that we want.
+                tempTypes = [x for x in self.settings['trialTypes'] if x in counterDict.keys()]
+                howManyKeep = gui.DlgFromDict(counterDict, title="How many items for each trial/block type per condition?",
+                                              order=tempTypes, copyDict=False)
+                ctrInfo = howManyKeep.show()
+                if not howManyKeep.OK:
+                    abort = True
+            # Finally, we should have all the information we need to start actually creating conditions.
+            if not abort:
+                self.autoCond(trialGen,blockGen,counterDict)
+
+    def autoCond(self, genTrials, genBlocks, counters):
+        """
+        The function that actually creates conditions automatically, given what it is generating conditions for, and how
+        many items from each trial/block it should have in each condition.
+        Simply sets condDict and condList.
+
+        :param genTrials: Are we generating conditions for movies within trial types?
+        :type genTrials: bool
+        :param genBlocks: Are we generating conditions for trials within blocks?
+        :type genBlocks: bool
+        :param counters: A dictionary of each block or trial type that needs to be randomized and the number of items
+            that thing should have in each condition
+        :type counters: dict
+        :return:
+        :rtype:
+        """
+
+        outputDict = {}
+        template = {} # A base template for a condition
+        permutates = [] # A list of every possible order of every permuted item.
+        mutKeys = []
+        for i in counters.keys():
+            if i in self.settings['stimNames'].keys():
+                template[i] = deepcopy(self.settings['stimNames'][i])
+            elif i in self.settings['blockList'].keys():
+                template[i] = deepcopy(self.settings['blockList'][i])
+        # Python has this beautiful thing called itertools, which can permute automatically.
+        for i, j in counters.items():
+            permutates.append(list(itertools.permutations(template[i],j)))
+            mutKeys.append(i)
+            # This creates a list of lists of 'tuples' (which are a lot like lists in most regards). Each item in the
+            # sub-list is a permutation with j items from the list of all possible items.
+        # Then we just go through permutates and combine THOSE. The 'product' function is a godsend here, but we need
+        # to do it to the entire permutation dictionary at once, which must be defined procedurally. Python is amazing.
+        outputList = list(itertools.product(*permutates))  # The * makes it take a dynamic list of arguments.
+        for i in range(0, len(outputList)):
+            outputList[i] = list(outputList[i])
+            tmpDict = {}
+            for j in range(0, len(outputList[i])):
+                outputList[i][j] = list(outputList[i][j])
+                tmpDict[mutKeys[j]] = outputList[i][j]
+            outputDict[str(i+1)] = tmpDict
+        # Once that's done we need to fill in any 'gaps' from things that weren't auto-generated.
+        excludes = [x for x in self.settings['trialTypes'] if x not in counters.keys()]
+        for i, j in outputDict.items():
+            for y in excludes:
+                if y in self.settings['blockList'].keys():
+                    j[y] = self.settings['blockList'][y]
+                elif y in self.settings['stimNames'].keys():
+                    j[y] = self.settings['stimNames'][y]
+
+        self.condDict = deepcopy(outputDict)
+        self.settings['condList'] = list(outputDict.keys())
+
 
     def condRandomizer(self):
         """
@@ -1936,6 +2770,9 @@ class PyHabBuilder:
         randCond = rCondDlg.show()
         if rCondDlg.OK and isinstance(randCond[0],int):
             totalN = len(self.condDict.keys())*randCond[0]
+            # First, save the old, un-randomized thing for later reference.
+            self.baseCondDict = deepcopy(self.condDict)
+            self.settings['baseCondList'] = deepcopy(self.settings['condList'])
             newCondList = [] # Will replace condlist.
             for i in range (1, totalN+1):
                 if i < 10:
@@ -1985,7 +2822,8 @@ class PyHabBuilder:
 
         7 = metCritStatic (static or moving window?)
 
-
+        8-N = Which trials to calculate hab over for multi-trial blocks. Hab selected by default, populated only if the
+        block structure is used
 
         :param lastSet: If information entered is invalid and the dialog needs to be shown again, this allows it to remember what was previously entered.
         :type lastSet: list
@@ -2009,7 +2847,7 @@ class PyHabBuilder:
         windowtypes = ['First', 'Peak', 'Max', 'Threshold']
         winchz = [x for x in windowtypes if x != lastSet[3]]
         winchz.insert(0, lastSet[3])
-        if lastSet[6] == 'Fixed':
+        if lastSet[-1] == 'Fixed':
             evalChz = ['Fixed','Moving']
         else:
             evalChz = ['Moving', 'Fixed']
@@ -2022,6 +2860,43 @@ class PyHabBuilder:
         hDlg.addField("Number of trials to sum looking time over when determining whether criterion has been met", self.settings['metCritWindow'])
         hDlg.addField("Number to divide sum of looking time by when determining whether criterion has been met", self.settings['metCritDivisor'])
         hDlg.addField("Evaluate criterion over moving window or fixed windows?", choices=evalChz)
+        if len(self.settings['habTrialList']) > 0:
+            hDlg.addText("Check which trial types criteria should be computed over (both setting and checking)")
+            expandedHabList = []
+            for q in range(0, len(self.settings['habTrialList'])):
+                if self.settings['habTrialList'][q] in self.settings['blockList'].keys():
+                    doneBlock = False
+                    listThings = []
+                    listBlocks = [] # A list of all blocks that need to go into the thing.
+                    blockType = self.settings['habTrialList'][q]
+                    prfx = blockType + '.'
+                    while not doneBlock:
+                        for i in self.settings['blockList'][blockType]:
+                            if i in self.settings['blockList'].keys():
+                                listBlocks.append(i)
+                            else:
+                                listThings.append(prfx + i)
+                        if len(listBlocks) == 0:
+                            doneBlock = True
+                        else:
+                            blockType = listBlocks.pop(0) # Pull out the next block and repeat until empty.
+                            prfx = prfx + blockType+'.'
+                    for z in range(0,len(listThings)):
+                        if listThings[z] in self.settings['calcHabOver']:
+                            chk=True
+                        else:
+                            chk = False
+                        hDlg.addField(listThings[z], initial=chk)
+                        expandedHabList.append(listThings[z])
+                else:
+                    if self.settings['habTrialList'][q] == 'Hab' and len(self.settings['calcHabOver']) == 0:
+                        chk = True
+                    elif self.settings['habTrialList'][q] in self.settings['calcHabOver']:
+                        chk = True
+                    else:
+                        chk = False
+                    hDlg.addField(self.settings['habTrialList'][q], initial=chk)
+                    expandedHabList.append(self.settings['habTrialList'][q])
         habDat=hDlg.show()
         if hDlg.OK:
             skip = False
@@ -2054,6 +2929,18 @@ class PyHabBuilder:
                 self.settings['metCritWindow'] = habDat[5]
                 self.settings['metCritDivisor'] = habDat[6]
                 self.settings['metCritStatic'] = habDat[7]
+                if len(self.settings['habTrialList']) > 0:
+                    tempArr = []
+                    for i in range(0, len(expandedHabList)):
+                        if habDat[i+8]:
+                           tempArr.append(expandedHabList[i])
+                    if len(tempArr) > 0:
+                        self.settings['calcHabOver'] = tempArr
+                    else:
+                        errDlg = gui.Dlg(title="Warning, no trial types selected!")
+                        errDlg.addText("You must select at least one trial to calculate habituation over!")
+                        errDlg.show()
+                        self.habSettingsDlg(habDat, redo=True)
             else:
                 errDlg = gui.Dlg(title="Warning, invalid number!")
                 errDlg.addText(
@@ -2114,7 +3001,7 @@ class PyHabBuilder:
         :rtype:
         """
         if not os.path.exists(self.folderPath):
-            os.makedirs(self.folderPath) # creates the initial folder if it did not exist.
+            os.makedirs(self.folderPath)  # creates the initial folder if it did not exist.
         success = True  # Assume it's going to work.
         # Structure: Top-level folder contains script, then you have data and stimuli.
         dataPath = self.folderPath+'data'+self.dirMarker
@@ -2129,7 +3016,7 @@ class PyHabBuilder:
         srcDir = 'PyHab'+self.dirMarker
         # Condition file! Save if there are any conditions created.
         # Convoluted mess because the dict won't necessarily be in order and we want the file to be.
-        if len(self.condDict)>0:
+        if len(self.condDict) > 0:
             tempArray = []
             for j in range(0, len(self.settings['condList'])):
                 tempArray.append([self.settings['condList'][j],self.condDict[self.settings['condList'][j]]])
@@ -2137,6 +3024,15 @@ class PyHabBuilder:
                 secretWriter = csv.writer(co,lineterminator='\n')
                 for k in range(0, len(tempArray)):
                     secretWriter.writerow(tempArray[k])
+            if len(self.baseCondDict) > 0:
+                # Same again, but for the 'base' conditions, with a modified filename.
+                tempArray2 = []
+                for l in range(0, len(self.settings['baseCondList'])):
+                    tempArray2.append([self.settings['baseCondList'][l], self.baseCondDict[self.settings['baseCondList'][l]]])
+                with open(self.folderPath+'base_'+self.settings['condFile'],'w') as bc:
+                    baseWriter = csv.writer(bc, lineterminator='\n')
+                    for m in range(0, len(tempArray2)):
+                        baseWriter.writerow(tempArray2[m])
         # copy stimuli if there are stimuli.
         if len(self.stimSource) > 0:
             for i, j in self.stimSource.items():  # Find each file, copy it over
