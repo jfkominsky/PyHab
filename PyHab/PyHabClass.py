@@ -2076,8 +2076,7 @@ class PyHab:
 
         :param blockTrials: The list of trials in self.blockList or self.habSubTrials
         :type blockTrials: list
-        :param prefixes: A recursively growing stack of prefixes. If block A has B and block B has C, then an instance
-        of A will be A.B.C in self.actualTrialOrder. This keeps track of the A.B. part.
+        :param prefixes: A recursively growing stack of prefixes. If block A has B and block B has C, then an instance of A will be A.B.C in self.actualTrialOrder. This keeps track of the A.B. part.
         :type prefixes: str
         :param hab: Are we dealing with a habituation trial expansion?
         :type hab: bool
@@ -2113,9 +2112,6 @@ class PyHab:
                 else:
                     self.actualTrialOrder.insert(insert, tempName)
                     insert += 1
-
-
-
 
     def SetupWindow(self):
         """
