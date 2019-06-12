@@ -2108,6 +2108,9 @@ class PyHabBuilder:
                     if ans2b[0] is not ans1[0]:  # Did they change the name?
                         self.settings['attnGetterList'][ans2b[0]] = self.settings['attnGetterList'].pop(ans1[0])
                         currAG = self.settings['attnGetterList'][ans2b[0]]
+                        for i, j in self.settings['playAttnGetter'].items():
+                            if j == ans1[0]:
+                                self.settings['playAttnGetter'][i] = ans2b[0]
                     if ans2b[1] is not currAG['stimType']:  # if they change it from audio to video or the reverse...
                         tempGetter = {'stimType': ans2b[1]}
                         # 1. If going to audio, select shape then new file.
@@ -2130,7 +2133,7 @@ class PyHabBuilder:
                                                                               'stimName': namething,
                                                                               'stimDur': tempStim.duration})
                             del tempStim
-                    if len(ans2b) > 2:  # If we had shape/color settings
+                    if len(ans2b) > 3:  # If we had shape/color settings
                         self.settings['attnGetterList'][ans2b[0]].update({'shape': ans2b[3], 'color': ans2b[4]})
 
     def condSettingsDlg(self): #Settings relating to conditions and randomization

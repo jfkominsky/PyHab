@@ -487,6 +487,20 @@ class PyHab:
         :return:
         :rtype:
         """
+        self.statusSquareA.fillColor = 'blue'
+        self.statusTextA.text = "RDY"
+        self.statusSquareB.fillColor = 'blue'
+        self.statusTextB.text = "RDY"
+        self.statusSquareA.draw()
+        self.statusTextA.draw()
+        self.statusSquareB.draw()
+        self.statusTextB.draw()
+        if self.blindPres < 2:
+            self.trialText.draw()
+            if self.blindPres < 1:
+                self.readyText.draw()
+        self.win2.flip()
+
         attnGetter = self.attnGetterList[self.playAttnGetter[trialType]]  # Reads attention-getter from list of AGs.
         if attnGetter['stimType'] is 'Audio':
             if attnGetter['shape'] is 'Rectangle':
