@@ -104,7 +104,7 @@ class PyHabBuilder:
             if 'blockDataList' not in self.settings.keys():
                 self.settings['blockDataList'] = "[]"
             # Settings requiring evaluation to get sensible values. Mostly dicts.
-            evalList = ['dataColumns','dataFiles','maxDur','condList','baseCondList','movieEnd','playThrough','trialOrder',
+            evalList = ['dataColumns','maxDur','condList','baseCondList','movieEnd','playThrough','trialOrder',
                         'stimNames', 'stimList', 'ISI', 'maxOff','minOn','autoAdvance','playAttnGetter','attnGetterList',
                         'trialTypes','habTrialList', 'calcHabOver', 'nextFlash', 'blockList']
             for i in evalList:
@@ -370,7 +370,7 @@ class PyHabBuilder:
                             pass
                         self.win.winHandle.set_visible(visible=False)
                     if self.buttonList['functions'][i] == self.addHabBlock: #one special case
-                        if self.buttonList['text'][i].text == "Mod Hab Block":
+                        if self.buttonList['text'][i].text == "Mod Habituation":
                             self.addHabBlock(makeNew=False)
                         else:
                             self.addHabBlock()
@@ -399,6 +399,8 @@ class PyHabBuilder:
                         self.makeBlockDlg(self.trialTypesArray['labels'][j], new=False)
                     elif self.trialTypesArray['labels'][j] == 'Hab' and len(self.settings['habTrialList']) > 0:
                         self.addHabBlock(makeNew=False)
+                    elif self.trialTypesArray['labels'][j] == 'Hab':
+                        self.makeHabTypeDlg(makeNew=False)
                     else:
                         self.trialTypeDlg(trialType=self.trialTypesArray['labels'][j], makeNew=False)
                     if os.name is not 'posix':
@@ -751,6 +753,14 @@ class PyHabBuilder:
         """
         A function for creating a habituation trial type, rather than multi-trial block.
 
+        0: Maximum duration
+        1: Maximum off-time
+        2: Minimum on-time
+        3-N: Stimuli added to trial type
+        -3: Auto-advance
+        -2: Attention-getter
+        -1: ISI
+
         :param makeNew: Making a new trial or revising an existing one?
         :type makeNew: bool
         :return:
@@ -833,7 +843,7 @@ class PyHabBuilder:
                 # Need to change text of hab button
                 self.settings['playThrough']['Hab'] = 0  # This will always be the case
                 x = self.buttonList['functions'].index(self.addHabBlock)  # gets index
-                self.buttonList['text'][x].text = "Mod Hab Block"  # Updates button text
+                self.buttonList['text'][x].text = "Mod Habituation"  # Updates button text
                 self.settings['maxDur']['Hab'] = habInfo[0]
                 self.settings['maxOff']['Hab'] = habInfo[1]
                 self.settings['minOn']['Hab'] = habInfo[2]
@@ -1064,11 +1074,13 @@ class PyHabBuilder:
                                 self.trialTypesArray = self.loadTypes(self.typeLocs, self.trialPalettePage)
                             done = True
                             self.habSettingsDlg()  # For setting which things to hab over.
-                        else:  # Create our new block!
+                        else:  # Create our new block or modify existing
                             self.settings['blockList'][blockName] = blockOrder
                             if new:
                                 self.settings['trialTypes'].append(blockName)
                                 self.trialTypesArray = self.loadTypes(self.typeLocs, self.trialPalettePage)
+                            else:
+                                self.studyFlowArray=self.loadFlow(self.settings['trialOrder'], self.flowArea, self.flowLocs, self.overFlowLocs)
                             done = True
                             if self.blockDataDlg not in self.buttonList['functions']:
                                 blockDataButton = visual.Rect(self.win, width=.3, height=.5 * (.2 / self.aspect),
@@ -1346,7 +1358,7 @@ class PyHabBuilder:
         'shapes': visual.Rect objects
         'text': visual.textStim objects
         'labels': Strings that label each trial. Shapes and text are indexted to these, so you can do easy lookup.
-        'extras': Special category for trial pips.
+        'extras': Special category for trial pips for blocks.
 
         :param tOrd: Extant order of trials, either the overall trial order or the block order
         :type tOrd: list
@@ -1365,7 +1377,7 @@ class PyHabBuilder:
         numItems = len(tOrd)
         tTypes = self.settings['trialTypes']
         for i in range(0,len(tOrd)):
-            if tOrd[i] == 'Hab' or tOrd[i] in self.settings['blockList'].keys():
+            if tOrd[i] == 'Hab':
                 numItems += 1 #Double-size for blocks
         outputDict = {'lines':[],'shapes':[],'text':[],'labels':[], 'extras':[]}  #Labels allows us to index the others while still keeping order.
         j = 0 # This serves a purpose, trust me. It's for rendering hab blocks.
@@ -1379,7 +1391,7 @@ class PyHabBuilder:
             #Now, actually build the list of objects to render.
             if j < 39 or (j == 39 and numItems == 40):
                 c = tTypes.index(tOrd[i])  # find the trial type, get color index
-                if tOrd[i] == 'Hab' or tOrd[i] in self.settings['blockList'].keys(): # The special category
+                if tOrd[i] == 'Hab': # The special category
                     if j % 10 == 9:
                         j += 1 # Just in case we're at the point where it would loop around to the second row. We don't want that.
                         if numItems == 20 or numItems == 39:  # Special case of breaking flowLocs limits.
@@ -1400,15 +1412,16 @@ class PyHabBuilder:
                                                   fillColor=self.colorsArray[tTypes.index(tempStr)],
                                                   pos=[lx+newwidth*(q-(len(self.settings['habTrialList'])-1)/2), flowSpace[j][1]-self.flowHeightObj/2.25])
                             outputDict['extras'].append(tempPip)
-                    elif tOrd[i] in self.settings['blockList'].keys():
-                        for q in range(0, len(self.settings['blockList'][tOrd[i]])):
-                            tempStr = self.settings['blockList'][tOrd[i]][q]
-                            newwidth = self.flowWidthObj/len(self.settings['blockList'][tOrd[i]])
-                            tempPip = visual.Rect(self.win, width=newwidth, height=self.flowHeightObj / 2.5,
-                                                  fillColor=self.colorsArray[tTypes.index(tempStr)],
-                                                  pos=[lx + newwidth * (q - (len(self.settings['blockList'][tOrd[i]]) - 1) / 2),
-                                                       flowSpace[j][1] - self.flowHeightObj / 2.25])
-                            outputDict['extras'].append(tempPip)
+                elif tOrd[i] in self.settings['blockList'].keys():
+                    tempObj = visual.Rect(self.win, width=self.flowWidthObj, height=self.flowHeightObj, fillColor=self.colorsArray[c], pos=flowSpace[j])
+                    for q in range(0, len(self.settings['blockList'][tOrd[i]])):
+                        tempStr = self.settings['blockList'][tOrd[i]][q]
+                        newwidth = self.flowWidthObj/(2*len(self.settings['blockList'][tOrd[i]]))
+                        tempPip = visual.Rect(self.win, width=newwidth, height=self.flowHeightObj / 2.5,
+                                              fillColor=self.colorsArray[tTypes.index(tempStr)],
+                                              pos=[flowSpace[j][0] + newwidth * (q - (len(self.settings['blockList'][tOrd[i]]) - 1) / 2),
+                                                   flowSpace[j][1] - self.flowHeightObj / 2.25])
+                        outputDict['extras'].append(tempPip)
                 elif tOrd[i] in self.settings['autoAdvance'] and j not in [0, 10, 20, 30]:
                     # Make it adjacent to the last one, unless it would start a row, in which case leave it.
                     loc = [flowSpace[j][0]-abs(space[1]-space[0])*((self.flowGap-self.flowWidMult)/2), flowSpace[j][1]]
@@ -1513,7 +1526,7 @@ class PyHabBuilder:
             numChar = len(tTypes[i])
             if numChar <= 3:
                 numChar = 4 #Maximum height
-            tempTxt = visual.TextStim(self.win, alignHoriz='center', alignVert='center',bold=True,height=self.typeHeightObj/(.32*numChar),text=tTypes[i], pos=typeLocations[i%len(typeLocations)])
+            tempTxt = visual.TextStim(self.win, alignHoriz='center', alignVert='center',bold=True,height=self.typeHeightObj/(.34*numChar),text=tTypes[i], pos=typeLocations[i%len(typeLocations)])
             outputDict['shapes'].append(tempObj)
             outputDict['text'].append(tempTxt)
             outputDict['labels'].append(tTypes[i])
@@ -3012,7 +3025,7 @@ class PyHabBuilder:
                 # Same again, but for the 'base' conditions, with a modified filename.
                 tempArray2 = []
                 for l in range(0, len(self.settings['baseCondList'])):
-                    tempArray2.append([self.settings['baseCondlist'][l], self.baseCondDict[self.settings['baseCondList'][l]]])
+                    tempArray2.append([self.settings['baseCondList'][l], self.baseCondDict[self.settings['baseCondList'][l]]])
                 with open(self.folderPath+'base_'+self.settings['condFile'],'w') as bc:
                     baseWriter = csv.writer(bc, lineterminator='\n')
                     for m in range(0, len(tempArray2)):
