@@ -8,10 +8,10 @@ maxOff,"{'Intro': 2.0, 'Fam': 2.0, 'Test': 2.0}"
 minOn,"{'Intro': 1.0, 'Fam': 1.0, 'Test': 1.0}"
 blindPres,0
 autoAdvance,['Fam']
-randPres,0
+randPres,True
 condPath,
-condFile,
-condList,[]
+condFile,conditions.csv
+condList,"['1', '2', '3', '4', '5', '6', '7', '8']"
 baseCondFile,
 baseCondList,[]
 trialTypes,"['Intro', 'Fam', 'Test', 'BlockA']"
@@ -43,7 +43,7 @@ ISI,"{'Example': 0.0, 'Intro': 0.0, 'Fam': 0.0, 'Test': 0.0}"
 freezeFrame,0.0
 playAttnGetter,"{'Example': 'PyHabDefault', 'Intro': 'PyHabDefault', 'Fam': 'PyHabDefault', 'Test': 'PyHabDefault'}"
 attnGetterList,"{'PyHabDefault': {'stimType': 'Audio', 'stimName': 'upchime1.wav', 'stimDur': 2, 'stimLoc': 'stimuli/attnGetters/upchime1.wav', 'shape': 'Rectangle', 'color': 'yellow'}}"
-folderPath,/Users/jonk/Desktop/Active Studies/Infant studies/PyHab/PyHab Repository/PyHabDemo/
+folderPath,/Users/jonk/Desktop/Active Studies/Infant studies/PyHab/PyHab Repository/PyHab/PyHabDemo/
 prefLook,0
 startImage,
 endImage,

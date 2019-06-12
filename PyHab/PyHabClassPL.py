@@ -140,9 +140,15 @@ class PyHabPL(PyHab):
         localType = deepcopy(ttype)
         while '.' in localType:
             localType = localType[localType.index('.') + 1:]
-        if ttype[0:3] == 'hab' and '.' in ttype:  # Hab sub-trials.
-            dataType = 'hab' + ttype[ttype.index('.'):]  # Collapses down the number and ^ markings for the data file
-            habTrial = True
+        if ttype[0:3] == 'hab' and '.' in ttype:  # Hab sub-trials. Hard to ID definitively, actually.
+            spliceType = ttype[ttype.index('.')+1:]
+            if '.' in spliceType:
+                spliceType = spliceType[0:spliceType.index('.')] # Isolate the part between '.'s, which will be what shows up in habtriallist.
+            if spliceType in self.habTrialList:
+                dataType = 'hab' + ttype[ttype.index('.'):]  # Collapses down the number and ^ markings for the data file
+                habTrial = True
+            else:
+                dataType = ttype
         elif len(self.habTrialList) == 0 and ttype == 'Hab':
             dataType = ttype
             habTrial = True
@@ -429,8 +435,12 @@ class PyHabPL(PyHab):
                 self.readyText.draw()
         self.win2.flip()
         if self.stimPres and number < len(self.actualTrialOrder):
-            if self.actualTrialOrder[number] not in self.autoAdvance:
-                self.win.flip() #blanks the screen outright if not auto-advancing
+            tmpNxt = deepcopy(self.actualTrialOrder[number])
+            while '.' in tmpNxt:
+                tmpNxt = tmpNxt[tmpNxt.index('.') + 1:]
+            if tmpNxt not in self.autoAdvance:
+                self.dummyThing.draw()
+                self.win.flip()  # blanks the screen outright between trials if NOT auto-advancing into the next trial
         if abort: #if the abort button was pressed
             if self.stimPres and disMovie['stimType'] == 'Movie':
                 disMovie['stim'].seek(0.0)

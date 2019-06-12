@@ -1338,7 +1338,10 @@ class PyHab:
             elif disMovie['stimType'] == 'Image with audio':
                 disMovie['stim']['Audio'].stop()
         if self.stimPres and number < len(self.actualTrialOrder):
-            if self.actualTrialOrder[number] not in self.autoAdvance:
+            tmpNxt = deepcopy(self.actualTrialOrder[number])
+            while '.' in tmpNxt:
+                tmpNxt = tmpNxt[tmpNxt.index('.')+1:]
+            if tmpNxt not in self.autoAdvance:
                 self.dummyThing.draw()
                 self.win.flip()  # blanks the screen outright between trials if NOT auto-advancing into the next trial
         if abort:  # if the abort button was pressed
