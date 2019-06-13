@@ -132,7 +132,7 @@ class PyHabBuilder:
             self.settings['stimPath'] = ''.join([self.dirMarker if x == otherOS else x for x in self.settings['stimPath']])
             self.settings['folderPath'] = os.getcwd()+self.dirMarker  # On load, reset the folder path to wherever you are now.
             # Get conditions!
-            if self.settings['randPres'] in [1,'1','True',True] or len(self.settings['condFile'])>0:  # If there is a condition file
+            if self.settings['randPres'] in [1,'1','True',True] and len(self.settings['condFile'])>0:  # If there is a condition file
                 if os.path.exists(self.settings['folderPath'] + self.settings['condFile']):
                     testReader=csv.reader(open(self.settings['condFile'],'rU'))
                     testStuff=[]
@@ -144,6 +144,7 @@ class PyHabBuilder:
                     self.condDict = testDict
                 else:
                     self.condDict = {}
+                    self.settings['condList'] = []
                 if len(self.settings['baseCondFile'])>0 and os.path.exists(self.settings['folderPath'] + self.settings['baseCondFile']):
                     testReader2 = csv.reader(open(self.settings['baseCondFile'],'rU'))
                     testStuff2 = []
@@ -155,6 +156,7 @@ class PyHabBuilder:
                     self.baseCondDict = newDict
                 else:
                     self.baseCondDict = {}
+                    self.settings['baseCondList'] = []
             else:
                 self.condDict = {}
                 self.baseCondDict = {}
@@ -1065,11 +1067,12 @@ class PyHabBuilder:
                             for z in range(0, len(blockOrder)):
                                 if blockOrder[z] != 'Hab':
                                     blockOrder[z] = blockOrder[z]
+                            if 'Hab' in self.settings['trialTypes'] and 'Hab' not in self.settings['blockList'].keys():
+                                self.deleteType('Hab')  # It's that simple. It'll shuffle 'hab' to the end of the pallette, but it won't change the color or anything.
                             self.settings['habTrialList'] = blockOrder
+                            self.settings['blockList']['Hab'] = blockOrder #TODO: Doubling up for now...
                             if new:
                                 self.settings['calcHabOver'] = [blockOrder[-1]]  # Default to last trial.
-                                if 'Hab' in self.settings['trialTypes']:
-                                    self.deleteType('Hab')  # It's that simple. It'll shuffle 'hab' to the end of the pallette, but it won't change the color or anything.
                                 self.settings['trialTypes'].append('Hab')
                                 self.trialTypesArray = self.loadTypes(self.typeLocs, self.trialPalettePage)
                             done = True
@@ -1202,29 +1205,6 @@ class PyHabBuilder:
             self.settings['blockDataList'] = finalList
 
 
-
-
-
-
-
-        """
-        blockType = self.settings['habTrialList'][q]
-        prfx = blockType + '.'
-        while not doneBlock:
-            for i in self.settings['blockList'][blockType]:
-                if i in self.settings['blockList'].keys():
-                    listBlocks.append(i)
-                else:
-                    listThings.append(prfx + i)
-            if len(listBlocks) == 0:
-                doneBlock = True
-            else:
-                blockType = listBlocks.pop(0)  # Pull out the next block and repeat until empty.
-                prfx = prfx + blockType + '.'
-
-        """
-
-
     def delTrialTypeDlg(self):
         """
         Dialog for deleting a trial type, and all instances of that trial type in the study flow
@@ -1263,12 +1243,10 @@ class PyHabBuilder:
         if dType in self.settings['blockList'].keys():  # Block vs. trial
             del self.settings['blockList'][dType]
         else:
-            if dType in self.settings['stimNames'].keys():
-                del self.settings['stimNames'][dType]  # remove from stimNames
-            del self.settings['maxDur'][dType]  # remove from maxDur and other trial-type-specific settings
-            del self.settings['minOn'][dType]
-            del self.settings['maxOff'][dType]
-            del self.settings['ISI'][dType]
+            keylist = ['stimNames','maxDur','minOn','maxOff','ISI']
+            for j in range(0, len(keylist)):
+                if dType in self.settings[keylist[j]].keys():
+                    del self.settings[keylist[j]][dType]
             if dType in self.settings['playThrough']:  # if it was in playThrough, remove it from there too.
                 self.settings['playThrough'].pop(dType, None)
         if dType in self.settings['habTrialList']:  # If it was in a hab meta-trial.
@@ -2171,10 +2149,12 @@ class PyHabBuilder:
                 if len(self.settings['trialTypes']) == 0: # If there are no trial types
                     allReady = False
                 for i in range(0,len(self.settings['trialTypes'])):
-                    if self.settings['trialTypes'][i] not in self.settings['blockList'].keys() and self.settings['trialTypes'][i] not in self.settings['stimNames'].keys(): # If a trial type has no movies associated with it
-                        allReady = False
-                    elif self.settings['trialTypes'][i] not in self.settings['blockList'].keys():
-                        if len(self.settings['stimNames'][self.trialTypesArray['labels'][i]]) == 0:  # Another way that it can have no movies associated with it.
+                    if self.settings['trialTypes'][i] not in self.settings['blockList'].keys(): # If a trial type has no movies associated with it
+                        if self.settings['trialTypes'][i] == 'Hab' and len(self.settings['habTrialList']) > 0:
+                            pass
+                        elif self.settings['trialTypes'][i] not in self.settings['stimNames'].keys():
+                            allReady = False
+                        elif len(self.settings['stimNames'][self.trialTypesArray['labels'][i]]) == 0:  # Another way that it can have no movies associated with it.
                             allReady = False
                 if allReady:
                     if len(condInfo[1]) > 0:

@@ -2033,6 +2033,8 @@ class PyHab:
                         finalDict[i] = newTempTrials
                     self.stimNames = finalDict
                     self.blockList = finalBlock
+                    if 'Hab' in self.blockList.keys():
+                        self.habTrialList = self.blockList['Hab']
                 else:
                     self.cond = thisInfo[6]
                     self.condLabel = self.cond
