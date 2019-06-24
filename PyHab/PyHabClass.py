@@ -529,6 +529,8 @@ class PyHab:
         else:
             dMovie = attnGetter['file']
             dMovie.seek(0.0)
+            if attnGetter['stimType'] == 'Movie + Audio':
+                attnGetter['audioFile'].play()
             self.frameCount = 0
             self.ISI['NobodyNameTheirTrialTypeThis'] = 0.0 # A goofy solution but it'll work. dispMovieStim requires a trial type, and the ISI for an attngetter needs to be 0.
             while self.dispMovieStim('NobodyNameTheirTrialTypeThis', dMovie) < 2:
@@ -2111,7 +2113,7 @@ class PyHab:
                 tempName = prefixes + '.' + tempName
                 if insert == -1:
                     self.actualTrialOrder.append(tempName)
-                else:
+                # else:
                     self.actualTrialOrder.insert(insert, tempName)
                     insert += 1
 
@@ -2182,6 +2184,8 @@ class PyHab:
                         self.attnGetterList[i]['file'] = visual.MovieStim3(self.win, self.attnGetterList[i]['stimLoc'],
                                                                            size=[self.movieWidth, self.movieHeight],
                                                                            flipHoriz=False, flipVert=False, loop=False)
+                        if self.attnGetterList[i]['stimType'] == 'Movie + Audio':
+                            self.attnGetterList[i]['audioFile'] = sound.Sound(self.attnGetterList[i]['audioLoc'])
             if self.endImage is not '': # Load image for end of experiment, if needed.
                 tempStim = self.stimList[self.endImage]
                 self.endImageObject = visual.ImageStim(self.win, tempStim['stimLoc'], size=[self.movieWidth, self.movieHeight])

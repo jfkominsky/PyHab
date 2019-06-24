@@ -2024,6 +2024,39 @@ class PyHabBuilder:
         else:
             return {}
 
+    def attnGetterMovieAudioDlg(self):
+        """
+        A modular dialog for finding an audio file and a video file and titling them appropriately.
+
+        :return: A dictionary containing all the info required for a video/audio attngetter.
+        :rtype:
+        """
+        initialDlg = gui.Dlg("Instructions")
+        initialDlg.addText("First select movie file, then select audio file.")
+        iShow = initialDlg.show()
+        if not initialDlg.OK:
+            return {}
+        NoneType = type(None)
+        fileSelectDlg = gui.fileOpenDlg(prompt="Select attention-getter MOVIE file")
+        if type(fileSelectDlg) is not NoneType:
+            path, namething = os.path.split(fileSelectDlg[0])
+            # Suboptimal solution for getting duration, but possibly only available.
+            tempMovie = visual.MovieStim3(self.win, fileSelectDlg[0])
+            tempDuration = tempMovie.duration
+            soundSelectDlg = gui.fileOpenDlg(prompt="Select attention-getter AUDIO file")
+            if type(soundSelectDlg) is not NoneType:
+                apath, aname = os.path.split(soundSelectDlg[0])
+                tempGetter = {'stimLoc': fileSelectDlg[0], 'stimName': namething, 'audioLoc': soundSelectDlg[0],
+                              'audioName': aname, 'stimDur': tempDuration}
+                del tempMovie
+                return tempGetter
+            else:
+                del tempMovie
+                return {}
+        else:
+            return {}
+
+
     def attnGetterDlg(self):
         """
         The dialog window for customizing the attention-getters available to use for different trials.
@@ -2050,14 +2083,16 @@ class PyHabBuilder:
                 # New window to design an attention getter! Choose your own adventure a bit.
                 aDlg2 = gui.Dlg(title="Make new attention-getter: step 1")
                 aDlg2.addField("Attention-getter name: ", 'NewAttnGetter')
-                aDlg2.addField("Audio (with built-in shape) or video?", choices=['Audio','Video'])
+                aDlg2.addField("Audio (with built-in shape) or movie, or silent movie with sep. audio track?", choices=['Audio','Movie','Movie + Audio'])
                 ans2 = aDlg2.show()
                 if aDlg2.OK:
                     tempGetter={'stimType': ans2[1]}
-                    if tempGetter['stimType'] is 'Video':
+                    if tempGetter['stimType'] is 'Movie':
                         newTempGet = self.attnGetterVideoDlg()
-                    else:
+                    elif tempGetter['stimType'] is 'Audio':
                         newTempGet = self.attnGetterAudioDlg()
+                    else:
+                        newTempGet = self.attnGetterMovieAudioDlg()
                     if len(newTempGet) > 0:
                         tempGetter.update(newTempGet)
                         self.settings['attnGetterList'][ans2[0]] = tempGetter
@@ -2067,12 +2102,16 @@ class PyHabBuilder:
                 currAG = self.settings['attnGetterList'][ans1[0]] #The current attention-getter.
                 aDlg2b.addField("Attention-getter name: ", ans1[0])
                 if currAG['stimType'] is 'Audio':
-                    chz = ['Audio', 'Video']
+                    chz = ['Audio', 'Movie', 'Movie + Audio']
+                elif currAG['stimType'] is 'Movie':
+                    chz = ['Movie', 'Audio', 'Movie + Audio']
                 else:
-                    chz = ['Video', 'Audio']
+                    chz = ['Movie + Audio', 'Movie', 'Audio']
                 aDlg2b.addField("Attention-getter type: ", choices=chz)
                 aDlg2b.addField("Change current file (%s)?" % currAG['stimName'], choices=["No","Yes"])
-                if currAG['stimType'] is 'Audio':
+                if currAG['stimType'] is 'Movie + Audio':
+                    aDlg2b.addField("Change audio file (%s)?" % currAG['audioName'], choices=["No","Yes"])
+                elif currAG['stimType'] is 'Audio':
                     allShapes = ['Rectangle','Cross','Star']
                     shapeChz = [x for x in allShapes if x is not currAG['shape']]
                     shapeChz.insert(0, currAG['shape'])
@@ -2092,26 +2131,32 @@ class PyHabBuilder:
                     if ans2b[1] is not currAG['stimType']:  # if they change it from audio to video or the reverse...
                         tempGetter = {'stimType': ans2b[1]}
                         # 1. If going to audio, select shape then new file.
-                        if currAG['stimType'] is 'Video':
+                        if currAG['stimType'] is 'Movie':
                             newTempGet = self.attnGetterAudioDlg()
-                        else:
+                        elif currAG['stimType'] is 'Audio':
                             newTempGet = self.attnGetterVideoDlg()
+                        else:
+                            newTempGet = self.attnGetterMovieAudioDlg()
                         if len(newTempGet) > 0:
                             tempGetter.update(newTempGet)
                             self.settings['attnGetterList'][ans2b[0]] = tempGetter # Overwrite existing.
-                    elif ans2b[2] is "Yes":  # Same stim type, change file. Ignore shape settings for now
-                        fileSelectDlg = gui.fileOpenDlg(prompt="Select attention-getter file")
-                        if type(fileSelectDlg) is not NoneType:
-                            path, namething = os.path.split(fileSelectDlg[0])
-                            if ans2b[1] is 'Video':
-                                tempStim = visual.MovieStim3(self.win, fileSelectDlg[0])
-                            else:
-                                tempStim = sound.Sound(fileSelectDlg[0])
-                            self.settings['attnGetterList'][ans2b[0]].update({'stimLoc': fileSelectDlg[0],
-                                                                              'stimName': namething,
-                                                                              'stimDur': tempStim.duration})
-                            del tempStim
-                    if len(ans2b) > 3:  # If we had shape/color settings
+                    else:
+                        if ans2b[2] is "Yes":  # Same stim type, change file. Ignore shape settings for now
+                            fileSelectDlg = gui.fileOpenDlg(prompt="Select attention-getter file")
+                            if type(fileSelectDlg) is not NoneType:
+                                path, namething = os.path.split(fileSelectDlg[0])
+                                if ans2b[1] is 'Audio':
+                                    tempStim = sound.Sound(fileSelectDlg[0])
+                                else:
+                                    tempStim = visual.MovieStim3(self.win, fileSelectDlg[0])
+                                self.settings['attnGetterList'][ans2b[0]].update({'stimLoc': fileSelectDlg[0],
+                                                                                  'stimName': namething,
+                                                                                  'stimDur': tempStim.duration})
+                                del tempStim
+                        if currAG['stimType'] is 'Movie + Audio' and ans2b[3] is "Yes":
+                            self.settings['attnGetterList'][ans2b[0]].update({'audioLoc': fileSelectDlg[0],
+                                                                              'audioName': namething})
+                    if len(ans2b) > 4:  # If we had shape/color settings
                         self.settings['attnGetterList'][ans2b[0]].update({'shape': ans2b[3], 'color': ans2b[4]})
 
     def condSettingsDlg(self): #Settings relating to conditions and randomization
