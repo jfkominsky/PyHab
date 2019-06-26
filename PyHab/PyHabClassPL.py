@@ -457,7 +457,9 @@ class PyHabPL(PyHab):
                 for d in range(0, len(onArray2)):
                     tempSum += onArray2[d]['duration']
                 self.habDataCompiled[self.habCount] += tempSum
-            if '^' in ttype:
+            if ttype == 4:
+                return 2
+            elif '^' in ttype:
                 self.habCount += 1
                 # Check if criteria need to be set or have been met
                 if self.checkStop():  # If criteria met

@@ -1374,7 +1374,9 @@ class PyHab:
                 for c in range(0, len(onArray)):
                     tempSum += onArray[c]['duration']
                 self.habDataCompiled[self.habCount] += tempSum
-            if '^' in ttype:
+            if ttype == 4:
+                return 2
+            elif '^' in ttype:
                 self.habCount += 1  # Note: Occurs after data recording, making recording hab trial number hard.
                 # Check if criteria need to be set or have been met
                 if self.checkStop():  # If criteria met

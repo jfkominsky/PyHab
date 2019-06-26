@@ -3087,6 +3087,10 @@ class PyHabBuilder:
                     if not os.path.exists(targPath + j['stimName']):
                         shutil.copyfile(j['stimLoc'], targPath + j['stimName'])
                         j['stimLoc'] = 'stimuli' + self.dirMarker + 'attnGetters' + self.dirMarker + j['stimName']
+                    if 'audioName' in j.keys():
+                        if not os.path.exists(targPath + j['audioName']):
+                            shutil.copyfile(j['audioLoc'], targPath + j['audioName'])
+                            j['audioLoc'] = 'stimuli' + self.dirMarker + 'attnGetters' + self.dirMarker + j['audioName']
                 except:
                     success = False
                     print('Could not copy attention-getter file ' + j['stimLoc'] + ' to location ' +  targPath + '. Make sure both exist!')
