@@ -2098,6 +2098,8 @@ class PyHab:
         for q in range(0, len(blockTrials)):
             tempName = blockTrials[q]
             if tempName in self.blockList.keys():
+                # If a block contains a different block. So, a recursive call that expands the lower-level block within
+                # the top-level one. Notably, hab can only be a top-level block.
                 if tempName in self.blockDataList:
                     start = len(self.actualTrialOrder)
                 self.blockExpander(self.blockList[tempName], prefixes+'.'+tempName, hab=False, insert=insert)
@@ -2110,6 +2112,7 @@ class PyHab:
                     revise = revise[:revise.index('.')] + '^' + revise[revise.index('.'):]
                     self.actualTrialOrder[-1] = revise
             else:
+                # For everything else.
                 if hab and q == len(self.habTrialList) - 1:
                     prefixes = prefixes + '^'  # End-of-hab-cycle marker
                 tempName = prefixes + '.' + tempName
