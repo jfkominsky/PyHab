@@ -2115,7 +2115,7 @@ class PyHab:
                 tempName = prefixes + '.' + tempName
                 if insert == -1:
                     self.actualTrialOrder.append(tempName)
-                # else:
+                else:
                     self.actualTrialOrder.insert(insert, tempName)
                     insert += 1
 
