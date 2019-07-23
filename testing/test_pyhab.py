@@ -1105,20 +1105,19 @@ class TestCommands(object):
                                       'B': ['Movie5', 'Movie6', 'Movie7', 'Movie8'],
                                       'C': ['Movie1', 'Movie2', 'Movie3', 'Movie4'],
                                       'D': ['Movie9', 'Movie10'],
-                                      'H': ['Movie11'],
-                                      'Hab': ['Movie12']}
+                                      'H': ['Movie11']}
         self.commandInst.stimDict = {'A': ['Movie1', 'Movie2'],
                                      'B': ['Movie5', 'Movie6'],
                                      'C': ['Movie1', 'Movie2'],
                                      'D': ['Movie9', 'Movie10'],
-                                     'H': ['Movie11'],
-                                     'Hab': ['Movie12']}
+                                     'H': ['Movie11']}
         self.commandInst.trialOrder = ['A', 'A', 'B', 'B', 'Hab', 'D']
         self.commandInst.habTrialList = ['H','C']
         self.commandInst.autoAdvance = ['B','C']
         self.commandInst.calcHabOver = ['H','C']
         self.commandInst.counters = {'A': 2, 'B': 2, 'C': 0, 'D': 0, 'H': 0}
         self.commandInst.run(testMode=testOne)
+        self.commandInst.habMetWhen = -1 # Resetting after the jump tests above on principle.
         self.commandInst.verbDatList = copy.deepcopy(self.testDatList)
         self.commandInst.dataMatrix = copy.deepcopy(self.testMatrix)
 
