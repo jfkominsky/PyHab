@@ -826,6 +826,7 @@ class PyHab:
         :return: [disMovie, trialType] as insertHab, the former being the movie file to play if relevant, and the latter being the new trial type
         :rtype: list
         """
+        self.habMetWhen = 0  # Necessary to make sure that once you have jumped to test you cannot jump trials again.
         trialNum = tn
         tempNum = self.maxHabIndex
         # It's actually necessary to decrement the counter for the current trial type to deal with jump/insert!
