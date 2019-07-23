@@ -1177,7 +1177,7 @@ class TestCommands(object):
         self.commandInst.redoSetup(11,['B','C'])
         assert self.commandInst.habDataCompiled[2] == 0
         assert self.commandInst.habSetWhen == -1
-        assert self.commandInst.habMetwhen == -1
+        assert self.commandInst.habMetWhen == -1
         assert self.commandInst.habCrit == 0
         assert self.commandInst.habCount == 2
 
@@ -1187,7 +1187,7 @@ class TestCommands(object):
         self.commandInst.habCount = 3
         assert self.commandInst.checkStop() == False # Reset
         assert self.commandInst.habSetWhen == 3
-        assert self.commandInst.habMetwhen == -1
+        assert self.commandInst.habMetWhen == -1
 
         # Now things get a little wild.
         temp7 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
