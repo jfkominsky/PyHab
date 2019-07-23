@@ -808,7 +808,7 @@ class PyHab:
                 if self.setCritType != 'First':  # If it's 'first', it'll just solve itself.
                     dummy = self.checkStop()
             # If habituation has been reached, we have to basically undo what happens when a hab crit is met.
-            if self.habMetWhen > 0 and self.habCount != self.maxHabTrials - 1:  # If it was the last hab trial possible, it'll just solve itself with no further action
+            if self.habMetWhen > -1 and self.habCount != self.maxHabTrials - 1:  # If it was the last hab trial possible, it'll just solve itself with no further action
                 if not self.checkStop():  # Almost always true in this case, because we're redoing a hab trial.
                     self.habMetWhen = -1  # Reset
                     tempTN = trialNum + max(len(self.habTrialList), 1)  # Starting with the next trial.
