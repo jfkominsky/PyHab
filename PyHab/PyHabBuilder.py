@@ -745,6 +745,8 @@ class PyHabBuilder:
             if habInitInfo[0] == 'Single trial type':
                 self.makeHabTypeDlg(makeNew)
             elif habInitInfo[0] == 'Multi-trial block':
+                if os.name is not 'posix':
+                    self.win.winHandle.set_visible(visible=True)
                 if makeNew or len(self.settings['habTrialList']) == 0:
                     # Neatly accounts for swapping in a block for a single trial type.
                     self.blockMaker('Hab', new=True, hab=True)
@@ -959,7 +961,9 @@ class PyHabBuilder:
                             for c in range(0, len(b)):
                                 if b[c] == name:
                                     b[c] = newBlock[0]
-
+                if os.name is not 'posix':
+                    # For Windows, because now we snap back to the regular window.
+                    self.win.winHandle.set_visible(visible=True)
                 self.blockMaker(newBlock[0], new)
         else:
             errDlg = gui.Dlg(title="No trials to make blocks with!")
