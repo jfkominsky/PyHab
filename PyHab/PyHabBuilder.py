@@ -1625,8 +1625,15 @@ class PyHabBuilder:
         dDlg.addText("Select which summary files to save.")
         dDlg.addText("Block-level means one line per block instance (e.g., each loop of a hab block),")
         dDlg.addText("trial-level means one line for each individual trial (the verbose file will always have this)")
-        dDlg.addField("Block-level", initial=True)
-        dDlg.addField("Trial-level", initial=True)
+        # Because addField is very literal about check-boxes, need to do this
+        if self.settings['blockSum']:
+            dDlg.addField("Block-level", initial=True)
+        else:
+            dDlg.addField("Block-level", initial=False)
+        if self.settings['trialSum']:
+            dDlg.addField("Trial-level", initial=True)
+        else:
+            dDlg.addField("Trial-level", initial=False)
         dDlg.addText("Check all columns you would like to be recorded in your data files. ")
         dDlg.addText("ANYTHING UNCHECKED WILL NOT BE STORED IN ANY WAY!")
         if self.settings['prefLook'] in [1,'1',True,'True']:
