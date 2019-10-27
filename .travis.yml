@@ -8,17 +8,14 @@ matrix:
 
     - os: linux
       dist: trusty
-      python: 2.7
       env: ANACONDA=false WXPYTHON=3 OPENPYXL=2.4 DISPLAY=:99.0 AUDIODEV=null
 
     - os: linux
       dist: trusty
-      python: 2.7
       env: ANACONDA=false WXPYTHON=4 OPENPYXL=2.4 DISPLAY=:99.0 AUDIODEV=null
 
     - os: linux
       dist: trusty
-      python: 2.7
       env: ANACONDA=false WXPYTHON=3 OPENPYXL=2.5 DISPLAY=:99.0 AUDIODEV=null
 
     - os: linux

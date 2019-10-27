@@ -31,6 +31,8 @@ class PyHabBuilder:
         if not loadedSaved:  # A new blank experiment
             # Load some defaults to start with.
             self.settings = {'dataColumns': ['sNum', 'sID', 'months', 'days', 'sex', 'cond','condLabel', 'trial','GNG','trialType','stimName','habCrit','habTrialNo','sumOnA','numOnA','sumOffA','numOffA','sumOnB','numOnB','sumOffB','numOffB'],
+                                                        'blockSum': '1',
+                                                        'trialSum': '1',
                                                         'prefix': 'PyHabExperiment',
                                                         'dataloc':'data'+self.dirMarker,
                                                         'maxDur': {},
@@ -97,14 +99,17 @@ class PyHabBuilder:
             if 'blockList' not in self.settings.keys():
                 self.settings['blockList'] = '{}'
             if 'calcHabOver' not in self.settings.keys():
-                if len(self.settings['habTrialList'])>0:
+                if len(self.settings['habTrialList']) > 0:
                     self.settings['calcHabOver'] = "['Hab']"  # Default to old behavior.
                 else:
                     self.settings['calcHabOver'] = "[]"
             if 'blockDataList' not in self.settings.keys():
                 self.settings['blockDataList'] = "[]"
+            if 'blockSum' not in self.settings.keys():
+                self.settings['blockSum'] = '1'
+                self.settings['trialSum'] = '1'
             # Settings requiring evaluation to get sensible values. Mostly dicts.
-            evalList = ['dataColumns','maxDur','condList','baseCondList','movieEnd','playThrough','trialOrder',
+            evalList = ['dataColumns','blockSum','trialSum','maxDur','condList','baseCondList','movieEnd','playThrough','trialOrder',
                         'stimNames', 'stimList', 'ISI', 'maxOff','minOn','autoAdvance','playAttnGetter','attnGetterList',
                         'trialTypes','habTrialList', 'calcHabOver', 'nextFlash', 'blockList']
             for i in evalList:
@@ -745,6 +750,8 @@ class PyHabBuilder:
             if habInitInfo[0] == 'Single trial type':
                 self.makeHabTypeDlg(makeNew)
             elif habInitInfo[0] == 'Multi-trial block':
+                if os.name is not 'posix':
+                    self.win.winHandle.set_visible(visible=True)
                 if makeNew or len(self.settings['habTrialList']) == 0:
                     # Neatly accounts for swapping in a block for a single trial type.
                     self.blockMaker('Hab', new=True, hab=True)
@@ -959,7 +966,9 @@ class PyHabBuilder:
                             for c in range(0, len(b)):
                                 if b[c] == name:
                                     b[c] = newBlock[0]
-
+                if os.name is not 'posix':
+                    # For Windows, because now we snap back to the regular window.
+                    self.win.winHandle.set_visible(visible=True)
                 self.blockMaker(newBlock[0], new)
         else:
             errDlg = gui.Dlg(title="No trials to make blocks with!")
@@ -1179,7 +1188,6 @@ class PyHabBuilder:
             else:
                 fieldList.append(blockName)
                 iteration += 1
-            print(fieldList)
             if iteration >= len(tempBlockList):
                 doneLoop = True
 
@@ -1633,9 +1641,17 @@ class PyHabBuilder:
         datInfo = dDlg.show()
         if dDlg.OK:
             tempCols = []
-            for j in range(0, len(datInfo)):
+            if datInfo[0]:
+                self.settings['blockSum'] = 1
+            else:
+                self.settings['blockSum'] = 0
+            if datInfo[1]:
+                self.settings['trialSum'] = 1
+            else:
+                self.settings['trialSum'] = 0
+            for j in range(2, len(datInfo)): # For the data columsn themselves, separate from the toggle of block/trial level
                 if datInfo[j]:
-                    tempCols.append(tempDataCols[j])
+                    tempCols.append(tempDataCols[j-2])
             self.settings['dataColumns'] = tempCols
         
     def stimSettingsDlg(self, lastSet=[], redo=False):

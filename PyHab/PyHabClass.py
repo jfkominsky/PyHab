@@ -51,6 +51,13 @@ class PyHab:
             self.dirMarker = '\\'
             otherOS = '/'
         self.dataColumns = eval(settingsDict['dataColumns'])
+        try:
+            # New settings in 0.8.2 for which summary files get saved
+            self.blockSum = eval(settingsDict['blockSum'])
+            self.trialSum = eval(settingsDict['trialSum'])
+        except:
+            self.blockSum = 1
+            self.trialSum = 1
         self.prefix = settingsDict['prefix']  # prefix for data files. All data filenames will start with this text.
         self.dataFolder = settingsDict['dataloc']  # datafolder, condpath,stimPath are the ones that need modification.
         if len(self.dataFolder) > 0 and self.dataFolder[-1] is not self.dirMarker:
@@ -449,6 +456,7 @@ class PyHab:
                 for i in [0, 1, 2]:
                     core.wait(.25)  # an inadvertent side effect of playing the sound is a short pause before the test trial can begin
                     self.endHabSound.play()
+                    self.endHabSound = sound.Sound('G', octave=4, sampleRate=44100, secs=0.2)
             self.habMetWhen = self.habCount
             return True
         elif self.habCount >= self.setCritWindow + self.metCritWindow and self.habSetWhen > -1:  # if we're far enough in that we can plausibly meet the hab criterion
@@ -1207,6 +1215,7 @@ class PyHab:
                     endTrial = core.getTime() - startTrial
                     if not self.stimPres:
                         self.endTrialSound.play()
+                        self.endTrialSound = sound.Sound('A', octave=4, sampleRate=44100, secs=0.2)
                     # determine if they were looking or not at end of trial and update appropriate array
                     if gazeOn:
                         onDur = endTrial - startOn
@@ -1243,6 +1252,7 @@ class PyHab:
                     endTrial = core.getTime() - startTrial
                     if not self.stimPres:
                         self.endTrialSound.play()
+                        self.endTrialSound = sound.Sound('A', octave=4, sampleRate=44100, secs=0.2)
                     # determine if they were looking or not at end of trial and update appropriate array
                     if gazeOn:
                         onDur = endTrial - startOn
@@ -1263,6 +1273,7 @@ class PyHab:
                         endTrial = core.getTime() - startTrial
                         if not self.stimPres:
                             self.endTrialSound.play()
+                            self.endTrialSound = sound.Sound('A', octave=4, sampleRate=44100, secs=0.2)
                         endOff = nowOff
                         offDur = nowOff - startOff
                         tempGazeArray = {'trial':number, 'trialType':dataType, 'startTime':startOff, 'endTime':endOff, 'duration':offDur}
@@ -1286,6 +1297,7 @@ class PyHab:
                         endTrial = core.getTime() - startTrial
                         if not self.stimPres:
                             self.endTrialSound.play()
+                            self.endTrialSound = sound.Sound('A', octave=4, sampleRate=44100, secs=0.2)
                         endOn = core.getTime() - startTrial
                         onDur = endOn - startOn
                         tempGazeArray = {'trial':number, 'trialType':dataType, 'startTime':startOn, 'endTime':endOn, 'duration':onDur}
@@ -1429,7 +1441,7 @@ class PyHab:
             self.win.flip()
 
         # Block-level summary data. Omits bad trials.
-        if len(self.blockDataList)>0:
+        if len(self.blockDataList) > 0 and self.blockSum:
             tempMatrix = self.saveBlockFile()
             # Now write the actual data file
             nDupe = ''  # This infrastructure eliminates the risk of overwriting existing data
@@ -1480,22 +1492,24 @@ class PyHab:
                 while  x < len(self.dataMatrix) and self.dataMatrix[x]['GNG'] == 0:  # this is to get around the possibility that the same trial had multiple 'false starts'
                     x += 1
                 self.dataMatrix.insert(x, self.badTrials[i])  # python makes this stupid easy
-        nDupe = '' # This infrastructure eliminates the risk of overwriting existing data
-        o = 1
-        filename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(self.today.month) + str(
-                self.today.day) + str(self.today.year) + '.csv'
-        while os.path.exists(filename):
-            o += 1
-            nDupe = str(o)
-            filename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(
-                self.today.month) + str(
-                self.today.day) + str(self.today.year) + '.csv'
-        with open(filename, 'w') as f:
-            outputWriter = csv.DictWriter(f, fieldnames=self.dataColumns, extrasaction='ignore', lineterminator='\n')
-            outputWriter.writeheader()
-            for r in range(0, len(self.dataMatrix)):
-                # print('writing rows')
-                outputWriter.writerow(self.dataMatrix[r])
+        # Trial-level summary file:
+        if self.trialSum:
+            nDupe = '' # This infrastructure eliminates the risk of overwriting existing data
+            o = 1
+            filename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(self.today.month) + str(
+                    self.today.day) + str(self.today.year) + '.csv'
+            while os.path.exists(filename):
+                o += 1
+                nDupe = str(o)
+                filename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(
+                    self.today.month) + str(
+                    self.today.day) + str(self.today.year) + '.csv'
+            with open(filename, 'w') as f:
+                outputWriter = csv.DictWriter(f, fieldnames=self.dataColumns, extrasaction='ignore', lineterminator='\n')
+                outputWriter.writeheader()
+                for r in range(0, len(self.dataMatrix)):
+                    # print('writing rows')
+                    outputWriter.writerow(self.dataMatrix[r])
 
 
         #Verbose data saving.
