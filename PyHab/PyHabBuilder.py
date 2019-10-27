@@ -82,6 +82,8 @@ class PyHabBuilder:
                                                                                           'stimLoc':'PyHab' + self.dirMarker + 'upchime1.wav',
                                                                                           'shape':'Rectangle',
                                                                                           'color':'yellow'}},
+                                                        'dynamicPause':[],
+                                                        'midAG':{},
                                                         'folderPath': '',
                                                         'prefLook': '0',
                                                         'startImage': '',
@@ -463,6 +465,9 @@ class PyHabBuilder:
         Now also sets whether the study should auto-advance into this
         trial and whether the built-in attention-getter should be used.
 
+        TODO: Dynamic pause settings and mid-trial AG settings. Here or a separate dialog? Advanced trial settings...?
+        TODO: Attention-getters can now cut off early...
+
         The dialog by default outputs a list with 8 items in it.
         0 = trial type name
 
@@ -574,7 +579,7 @@ class PyHabBuilder:
             elif trialType in self.settings['playAttnGetter']:
                 chz3 = [x for x in list(self.settings['attnGetterList'].keys()) if x != self.settings['playAttnGetter'][trialType]]
                 chz3.insert(0, 'None')
-                chz3.insert(0, self.settings['playAttnGetter'][trialType])
+                chz3.insert(0, self.settings['playAttnGetter'][trialType]['attnGetter']) # TODO: FIX
             typeDlg.addField("Attention-getter for this trial type (Stim presentation mode only)", choices = chz3)
             if trialType in self.settings['movieEnd']:
                 chz4 = True

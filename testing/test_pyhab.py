@@ -49,6 +49,8 @@ base_settings = {
     'ISI': "{'A':0.0,'B':0.0,'C':0.0,'D':0.0}",
     'freezeFrame': '0.0',
     'playAttnGetter': "{'A':'PyHabDefault','B':'PyHabDefault'}",
+    'dynamicPause':'[]',
+    'midAG':'{}',
     'attnGetterList': "{'PyHabDefault':{'stimType':'Audio','stimName':'upchime1.wav','stimDur':2,'stimLoc':'PyHab/upchime1.wav','shape':'Rectangle','color':'yellow'}}",
     'folderPath': '',
     'trialTypes': "['A','B','C','D']",
