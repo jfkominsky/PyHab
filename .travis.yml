@@ -7,19 +7,21 @@ matrix:
   include:
 
     - os: linux
-      env: CONDA=true PYTHON_VERSION=2.7 WXPYTHON=3 OPENPYXL=2.4 DISPLAY=:99.0 AUDIODEV=null
+      dist: trusty
+      env: ANACONDA=false WXPYTHON=3 OPENPYXL=2.4 DISPLAY=:99.0 AUDIODEV=null
 
     - os: linux
-      env: CONDA=true PYTHON_VERSION=2.7 WXPYTHON=4 OPENPYXL=2.4 DISPLAY=:99.0 AUDIODEV=null
+      dist: trusty
+      env: ANACONDA=false WXPYTHON=4 OPENPYXL=2.4 DISPLAY=:99.0 AUDIODEV=null
 
     - os: linux
-      env: CONDA=true PYTHON_VERSION=2.7 WXPYTHON=3 OPENPYXL=2.5 DISPLAY=:99.0 AUDIODEV=null
+      dist: trusty
+      env: ANACONDA=false WXPYTHON=3 OPENPYXL=2.5 DISPLAY=:99.0 AUDIODEV=null
 
     - os: linux
-      env: CONDA=true PYTHON_VERSION=3.6 DISPLAY=:99.0 AUDIODEV=null
-
-    - os: linux
-      env: CONDA=true PYTHON_VERSION=3.7 DISPLAY=:99.0 AUDIODEV=null
+      dist: trusty
+      python: 3.6
+      env: ANACONDA=false DISPLAY=:99.0 AUDIODEV=null
 
 
 before_install:
