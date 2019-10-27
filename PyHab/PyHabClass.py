@@ -51,6 +51,13 @@ class PyHab:
             self.dirMarker = '\\'
             otherOS = '/'
         self.dataColumns = eval(settingsDict['dataColumns'])
+        try:
+            # New settings in 0.8.2 for which summary files get saved
+            self.blockSum = eval(settingsDict['blockSum'])
+            self.trialSum = eval(settingsDict['trialSum'])
+        except:
+            self.blockSum = 1
+            self.trialSum = 1
         self.prefix = settingsDict['prefix']  # prefix for data files. All data filenames will start with this text.
         self.dataFolder = settingsDict['dataloc']  # datafolder, condpath,stimPath are the ones that need modification.
         if len(self.dataFolder) > 0 and self.dataFolder[-1] is not self.dirMarker:
@@ -1429,7 +1436,7 @@ class PyHab:
             self.win.flip()
 
         # Block-level summary data. Omits bad trials.
-        if len(self.blockDataList)>0:
+        if len(self.blockDataList) > 0 and self.blockSum:
             tempMatrix = self.saveBlockFile()
             # Now write the actual data file
             nDupe = ''  # This infrastructure eliminates the risk of overwriting existing data
@@ -1480,22 +1487,24 @@ class PyHab:
                 while  x < len(self.dataMatrix) and self.dataMatrix[x]['GNG'] == 0:  # this is to get around the possibility that the same trial had multiple 'false starts'
                     x += 1
                 self.dataMatrix.insert(x, self.badTrials[i])  # python makes this stupid easy
-        nDupe = '' # This infrastructure eliminates the risk of overwriting existing data
-        o = 1
-        filename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(self.today.month) + str(
-                self.today.day) + str(self.today.year) + '.csv'
-        while os.path.exists(filename):
-            o += 1
-            nDupe = str(o)
-            filename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(
-                self.today.month) + str(
-                self.today.day) + str(self.today.year) + '.csv'
-        with open(filename, 'w') as f:
-            outputWriter = csv.DictWriter(f, fieldnames=self.dataColumns, extrasaction='ignore', lineterminator='\n')
-            outputWriter.writeheader()
-            for r in range(0, len(self.dataMatrix)):
-                # print('writing rows')
-                outputWriter.writerow(self.dataMatrix[r])
+        # Trial-level summary file:
+        if self.trialSum:
+            nDupe = '' # This infrastructure eliminates the risk of overwriting existing data
+            o = 1
+            filename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(self.today.month) + str(
+                    self.today.day) + str(self.today.year) + '.csv'
+            while os.path.exists(filename):
+                o += 1
+                nDupe = str(o)
+                filename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(
+                    self.today.month) + str(
+                    self.today.day) + str(self.today.year) + '.csv'
+            with open(filename, 'w') as f:
+                outputWriter = csv.DictWriter(f, fieldnames=self.dataColumns, extrasaction='ignore', lineterminator='\n')
+                outputWriter.writeheader()
+                for r in range(0, len(self.dataMatrix)):
+                    # print('writing rows')
+                    outputWriter.writerow(self.dataMatrix[r])
 
 
         #Verbose data saving.

@@ -511,7 +511,7 @@ class PyHabPL(PyHab):
             self.win.flip()
 
         # Block-level summary data. Omits bad trials.
-        if len(self.blockDataList)>0:
+        if len(self.blockDataList) > 0 and self.blockSum:
             tempMatrix = self.saveBlockFile()
             # Now write the actual data file
             nDupe = ''  # This infrastructure eliminates the risk of overwriting existing data
@@ -564,23 +564,26 @@ class PyHabPL(PyHab):
                 while self.dataMatrix[x]['GNG'] == 0: #this is to get around the possibility that the same trial had multiple 'false starts'
                     x += 1
                 self.dataMatrix.insert(x, self.badTrials[i]) #python makes this stupid easy
-        nDupe = ''  # This infrastructure eliminates the risk of overwriting existing data
-        o = 1
-        filename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '.csv'
-        while os.path.exists(filename):
-            o += 1
-            nDupe = str(o)
+        #Trial-level summary file
+        if self.trialSum:
+            nDupe = ''  # This infrastructure eliminates the risk of overwriting existing data
+            o = 1
             filename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '.csv'
-        with open(filename, 'w') as f:
-            outputWriter = csv.DictWriter(f,fieldnames = self.dataColumns, extrasaction='ignore', lineterminator ='\n')
-            outputWriter.writeheader()
-            for r in range(0, len(self.dataMatrix)):
-                outputWriter.writerow(self.dataMatrix[r])
-        #Now to construct and save verbose data
+            while os.path.exists(filename):
+                o += 1
+                nDupe = str(o)
+                filename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '.csv'
+            with open(filename, 'w') as f:
+                outputWriter = csv.DictWriter(f,fieldnames = self.dataColumns, extrasaction='ignore', lineterminator ='\n')
+                outputWriter.writeheader()
+                for r in range(0, len(self.dataMatrix)):
+                    outputWriter.writerow(self.dataMatrix[r])
+
+        # Now to construct and save verbose data
         verboseMatrix = []
-        #first, verbose data is not as well organized. However, we should be able to alternate back and forth between
-        #on and off until we reach the end of a given trial, to reconstruct it.
-        #at the start of each line, add information: sNum, ageMo, ageDay, sex, cond, GNG, ON/OFF
+        # first, verbose data is not as well organized. However, we should be able to alternate back and forth between
+        # on and off until we reach the end of a given trial, to reconstruct it.
+        # at the start of each line, add information: sNum, ageMo, ageDay, sex, cond, GNG, ON/OFF
         for n in range(0, len(self.verbDatList['verboseOn'])):
             self.verbDatList['verboseOn'][n].update({'snum': self.sNum, 'sID': self.sID, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex,
                                       'cond': self.cond, 'GNG': 1, 'gazeOnOff': 1})
