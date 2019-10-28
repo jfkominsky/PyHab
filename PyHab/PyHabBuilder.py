@@ -110,7 +110,9 @@ class PyHabBuilder:
             if 'blockSum' not in self.settings.keys():
                 self.settings['blockSum'] = '1'
                 self.settings['trialSum'] = '1'
-            # TODO: midAG and dynamicPause need to be added if missing
+            if 'midAG' not in self.settings:
+                self.settings['midAG'] = '{}'
+                self.settings['dynamicPause'] = '[]'
             # Settings requiring evaluation to get sensible values. Mostly dicts.
             evalList = ['dataColumns','blockSum','trialSum','maxDur','condList','baseCondList','movieEnd','playThrough','trialOrder',
                         'stimNames', 'stimList', 'ISI', 'maxOff','minOn','autoAdvance','playAttnGetter','attnGetterList',
@@ -136,7 +138,10 @@ class PyHabBuilder:
                 self.settings['endImage'] = ''
             if 'habThresh' not in self.settings.keys():
                 self.settings['habThresh'] = '1.0'
-            # TODO: Backwards compatiblity for attention-getters
+            # Backwards compatiblity for attention-getters v0.9.0
+            for i, j in self.settings['playAttnGetter'].items():
+                if isinstance(j, str):
+                    self.settings['playAttnGetter'][i] = {'attnGetter':j,'cutoff':0,'onmin':0.0}
             self.settings['dataloc'] = ''.join([self.dirMarker if x == otherOS else x for x in self.settings['dataloc']])
             self.settings['stimPath'] = ''.join([self.dirMarker if x == otherOS else x for x in self.settings['stimPath']])
             self.settings['folderPath'] = os.getcwd()+self.dirMarker  # On load, reset the folder path to wherever you are now.
@@ -336,17 +341,25 @@ class PyHabBuilder:
             self.buttonList['text'].append(addMovText)
             self.buttonList['functions'].append(self.addStimToTypesDlg)
 
-        if len(list(self.settings['blockList'].keys())) > 0:  # Add button for block data settings
-            blockDataButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect), pos=[.8, -.65],
-                                          fillColor="white")
-            blockDataText = visual.TextStim(self.win, text="Save block summary \nfile?", color="black",
-                                            height=blockDataButton.height*.3, alignHoriz='center',pos=blockDataButton.pos)
-            self.buttonList['shapes'].append(blockDataButton)
-            self.buttonList['text'].append(blockDataText)
-            self.buttonList['functions'].append(self.blockDataDlg)
+        # if len(list(self.settings['blockList'].keys())) > 0:  # Add button for block data settings
+        #     blockDataButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect), pos=[.8, -.65],
+        #                                   fillColor="white")
+        #     blockDataText = visual.TextStim(self.win, text="Save block summary \nfile?", color="black",
+        #                                     height=blockDataButton.height*.3, alignHoriz='center',pos=blockDataButton.pos)
+        #     self.buttonList['shapes'].append(blockDataButton)
+        #     self.buttonList['text'].append(blockDataText)
+        #     self.buttonList['functions'].append(self.blockDataDlg)
+        # TODO: Temporarily removed block saving optiions to test advanced trial options
+        advTrialButton = visual.Rect(self.win, width=.3, height=.5 * (.2 / self.aspect), pos=[.8, -.65], fillColor="white")
+        advTrialText = visual.TextStim(self.win, text="Advanced trial \nsettings", color="black",
+                                       height=advTrialButton.height * .3, alignHoriz='center', pos=advTrialButton.pos)
+        self.buttonList['shapes'].append(advTrialButton)
+        self.buttonList['text'].append(advTrialText)
+        self.buttonList['functions'].append(self.advTrialSetup)
 
         self.workingRect = visual.Rect(self.win, width=1, height=.5, pos=[0,0], fillColor = 'green') #Because there are certain things that take a while.
         self.workingText = visual.TextStim(self.win, text="Working...", height= .3, bold=True, alignHoriz='center', pos=[0,0])
+
 
         self.UI = {'bg':[self.flowRect, self.paletteRect], 'buttons': self.buttonList}
 
@@ -676,7 +689,7 @@ class PyHabBuilder:
                         else:
                             if trialType not in self.settings['playAttnGetter']:  # If it did not have an attngetter before.
                                 agname = typeInfo[len(typeInfo)-3]
-                                self.settings['playAttnGetter'][trialType] = {'attnGetter':agname, 'cutoff':0, 'onmin':0}
+                                self.settings['playAttnGetter'][trialType] = {'attnGetter':agname, 'cutoff':0, 'onmin':0.0}
                             elif typeInfo[len(typeInfo) - 3] is not self.settings['playAttnGetter'][trialType]:
                                 # If a different attention-getter has been selected
                                 agname = typeInfo[len(typeInfo) - 3]
@@ -742,8 +755,7 @@ class PyHabBuilder:
         self.workingRect.draw()
         self.workingText.draw()
         self.win.flip()
-        # For when a trial is right-clicked, or a new one created, open a dialog with info about it.
-        skip = False
+
         adTypeDlg = gui.Dlg("Advanced trial settings")
         adTypeDlg.addText("Advancted trial settings for trial type" + trialType)
         if trialType in self.settings['playAttnGetter']:
@@ -776,9 +788,9 @@ class PyHabBuilder:
         elif trialType in self.settings['playAttnGetter']:
             # Default to the start-of-trial attention-getter as first non-None option, with all settings
             chz3 = [x for x in list(self.settings['attnGetterList'].keys()) if x != self.settings['playAttnGetter'][trialType]['attnGetter']]
-            chz3.insert(0, self.settings['midAG'][trialType]['attnGetter'])
+            chz3.insert(0, self.settings['playAttnGetter'][trialType]['attnGetter'])
             chz3.insert(0, 'No mid-trial AG')
-            trigger = self.settings['playAttnGetter'][trialType]['trigger']
+            trigger = 0.0
             if self.settings['playAttnGetter'][trialType]['cutoff'] in [1, '1', True, 'True']:
                 midcutoff = True
             else:
@@ -814,7 +826,7 @@ class PyHabBuilder:
             if adTypeInfo[len(adTypeInfo)-5] in [True, 1, 'True', '1'] and trialType not in self.settings['dynamicPause']:
                 self.settings['dynamicPause'].append(trialType)
             # Mid-trial AG
-            if adTypeInfo[len(adTypeInfo)-5] in self.settings['attnGetterList']:
+            if adTypeInfo[len(adTypeInfo)-4] in self.settings['attnGetterList']:
                 # We have the luxury of only caring about certain inputs if there is a mid-trial AG
                 if not isinstance(adTypeInfo[len(adTypeInfo) - 3], float) and not isinstance(adTypeInfo[len(adTypeInfo) - 3], int):
                     try:
@@ -838,7 +850,7 @@ class PyHabBuilder:
                 else:
                     midcut = 0
                     midmin = 0.0
-                self.settings['midAG'][trialType] = {'attnGetter':adTypeInfo[len(adTypeInfo)-5], 'trigger':trigger,
+                self.settings['midAG'][trialType] = {'attnGetter':adTypeInfo[len(adTypeInfo)-4], 'trigger':trigger,
                                                      'cutoff':midcut, 'onmin':midmin}
             if len(fail) > 0:
                 errDlg = gui.Dlg("Problem!")
@@ -847,6 +859,26 @@ class PyHabBuilder:
                     errDlg.addText(fail[i])
                 failDisp = errDlg.show()
                 self.advTrialDlg(trialType)
+
+    def advTrialSetup(self):
+        """
+        A function for selecting the trials you want to access the advanced settings of.
+        TODO: Make better.
+        :return:
+        :rtype:
+        """
+
+        self.showMainUI(self.UI, self.studyFlowArray, self.trialTypesArray)
+        self.workingRect.draw()
+        self.workingText.draw()
+        self.win.flip()
+
+        selDlg = gui.Dlg("Select trial")
+        selDlg.addField("Select trial to access advanced settings", choices=self.settings['trialTypes'])
+        selInfo = selDlg.show()
+        if selDlg.OK:
+            self.advTrialDlg(selInfo[0])
+
 
     def addHabBlock(self, makeNew = True):
         """
