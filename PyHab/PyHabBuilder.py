@@ -732,6 +732,7 @@ class PyHabBuilder:
         A dialog for advanced trial settings mostly having to do with attention-getters and stimulus presentation
 
         TODO: Find a place in the UI for this
+        TODO: Windows hide and show stuff.
         0/-7 = cutoff attention-getter on gaze-on? T/F [if trial has an AG]
 
         1/-6 = cutoff on-time: How long do they have to look to cut off presentation? [if trial has an AG]
@@ -863,21 +864,74 @@ class PyHabBuilder:
     def advTrialSetup(self):
         """
         A function for selecting the trials you want to access the advanced settings of.
-        TODO: Make better.
+        Spawns a panel with all the trial types. Reuses code from the block interface.
+        Doesn't need to check existence of trials because TODO: button only appears when there are valid trials
+
         :return:
         :rtype:
         """
+        if os.name is not 'posix':
+            self.win.winHandle.set_visible(visible=True) # Might cause a little flicker, but the best solution for now
 
-        self.showMainUI(self.UI, self.studyFlowArray, self.trialTypesArray)
-        self.workingRect.draw()
-        self.workingText.draw()
-        self.win.flip()
+        blockUI = {'bg': [], 'buttons': {'shapes': [], 'text': [], 'functions': []}}
+        blockOrder = []  # This will be what contains the order for the block!
+        end = False
+        newFlowArea = [-.9, .9, .9, -.9]  # X,X,Y,Y
+        menuArea = visual.Rect(self.win, width=newFlowArea[1] - newFlowArea[0],
+                                  height=newFlowArea[3] - newFlowArea[2], fillColor='lightgrey', lineColor='black',
+                                  pos=[newFlowArea[0] + float(abs(newFlowArea[1] - newFlowArea[0])) / 2,
+                                       newFlowArea[2] - float(abs(newFlowArea[3] - newFlowArea[2])) / 2])
+        cancelButton = visual.Rect(self.win, width=.15, height=.67 * (.15 / self.aspect), pos=[-.52, -.8],
+                                   fillColor="red")
+        cancelText = visual.TextStim(self.win, text="Cancel", height=.45 * cancelButton.height, pos=cancelButton.pos,
+                                     color='white')
+        instrText = visual.TextStim(self.win, text="Choose trial type to access advanced settings", pos=[.1, -.8], color='black',
+                                    height=.08)
 
-        selDlg = gui.Dlg("Select trial")
-        selDlg.addField("Select trial to access advanced settings", choices=self.settings['trialTypes'])
-        selInfo = selDlg.show()
-        if selDlg.OK:
-            self.advTrialDlg(selInfo[0])
+        blockUI['bg'].append(menuArea)
+        blockUI['bg'].append(instrText)
+        blockUI['buttons']['shapes'].append(cancelButton)
+        blockUI['buttons']['text'].append(cancelText)
+        menuLocs = []
+
+        for y in [.2, .4, .6, .8]:  # four rows for the block flow.
+            for z in range(1,11):
+                menuLocs.append([newFlowArea[0] + z * (newFlowArea[1] - newFlowArea[0]) * self.flowGap,
+                                    newFlowArea[2] + y * (newFlowArea[3] - newFlowArea[2])])
+
+        trialTypes = self.loadTypes(menuLocs)
+        # We only want base trial types, not blocks, so we omit all blocks.
+        delIndex = []
+        forbid = list(self.settings['blockList'].keys())  # If we're using this to make hab blocks, we need to allow (indeed mandate) Hab trials.
+        for i in range(0, len(trialTypes['labels'])):
+            if trialTypes['labels'][i] in forbid:
+                delIndex.insert(0, deepcopy(i))  # In reverse order, because it makes the next part way simpler
+        for j in range(0, len(delIndex)):
+            del trialTypes['labels'][delIndex[j]]
+            del trialTypes['shapes'][delIndex[j]]
+            del trialTypes['text'][delIndex[j]]
+
+        # Going to leave the gaps this will leave for now. Think it actually communicates more info.
+        flow={'lines':[],'shapes':[],'labels':[],'text':[],'extras':[]}
+        done = False
+        while not done:
+            self.showMainUI(self.UI, self.studyFlowArray, self.trialTypesArray) # put main UI under new one.
+            self.showMainUI(blockUI, flow, trialTypes)
+            self.win.flip()
+            if self.mouse.isPressedIn(blockUI['buttons']['shapes'][0]):
+                # There's only one button in this mode, it's cancel
+                done = True  # Just break the loop and that's that.
+                while self.mouse.isPressedIn(blockUI['buttons']['shapes'][0], buttons=[0]):  # waits until the mouse is released before continuing.
+                    pass
+            for k in range(0, len(trialTypes['shapes'])):  # Simply access the dialog for that trial
+                if self.mouse.isPressedIn(trialTypes['shapes'][k], buttons=[0]):
+                    done = True
+                    while self.mouse.isPressedIn(trialTypes['shapes'][k], buttons=[0]):
+                        pass  # Wait until mouse-up
+                    if os.name is not 'posix':
+                        self.win.winHandle.set_visible(visible=False)
+                    self.advTrialDlg(trialTypes['labels'][k])
+
 
 
     def addHabBlock(self, makeNew = True):
