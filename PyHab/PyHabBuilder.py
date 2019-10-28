@@ -110,10 +110,11 @@ class PyHabBuilder:
             if 'blockSum' not in self.settings.keys():
                 self.settings['blockSum'] = '1'
                 self.settings['trialSum'] = '1'
+            # TODO: midAG and dynamicPause need to be added if missing
             # Settings requiring evaluation to get sensible values. Mostly dicts.
             evalList = ['dataColumns','blockSum','trialSum','maxDur','condList','baseCondList','movieEnd','playThrough','trialOrder',
                         'stimNames', 'stimList', 'ISI', 'maxOff','minOn','autoAdvance','playAttnGetter','attnGetterList',
-                        'trialTypes','habTrialList', 'calcHabOver', 'nextFlash', 'blockList']
+                        'trialTypes','habTrialList', 'calcHabOver', 'nextFlash', 'blockList', 'dynamicPause','midAG']
             for i in evalList:
                 self.settings[i] = eval(self.settings[i])
                 if i in ['stimList','attnGetterList']:
@@ -135,6 +136,7 @@ class PyHabBuilder:
                 self.settings['endImage'] = ''
             if 'habThresh' not in self.settings.keys():
                 self.settings['habThresh'] = '1.0'
+            # TODO: Backwards compatiblity for attention-getters
             self.settings['dataloc'] = ''.join([self.dirMarker if x == otherOS else x for x in self.settings['dataloc']])
             self.settings['stimPath'] = ''.join([self.dirMarker if x == otherOS else x for x in self.settings['stimPath']])
             self.settings['folderPath'] = os.getcwd()+self.dirMarker  # On load, reset the folder path to wherever you are now.
@@ -465,8 +467,6 @@ class PyHabBuilder:
         Now also sets whether the study should auto-advance into this
         trial and whether the built-in attention-getter should be used.
 
-        TODO: Dynamic pause settings and mid-trial AG settings. Here or a separate dialog? Advanced trial settings...?
-        TODO: Attention-getters can now cut off early...
 
         The dialog by default outputs a list with 8 items in it.
         0 = trial type name
@@ -577,9 +577,9 @@ class PyHabBuilder:
                     chz3.insert(0, 'PyHabDefault')
                     chz3.insert(0, 'None') # Only default to default if this is a new trial type, not if "none" was selected before.
             elif trialType in self.settings['playAttnGetter']:
-                chz3 = [x for x in list(self.settings['attnGetterList'].keys()) if x != self.settings['playAttnGetter'][trialType]]
+                chz3 = [x for x in list(self.settings['attnGetterList'].keys()) if x != self.settings['playAttnGetter'][trialType]['attnGetter']]
                 chz3.insert(0, 'None')
-                chz3.insert(0, self.settings['playAttnGetter'][trialType]['attnGetter']) # TODO: FIX
+                chz3.insert(0, self.settings['playAttnGetter'][trialType]['attnGetter'])
             typeDlg.addField("Attention-getter for this trial type (Stim presentation mode only)", choices = chz3)
             if trialType in self.settings['movieEnd']:
                 chz4 = True
@@ -676,11 +676,11 @@ class PyHabBuilder:
                         else:
                             if trialType not in self.settings['playAttnGetter']:  # If it did not have an attngetter before.
                                 agname = typeInfo[len(typeInfo)-3]
-                                self.settings['playAttnGetter'][trialType] = agname
+                                self.settings['playAttnGetter'][trialType] = {'attnGetter':agname, 'cutoff':0, 'onmin':0}
                             elif typeInfo[len(typeInfo) - 3] is not self.settings['playAttnGetter'][trialType]:
                                 # If a different attention-getter has been selected
                                 agname = typeInfo[len(typeInfo) - 3]
-                                self.settings['playAttnGetter'][trialType] = agname
+                                self.settings['playAttnGetter'][trialType]['attnGetter'] = agname # leaves cutoff and onmin intact
 
                         # End-trial-on-movie-end settings
                         if typeInfo[len(typeInfo)-2] in [False,0,'False','0'] and trialType in self.settings['movieEnd']:
@@ -713,6 +713,140 @@ class PyHabBuilder:
                 self.studyFlowArray = self.loadFlow(self.settings['trialOrder'], self.flowArea, self.flowLocs, self.overFlowLocs)
                 self.showMainUI(self.UI, self.studyFlowArray, self.trialTypesArray)
                 self.win.flip()
+
+    def advTrialDlg(self, trialType):
+        """
+        A dialog for advanced trial settings mostly having to do with attention-getters and stimulus presentation
+
+        TODO: Find a place in the UI for this
+        0/-7 = cutoff attention-getter on gaze-on? T/F [if trial has an AG]
+
+        1/-6 = cutoff on-time: How long do they have to look to cut off presentation? [if trial has an AG]
+
+        2/-5 = Pause stimulus presentation when infant is not looking at screen?
+
+        3/-4 = Mid-trial AG: Play an attention-getter if infant looks away mid-trial?
+
+        4/-3 = mid-trial AG trigger: Minimum time to trigger mid-trial AG
+
+        5/-2 = mid-trial AG cutoff: Stop mid-trial AG on gaze-on?
+
+        6/-1 = mid-trial AG cutoff ontime
+
+        :param trialType: The trial type being modified.
+        :type trialType: str
+        :return:
+        :rtype:
+        """
+        self.showMainUI(self.UI, self.studyFlowArray, self.trialTypesArray)
+        self.workingRect.draw()
+        self.workingText.draw()
+        self.win.flip()
+        # For when a trial is right-clicked, or a new one created, open a dialog with info about it.
+        skip = False
+        adTypeDlg = gui.Dlg("Advanced trial settings")
+        adTypeDlg.addText("Advancted trial settings for trial type" + trialType)
+        if trialType in self.settings['playAttnGetter']:
+            if self.settings['playAttnGetter'][trialType]['cutoff'] in [1, '1', True, 'True']:
+                chz1 = True
+            else:
+                chz1 = False
+            adTypeDlg.addField("Cutoff attention-getter on gaze-on?", initial=chz1)
+            adTypeDlg.addField("Minimum on-time to cutoff attention-getter (ignored if box above is not checked)",
+                               self.settings['playAttnGetter'][trialType]['onmin'])
+        # The "dynamic pause" feature is available even if there are no stimuli in order to allow offline coding to
+        # simulate it, and if necessary add time to the trial (...?)
+        if trialType in self.settings['dynamicPause']:
+            chz2 = True
+        else:
+            chz2 = False
+        adTypeDlg.addField("Pause stimulus presentation when infant is not looking at screen?", initial=chz2)
+
+        # mid-trial AG settings are present regardless of whether there is an AG at the start of the trial or not.
+        if trialType in self.settings['midAG']:
+            chz3 = [x for x in list(self.settings['attnGetterList'].keys()) if x != self.settings['midAG'][trialType]['attnGetter']]
+            chz3.insert(0, 'No mid-trial AG')
+            chz3.insert(0, self.settings['midAG'][trialType]['attnGetter'])
+            trigger = self.settings['midAG'][trialType]['trigger']
+            if self.settings['midAG'][trialType]['cutoff'] in [1, '1', True, 'True']:
+                midcutoff = True
+            else:
+                midcutoff = False
+            midonmin = self.settings['midAG'][trialType]['onmin']
+        elif trialType in self.settings['playAttnGetter']:
+            # Default to the start-of-trial attention-getter as first non-None option, with all settings
+            chz3 = [x for x in list(self.settings['attnGetterList'].keys()) if x != self.settings['playAttnGetter'][trialType]['attnGetter']]
+            chz3.insert(0, self.settings['midAG'][trialType]['attnGetter'])
+            chz3.insert(0, 'No mid-trial AG')
+            trigger = self.settings['playAttnGetter'][trialType]['trigger']
+            if self.settings['playAttnGetter'][trialType]['cutoff'] in [1, '1', True, 'True']:
+                midcutoff = True
+            else:
+                midcutoff = False
+            midonmin = self.settings['playAttnGetter'][trialType]['onmin']
+        else:
+            chz3 = [x for x in list(self.settings['attnGetterList'].keys())]
+            chz3.insert(0, 'No mid-trial AG')
+            trigger = 2.0
+            midcutoff = False
+            midonmin = 0.0
+        adTypeDlg.addField("Play mid-trial attention-getter on sustained gaze-off (select AG)?", choices=chz3)
+        adTypeDlg.addField("Seconds of gaze-off to trigger attention-getter", trigger)
+        adTypeDlg.addField("Stop mid-trial AG on gaze-on?", initial=midcutoff)
+        adTypeDlg.addField("Minimum on-time to stop mid-trial AG", midonmin)
+
+        adTypeInfo = adTypeDlg.show()
+        if adTypeDlg.OK:
+            fail = [] # amass invalid inputs, save the rest
+            if trialType in self.settings['playAttnGetter']:
+                if adTypeInfo[len(adTypeInfo)-7] in [True, 1, 'True', '1']:
+                    self.settings['playAttnGetter'][trialType]['cutoff'] = 1
+                else:
+                    self.settings['playAttnGetter'][trialType]['cutoff'] = 0
+                if not isinstance(adTypeInfo[len(adTypeInfo)-6], float) and not isinstance(adTypeInfo[len(adTypeInfo)-6], int):
+                    try:
+                        eval(adTypeInfo[len(adTypeInfo)-6])
+                    except:
+                        fail.append("Number expected for minimum on-time to end attention-getter, got text instead!")
+                if isinstance(adTypeInfo[len(adTypeInfo)-6], float) and not isinstance(adTypeInfo[len(adTypeInfo)-6], int):
+                    self.settings['playAttnGetter'][trialType]['onmin'] = adTypeInfo[len(adTypeInfo)-6]
+            # Pause behavior
+            if adTypeInfo[len(adTypeInfo)-5] in [True, 1, 'True', '1'] and trialType not in self.settings['dynamicPause']:
+                self.settings['dynamicPause'].append(trialType)
+            # Mid-trial AG
+            if adTypeInfo[len(adTypeInfo)-5] in self.settings['attnGetterList']:
+                # We have the luxury of only caring about certain inputs if there is a mid-trial AG
+                if not isinstance(adTypeInfo[len(adTypeInfo) - 3], float) and not isinstance(adTypeInfo[len(adTypeInfo) - 3], int):
+                    try:
+                        trigger = eval(adTypeInfo[len(adTypeInfo) - 3])
+                    except:
+                        trigger = 0.0
+                        fail.append("Number expected for minimum off-time to trigger mid-trail AG, got text instead!")
+                else:
+                    trigger = adTypeInfo[len(adTypeInfo) - 3]
+
+                if adTypeInfo[len(adTypeInfo)-2] in [1, '1', True, 'True']:
+                    midcut = 1
+                    if not isinstance(adTypeInfo[len(adTypeInfo) - 1], float) and not isinstance(adTypeInfo[len(adTypeInfo) - 1], int):
+                        try:
+                            midmin = eval(adTypeInfo[len(adTypeInfo) - 1])
+                        except:
+                            midmin = 0.0
+                            fail.append("Number expected for minimum on-time to cutoff mid-trail AG, got text instead!")
+                    else:
+                        midmin = adTypeInfo[len(adTypeInfo) - 1]
+                else:
+                    midcut = 0
+                    midmin = 0.0
+                self.settings['midAG'][trialType] = {'attnGetter':adTypeInfo[len(adTypeInfo)-5], 'trigger':trigger,
+                                                     'cutoff':midcut, 'onmin':midmin}
+            if len(fail) > 0:
+                errDlg = gui.Dlg("Problem!")
+                errDlg.addText("The following fields received invalid input, please re-enter! (Other fields have been saved)")
+                for i in range(0, len(fail)):
+                    errDlg.addText(fail[i])
+                failDisp = errDlg.show()
+                self.advTrialDlg(trialType)
 
     def addHabBlock(self, makeNew = True):
         """
