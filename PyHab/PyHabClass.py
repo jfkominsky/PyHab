@@ -87,7 +87,7 @@ class PyHab:
             self.condPath = ''.join(self.condPath)
         # New settings for 0.9, pause if they look away and play AG mid-trial.
         try:
-            self.dyanmicPause = eval(settingsDict['dynamicPause'])
+            self.dynamicPause = eval(settingsDict['dynamicPause'])
             self.midAG = eval(settingsDict['midAG'])
         except:
             self.dynamicPause = []
@@ -545,7 +545,7 @@ class PyHab:
             useShape.fillColor = attnGetter['color']
             animDur = int(60*attnGetter['file'].getDuration())
             attnGetter['file'].play()
-            for i in range (0, animDur):  # Animation set to length of sound
+            for i in range(0, animDur):  # Animation set to length of sound
                 useShape.ori += 5  # Defines rotation speed in degrees. Arbitrary.
                 x += .1
                 if attnGetter['shape'] is 'Rectangle':
@@ -555,6 +555,15 @@ class PyHab:
                     useShape.size = tan(.025 * x) * (sizeMult*self.baseSize)
                 useShape.draw()
                 self.win.flip()
+                self.statusSquareA.draw()
+                self.statusTextA.draw()
+                self.statusSquareB.draw()
+                self.statusTextB.draw()
+                if self.blindPres < 2:
+                    self.trialText.draw()
+                    if self.blindPres < 1:
+                        self.readyText.draw()
+                self.win2.flip()  # If you don't refresh the expeirmenter window it doesn't read the keyboard!
                 if cutoff and self.lookKeysPressed():
                     if onCheck == 0 and onmin > 0:
                         onCheck = core.getTime()
@@ -572,17 +581,25 @@ class PyHab:
             self.frameCount = 0
             self.ISI['NobodyNameTheirTrialTypeThis'] = 0.0 # A goofy solution but it'll work. dispMovieStim requires a trial type, and the ISI for an attngetter needs to be 0.
             while self.dispMovieStim('NobodyNameTheirTrialTypeThis', dMovie) < 2:
+                self.statusSquareA.draw()
+                self.statusTextA.draw()
+                self.statusSquareB.draw()
+                self.statusTextB.draw()
+                if self.blindPres < 2:
+                    self.trialText.draw()
+                    if self.blindPres < 1:
+                        self.readyText.draw()
+                self.win2.flip() # If you don't refresh the expeirmenter window, it doesn't read the keyboard!
                 if cutoff and self.lookKeysPressed():
-                    if cutoff and self.lookKeysPressed():
-                        if onCheck == 0 and onmin > 0:
-                            onCheck = core.getTime()
-                        elif core.getTime() - onCheck > onmin:
-                            if attnGetter['stimType'] == 'Movie + Audio':
-                                attnGetter['audioFile'].stop(reset=True)
-                            dMovie.pause()
-                            break
-                    elif cutoff and onCheck > 0:  # A clever little way to say "if they aren't looking but were earlier"
-                        onCheck = 0
+                    if onCheck == 0 and onmin > 0:
+                        onCheck = core.getTime()
+                    elif core.getTime() - onCheck > onmin:
+                        if attnGetter['stimType'] == 'Movie + Audio':
+                            attnGetter['audioFile'].stop(reset=True)
+                        dMovie.pause()
+                        break
+                elif cutoff and onCheck > 0:  # A clever little way to say "if they aren't looking but were earlier"
+                    onCheck = 0
 
         self.dispCoderWindow(0)
         #self.win.flip()  # clear screen (change?)
@@ -1054,7 +1071,8 @@ class PyHab:
                     self.dispCoderWindow(0)
                 if self.stimPres:
                     if trialType in self.playAttnGetter: #Shockingly, this will work.
-                        # TODO: Data might want to record AG length, repeats.
+                        # TODO: Data might want to record AG length, repeats. Add data columns? "AGreps" and "AGlength"?
+                        # TODO: Maybe put AG data in verbose...?
                         # Pull relevant arguments out of the attngetter dictionary.
                         self.attnGetter(trialType, self.playAttnGetter[trialType]['cutoff'], self.playAttnGetter[trialType]['onmin'])  # plays the attention-getter
                         core.wait(.1)  # this wait is important to make the attentiongetter not look like it is turning into the stimulus
@@ -1195,7 +1213,7 @@ class PyHab:
         """
         Control function for individual trials, to be called by doExperiment
         Returns a status value (int) that tells doExperiment what to do next
-        TODO: Requires reconfiguration for baby-contingent presentation.
+
         :param number: Trial number
         :type number: int
         :param ttype: Trial type
@@ -1374,7 +1392,7 @@ class PyHab:
                             disMovie['stim']['Audio'].pause()
                     if localType in self.midAG and self.stimPres:
                         if nowOff - startOff >= self.midAG[localType]['trigger']:
-                            # TODO: Do something here to deal with recording data about mid-trial AG behavior
+                            # TODO: Do something here to deal with recording data about mid-trial AG behavior?
                             if localType not in self.dynamicPause: # Need to pause it anyways to play the AG so they don't overlap
                                 if disMovie['stimType'] in ['Movie', 'Audio'] and disMovie['stim'].status == PLAYING:
                                     disMovie['stim'].pause()
@@ -1383,7 +1401,7 @@ class PyHab:
                             startAG = core.getTime()
                             self.attnGetter(localType, self.midAG[localType]['cutoff'], self.midAG[localType]['onmin'])
                             durAG = core.getTime() - startAG
-                            maxDurAdd = maxDurAdd + durAG # Increase max length of trial by duration that AG played.
+                            maxDurAdd = maxDurAdd + durAG  # Increase max length of trial by duration that AG played.
                             if localType not in self.dynamicPause:
                                 if disMovie['stimType'] in ['Movie', 'Audio'] and disMovie['stim'].status != PLAYING:
                                     disMovie['stim'].play()

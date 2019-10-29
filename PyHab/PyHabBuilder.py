@@ -790,7 +790,7 @@ class PyHabBuilder:
         self.win.flip()
 
         adTypeDlg = gui.Dlg("Advanced trial settings")
-        adTypeDlg.addText("Advancted trial settings for trial type" + trialType)
+        adTypeDlg.addText("Advanced trial settings for trial type" + trialType)
         if trialType in self.settings['playAttnGetter']:
             if self.settings['playAttnGetter'][trialType]['cutoff'] in [1, '1', True, 'True']:
                 chz1 = True
