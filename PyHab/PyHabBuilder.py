@@ -299,7 +299,7 @@ class PyHabBuilder:
         self.buttonList['shapes'].append(USetButton)
         self.buttonList['text'].append(USetText)
         self.buttonList['functions'].append(self.univSettingsDlg)
-        dataSetButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect),pos=[-.8,-.65], fillColor="white")
+        dataSetButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect),pos=[-.8,-.65], fillColor="white", lineColor="black")
         dataSetText = visual.TextStim(self.win, text="Data \nsettings",color="black",height=dataSetButton.height*.3, alignHoriz='center', pos=dataSetButton.pos)
         self.buttonList['shapes'].append(dataSetButton)
         self.buttonList['text'].append(dataSetText)
@@ -341,21 +341,29 @@ class PyHabBuilder:
             self.buttonList['text'].append(addMovText)
             self.buttonList['functions'].append(self.addStimToTypesDlg)
 
-        # if len(list(self.settings['blockList'].keys())) > 0:  # Add button for block data settings
-        #     blockDataButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect), pos=[.8, -.65],
-        #                                   fillColor="white")
-        #     blockDataText = visual.TextStim(self.win, text="Save block summary \nfile?", color="black",
-        #                                     height=blockDataButton.height*.3, alignHoriz='center',pos=blockDataButton.pos)
-        #     self.buttonList['shapes'].append(blockDataButton)
-        #     self.buttonList['text'].append(blockDataText)
-        #     self.buttonList['functions'].append(self.blockDataDlg)
-        # TODO: Temporarily removed block saving optiions to test advanced trial options
-        advTrialButton = visual.Rect(self.win, width=.3, height=.5 * (.2 / self.aspect), pos=[.8, -.65], fillColor="white")
-        advTrialText = visual.TextStim(self.win, text="Advanced trial \nsettings", color="black",
-                                       height=advTrialButton.height * .3, alignHoriz='center', pos=advTrialButton.pos)
-        self.buttonList['shapes'].append(advTrialButton)
-        self.buttonList['text'].append(advTrialText)
-        self.buttonList['functions'].append(self.advTrialSetup)
+
+        if len(list(self.settings['blockList'].keys())) > 0:  # Add button for block data settings
+            blockDataButton = visual.Rect(self.win, width=.15, height=.5*(.2/self.aspect), pos=[-.65, -.65],
+                                          fillColor="white")
+            blockDataText = visual.TextStim(self.win, text="Block \ndata", color="black",
+                                            height=blockDataButton.height*.3, alignHoriz='center',pos=blockDataButton.pos)
+            self.buttonList['shapes'].append(blockDataButton)
+            self.buttonList['text'].append(blockDataText)
+            self.buttonList['functions'].append(self.blockDataDlg)
+            # Find the data settings button and shrink it.
+            dataIndex = self.buttonList['functions'].index(self.dataSettingsDlg)
+            self.buttonList['shapes'][dataIndex].pos = [-.875, -.65]
+            self.buttonList['shapes'][dataIndex].width = .15
+            self.buttonList['text'][dataIndex].pos = [-.875, -.65]
+
+        if len(self.settings['trialTypes']) > 0:
+            advTrialButton = visual.Rect(self.win, width=.3, height=.5 * (.2 / self.aspect), pos=[.8, -.65], fillColor="white")
+            advTrialText = visual.TextStim(self.win, text="Advanced trial \nsettings", color="black",
+                                           height=advTrialButton.height * .3, alignHoriz='center', pos=advTrialButton.pos)
+            self.buttonList['shapes'].append(advTrialButton)
+            self.buttonList['text'].append(advTrialText)
+            self.buttonList['functions'].append(self.advTrialSetup)
+
 
         self.workingRect = visual.Rect(self.win, width=1, height=.5, pos=[0,0], fillColor = 'green') #Because there are certain things that take a while.
         self.workingText = visual.TextStim(self.win, text="Working...", height= .3, bold=True, alignHoriz='center', pos=[0,0])
@@ -402,6 +410,22 @@ class PyHabBuilder:
                         self.buttonList['functions'][i]() #It should not be this easy, BUT IT IS. Python is great.
                     if os.name is not 'posix':
                         self.win.winHandle.set_visible(visible=True)
+            # Some conditions to check if we need to remove buttons, must be done outside the for loop to prevent index errors
+            if self.advTrialSetup in self.buttonList['functions'] and len(self.settings['trialTypes']) == 0:
+                advTrialIndex = self.buttonList['functions'].index(self.advTrialSetup)
+                self.buttonList['shapes'].pop(advTrialIndex)
+                self.buttonList['text'].pop(advTrialIndex)
+                self.buttonList['functions'].pop(advTrialIndex)
+            if self.blockDataDlg in self.buttonList['functions'] and len(list(self.settings['blockList'].keys())) == 0:
+                blockDataIndex = self.buttonList['functions'].index(self.blockDataDlg)
+                self.buttonList['shapes'].pop(blockDataIndex)
+                self.buttonList['text'].pop(blockDataIndex)
+                self.buttonList['functions'].pop(blockDataIndex)
+                # Re-expand old data button
+                dataIndex = self.buttonList['functions'].index(self.dataSettingsDlg)
+                self.buttonList['shapes'][dataIndex].pos = [-.8,-.65]
+                self.buttonList['shapes'][dataIndex].width = .3
+                self.buttonList['text'][dataIndex].pos = [-.8, -.65]
             #Check all the trial type elements.
             for j in range(0,len(self.trialTypesArray['shapes'])):
                 if self.mouse.isPressedIn(self.trialTypesArray['shapes'][j],buttons=[0]): #Left-click, add to study flow, at end.
@@ -723,6 +747,16 @@ class PyHabBuilder:
                                 warnDlg = gui.Dlg(title="Update conditions")
                                 warnDlg.addText("WARNING! UPDATE CONDITION SETTINGS AFTER ADDING STIMULI TO THIS TRIAL TYPE! \nIf you do not update conditions, the experiment will crash whenever it reaches this trial type.")
                                 warnDlg.show()
+                            if self.advTrialSetup not in self.buttonList['functions']:
+                                advTrialButton = visual.Rect(self.win, width=.3, height=.5 * (.2 / self.aspect),
+                                                             pos=[.8, -.65], fillColor="white")
+                                advTrialText = visual.TextStim(self.win, text="Advanced trial \nsettings",
+                                                               color="black",
+                                                               height=advTrialButton.height * .3, alignHoriz='center',
+                                                               pos=advTrialButton.pos)
+                                self.buttonList['shapes'].append(advTrialButton)
+                                self.buttonList['text'].append(advTrialText)
+                                self.buttonList['functions'].append(self.advTrialSetup)
                 self.studyFlowArray = self.loadFlow(self.settings['trialOrder'], self.flowArea, self.flowLocs, self.overFlowLocs)
                 self.showMainUI(self.UI, self.studyFlowArray, self.trialTypesArray)
                 self.win.flip()
@@ -731,8 +765,6 @@ class PyHabBuilder:
         """
         A dialog for advanced trial settings mostly having to do with attention-getters and stimulus presentation
 
-        TODO: Find a place in the UI for this
-        TODO: Windows hide and show stuff.
         0/-7 = cutoff attention-getter on gaze-on? T/F [if trial has an AG]
 
         1/-6 = cutoff on-time: How long do they have to look to cut off presentation? [if trial has an AG]
@@ -865,7 +897,7 @@ class PyHabBuilder:
         """
         A function for selecting the trials you want to access the advanced settings of.
         Spawns a panel with all the trial types. Reuses code from the block interface.
-        Doesn't need to check existence of trials because TODO: button only appears when there are valid trials
+        Doesn't need to check existence of trials because
 
         :return:
         :rtype:
@@ -1320,16 +1352,21 @@ class PyHabBuilder:
                                 self.studyFlowArray=self.loadFlow(self.settings['trialOrder'], self.flowArea, self.flowLocs, self.overFlowLocs)
                             done = True
                             if self.blockDataDlg not in self.buttonList['functions']:
-                                blockDataButton = visual.Rect(self.win, width=.3, height=.5 * (.2 / self.aspect),
-                                                              pos=[.8, -.65],
-                                                              fillColor="white")
-                                blockDataText = visual.TextStim(self.win, text="Save block summary \nfile?",
+                                blockDataButton = visual.Rect(self.win, width=.15, height=.5 * (.2 / self.aspect),
+                                                              pos=[-.725, -.65],
+                                                              fillColor="white", lineColor="black")
+                                blockDataText = visual.TextStim(self.win, text="Block \ndata",
                                                                 color="black",
                                                                 height=blockDataButton.height * .3, alignHoriz='center',
                                                                 pos=blockDataButton.pos)
                                 self.buttonList['shapes'].append(blockDataButton)
                                 self.buttonList['text'].append(blockDataText)
                                 self.buttonList['functions'].append(self.blockDataDlg)
+                                # Find the data settings and shrink it.
+                                dataIndex = self.buttonList['functions'].index(self.dataSettingsDlg)
+                                self.buttonList['shapes'][dataIndex].pos = [-.875, -.65]
+                                self.buttonList['shapes'][dataIndex].width = .15
+                                self.buttonList['text'][dataIndex].pos = [-.875, -.65]
                             while self.mouse.isPressedIn(blockUI['buttons']['shapes'][i], buttons=[0]):  # waits until the mouse is released before continuing.
                                 pass
                     elif blockUI['buttons']['text'][i].text == 'Cancel':
@@ -1501,6 +1538,7 @@ class PyHabBuilder:
             warnDlg.addText(
                 "WARNING! UPDATE CONDITION SETTINGS AFTER REMOVING THIS TRIAL TYPE! \nIf you do not update conditions, the experiment may crash when you try to run it.")
             warnDlg.show()
+
 
     def moveTrialInFlow(self, flowIndex, tOrd, flowSpace, UI, flow, types):
         """
