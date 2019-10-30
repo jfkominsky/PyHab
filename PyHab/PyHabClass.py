@@ -1071,8 +1071,8 @@ class PyHab:
                     self.dispCoderWindow(0)
                 if self.stimPres:
                     if trialType in self.playAttnGetter: #Shockingly, this will work.
-                        # TODO: Data might want to record AG length, repeats. Add data columns? "AGreps" and "AGlength"?
-                        # TODO: Maybe put AG data in verbose...?
+                        # TODO: Data might want to record AG length, repeats. Add data columns? "AGreps" and "AGtime"?
+                        # TODO: Maybe put mid-AG data in verbose...? We end up adding four columns otherwise.
                         # Pull relevant arguments out of the attngetter dictionary.
                         self.attnGetter(trialType, self.playAttnGetter[trialType]['cutoff'], self.playAttnGetter[trialType]['onmin'])  # plays the attention-getter
                         core.wait(.1)  # this wait is important to make the attentiongetter not look like it is turning into the stimulus

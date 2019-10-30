@@ -1,5 +1,6 @@
 import os, sys
 from psychopy import visual, event, core, data, gui, monitors, tools, prefs, logging
+from psychopy.constants import (STARTED, PLAYING)  # Added for new stimulus types
 prefs.hardware['audioLib'] = ['sounddevice']
 if os.name is 'posix':
     prefs.general['audioDevice'] = ['Built-in Output']
@@ -327,6 +328,11 @@ class PyHabPL(PyHab):
                     tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOff, 'endTime': endOff,
                                      'duration': offDur}
                     offArray.append(tempGazeArray)
+                    if localType in self.dynamicPause and self.stimPres:
+                        if disMovie['stimType'] in ['Movie', 'Audio'] and disMovie['stim'].status != PLAYING:
+                            disMovie['stim'].play()
+                        elif disMovie['stimType'] == ['Image with audio'] and disMovie['stim']['Audio'].status != PLAYING:
+                            disMovie['stim']['Audio'].play()
                 elif self.keyboard[self.key.M]: #if they have started looking since the last refresh and not met criterion
                     gazeOn2 = True
                     numOn2 = numOn2 + 1
@@ -337,6 +343,34 @@ class PyHabPL(PyHab):
                     tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOff, 'endTime': endOff,
                                      'duration': offDur}
                     offArray.append(tempGazeArray)
+                    if localType in self.dynamicPause and self.stimPres:
+                        if disMovie['stimType'] in ['Movie', 'Audio'] and disMovie['stim'].status != PLAYING:
+                            disMovie['stim'].play()
+                        elif disMovie['stimType'] == ['Image with audio'] and disMovie['stim']['Audio'].status != PLAYING:
+                            disMovie['stim']['Audio'].play()
+                else:
+                    if localType in self.dynamicPause and self.stimPres:
+                        if disMovie['stimType'] in ['Movie','Audio'] and disMovie['stim'].status == PLAYING:
+                            disMovie['stim'].pause()
+                        elif disMovie['stimType'] == ['Image with audio'] and disMovie['stim']['Audio'].status == PLAYING:
+                            disMovie['stim']['Audio'].pause()
+                    if localType in self.midAG and self.stimPres:
+                        if nowOff - startOff >= self.midAG[localType]['trigger']:
+                            # TODO: Do something here to deal with recording data about mid-trial AG behavior?
+                            if localType not in self.dynamicPause: # Need to pause it anyways to play the AG so they don't overlap
+                                if disMovie['stimType'] in ['Movie', 'Audio'] and disMovie['stim'].status == PLAYING:
+                                    disMovie['stim'].pause()
+                                elif disMovie['stimType'] == ['Image with audio'] and disMovie['stim']['Audio'].status == PLAYING:
+                                    disMovie['stim']['Audio'].pause()
+                            startAG = core.getTime()
+                            self.attnGetter(localType, self.midAG[localType]['cutoff'], self.midAG[localType]['onmin'])
+                            durAG = core.getTime() - startAG
+                            maxDurAdd = maxDurAdd + durAG  # Increase max length of trial by duration that AG played.
+                            if localType not in self.dynamicPause:
+                                if disMovie['stimType'] in ['Movie', 'Audio'] and disMovie['stim'].status != PLAYING:
+                                    disMovie['stim'].play()
+                                elif disMovie['stimType'] == ['Image with audio'] and disMovie['stim']['Audio'].status != PLAYING:
+                                    disMovie['stim']['Audio'].play()
             elif gazeOn or gazeOn2:
                 nowOn = core.getTime() - startTrial
                 if gazeOn:
