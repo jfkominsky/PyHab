@@ -66,8 +66,8 @@ class PyHabBuilder:
                                                         'stimPath': 'stimuli'+self.dirMarker,
                                                         'stimNames': {},
                                                         'stimList': {},
-                                                        'screenWidth': 1080, 
-                                                        'screenHeight': 700,
+                                                        'screenWidth': {'C':1080,'L':1080,'R':1080},
+                                                        'screenHeight': {'C':700,'L':700,'R':700},
                                                         'screenColor': 'black',
                                                         'movieWidth': 800, 
                                                         'movieHeight': 600, 
@@ -145,6 +145,8 @@ class PyHabBuilder:
             self.settings['dataloc'] = ''.join([self.dirMarker if x == otherOS else x for x in self.settings['dataloc']])
             self.settings['stimPath'] = ''.join([self.dirMarker if x == otherOS else x for x in self.settings['stimPath']])
             self.settings['folderPath'] = os.getcwd()+self.dirMarker  # On load, reset the folder path to wherever you are now.
+            #TODO: Backwards compatibility for L/C/R multi-screen settings, once ints or floats now dicts.
+
             # Get conditions!
             if self.settings['randPres'] in [1,'1','True',True] and len(self.settings['condFile'])>0:  # If there is a condition file
                 if os.path.exists(self.settings['folderPath'] + self.settings['condFile']):
@@ -177,6 +179,7 @@ class PyHabBuilder:
         self.folderPath = self.settings['folderPath']  # The location where all the pieces are saved.
         self.allDataColumns = ['sNum', 'sID', 'months', 'days', 'sex', 'cond','condLabel', 'trial','GNG','trialType','stimName','habCrit','habTrialNo','sumOnA','numOnA','sumOffA','numOffA','sumOnB','numOnB','sumOffB','numOffB']
         self.allDataColumnsPL = ['sNum', 'sID', 'months', 'days', 'sex', 'cond','condLabel', 'trial','GNG','trialType','stimName','habCrit','habTrialNo', 'sumOnL','numOnL','sumOnR','numOnR','sumOff','numOff']
+        self.allDataColumpsHPP = ['sNum', 'sID', 'months', 'days', 'sex', 'cond','condLabel', 'trial','GNG','trialType','stimName','habCrit','habTrialNo', 'sumOnL','numOnL','sumOnC','numOnC','sumOnR','numOnR','sumOff','numOff']
         self.stimSource={}  # A list of the source folder(s) for each stimulus file, a dict where each key is the filename in stimNames?
         self.delList=[] # A list of stimuli to delete if they are removed from the experiment library.
         self.allDone=False
@@ -241,6 +244,13 @@ class PyHabBuilder:
         self.buttonList['shapes'].append(saveAsButton)
         self.buttonList['text'].append(saveAsText)
         self.buttonList['functions'].append(self.saveDlg)
+
+        # Mode select
+        self.modeText = visual.TextStim(self.win, text="Exp Type:", color="white", height=.67*(.15/self.aspect)*.5, pos=[.22, -.9])
+        # TODO: ST, PL, HPP buttons. Will need corresponding functions, which can be all the conversion required between HPP and the others.
+
+
+        # Main function buttons
         newTrialTypeButton = visual.Rect(self.win, width=.9*(self.paletteArea[1]-self.paletteArea[0]), height=self.standardPaletteHeight*.10, fillColor="yellow", lineColor="black",
                 pos=[self.paletteArea[0]+float(abs(self.paletteArea[1]-self.paletteArea[0]))/2, self.paletteArea[2]-self.standardPaletteHeight*.07])
         newTrialTypeText=visual.TextStim(self.win, alignHoriz='center', alignVert='center', text = "New Trial Type",height=.5*newTrialTypeButton.height, pos=newTrialTypeButton.pos,color="black")
@@ -369,7 +379,7 @@ class PyHabBuilder:
         self.workingText = visual.TextStim(self.win, text="Working...", height= .3, bold=True, alignHoriz='center', pos=[0,0])
 
 
-        self.UI = {'bg':[self.flowRect, self.paletteRect], 'buttons': self.buttonList}
+        self.UI = {'bg':[self.flowRect, self.paletteRect, self.modeText], 'buttons': self.buttonList}
 
     def run(self):
         """
@@ -1815,7 +1825,7 @@ class PyHabBuilder:
         1 = blindPres: Level of experimenter blinding, 0 (none), 1 (no trial type info), or
             2 (only info is whether a trial is currently active.
 
-        2 = prefLook: Whether the study is preferential-looking or single-target.
+        2 = prefLook: Whether the study is preferential-looking or single-target. TODO: Replace with buttons on the main UI.
 
         3 = nextFlash: Whether to have the coder window flash to alert the experimenter they need to manually trigger
             the next trial
@@ -1946,8 +1956,7 @@ class PyHabBuilder:
 
         7 = expScreenIndex: Which screen to display the experimenter window on
 
-
-
+        # TODO: Redo screen and movie dimensions as a dict, L: C: R:, and use C for single-target and PL, all three for HPP.
         :param lastSet: Optional. Last entered settings, in case dialog needs to be presented again to fix bad entries.
         :type lastSet: list
         :param redo: Are we doing this again to fix bad entries?
@@ -2025,7 +2034,24 @@ class PyHabBuilder:
                 warnDlg.show()
                 self.stimSettingsDlg(stimfo, redo=True)
 
+    def HPP_stimSettingsDlg(self, lastSet=[], redo=False):
+        """
+        A dialog box for the stimulus settings unique to head-turn preference procedures.
+        Only accessible when HPP is the selected type.
 
+        :param lastSet: A list of the settings of the dialog if it is being redone
+        :type lastSet: list
+        :param redo: Whether this is a redo due to invalid input
+        :type redo: bool
+        :return:
+        :rtype:
+        """
+        self.showMainUI(self.UI, self.studyFlowArray, self.trialTypesArray)
+        self.workingRect.draw()
+        self.workingText.draw()
+        self.win.flip()
+
+        sDlg = gui.Dlg(title="Stimulus presentation settings")
 
     def addStimToLibraryDlg(self):
         """

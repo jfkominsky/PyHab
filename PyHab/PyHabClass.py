@@ -141,6 +141,7 @@ class PyHab:
                 j['audioLoc'] = ''.join([self.dirMarker if x == otherOS else x for x in j['audioLoc']])
                 j['imageLoc'] = ''.join([self.dirMarker if x == otherOS else x for x in j['imageLoc']])
 
+        # Todo: Redo as dicts with L: C: R: for HPP.
         self.screenWidth = eval(settingsDict['screenWidth'])  # Display window width, in pixels
         self.screenHeight = eval(settingsDict['screenHeight'])  # Display window height, in pixels
         self.screenColor = settingsDict['screenColor']  #Background color of stim window.
@@ -1072,7 +1073,7 @@ class PyHab:
                 if self.stimPres:
                     if trialType in self.playAttnGetter: #Shockingly, this will work.
                         # TODO: Data might want to record AG length, repeats. Add data columns? "AGreps" and "AGtime"?
-                        # TODO: Maybe put mid-AG data in verbose...? We end up adding four columns otherwise.
+                        # TODO: Maybe put mid-AG data in verbose...? We end up adding four columns otherwise. Adding two is bad enough.
                         # Pull relevant arguments out of the attngetter dictionary.
                         self.attnGetter(trialType, self.playAttnGetter[trialType]['cutoff'], self.playAttnGetter[trialType]['onmin'])  # plays the attention-getter
                         core.wait(.1)  # this wait is important to make the attentiongetter not look like it is turning into the stimulus

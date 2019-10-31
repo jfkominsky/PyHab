@@ -32,7 +32,7 @@ def run():
             if setDict['prefLook'] in['0',0,'False',False]:
                 experiment = PH.PyHab(setDict)
             else:
-                experiment = PHL.PyHabPL(setDict)
+                experiment = PHL.PyHabPL(setDict) # TODO: add HPP
             experiment.run()
         else:
             builder = PB.PyHabBuilder(loadedSaved = True, settingsDict=setDict)
