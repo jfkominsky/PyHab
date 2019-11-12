@@ -141,13 +141,40 @@ class PyHab:
                 j['audioLoc'] = ''.join([self.dirMarker if x == otherOS else x for x in j['audioLoc']])
                 j['imageLoc'] = ''.join([self.dirMarker if x == otherOS else x for x in j['imageLoc']])
 
-        # Todo: Redo as dicts with L: C: R: for HPP.
+
+        # 0.9: Screen-specific settings: ['screenWidth','screenHeight','screenColor','movieWidth','movieHeight','screenIndex']
         self.screenWidth = eval(settingsDict['screenWidth'])  # Display window width, in pixels
         self.screenHeight = eval(settingsDict['screenHeight'])  # Display window height, in pixels
-        self.screenColor = settingsDict['screenColor']  #Background color of stim window.
         self.movieWidth = eval(settingsDict['movieWidth'])  # movie width
         self.movieHeight = eval(settingsDict['movieHeight'])  # movie height
         self.screenIndex = eval(settingsDict['screenIndex'])  # which monitor stimuli are presented on. 1 for secondary monitor, 0 for primary monitor.
+
+        if not isinstance(settingsDict['screenWidth'], dict):
+            tmpDict = {'L': self.screenWidth, 'C': self.screenWidth,
+                       'R': self.screenWidth}
+            self.screenWidth = tmpDict
+            tmpDict2 = {'L': self.screenHeight, 'C': self.screenHeight,
+                        'R': self.screenHeight}
+            self.screenHeight = tmpDict2
+            tmpDict3 = {'L': self.movieWidth, 'C': self.movieWidth,
+                        'R': self.movieWidth}
+            self.movieWidth = tmpDict3
+            tmpDict4 = {'L': self.movieHeight, 'C': self.movieHeight,
+                        'R': self.movieHeight}
+            self.movieHeight = tmpDict4
+            tmpDict5 = {'L': self.screenColor, 'C': self.screenColor,
+                        'R': self.screenColor}
+            self.screenColor = tmpDict5
+            tmpDict6 = {'L': self.screenIndex, 'C': self.screenIndex,
+                        'R': self.screenIndex}
+            self.screenIndex = tmpDict6
+        try:
+            # Screencolor is special. Eval breaks if it's a pre-0.9 version that's just a string.
+            self.screenColor = eval(settingsDict['screenColor'])
+        except:
+            self.screenColor = {'L':settingsDict['screenColor'], 'C':settingsDict['screenColor'], 'R':settingsDict['screenColor']}
+
+
         self.ISI = eval(settingsDict['ISI'])  # time between loops (by trial type)
         # Backwards compatibility time!
         if type(self.ISI) is not dict:
@@ -2263,6 +2290,7 @@ class PyHab:
         """
         Sets up the stimulus presentation and coder windows, loads all the stimuli, then starts the experiment
         with doExperiment()
+        TODO: For non-HPP, just pull the ['C'] screen settings.
 
         :return:
         :rtype:
@@ -2270,8 +2298,8 @@ class PyHab:
         # Important to do this first because it gets the windows in the correct order for focus etc.
         if self.stimPres:
             # Stimulus presentation window
-            self.win = visual.Window((self.screenWidth, self.screenHeight), fullscr=False, screen=self.screenIndex, allowGUI=False,
-                                     units='pix', color=self.screenColor)
+            self.win = visual.Window((self.screenWidth['C'], self.screenHeight['C']), fullscr=False, screen=self.screenIndex['C'], allowGUI=False,
+                                     units='pix', color=self.screenColor['C'])
             self.dummyThing = visual.Circle(self.win, size=1, color=self.win.color) # This is for fixing a display glitch in PsychoPy3 involving multiple windows of different sizes.
         # Coder window
         self.win2 = visual.Window((400, 400), fullscr=False, screen=self.expScreenIndex, allowGUI=True, units='pix', waitBlanking=False,
@@ -2284,7 +2312,7 @@ class PyHab:
             if self.startImage is not '':
                 self.dummyThing.draw()
                 tempStim = self.stimList[self.startImage]
-                tempStimObj = visual.ImageStim(self.win, tempStim['stimLoc'], size=[self.movieWidth, self.movieHeight])
+                tempStimObj = visual.ImageStim(self.win, tempStim['stimLoc'], size=[self.movieWidth['C'], self.movieHeight['C']])
                 tempStimObj.draw()
                 self.win.flip() # This should now be on the screen until the first attngetter
             self.stimDict = {x: [] for x in self.stimNames.keys()}  # This holds all the loaded movies.
@@ -2302,17 +2330,17 @@ class PyHab:
                     tempStim = self.stimList[self.stimNames[i][x]]
                     if tempStim['stimType'] == 'Movie':
                         tempStimObj = visual.MovieStim3(self.win, tempStim['stimLoc'],
-                                                      size=[self.movieWidth, self.movieHeight], flipHoriz=False,
+                                                      size=[self.movieWidth['C'], self.movieHeight['C']], flipHoriz=False,
                                                       flipVert=False, loop=False)
                     elif tempStim['stimType'] == 'Image':
                         tempStimObj = visual.ImageStim(self.win, tempStim['stimLoc'],
-                                                       size=[self.movieWidth, self.movieHeight])
+                                                       size=[self.movieWidth['C'], self.movieHeight['C']])
                     elif tempStim['stimType'] == 'Audio':
                         tempStimObj = sound.Sound(tempStim['stimLoc'])
                     else: # The eternal problem of audio/image pair. Just creates an object that's a dict of audio and image.
                         audioObj = sound.Sound(tempStim['audioLoc'])
                         imageObj = visual.ImageStim(self.win, tempStim['imageLoc'],
-                                                       size=[self.movieWidth, self.movieHeight])
+                                                       size=[self.movieWidth['C'], self.movieHeight['C']])
                         tempStimObj = {'Audio': audioObj, 'Image': imageObj}
                     tempAdd = {'stimType':tempStim['stimType'], 'stim':tempStimObj}
                     self.stimDict[i].append(tempAdd)
@@ -2324,13 +2352,13 @@ class PyHab:
                         self.attnGetterList[i]['file'] = sound.Sound(self.attnGetterList[i]['stimLoc'])
                     else:
                         self.attnGetterList[i]['file'] = visual.MovieStim3(self.win, self.attnGetterList[i]['stimLoc'],
-                                                                           size=[self.movieWidth, self.movieHeight],
+                                                                           size=[self.movieWidth['C'], self.movieHeight['C']],
                                                                            flipHoriz=False, flipVert=False, loop=False)
                         if self.attnGetterList[i]['stimType'] == 'Movie + Audio':
                             self.attnGetterList[i]['audioFile'] = sound.Sound(self.attnGetterList[i]['audioLoc'])
             if self.endImage is not '': # Load image for end of experiment, if needed.
                 tempStim = self.stimList[self.endImage]
-                self.endImageObject = visual.ImageStim(self.win, tempStim['stimLoc'], size=[self.movieWidth, self.movieHeight])
+                self.endImageObject = visual.ImageStim(self.win, tempStim['stimLoc'], size=[self.movieWidth['C'], self.movieHeight['C']])
             else:
                 self.endImageObject = None
         self.keyboard = self.key.KeyStateHandler()

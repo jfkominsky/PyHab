@@ -68,10 +68,10 @@ class PyHabBuilder:
                                                         'stimList': {},
                                                         'screenWidth': {'C':1080,'L':1080,'R':1080},
                                                         'screenHeight': {'C':700,'L':700,'R':700},
-                                                        'screenColor': 'black',
-                                                        'movieWidth': 800, 
-                                                        'movieHeight': 600, 
-                                                        'screenIndex': '1',
+                                                        'screenColor': {'C':'black','L':'black','R':'black'},
+                                                        'movieWidth': {'C':800,'L':800,'R':800},
+                                                        'movieHeight': {'C':600,'L':600,'R':600},
+                                                        'screenIndex': {'C':1,'L':1,'R':1},
                                                         'expScreenIndex': '0',
                                                         'ISI': {},
                                                         'freezeFrame': '0.0',
@@ -116,7 +116,8 @@ class PyHabBuilder:
             # Settings requiring evaluation to get sensible values. Mostly dicts.
             evalList = ['dataColumns','blockSum','trialSum','maxDur','condList','baseCondList','movieEnd','playThrough','trialOrder',
                         'stimNames', 'stimList', 'ISI', 'maxOff','minOn','autoAdvance','playAttnGetter','attnGetterList',
-                        'trialTypes','habTrialList', 'calcHabOver', 'nextFlash', 'blockList', 'dynamicPause','midAG']
+                        'trialTypes','habTrialList', 'calcHabOver', 'nextFlash', 'blockList', 'dynamicPause','midAG',
+                        'screenWidth','screenHeight','movieWidth','movieHeight'] # in 0.9, this becomes necessary.
             for i in evalList:
                 self.settings[i] = eval(self.settings[i])
                 if i in ['stimList','attnGetterList']:
@@ -142,10 +143,25 @@ class PyHabBuilder:
             for i, j in self.settings['playAttnGetter'].items():
                 if isinstance(j, str):
                     self.settings['playAttnGetter'][i] = {'attnGetter':j,'cutoff':0,'onmin':0.0}
+            # Backwards compatibility for new settings format for HPP.
+            if not isinstance(self.settings['screenWidth'], dict):
+                tmpDict = {'L': self.settings['screenWidth'], 'C': self.settings['screenWidth'], 'R': self.settings['screenWidth']}
+                self.settings['screenWidth'] = tmpDict
+                tmpDict2 = {'L': self.settings['screenHeight'], 'C': self.settings['screenHeight'], 'R': self.settings['screenHeight']}
+                self.settings['screenHeight'] = tmpDict2
+                tmpDict3 = {'L': self.settings['movieWidth'], 'C': self.settings['movieWidth'], 'R': self.settings['movieWidth']}
+                self.settings['movieWidth'] = tmpDict3
+                tmpDict4 = {'L': self.settings['movieHeight'], 'C': self.settings['movieHeight'], 'R': self.settings['movieHeight']}
+                self.settings['movieHeight'] = tmpDict4
+                tmpDict5 = {'L': self.settings['screenColor'], 'C': self.settings['screenColor'], 'R': self.settings['screenColor']}
+                self.settings['screenColor'] = tmpDict5
+                tmpDict6 = {'L': self.settings['screenIndex'], 'C': self.settings['screenIndex'], 'R': self.settings['screenIndex']}
+                self.settings['screenIndex'] = tmpDict6
+            else:
+                self.settings['screenColor'] = eval(self.settings['screenColor']) # This is special b/c it cannot be eval'd if it's just a string.
             self.settings['dataloc'] = ''.join([self.dirMarker if x == otherOS else x for x in self.settings['dataloc']])
             self.settings['stimPath'] = ''.join([self.dirMarker if x == otherOS else x for x in self.settings['stimPath']])
             self.settings['folderPath'] = os.getcwd()+self.dirMarker  # On load, reset the folder path to wherever you are now.
-            #TODO: Backwards compatibility for L/C/R multi-screen settings, once ints or floats now dicts.
 
             # Get conditions!
             if self.settings['randPres'] in [1,'1','True',True] and len(self.settings['condFile'])>0:  # If there is a condition file
@@ -246,9 +262,30 @@ class PyHabBuilder:
         self.buttonList['functions'].append(self.saveDlg)
 
         # Mode select
-        self.modeText = visual.TextStim(self.win, text="Exp Type:", color="white", height=.67*(.15/self.aspect)*.5, pos=[.22, -.9])
-        # TODO: ST, PL, HPP buttons. Will need corresponding functions, which can be all the conversion required between HPP and the others.
+        self.modeText = visual.TextStim(self.win, text="Exp Type:", color="white", height=.67*(.15/self.aspect)*.5, pos=[.2, -.9])
 
+        modeColors = ['black','black','black']
+        modeColors[eval(self.settings['prefLook'])] = 'green' # Set the color of the initially selected one.
+
+        stButton = visual.Rect(self.win, width=.1, height=.67*(.15/self.aspect), fillColor=modeColors[0], lineColor='white', pos=[.38, -.9])
+        stText = visual.TextStim(self.win, text="ST", height=.67*(.15/self.aspect)*.5, pos=stButton.pos)
+        self.buttonList['shapes'].append(stButton)
+        self.buttonList['text'].append(stText)
+        self.buttonList['functions'].append(self.toST)
+
+        plButton = visual.Rect(self.win, width=.1, height=.67 * (.15 / self.aspect), fillColor=modeColors[1], lineColor='white',
+                      pos=[.5, -.9])
+        plText = visual.TextStim(self.win, text="PL", height=.67*(.15/self.aspect)*.5, pos=plButton.pos)
+        self.buttonList['shapes'].append(plButton)
+        self.buttonList['text'].append(plText)
+        self.buttonList['functions'].append(self.toPL)
+
+        hpButton = visual.Rect(self.win, width=.1, height=.67 * (.15 / self.aspect), fillColor=modeColors[2], lineColor='white',
+                      pos=[.62,-.9])
+        hpText = visual.TextStim(self.win, text="HPP", height=.67*(.15/self.aspect)*.5, pos=hpButton.pos)
+        self.buttonList['shapes'].append(hpButton)
+        self.buttonList['text'].append(hpText)
+        self.buttonList['functions'].append(self.toHPP)
 
         # Main function buttons
         newTrialTypeButton = visual.Rect(self.win, width=.9*(self.paletteArea[1]-self.paletteArea[0]), height=self.standardPaletteHeight*.10, fillColor="yellow", lineColor="black",
@@ -410,7 +447,10 @@ class PyHabBuilder:
                     if os.name is not 'posix':
                         while self.mouse.getPressed()[0] == 1:
                             pass
-                        self.win.winHandle.set_visible(visible=False)
+                        if self.buttonList['function'][i] not in [self.toST, self.toPL, self.toHPP]:
+                            # If we're opening a dialog box, basically.
+                            self.win.winHandle.set_visible(visible=False)
+
                     if self.buttonList['functions'][i] == self.addHabBlock: #one special case
                         if self.buttonList['text'][i].text == "Mod Habituation":
                             self.addHabBlock(makeNew=False)
@@ -1934,10 +1974,75 @@ class PyHabBuilder:
                     tempCols.append(tempDataCols[j-2])
             self.settings['dataColumns'] = tempCols
         
-    def stimSettingsDlg(self, lastSet=[], redo=False):
+    def toST(self):
+        """
+        A function that converts PL or HPP to single-target. PL to ST is NBD. HPP is more of a challenge.
+
+        :return:
+        :rtype:
+        """
+        if self.settings['prefLook'] not in [0,'0']:
+
+            if self.settings['prefLook'] in [2,'2']:
+                # If we're starting from HPP we got some transforms to do
+                pass
+
+            stIndex = self.buttonList['functions'].index(self.toST)
+            plIndex = self.buttonList['functions'].index(self.toPL)
+            hpIndex = self.buttonList['functions'].index(self.toHPP)
+            self.buttonList['shapes'][stIndex].fillColor='green'
+            self.buttonList['shapes'][plIndex].fillColor='black'
+            self.buttonList['shapes'][hpIndex].fillColor = 'black'
+
+            self.settings['prefLook'] = 0
+            while 1 in self.mouse.getPressed():
+                pass # Just a little thing so it doesn't get called for every frame the mouse is down on the button.
+
+
+    def toPL(self):
+        """
+        A function that converts ST or HPP to preferential looking. ST to PL is NBD. HPP is more of a challenge.
+        :return:
+        :rtype:
+        """
+        if self.settings['prefLook'] not in [1, '1']:
+            if self.settings['prefLook'] in [2, '2']:
+                pass
+            stIndex = self.buttonList['functions'].index(self.toST)
+            plIndex = self.buttonList['functions'].index(self.toPL)
+            hpIndex = self.buttonList['functions'].index(self.toHPP)
+            self.buttonList['shapes'][stIndex].fillColor = 'black'
+            self.buttonList['shapes'][plIndex].fillColor = 'green'
+            self.buttonList['shapes'][hpIndex].fillColor = 'black'
+            self.settings['prefLook'] = 1
+            while 1 in self.mouse.getPressed():
+                pass # Just a little thing so it doesn't get called for every frame the mouse is down on the button.
+
+
+    def toHPP(self):
+        """
+        A function that converts ST or PL experiments to HPP. Always a little complicated.
+
+        TODO: Trial types and conditions now need to track screen of presentation. Screen settings need to be updated.
+        :return:
+        :rtype:
+        """
+        if self.settings['prefLook'] not in [2, '2']:
+            stIndex = self.buttonList['functions'].index(self.toST)
+            plIndex = self.buttonList['functions'].index(self.toPL)
+            hpIndex = self.buttonList['functions'].index(self.toHPP)
+            self.buttonList['shapes'][stIndex].fillColor = 'black'
+            self.buttonList['shapes'][plIndex].fillColor = 'black'
+            self.buttonList['shapes'][hpIndex].fillColor = 'green'
+            self.settings['prefLook'] = 2
+            # whole bunch of other stuff.
+            while 1 in self.mouse.getPressed():
+                pass # Just a little thing so it doesn't get called for every frame the mouse is down on the button.
+
+    def stimSettingsDlg(self, lastSet=[], redo=False, screen='all'):
         """
 
-        Settings relating to stimulus presentation. Indexes from the dialog
+        Settings relating to stimulus presentation. Indexes from the dialog (non-HPP version):
 
         0 = screenWidth: Width of stim window
 
@@ -1956,11 +2061,14 @@ class PyHabBuilder:
 
         7 = expScreenIndex: Which screen to display the experimenter window on
 
-        # TODO: Redo screen and movie dimensions as a dict, L: C: R:, and use C for single-target and PL, all three for HPP.
+
+        TODO: Redo screen and movie dimensions as a dict, L: C: R:, and use C for single-target and PL, all three for HPP.
         :param lastSet: Optional. Last entered settings, in case dialog needs to be presented again to fix bad entries.
         :type lastSet: list
         :param redo: Are we doing this again to fix bad entries?
         :type redo: boolean
+        :param screen: Optional. For HPP, lets you set for just the individual screen?
+        :type screen: string
         :return:
         :rtype:
         """
@@ -1976,13 +2084,23 @@ class PyHabBuilder:
             # This order maps on to the order of the dialog box. This allows for carrying over from previous entries
             # if there's a problem (e.g., text where numbers should be). Done as separate lines basically for ease of
             # correspondence to the field definitions and the saving at the end.
-            lastSet.append(self.settings['screenWidth'])
-            lastSet.append(self.settings['screenHeight'])
-            lastSet.append(self.settings['screenColor'])
-            lastSet.append(self.settings['movieWidth'])
-            lastSet.append(self.settings['movieHeight'])
+            if screen == 'all':
+                lastSet.append(self.settings['screenWidth']['C'])
+                lastSet.append(self.settings['screenHeight']['C'])
+                lastSet.append(self.settings['screenColor']['C'])
+                lastSet.append(self.settings['movieWidth']['C'])
+                lastSet.append(self.settings['movieHeight']['C'])
+            else:
+                lastSet.append(self.settings['screenWidth'][screen])
+                lastSet.append(self.settings['screenHeight'][screen])
+                lastSet.append(self.settings['screenColor'][screen])
+                lastSet.append(self.settings['movieWidth'][screen])
+                lastSet.append(self.settings['movieHeight'][screen])
             lastSet.append(self.settings['freezeFrame'])
-            lastSet.append(self.settings['screenIndex'])
+            if screen == 'all':
+                lastSet.append(self.settings['screenIndex']['C'])
+            else:
+                lastSet.append(self.settings['screenIndex'][screen])
             lastSet.append(self.settings['expScreenIndex'])
         colors = ['black', 'white', 'gray']
         colorchz = [x for x in colors if x != lastSet[2]]
@@ -2019,13 +2137,22 @@ class PyHabBuilder:
                     except:
                         problem = True
             if not problem:
-                self.settings['screenWidth'] = stimfo[0]
-                self.settings['screenHeight'] = stimfo[1]
-                self.settings['screenColor'] = stimfo[2]
-                self.settings['movieWidth'] = stimfo[3]
-                self.settings['movieHeight'] = stimfo[4]
+                if screen == 'all':
+                    # Settings that are screen-specific, setting for all screens at once.
+                    allScreenSets = ['screenWidth','screenHeight','screenColor','movieWidth','movieHeight','screenIndex']
+                    indList = [0, 1, 2, 3, 4, 6]  # indexes that are screen-spec settings
+                    for q in range(0, len(allScreenSets)):
+                        # Iterates through the dicts of screen-specific settings
+                        for i,j in self.settings[allScreenSets[q]].items():
+                            j = stimfo[indList[q]]
+                else:
+                    self.settings['screenWidth'][screen] = stimfo[0]
+                    self.settings['screenHeight'][screen] = stimfo[1]
+                    self.settings['screenColor'][screen] = stimfo[2]
+                    self.settings['movieWidth'][screen] = stimfo[3]
+                    self.settings['movieHeight'][screen] = stimfo[4]
+                    self.settings['screenIndex'][screen] = stimfo[6]
                 self.settings['freezeFrame'] = stimfo[5]
-                self.settings['screenIndex'] = stimfo[6]
                 self.settings['expScreenIndex'] = stimfo[7]
             else:
                 warnDlg = gui.Dlg(title="Warning!")
@@ -2036,8 +2163,10 @@ class PyHabBuilder:
 
     def HPP_stimSettingsDlg(self, lastSet=[], redo=False):
         """
-        A dialog box for the stimulus settings unique to head-turn preference procedures.
+        A dialog box for the stimulus settings unique to head-turn preference procedures. Basically 3x the settings.
         Only accessible when HPP is the selected type.
+        TODO: Split by screen first? So stage 1 dlg is "pick screen" and then just set everything for that screen?
+
 
         :param lastSet: A list of the settings of the dialog if it is being redone
         :type lastSet: list
