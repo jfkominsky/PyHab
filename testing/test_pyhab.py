@@ -66,15 +66,15 @@ def test_init():
     """
     itest = PH.PyHab(base_settings)
     TheDicts = [itest.maxDur, itest.playThrough, itest.maxOff, itest.minOn, itest.stimNames,
-                itest.stimList, itest.playAttnGetter, itest.attnGetterList, itest.ISI]
+                itest.stimList, itest.playAttnGetter, itest.attnGetterList, itest.ISI, itest.screenColor,
+                itest.screenWidth, itest.screenHeight, itest.movieWidth, itest.movieHeight, itest.screenIndex]
     TheLists = [itest.dataColumns, itest.movieEnd, itest.autoAdvance, itest.condList, itest.trialOrder,
                 itest.habTrialList]
     TheStrings = [itest.prefix, itest.dataFolder, itest.stimPath, itest.condFile, itest.setCritType,
-                  itest.metCritStatic,
-                  itest.screenColor]
+                  itest.metCritStatic]
     TheFloats = [itest.freezeFrame]
     TheInts = [itest.blindPres, itest.maxHabTrials, itest.setCritWindow, itest.setCritDivisor, itest.metCritDivisor,
-               itest.metCritWindow, itest.screenWidth, itest.screenHeight, itest.movieWidth, itest.movieHeight]
+               itest.metCritWindow]
     for i in TheDicts:
         assert type(i) == dict
     for j in TheLists:
