@@ -148,7 +148,8 @@ class PyHab:
         self.movieWidth = eval(settingsDict['movieWidth'])  # movie width
         self.movieHeight = eval(settingsDict['movieHeight'])  # movie height
         self.screenIndex = eval(settingsDict['screenIndex'])  # which monitor stimuli are presented on. 1 for secondary monitor, 0 for primary monitor.
-
+        self.ISI = eval(settingsDict['ISI'])  # time between loops (by trial type)
+        # Backwards compatibility with pre-0.9
         if not isinstance(settingsDict['screenWidth'], dict):
             tmpDict = {'L': self.screenWidth, 'C': self.screenWidth,
                        'R': self.screenWidth}
@@ -162,20 +163,17 @@ class PyHab:
             tmpDict4 = {'L': self.movieHeight, 'C': self.movieHeight,
                         'R': self.movieHeight}
             self.movieHeight = tmpDict4
-            tmpDict5 = {'L': self.screenColor, 'C': self.screenColor,
-                        'R': self.screenColor}
+            tmpDict5 = {'L': settingsDict['screenColor'], 'C': settingsDict['screenColor'],
+                        'R': settingsDict['screenColor']}
             self.screenColor = tmpDict5
             tmpDict6 = {'L': self.screenIndex, 'C': self.screenIndex,
                         'R': self.screenIndex}
             self.screenIndex = tmpDict6
-        try:
-            # Screencolor is special. Eval breaks if it's a pre-0.9 version that's just a string.
+        else:
+            # Screencolor is special. Eval breaks if it's a pre-0.9 version that's just a string. Otherwise, we need to eval it
             self.screenColor = eval(settingsDict['screenColor'])
-        except:
-            self.screenColor = {'L':settingsDict['screenColor'], 'C':settingsDict['screenColor'], 'R':settingsDict['screenColor']}
 
 
-        self.ISI = eval(settingsDict['ISI'])  # time between loops (by trial type)
         # Backwards compatibility time!
         if type(self.ISI) is not dict:
             # Go through stimNames and make everything work
