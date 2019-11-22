@@ -1985,7 +1985,8 @@ class PyHabBuilder:
 
             if self.settings['prefLook'] in [2,'2']:
                 # If we're starting from HPP we got some transforms to do
-                pass
+                self.buttonList['functions'][self.buttonList['functions'].index(self.HPP_stimSettingsDlg)] = self.stimSettingsDlg
+
 
             stIndex = self.buttonList['functions'].index(self.toST)
             plIndex = self.buttonList['functions'].index(self.toPL)
@@ -2007,7 +2008,9 @@ class PyHabBuilder:
         """
         if self.settings['prefLook'] not in [1, '1']:
             if self.settings['prefLook'] in [2, '2']:
-                pass
+                # If we're coming from HPP we have some transforms to do
+                self.buttonList['functions'][self.buttonList['functions'].index(self.HPP_stimSettingsDlg)] = self.stimSettingsDlg
+
             stIndex = self.buttonList['functions'].index(self.toST)
             plIndex = self.buttonList['functions'].index(self.toPL)
             hpIndex = self.buttonList['functions'].index(self.toHPP)
@@ -2035,7 +2038,9 @@ class PyHabBuilder:
             self.buttonList['shapes'][plIndex].fillColor = 'black'
             self.buttonList['shapes'][hpIndex].fillColor = 'green'
             self.settings['prefLook'] = 2
-            # whole bunch of other stuff.
+            # find the stim settings button and change its behavior
+            self.buttonList['functions'][self.buttonList['functions'].index(self.stimSettingsDlg)] = self.HPP_stimSettingsDlg
+
             while 1 in self.mouse.getPressed():
                 pass # Just a little thing so it doesn't get called for every frame the mouse is down on the button.
 
@@ -2161,17 +2166,11 @@ class PyHabBuilder:
                 warnDlg.show()
                 self.stimSettingsDlg(stimfo, redo=True)
 
-    def HPP_stimSettingsDlg(self, lastSet=[], redo=False):
+    def HPP_stimSettingsDlg(self):
         """
-        A dialog box for the stimulus settings unique to head-turn preference procedures. Basically 3x the settings.
-        Only accessible when HPP is the selected type.
-        TODO: Split by screen first? So stage 1 dlg is "pick screen" and then just set everything for that screen?
+        A dialog box for the stimulus settings unique to head-turn preference procedures. Just selects the screen to
+        then open the stimulus dialgo window for.
 
-
-        :param lastSet: A list of the settings of the dialog if it is being redone
-        :type lastSet: list
-        :param redo: Whether this is a redo due to invalid input
-        :type redo: bool
         :return:
         :rtype:
         """
@@ -2180,7 +2179,16 @@ class PyHabBuilder:
         self.workingText.draw()
         self.win.flip()
 
-        sDlg = gui.Dlg(title="Stimulus presentation settings")
+        sDlg = gui.Dlg(title="Select screen")
+
+        sDlg.addField("Select which screen to modify settings of", choices=['all','Left','Center','Right'])
+        sDlg.addText("WARNING: selecting 'all' will overwrite all settings for individual screens!")
+        screenChoice = sDlg.show()
+        if sDlg.OK:
+            if screenChoice[0] != 'all':
+                screenChoice[0] = screenChoice[0][0]  # Get just the first letter for L/C/R
+            self.stimSettingsDlg(screen=screenChoice[0])
+
 
     def addStimToLibraryDlg(self):
         """
