@@ -42,6 +42,7 @@ class PyHabBuilder:
                                                         'minOn': {},
                                                         'blindPres': '0', 
                                                         'autoAdvance': [],
+                                                        'multiStim': [], # 0.9 New, for HPP
                                                         'randPres': '0', 
                                                         'condPath': '', 
                                                         'condFile': '', 
@@ -113,9 +114,11 @@ class PyHabBuilder:
             if 'midAG' not in self.settings:
                 self.settings['midAG'] = '{}'
                 self.settings['dynamicPause'] = '[]'
+            if 'multiStim' not in self.settings:
+                self.settings['multiStim'] = '[]'
             # Settings requiring evaluation to get sensible values. Mostly dicts.
             evalList = ['dataColumns','blockSum','trialSum','maxDur','condList','baseCondList','movieEnd','playThrough','trialOrder',
-                        'stimNames', 'stimList', 'ISI', 'maxOff','minOn','autoAdvance','playAttnGetter','attnGetterList',
+                        'stimNames', 'stimList', 'ISI', 'maxOff','minOn','autoAdvance','multiStim','playAttnGetter','attnGetterList',
                         'trialTypes','habTrialList', 'calcHabOver', 'nextFlash', 'blockList', 'dynamicPause','midAG',
                         'screenWidth','screenHeight','movieWidth','movieHeight'] # in 0.9, this becomes necessary.
             for i in evalList:
@@ -554,27 +557,30 @@ class PyHabBuilder:
         Now also sets whether the study should auto-advance into this
         trial and whether the built-in attention-getter should be used.
 
+        TODO: For HPP, we are basically going to need to either change stimNames or make something new.
 
         The dialog by default outputs a list with 8 items in it.
         0 = trial type name
 
         1 = Maximum duration of trials of this type
 
-        [if movies assigned to trial type already, they occupy 2 - N]
+        2 = Gaze-contingent trial type?
 
-        2/-7 = Gaze-contingent trial type?
+        3 = Maximum continuous looking-away to end trial of type
 
-        3/-6 = Maximum continuous looking-away to end trial of type
+        4 = Minimum on-time to enable off-time criterion (not continuous)
 
-        4/-5 = Minimum on-time to enable off-time criterion (not continuous)
+        5 = Auto-advance into trial?
 
-        5/-4 = Auto-advance into trial?
+        6 = Attention-getter selection
 
-        6/-3 = Attention-getter selection
+        7 = End trial on movie end or mid-movie
 
-        7/-2 = End trial on movie end or mid-movie
+        8 = inter-stimulus interveral (ISI) for this trial type
 
-        8/-1 = inter-stimulus interveral (ISI) for this trial type
+        9 = HPP ONLY: Present multiple stimuli at once? (multiStim)
+
+        [if movies assigned to trial type already, they occupy 2 - N] TODO: MOVE TO END
 
         :param trialType: Name of the trial type
         :type trialType: str
@@ -604,19 +610,13 @@ class PyHabBuilder:
                     maxOff = self.settings['maxOff'][trialType]
                     minOn = self.settings['minOn'][trialType]
                     ISI = self.settings['ISI'][trialType]
-                    if len(self.settings['stimNames'][trialType]) > 0:
-                        typeDlg.addText("Current movie files in trial type (uncheck to remove)")
-                        for i in range(0,len(self.settings['stimNames'][trialType])):
-                            typeDlg.addField(self.settings['stimNames'][trialType][i], initial=True)
+
                 else:
                     typeDlg.addField("Max duration", prevInfo[1])
-                    maxOff = prevInfo[-6]
-                    minOn = prevInfo[-5]
-                    ISI = prevInfo[-1]
-                    if len(prevInfo) > 9:  # If there were no movies to start with, this will have a length of 9.
-                        typeDlg.addText("Current stimuli in trial type (uncheck to remove)")
-                        for i in range(0,len(self.settings['stimNames'][trialType])):
-                            typeDlg.addField(self.settings['stimNames'][trialType][i], initial=prevInfo[i+2])
+                    maxOff = prevInfo[3]
+                    minOn = prevInfo[4]
+                    ISI = prevInfo[8]
+
                 # Find the index of the existing trial type in the study flow and type pane.
                 flowIndexes=[]
                 for i in range(0,len(self.studyFlowArray['labels'])):
@@ -631,12 +631,12 @@ class PyHabBuilder:
                     chz = ["Yes", "OnOnly", "No"]
             elif len(prevInfo) > 0:
                 typeDlg.addField("Max duration", prevInfo[1])
-                maxOff = prevInfo[-5]
-                minOn = prevInfo[-4]
-                ISI = prevInfo[-1]
-                if prevInfo[4] == 2:
+                maxOff = prevInfo[3]
+                minOn = prevInfo[4]
+                ISI = prevInfo[8]
+                if prevInfo[5] == 2:
                     chz = ["No", "OnOnly", "Yes"]
-                elif prevInfo[4] == 1:
+                elif prevInfo[5] == 1:
                     chz = ["OnOnly", "Yes", "No"]
                 else:
                     chz = ["Yes", "OnOnly", "No"]
@@ -674,10 +674,49 @@ class PyHabBuilder:
                 chz4 = False
             typeDlg.addField("Only end trial on end of movie repetition? (Only works when presenting stimuli)", initial = chz4)
             typeDlg.addField("Inter-stimulus interval on loops (pause between end of one loop and start of next)", ISI)
+            if self.settings['prefLook'] in [2,'2']: # HPP
+                if trialType in self.settings['multiStim']:
+                    multi = True
+                else:
+                    multi = False
+                typeDlg.addField("Present stimuli on multiple screens at once:", initial=multi)
+            if not makeNew:
+                if len(prevInfo) == 0:
+                    if len(self.settings['stimNames'][trialType]) > 0:
+                        if self.settings['prefLook'] in [2, '2']: #HPP
+                            typeDlg.addText("Current movie files in trial type (change screens or remove)")
+                            for j in ['C','L','R']:
+                                locChoice = ['C','L','R','Remove']
+                                locChoice = [x for x in locChoice if x != j]
+                                locChoice.insert(0, j)
+                                if len(self.settings['stimNames'][trialType][j])>0:
+                                    for i in range(0, len(self.settings['stimNames'][trialType][j])):
+                                        typeDlg.addField(self.settings['stimNames'][trialType][j][i], choices=locChoice)
+                        else:
+                            typeDlg.addText("Current movie files in trial type (uncheck to remove)")
+                            for i in range(0, len(self.settings['stimNames'][trialType])):
+                                typeDlg.addField(self.settings['stimNames'][trialType][i], initial=True)
+                elif len(prevInfo) > 9: # If there were no movies to start with, this will have a length of 9.
+                    if self.settings['prefLook'] in [2, '2']:  # HPP
+                        if len(prevInfo) > 10:
+                            typeDlg.addText("Current movie files in trial type (change screens or remove)")
+                            for j in ['C', 'L', 'R']:
+                                locChoice = ['C', 'L', 'R', 'Remove']
+                                for i in range(0, len(self.settings['stimNames'][trialType][j])):
+                                    locChoice = [x for x in locChoice if x != prevInfo[i+10]]
+                                    locChoice.insert(0, prevInfo[i+10])
+                                    typeDlg.addField(self.settings['stimNames'][trialType][j][i], choices=locChoice)
+                    else:
+                        typeDlg.addText("Current stimuli in trial type (uncheck to remove)")
+                        for i in range(0,len(self.settings['stimNames'][trialType])):
+                            typeDlg.addField(self.settings['stimNames'][trialType][i], initial=prevInfo[i+9])
+
+
             typeInfo = typeDlg.show()
+
             if typeDlg.OK:
                 # Check if all the things that need to be numbers are actually numbers.
-                for i in [1, len(typeInfo) - 5, len(typeInfo) - 4]:
+                for i in [1, 3, 4]:
                     if not isinstance(typeInfo[i], float) and not isinstance(typeInfo[i], int):
                         try:
                             typeInfo[i] = eval(typeInfo[i])
@@ -736,51 +775,71 @@ class PyHabBuilder:
                     if not skip:
 
                         self.settings['maxDur'][trialType] = typeInfo[1] #Update maxDur
-                        self.settings['maxOff'][trialType] = typeInfo[len(typeInfo)-6]
-                        self.settings['minOn'][trialType] = typeInfo[len(typeInfo)-5]
-                        self.settings['ISI'][trialType] = typeInfo[len(typeInfo)-1]
+                        self.settings['maxOff'][trialType] = typeInfo[3]
+                        self.settings['minOn'][trialType] = typeInfo[4]
+                        self.settings['ISI'][trialType] = typeInfo[8]
 
                         # Gaze-contingency settings
                         if trialType not in self.settings['playThrough'].keys(): #Initialize if needed.
                             self.settings['playThrough'][trialType] = 0
-                        if typeInfo[len(typeInfo)-7] == "Yes" and self.settings['playThrough'][trialType] is not 0: #gaze-contingent trial type, not already tagged as such.
+                        if typeInfo[2] == "Yes" and self.settings['playThrough'][trialType] is not 0: #gaze-contingent trial type, not already tagged as such.
                             self.settings['playThrough'][trialType] = 0
-                        elif typeInfo[len(typeInfo)-7] == "No" and self.settings['playThrough'][trialType] is not 2:
+                        elif typeInfo[2] == "No" and self.settings['playThrough'][trialType] is not 2:
                             self.settings['playThrough'][trialType] = 2
-                        elif typeInfo[len(typeInfo)-7] == "OnOnly" and self.settings['playThrough'][trialType] is not 1:
+                        elif typeInfo[2] == "OnOnly" and self.settings['playThrough'][trialType] is not 1:
                             self.settings['playThrough'][trialType] = 1
 
                         # Auto-advance settings
-                        if typeInfo[len(typeInfo)-4] in [False,0,'False','0'] and trialType in self.settings['autoAdvance']: #gaze-contingent trial type, not already tagged as such.
+                        if typeInfo[5] in [False,0,'False','0'] and trialType in self.settings['autoAdvance']: #gaze-contingent trial type, not already tagged as such.
                             self.settings['autoAdvance'].remove(trialType)
-                        elif typeInfo[len(typeInfo)-4] in [True, 1, 'True', '1'] and not trialType in self.settings['autoAdvance']:
+                        elif typeInfo[5] in [True, 1, 'True', '1'] and not trialType in self.settings['autoAdvance']:
                             self.settings['autoAdvance'].append(trialType)
 
                         # Attention-getter settings
-                        if typeInfo[len(typeInfo)-3] == 'None':
+                        if typeInfo[6] == 'None':
                             if trialType in self.settings['playAttnGetter']:
                                 del self.settings['playAttnGetter'][trialType]
                         else:
                             if trialType not in self.settings['playAttnGetter']:  # If it did not have an attngetter before.
-                                agname = typeInfo[len(typeInfo)-3]
+                                agname = typeInfo[6]
                                 self.settings['playAttnGetter'][trialType] = {'attnGetter':agname, 'cutoff':0, 'onmin':0.0}
-                            elif typeInfo[len(typeInfo) - 3] is not self.settings['playAttnGetter'][trialType]:
+                            elif typeInfo[6] is not self.settings['playAttnGetter'][trialType]:
                                 # If a different attention-getter has been selected
-                                agname = typeInfo[len(typeInfo) - 3]
+                                agname = typeInfo[6]
                                 self.settings['playAttnGetter'][trialType]['attnGetter'] = agname # leaves cutoff and onmin intact
 
                         # End-trial-on-movie-end settings
-                        if typeInfo[len(typeInfo)-2] in [False,0,'False','0'] and trialType in self.settings['movieEnd']:
+                        if typeInfo[7] in [False,0,'False','0'] and trialType in self.settings['movieEnd']:
                             self.settings['movieEnd'].remove(trialType)
-                        elif typeInfo[len(typeInfo)-2] in [True, 1, 'True', '1'] and not trialType in self.settings['movieEnd']:
+                        elif typeInfo[7] in [True, 1, 'True', '1'] and not trialType in self.settings['movieEnd']:
                             self.settings['movieEnd'].append(trialType)
 
+                        if self.settings['prefLook'] in [2, '2']:
+                            if typeInfo[9] in [False,0,'False','0'] and trialType in self.settings['multiStim']:
+                                self.settings['multiStim'].remove(trialType)
+                            elif typeInfo[9] in [True, 1, 'True', '1'] and not trialType in self.settings['multiStim']:
+                                self.settings['multiStim'].append(trialType)
 
-                        # Remove stimuli if needed
-                        if len(typeInfo) > 9: #Again, if there were movies to list.
+                        # Remove stimuli if needed, or change screens if HPP
+                        if self.settings['prefLook'] in [2, '2']:
+                            if len(typeInfo) > 10:
+                                tempMovies = {'C':[],'L':[],'R':[]} # This will replace stimNames
+                                # This is going to mess up the ordering something fierce, but unavoidably.
+                                for j in ['C','L','R']:
+                                    for i in range(0, len(self.settings['stimNames'][trialType][j])):
+                                        if typeInfo[10+i] == 'C':
+                                            tempMovies['C'].append(self.settings['stimNames'][trialType][j][i])
+                                        elif typeInfo[10+i] == 'L':
+                                            tempMovies['L'].append(self.settings['stimNames'][trialType][j][i])
+                                        elif typeInfo[10+i] == 'R':
+                                            tempMovies['R'].append(self.settings['stimNames'][trialType][j][i])
+                                        # handily if they selected remove, we just don't do anything with it.
+                                self.settings['stimNames'][trialType] = tempMovies
+
+                        elif len(typeInfo) > 9: #Again, if there were movies to list.
                             tempMovies = [] #This will just replace the stimNames list
                             for i in range(0,len(self.settings['stimNames'][trialType])):
-                                if typeInfo[i+2]:
+                                if typeInfo[i+9]:
                                     tempMovies.append(self.settings['stimNames'][trialType][i])
                             self.settings['stimNames'][trialType] = tempMovies
 
@@ -1865,9 +1924,7 @@ class PyHabBuilder:
         1 = blindPres: Level of experimenter blinding, 0 (none), 1 (no trial type info), or
             2 (only info is whether a trial is currently active.
 
-        2 = prefLook: Whether the study is preferential-looking or single-target. TODO: Replace with buttons on the main UI.
-
-        3 = nextFlash: Whether to have the coder window flash to alert the experimenter they need to manually trigger
+        2 = nextFlash: Whether to have the coder window flash to alert the experimenter they need to manually trigger
             the next trial
 
         :return:
@@ -1888,12 +1945,6 @@ class PyHabBuilder:
         else:
             ch=['none','do not display next trial type','show trial active/not active only']
         uDlg.addField("Experimenter blinding:", choices=ch)
-        ch2 = []
-        if self.settings['prefLook'] in ['1',1]:# so it does not reset everytime you load this dialog.
-            ch2 = ["Preferential looking","Single-target"]
-        else:
-            ch2=["Single-target", "Preferential looking"]
-        uDlg.addField("Single-target or preferential looking?",choices=ch2)
         if self.settings['nextFlash'] in ['1',1,'True',True]:
             ch3 = ["Yes","No"]
         else:
@@ -1909,13 +1960,7 @@ class PyHabBuilder:
                 self.settings['blindPres'] = 1
             else:
                 self.settings['blindPres'] = 2
-            if uInfo[2] == "Preferential looking" and self.settings['prefLook'] in [0,'0','False',False]: #specifically switching, reactivate all data cols.
-                self.settings['prefLook'] = 1
-                self.settings['dataColumns'] = self.allDataColumnsPL
-            elif uInfo[2] == "Single-target" and self.settings['prefLook'] in [1,'1','True',True]:
-                self.settings['prefLook'] = 0
-                self.settings['dataColumns'] = self.allDataColumns
-            if uInfo[3] == "Yes":
+            if uInfo[2] == "Yes":
                 self.settings['nextFlash'] = 1
             else:
                 self.settings['nextFlash'] = 0
@@ -1986,7 +2031,12 @@ class PyHabBuilder:
             if self.settings['prefLook'] in [2,'2']:
                 # If we're starting from HPP we got some transforms to do
                 self.buttonList['functions'][self.buttonList['functions'].index(self.HPP_stimSettingsDlg)] = self.stimSettingsDlg
-
+                for i,j in self.settings['stimNames'].items():
+                    tempMovies = []
+                    for q in ['C','L','R']:
+                        for z in range(0, len(j[q])):
+                            tempMovies.append(j[q])
+                    self.settings['stimNames'][i] = tempMovies
 
             stIndex = self.buttonList['functions'].index(self.toST)
             plIndex = self.buttonList['functions'].index(self.toPL)
@@ -2010,6 +2060,12 @@ class PyHabBuilder:
             if self.settings['prefLook'] in [2, '2']:
                 # If we're coming from HPP we have some transforms to do
                 self.buttonList['functions'][self.buttonList['functions'].index(self.HPP_stimSettingsDlg)] = self.stimSettingsDlg
+                for i,j in self.settings['stimNames'].items():
+                    tempMovies = []
+                    for q in ['C','L','R']:
+                        for z in range(0, len(j[q])):
+                            tempMovies.append(j[q])
+                    self.settings['stimNames'][i] = tempMovies
 
             stIndex = self.buttonList['functions'].index(self.toST)
             plIndex = self.buttonList['functions'].index(self.toPL)
@@ -2025,8 +2081,8 @@ class PyHabBuilder:
     def toHPP(self):
         """
         A function that converts ST or PL experiments to HPP. Always a little complicated.
+        TODO: Conditions
 
-        TODO: Trial types and conditions now need to track screen of presentation. Screen settings need to be updated.
         :return:
         :rtype:
         """
@@ -2040,6 +2096,11 @@ class PyHabBuilder:
             self.settings['prefLook'] = 2
             # find the stim settings button and change its behavior
             self.buttonList['functions'][self.buttonList['functions'].index(self.stimSettingsDlg)] = self.HPP_stimSettingsDlg
+
+            # Update stimNames to be a dictionary, put everything in c.
+            for i, j in self.settings['stimNames'].items():
+                tempMovies = deepcopy(j)
+                self.settings['stimNames'][i] = {'C':tempMovies, 'L':[],'R':[]}
 
             while 1 in self.mouse.getPressed():
                 pass # Just a little thing so it doesn't get called for every frame the mouse is down on the button.
@@ -2066,13 +2127,11 @@ class PyHabBuilder:
 
         7 = expScreenIndex: Which screen to display the experimenter window on
 
-
-        TODO: Redo screen and movie dimensions as a dict, L: C: R:, and use C for single-target and PL, all three for HPP.
         :param lastSet: Optional. Last entered settings, in case dialog needs to be presented again to fix bad entries.
         :type lastSet: list
         :param redo: Are we doing this again to fix bad entries?
         :type redo: boolean
-        :param screen: Optional. For HPP, lets you set for just the individual screen?
+        :param screen: Optional. For HPP, lets you set for just the individual screen the settings apply to.
         :type screen: string
         :return:
         :rtype:
@@ -2343,7 +2402,10 @@ class PyHabBuilder:
         """
         A series dialog boxes, the first selecting a trial type and the number of stimuli to add to it,
         a second allowing you to add stimuli from the stimulus library that is stimList in the settings.
-        Also used for adding beginning and end of experiment images (?)
+        Also used for adding beginning and end of experiment images
+
+        TODO: HPP
+
 
         :return:
         :rtype:
@@ -2368,6 +2430,8 @@ class PyHabBuilder:
             d1.addField("Number of stimuli to add (you will select them in the next window)",1)
             d1.addText("Note: You can only select stimuli you have already added to the experiment library")
             d1.addText("Note: You can only REMOVE stimuli from a trial type in the trial type's own settings, this will add to whatever is already there")
+            if self.settings['prefLook'] in [2, '2']:
+                d1.addField("Screen for new stimuli", choices=['C','L','R'])
             d = d1.show()
             if d1.OK and isinstance(d[1], int):
                 self.showMainUI(self.UI, self.studyFlowArray, self.trialTypesArray)
@@ -2385,7 +2449,10 @@ class PyHabBuilder:
                     newList = d2.show()
                     if d2.OK:
                         for z in range(0, len(newList)):
-                            self.settings['stimNames'][tType].append(newList[z])
+                            if self.settings['prefLook'] in [2, '2']: # HPP
+                                self.settings['stimNames'][tType][d[2]].append(newList[z])
+                            else:
+                                self.settings['stimNames'][tType].append(newList[z])
                 else:
                     d2 = gui.Dlg(title="Select image")
                     # Create a list of just image stim
@@ -2682,6 +2749,7 @@ class PyHabBuilder:
 
         Outputs settings condList (labels of each condition), condFile (save conditions to this file)
         and makes new structure condDict (mapping of each label to actual condition it applies to)
+        TODO: Conditions will need a significant rework for HPP
 
         :param rep: Basically whether we are recursing while editing conditions
         :type rep: bool
