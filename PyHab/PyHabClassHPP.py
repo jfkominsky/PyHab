@@ -23,7 +23,12 @@ class PyHabHPP(PyHab):
     def __init__(self, settingsDict):
         PyHab.__init__(self, settingsDict)
         self.multiStim = eval(settingsDict['multiStim'])
-        self.secondKey = self.key.M  # Variable that determines what the second key is. Overwrites what is set in the default init
+        self.centerKey = self.key.B
+        self.secondKey = self.key.V  # Variable that determines what the second key is. Overwrites what is set in the default init
+        self.rightKey = self.key.M
+        self.leftKey = self.secondKey  # This is a sort of belts-and-suspenders solution in case there are stray secondKey references.
+
+        self.HPPstim = eval(settingsDict['HPPstim'])
 
         self.verbDatList = {'verboseOnC': [], 'verboseOnL': [], 'verboseOnR': [], 'verboseOff': []}  # a dict of the verbose data arrays
         self.verbBadList = {'verboseOnC': [], 'verboseOnL': [], 'verboseOnR': [], 'verboseOff': []}  # Corresponding for bad data
@@ -115,11 +120,12 @@ class PyHabHPP(PyHab):
             sumOnR = sumOnR + onArrayR[m]['duration']
         #add to verbose master gaze array
         self.verbDatList['verboseOn'].extend(onArray)
+        self.verbDatList['verboseOnL'].extend(onArrayL)
+        self.verbDatList['verboseOnR'].extend(onArrayR)
         self.verbDatList['verboseOff'].extend(offArray)
-        self.verbDatList['verboseOn2'].extend(onArray2)
         tempData={'sNum':self.sNum, 'sID': self.sID, 'months':self.ageMo, 'days':self.ageDay, 'sex':self.sex, 'cond':self.cond,'condLabel':self.condLabel,
                                 'trial':trial, 'GNG':1, 'trialType':type, 'stimName':stimName, 'habCrit':self.habCrit, 'habTrialNo': habTrialNo,
-                                'sumOnL':sumOn, 'numOnL':len(onArray),
+                                'sumOnC':sumOn, 'numOnC':len(onArray),
                                 'sumOnL':sumOnL,'numOnL':len(onArrayL),
                                 'sumOnR':sumOnR,'numOnR':len(onArrayR),'sumOff':sumOff, 'numOff':len(offArray)}
         self.dataMatrix.append(tempData)
@@ -130,15 +136,102 @@ class PyHabHPP(PyHab):
         Basically, allows you to set an arbitrary set of keys to start a trial once the attngetter has played.
         In this case, only B or M are sufficient.
 
-        :return: True if the B, N, or M key is pressed, False otherwise.
+        :return: True if the V, B, or N key is pressed, False otherwise.
         :rtype:
         """
-        if self.keyboard[self.key.N] or self.keyboard[self.key.B] or self.keyboard[self.key.M]:
+        if self.keyboard[self.key.V] or self.keyboard[self.key.B] or self.keyboard[self.key.N]:
             return True
         else:
             return False
 
-    def setupWindow(self):
+    def dispCoderWindow(self, trialType = -1):
+        """
+        Because there are three looking keys, the experimenter window has three boxes. Also things work differently with
+        there being no 'secondkey' really.
+        :param trialType:
+        :type trialType:
+        :return:
+        :rtype:
+        """
+        if trialType == -1:
+            self.statusSquareA.fillColor = 'black'
+            self.statusTextA.text = ''
+        elif self.blindPres < 2:
+            if trialType == 0:
+                self.statusSquareA.fillColor = 'blue'
+                self.statusTextA.text = "RDY"
+            elif self.keyboard[self.centerKey]:
+                self.statusSquareA.fillColor = 'green'
+                self.statusTextA.text = "ON"
+            else:
+                self.statusSquareA.fillColor = 'red'
+                self.statusTextA.text = "OFF"
+        else:
+            self.statusSquareA.fillColor = 'blue'
+            self.statusTextA.text = ""
+
+        self.statusSquareA.draw()
+        self.statusTextA.draw()
+        #Again for second coder box.
+        if trialType == -1:
+            self.statusSquareB.fillColor = 'black'
+            self.statusTextB.text = ''
+        elif self.blindPres < 2:
+            if trialType == 0:
+                self.statusSquareB.fillColor = 'blue'
+                self.statusTextB.text = "RDY"
+            elif self.keyboard[self.rightKey]:
+                self.statusSquareB.fillColor = 'green'
+                self.statusTextB.text = "ON"
+            else:
+                self.statusSquareB.fillColor = 'red'
+                self.statusTextB.text = "OFF"
+        else:
+            self.statusSquareB.fillColor = 'blue'
+            self.statusTextB.text = ""
+        self.statusSquareB.draw()
+        self.statusTextB.draw()
+        # and the third!
+        if trialType == -1:
+            self.statusSquareL.fillColor = 'black'
+            self.statusTextL.text = ''
+        elif self.blindPres < 2:
+            if trialType == 0:
+                self.statusSquareL.fillColor = 'blue'
+                self.statusTextL.text = "RDY"
+            elif self.keyboard[self.leftKey]:
+                self.statusSquareL.fillColor = 'green'
+                self.statusTextL.text = "ON"
+            else:
+                self.statusSquareL.fillColor = 'red'
+                self.statusTextL.text = "OFF"
+        else:
+            self.statusSquareL.fillColor = 'blue'
+            self.statusTextL.text = ""
+        self.statusSquareL.draw()
+        self.statusTextL.draw()
+        if self.blindPres < 2:
+            self.trialText.draw()
+            if self.blindPres < 1:
+                self.readyText.draw()
+        self.win2.flip()  # flips the status screen without delaying the stimulus onset.
+
+    def dispTrial(self, trialType, dispMovie = False):
+        """
+        An HPP-specific version of dispTrial that can display on multiple things, read the new stimDict, etc.
+
+        :param trialType: The trial type of the current trial being displayed
+        :type trialType: str
+        :param dispMovie: Now a dictionary C/L/R that will refresh everything that needs refreshing.
+        :type dispMovie: dict
+        :return: 1 or 0. 1 = end of movie for trials that end on that.
+        :rtype: int
+        """
+
+
+
+
+    def SetupWindow(self):
         """
         An HPP-specific version of the function that sets up the windows and loads everything. With four windows to set
         up it's a real doozy, and has the added problem of needing to assign things properly to each window for stim
@@ -175,45 +268,32 @@ class PyHabHPP(PyHab):
             self.counters = {x: 0 for x in self.stimNames.keys()}  # list of counters, one per index of the dict, so it knows which movie to play
             tempCtr = {x: 0 for x in self.stimNames.keys()}
             for i in self.actualTrialOrder:
-                # Adjust for hab sub-trials. Looks for a very specific set of traits, which could occur, but...shouldn't.
+                # Adjust for block sub-trials. Looks for a very specific set of traits, which could occur, but...shouldn't.
                 if '.' in i:
                     tempI = i
                     while '.' in tempI:
                         tempI = tempI[tempI.index('.')+1:]
                     i = tempI
                 x = tempCtr[i]  # Changed so hab trials get the same treatment as everything else.
-                # TODO The counter system will need to treat each pair in a multi-presentation trial as one item.
-                # TODO: This will require making an HPP-specific DoExperiment. Ultimately we're going to have to redo most of PyHabClass for HPP unless we find a way to factorize it more.
-                # TODO: REdosetup also doesn't carry over, nor jump and insert. Nothing that references stimNames will be able to stay the same.
-                if i in self.multiStim:
-                    # We need to count two to three movies for every instance of the counter.
-                    lenC = len(self.stimNames[i]['C'])
-                    lenL = len(self.stimNames[i]['L'])
-                    lenR = len(self.stimNames[i]['R'])
+                # Stimuli data structure: stimDict is a dict of lists for each trial type that the counter iterates through. It now needs to be a list of dicts.
+                # StimDict = {trialType:[{C:,L:,R:}]} 0 if nothing presented on that screen that trial, otherwise each one
+                # {'stimType': tempStim['stimType'], 'stim': tempStimObj}
+                if x < len(self.stimNames[i]):
+                    tempOutput = {'C':0,'L':0,'R':0}
 
-                else:
-                    # TODO: For non multi-stim trials, we have effectively no way of controlling order reasonably. We need a separate data structure just for order of movies in HPP...hell.
-                    if x < len(self.stimNames[i]):
-                        # TODO: x is an iterator for an instance of a trial. The stimNames length condition no longer works exactly...
-                        tempStim = self.stimList[self.stimNames[i][x]]
-                        #TODO: Here's where we have to start getting real clever about it. StimNames is going to be more complex.
-                        if tempStim['stimType'] == 'Movie':
-                            tempStimObj = visual.MovieStim3(self.win, tempStim['stimLoc'],
-                                                          size=[self.movieWidth['C'], self.movieHeight['C']], flipHoriz=False,
-                                                          flipVert=False, loop=False)
-                        elif tempStim['stimType'] == 'Image':
-                            tempStimObj = visual.ImageStim(self.win, tempStim['stimLoc'],
-                                                           size=[self.movieWidth['C'], self.movieHeight['C']])
-                        elif tempStim['stimType'] == 'Audio':
-                            tempStimObj = sound.Sound(tempStim['stimLoc'])
-                        else: # The eternal problem of audio/image pair. Just creates an object that's a dict of audio and image.
-                            audioObj = sound.Sound(tempStim['audioLoc'])
-                            imageObj = visual.ImageStim(self.win, tempStim['imageLoc'],
-                                                           size=[self.movieWidth['C'], self.movieHeight['C']])
-                            tempStimObj = {'Audio': audioObj, 'Image': imageObj}
-                        tempAdd = {'stimType':tempStim['stimType'], 'stim':tempStimObj}
-                        self.stimDict[i].append(tempAdd)
-                    tempCtr[i] += 1
+                    finConstruct = False
+                    while not finConstruct:
+                        stim = self.stimNames[i][tempCtr[i]]
+                        scrn = self.HPPstim[i][stim]
+                        tempOutput[scrn] = self.loadStim(stim,scrn)
+                        tempCtr[i] += 1
+                        if i in self.multiStim and tempCtr[i] < len(self.stimNames[i]):
+                            if self.HPPstim[i][self.stimNames[i][tempCtr[i]]] == scrn or tempOutput[self.HPPstim[i][self.stimNames[i][tempCtr[i]]]] != 0:
+                                finConstruct = True
+                        else:
+                            finConstruct = True
+
+                    self.stimDict[i].append(tempOutput)
 
             if len(list(self.playAttnGetter.keys())) > 0:
                 for i in list(self.attnGetterList.keys()):
@@ -234,6 +314,8 @@ class PyHabHPP(PyHab):
         self.win2.winHandle.push_handlers(self.keyboard)
         if self.stimPres:
             self.win.winHandle.push_handlers(self.keyboard)
+            self.winL.winHandle.push_handlers(self.keyboard)
+            self.winR.winHandle.push_handlers(self.keyboard)
             self.baseSize = 40 # Base size of all attention-getters, in pixels
             self.attnGetterSquare = visual.Rect(self.win, height=self.baseSize, width=self.baseSize, pos=[self.testOffset + 0, 0], fillColor='black')
             self.attnGetterCross = visual.ShapeStim(self.win, vertices='cross', size=self.baseSize, pos=[self.testOffset + 0, 0], fillColor='black')
@@ -252,13 +334,17 @@ class PyHabHPP(PyHab):
             self.attnGetterStar = visual.ShapeStim(self.win, vertices=starVerts, pos=[self.testOffset + 0, 0], fillColor='black')
 
         self.statusSquareA = visual.Rect(self.win2, height=80, width=80,
-                                         pos=[self.statusOffset - 60, self.statusOffsetY + 0],
+                                         pos=[self.statusOffset - 0, self.statusOffsetY + 0],
                                          fillColor='black')  # These two appear on the status screen window.
         self.statusSquareB = visual.Rect(self.win2, height=80, width=80,
-                                         pos=[self.statusOffset + 60, self.statusOffsetY + 0], fillColor='black')
-        self.statusTextA = visual.TextStim(self.win2, text="", pos=[self.statusOffset - 60, self.statusOffsetY + 0],
+                                         pos=[self.statusOffset + 80, self.statusOffsetY + 0], fillColor='black')
+        self.statusSquareL = visual.Rect(self.win2, height=80, width=80,
+                                         pos=[self.statusOffset - 80, self.statusOffsetY + 0], fillColor='black')
+        self.statusTextA = visual.TextStim(self.win2, text="", pos=self.statusSquareA.pos,
                                            color='white', bold=True, height=30)
-        self.statusTextB = visual.TextStim(self.win2, text="", pos=[self.statusOffset + 60, self.statusOffsetY + 0],
+        self.statusTextB = visual.TextStim(self.win2, text="", pos=self.statusSquareB.pos,
+                                           color='white', bold=True, height=30)
+        self.statusTextL =  visual.TextStim(self.win2, text="", pos=self.statusSquareL.pos,
                                            color='white', bold=True, height=30)
         self.trialText = visual.TextStim(self.win2, text="Trial no: ", pos=[-100, 150], color='white')
         self.readyText = visual.TextStim(self.win2, text="Trial not active", pos=[-25, 100], color='white')

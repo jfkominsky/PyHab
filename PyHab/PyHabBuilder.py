@@ -66,6 +66,7 @@ class PyHabBuilder:
                                                         'stimPres': 0,  # Will be set on each run anyways.
                                                         'stimPath': 'stimuli'+self.dirMarker,
                                                         'stimNames': {},
+                                                        'HPPstim': {},  # 0.9, for tracking screens in HPP procedures.
                                                         'stimList': {},
                                                         'screenWidth': {'C':1080,'L':1080,'R':1080},
                                                         'screenHeight': {'C':700,'L':700,'R':700},
@@ -116,11 +117,12 @@ class PyHabBuilder:
                 self.settings['dynamicPause'] = '[]'
             if 'multiStim' not in self.settings:
                 self.settings['multiStim'] = '[]'
+                self.settings['HPPstim']='{}'
             # Settings requiring evaluation to get sensible values. Mostly dicts.
             evalList = ['dataColumns','blockSum','trialSum','maxDur','condList','baseCondList','movieEnd','playThrough','trialOrder',
                         'stimNames', 'stimList', 'ISI', 'maxOff','minOn','autoAdvance','multiStim','playAttnGetter','attnGetterList',
-                        'trialTypes','habTrialList', 'calcHabOver', 'nextFlash', 'blockList', 'dynamicPause','midAG',
-                        'screenWidth','screenHeight','movieWidth','movieHeight'] # in 0.9, this becomes necessary.
+                        'trialTypes','habTrialList', 'calcHabOver', 'nextFlash', 'blockList', 'dynamicPause','midAG', 'HPPstim',
+                        'screenWidth','screenHeight','movieWidth','movieHeight']  # in 0.9, this becomes necessary.
             for i in evalList:
                 self.settings[i] = eval(self.settings[i])
                 if i in ['stimList','attnGetterList']:
@@ -358,7 +360,10 @@ class PyHabBuilder:
         stimSetText = visual.TextStim(self.win, text="Stimuli \nsettings",color="black",height=stimSetButton.height*.3, alignHoriz='center', pos=stimSetButton.pos)
         self.buttonList['shapes'].append(stimSetButton)
         self.buttonList['text'].append(stimSetText)
-        self.buttonList['functions'].append(self.stimSettingsDlg)
+        if self.settings['prefLook'] in [2, '2']:
+            self.buttonList['functions'].append(self.HPP_stimSettingsDlg)
+        else:
+            self.buttonList['functions'].append(self.stimSettingsDlg)
         condSetButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect),pos=[-.4,-.65], fillColor="white")
         condSetText = visual.TextStim(self.win, text="Condition \nsettings",color="black",height=condSetButton.height*.3, alignHoriz='center', pos=condSetButton.pos)
         self.buttonList['shapes'].append(condSetButton)
@@ -557,8 +562,6 @@ class PyHabBuilder:
         Now also sets whether the study should auto-advance into this
         trial and whether the built-in attention-getter should be used.
 
-        TODO: For HPP, we are basically going to need to either change stimNames or make something new.
-
         The dialog by default outputs a list with 8 items in it.
         0 = trial type name
 
@@ -580,7 +583,7 @@ class PyHabBuilder:
 
         9 = HPP ONLY: Present multiple stimuli at once? (multiStim)
 
-        [if movies assigned to trial type already, they occupy 2 - N] TODO: MOVE TO END
+        [if movies assigned to trial type already, they occupy 2 - N]
 
         :param trialType: Name of the trial type
         :type trialType: str
@@ -685,13 +688,15 @@ class PyHabBuilder:
                     if len(self.settings['stimNames'][trialType]) > 0:
                         if self.settings['prefLook'] in [2, '2']: #HPP
                             typeDlg.addText("Current movie files in trial type (change screens or remove)")
-                            for j in ['C','L','R']:
-                                locChoice = ['C','L','R','Remove']
-                                locChoice = [x for x in locChoice if x != j]
-                                locChoice.insert(0, j)
-                                if len(self.settings['stimNames'][trialType][j])>0:
-                                    for i in range(0, len(self.settings['stimNames'][trialType][j])):
-                                        typeDlg.addField(self.settings['stimNames'][trialType][j][i], choices=locChoice)
+                            # HPPstim is a structure that is keyed by trial type and stimulus file name. dict of dicts.
+                            # {trialTypes:{stim1:'L'}}
+                            for i in range(0, len(self.settings['stimNames'][trialType])):
+                                stim = self.settings['stimNames'][trialType][i]
+                                scrn = self.settings['HPPstim'][trialType][stim]
+                                locChoice = ['C', 'L', 'R', 'Remove']
+                                locChoice = [x for x in locChoice if x != scrn]
+                                locChoice.insert(0, scrn)
+                                typeDlg.addField(stim, choices=locChoice)
                         else:
                             typeDlg.addText("Current movie files in trial type (uncheck to remove)")
                             for i in range(0, len(self.settings['stimNames'][trialType])):
@@ -700,12 +705,12 @@ class PyHabBuilder:
                     if self.settings['prefLook'] in [2, '2']:  # HPP
                         if len(prevInfo) > 10:
                             typeDlg.addText("Current movie files in trial type (change screens or remove)")
-                            for j in ['C', 'L', 'R']:
+                            for i in range(0, len(self.settings['stimNames'][trialType])):
+                                stim = self.settings['stimNames'][trialType][i]
                                 locChoice = ['C', 'L', 'R', 'Remove']
-                                for i in range(0, len(self.settings['stimNames'][trialType][j])):
-                                    locChoice = [x for x in locChoice if x != prevInfo[i+10]]
-                                    locChoice.insert(0, prevInfo[i+10])
-                                    typeDlg.addField(self.settings['stimNames'][trialType][j][i], choices=locChoice)
+                                locChoice = [x for x in locChoice if x != prevInfo[i+10]]
+                                locChoice.insert(0, prevInfo[i+10])
+                                typeDlg.addField(stim, choices=locChoice)
                     else:
                         typeDlg.addText("Current stimuli in trial type (uncheck to remove)")
                         for i in range(0,len(self.settings['stimNames'][trialType])):
@@ -823,19 +828,10 @@ class PyHabBuilder:
                         # Remove stimuli if needed, or change screens if HPP
                         if self.settings['prefLook'] in [2, '2']:
                             if len(typeInfo) > 10:
-                                tempMovies = {'C':[],'L':[],'R':[]} # This will replace stimNames
-                                # This is going to mess up the ordering something fierce, but unavoidably.
-                                for j in ['C','L','R']:
-                                    for i in range(0, len(self.settings['stimNames'][trialType][j])):
-                                        if typeInfo[10+i] == 'C':
-                                            tempMovies['C'].append(self.settings['stimNames'][trialType][j][i])
-                                        elif typeInfo[10+i] == 'L':
-                                            tempMovies['L'].append(self.settings['stimNames'][trialType][j][i])
-                                        elif typeInfo[10+i] == 'R':
-                                            tempMovies['R'].append(self.settings['stimNames'][trialType][j][i])
-                                        # handily if they selected remove, we just don't do anything with it.
-                                self.settings['stimNames'][trialType] = tempMovies
-
+                                for i in range(0, len(self.settings['stimNames'][trialType])):
+                                    stim = self.settings['stimNames'][trialType][i]
+                                    if typeInfo[10+i] in ['C','L','R']:
+                                        self.settings['HPPstim'][trialType][stim] = typeInfo[10+i]
                         elif len(typeInfo) > 9: #Again, if there were movies to list.
                             tempMovies = [] #This will just replace the stimNames list
                             for i in range(0,len(self.settings['stimNames'][trialType])):
@@ -2031,12 +2027,7 @@ class PyHabBuilder:
             if self.settings['prefLook'] in [2,'2']:
                 # If we're starting from HPP we got some transforms to do
                 self.buttonList['functions'][self.buttonList['functions'].index(self.HPP_stimSettingsDlg)] = self.stimSettingsDlg
-                for i,j in self.settings['stimNames'].items():
-                    tempMovies = []
-                    for q in ['C','L','R']:
-                        for z in range(0, len(j[q])):
-                            tempMovies.append(j[q])
-                    self.settings['stimNames'][i] = tempMovies
+
 
             stIndex = self.buttonList['functions'].index(self.toST)
             plIndex = self.buttonList['functions'].index(self.toPL)
@@ -2060,12 +2051,7 @@ class PyHabBuilder:
             if self.settings['prefLook'] in [2, '2']:
                 # If we're coming from HPP we have some transforms to do
                 self.buttonList['functions'][self.buttonList['functions'].index(self.HPP_stimSettingsDlg)] = self.stimSettingsDlg
-                for i,j in self.settings['stimNames'].items():
-                    tempMovies = []
-                    for q in ['C','L','R']:
-                        for z in range(0, len(j[q])):
-                            tempMovies.append(j[q])
-                    self.settings['stimNames'][i] = tempMovies
+
 
             stIndex = self.buttonList['functions'].index(self.toST)
             plIndex = self.buttonList['functions'].index(self.toPL)
@@ -2097,10 +2083,13 @@ class PyHabBuilder:
             # find the stim settings button and change its behavior
             self.buttonList['functions'][self.buttonList['functions'].index(self.stimSettingsDlg)] = self.HPP_stimSettingsDlg
 
-            # Update stimNames to be a dictionary, put everything in c.
+            # Check if everything in stimNames is in HPPstim, if not add and turn to 'C'
             for i, j in self.settings['stimNames'].items():
-                tempMovies = deepcopy(j)
-                self.settings['stimNames'][i] = {'C':tempMovies, 'L':[],'R':[]}
+                for k in range(0, len(j)):
+                    if i not in self.settings['HPPstim'].keys():
+                        self.settings['HPPstim'][i] = {}
+                    if j[k] not in self.settings['HPPstim'][i].keys():
+                        self.settings['HPPstim'][i][j[k]] = 'C'
 
             while 1 in self.mouse.getPressed():
                 pass # Just a little thing so it doesn't get called for every frame the mouse is down on the button.
@@ -2393,6 +2382,10 @@ class PyHabBuilder:
                         print("Could not remove from stimList!")
                     for q in self.settings['stimNames'].keys(): # Remove from trial types it has been assigned to.
                         self.settings['stimNames'][q] = [x for x in self.settings['stimNames'][q] if x != toRemove]
+                    if len(self.settings['HPPstim'])>0:
+                        for r in self.settings['HPPstim'].keys():
+                            if toRemove in self.settings['HPPstim'][r].keys():
+                                del self.settings['HPPstim'][r][toRemove]
 
 
 
@@ -2450,7 +2443,8 @@ class PyHabBuilder:
                     if d2.OK:
                         for z in range(0, len(newList)):
                             if self.settings['prefLook'] in [2, '2']: # HPP
-                                self.settings['stimNames'][tType][d[2]].append(newList[z])
+                                self.settings['stimNames'][tType].append(newList[z])
+                                self.settings['HPPstim'][tType][newList[z]]=d[2]
                             else:
                                 self.settings['stimNames'][tType].append(newList[z])
                 else:
