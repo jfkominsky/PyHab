@@ -222,12 +222,59 @@ class PyHabHPP(PyHab):
 
         :param trialType: The trial type of the current trial being displayed
         :type trialType: str
-        :param dispMovie: Now a dictionary C/L/R that will refresh everything that needs refreshing.
-        :type dispMovie: dict
-        :return: 1 or 0. 1 = end of movie for trials that end on that.
+        :param dispMovie: Now a dictionary C/L/R each index of which contains what this function expects in the base class
+        :type dispMovie: bool or dict
+        :return: 1 or 0. 1 = end of movie for trials that end on that. TODO: for HPP currently returns 1 if EVERYTHING IN IT is done.
         :rtype: int
         """
+        self.dispCoderWindow(trialType)
+        
+        # That's the easy part. Now for the fun bit.
+        if self.stimPres:
+            screens = []
+            for i,j in dispMovie.items():
+                if j != 0:
+                    screens.append(i)
+            t=[]
+            for k in screens:
+                if dispMovie[k]['stimType'] == 'Movie':
+                    t.append(self.dispMovieStim(trialType, dispMovie[k]['stim'], screen=k))
+                elif dispMovie[k]['stimType'] == 'Image':
+                    t.append(self.dispImageStim(dispMovie[k]['stim'], screen=k))
+                elif dispMovie[k]['stimType'] == 'Audio' and trialType != 0:  # No still-frame equivalent
+                    t.append(self.dispAudioStim(trialType, dispMovie[k]['stim']))
+                elif dispMovie[k]['stimType'] == 'Image with audio':  # Audio and image together
+                    if trialType != 0:  # No still-frame equivalent
+                        t.append(self.dispAudioStim(trialType, dispMovie[k]['stim']['Audio']))
+                    else:
+                        t.append(0)
+                    p = self.dispImageStim(dispMovie[k]['stim']['Image'], screen=k)
+                else:
+                    t.append(0)
+            if sum(t) >= len(t):
+                return 1
+            else:
+                return 0
+        else:
+            return 0
 
+
+    def printCurrentData(self):
+        """
+        Prints current data to output window, HPP variant. Only called when stimulus presentation is off.
+        :return:
+        :rtype:
+        """
+
+        print("hab crit, on-timeC, numOnC, on-timeL, numOnL, onTimeR, numOnR, offTime, numOff")
+        print("-------------------------------------------------------------------------------------------")
+        for i in range(0, len(self.dataMatrix)):
+            dataList = [self.dataMatrix[i]['habCrit'], round(self.dataMatrix[i]['sumOnC'],1),
+                        self.dataMatrix[i]['numOnC'], round(self.dataMatrix[i]['sumOnL'],1),
+                        self.dataMatrix[i]['numOnL'], round(self.dataMatrix[i]['sumOnR'],1),
+                        self.dataMatrix[i]['numOnR'], round(self.dataMatrix[i]['sumOff'],1),
+                        self.dataMatrix[i]['numOff']]
+            print(dataList)
 
 
 

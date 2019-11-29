@@ -1019,6 +1019,25 @@ class PyHab:
             self.rdyTextAppend = " NEXT: " + self.actualTrialOrder[trialNum - 1] + " TRIAL"
         return [disMovie,trialType]
 
+    def printCurrentData(self):
+        """
+        A function which prints the current data to the output window, made into its own function to facilitate having
+        working versions for PL and HPP studies as well. Only called when stimulus presentation is off.
+
+
+        :return:
+        :rtype:
+        """
+        print("hab crit, on-timeA, numOnA, offtimeA, numOffA, onTimeB, numOnB, offTimeB, numOffB")
+        print("-------------------------------------------------------------------------------------------")
+        for i in range(0, len(self.dataMatrix)):
+            dataList = [self.dataMatrix[i]['habCrit'], round(self.dataMatrix[i]['sumOnA'],1),
+                        self.dataMatrix[i]['numOnA'], round(self.dataMatrix[i]['sumOffA'],1),
+                        self.dataMatrix[i]['numOffA'], round(self.dataMatrix[i]['sumOnB'],1),
+                        self.dataMatrix[i]['numOnB'], round(self.dataMatrix[i]['sumOffB'],1),
+                        self.dataMatrix[i]['numOffB']]
+            print(dataList)
+
     def doExperiment(self):
         """
         The primary control function and main trial loop.
@@ -1092,15 +1111,7 @@ class PyHab:
                         trialType = trialType[trialType.index('.') + 1:]
                 elif trialNum > 1 and not self.stimPres and self.keyboard[self.key.P] and not reviewed:  # Print data so far, as xHab. Non-stimulus version only. Only between trials.
                     reviewed = True
-                    print("hab crit, on-timeA, numOnA, offtimeA, numOffA, onTimeB, numOnB, offTimeB, numOffB")
-                    print("-------------------------------------------------------------------------------------------")
-                    for i in range(0, len(self.dataMatrix)):
-                        dataList = [self.dataMatrix[i]['habCrit'], self.dataMatrix[i]['sumOnA'],
-                                    self.dataMatrix[i]['numOnA'], self.dataMatrix[i]['sumOffA'],
-                                    self.dataMatrix[i]['numOffA'], self.dataMatrix[i]['sumOnB'],
-                                    self.dataMatrix[i]['numOnB'], self.dataMatrix[i]['sumOffB'],
-                                    self.dataMatrix[i]['numOffB']]
-                        print(dataList)
+                    self.printCurrentData()
                 self.readyText.text = "No trial active" + self.rdyTextAppend
                 self.dispCoderWindow()
             if not end: #This if statement checks if we're trying to quit.

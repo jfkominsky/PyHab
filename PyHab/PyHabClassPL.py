@@ -122,6 +122,22 @@ class PyHabPL(PyHab):
         else:
             return False
 
+    def printCurrentData(self):
+        """
+        Prints the current data, preferential looking variant. Only called when stimulus presentation is off
+        :return:
+        :rtype:
+        """
+
+        print("hab crit, on-timeL, numOnL, onTimeR, numOnR, offTime, numOff")
+        print("-------------------------------------------------------------------------------------------")
+        for i in range(0, len(self.dataMatrix)):
+            dataList = [self.dataMatrix[i]['habCrit'], round(self.dataMatrix[i]['sumOnL'],1),
+                        self.dataMatrix[i]['numOnL'], round(self.dataMatrix[i]['sumOnR'],1),
+                        self.dataMatrix[i]['numOnR'], round(self.dataMatrix[i]['sumOff'],1),
+                        self.dataMatrix[i]['numOff']]
+            print(dataList)
+
     def doTrial(self, number, ttype, disMovie):
         """
         Control function for individual trials, to be called by doExperiment
