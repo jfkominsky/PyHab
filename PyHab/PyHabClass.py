@@ -2288,7 +2288,6 @@ class PyHab:
         """
         Sets up the stimulus presentation and coder windows, loads all the stimuli, then starts the experiment
         with doExperiment()
-        TODO: For non-HPP, just pull the ['C'] screen settings.
 
         :return:
         :rtype:
