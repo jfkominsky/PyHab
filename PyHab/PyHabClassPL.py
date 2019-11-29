@@ -147,8 +147,8 @@ class PyHabPL(PyHab):
         :type number: int
         :param ttype: Trial type
         :type ttype: string
-        :param disMovie: Movie object for stimulus presentation
-        :type disMovie: movieStim3 object
+        :param  disMovie: A dictionary as follows {'stim':[psychopy object for stimulus presentation], 'stimType':[movie,image,audio, pair]}
+        :type disMovie: dictionary
         :return: int, 0 = proceed to next trial, 1 = hab crit met, 2 = end experiment, 3 = trial aborted
         :rtype:
         """
@@ -175,18 +175,18 @@ class PyHabPL(PyHab):
         self.pauseCount = 0 #needed for ISI
         if self.stimPres and disMovie['stimType'] == 'Movie':
             disMovie['stim'].seek(0)
+            disMovie['stim'].pause()
         startTrial = core.getTime()
         startTrial2=core.getTime()
         onArray = []
         offArray = []
         onArray2=[]
-        offArray2=[]
         numOn = 0
+        numOn2 = 0
         numOff = 0
         sumOn = 0
         sumOn2 = 0
-        numOff2 = 0
-        numOn2 = 0
+        maxDurAdd = 0
         abort = False
         runTrial = True
         endFlag = False
@@ -229,7 +229,7 @@ class PyHabPL(PyHab):
                     tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOff, 'endTime': endTrial,
                                      'duration': offDur}
                     offArray.append(tempGazeArray)
-            elif core.getTime() - startTrial >= .5 and self.keyboard[self.key.J] and 'Hab' not in self.actualTrialOrder[(number-1):]:
+            elif core.getTime() - startTrial >= .5 and self.keyboard[self.key.S] and ttype != 'Hab' and '^' not in ttype:
                 # End this trial, move to next, do not mark as bad.
                 if localType in self.movieEnd:
                     endFlag = True
@@ -288,7 +288,7 @@ class PyHabPL(PyHab):
                     offArray.append({'trial': 0, 'trialType': 0, 'startTime': 0, 'endTime': 0,'duration': 0}) #keeps it from crashing while trying to write data.
                 ttype = 4 #to force an immediate quit.
             #Now for the non-abort states.
-            elif core.getTime() - startTrial >= self.maxDur[localType] and not endFlag: #reached max trial duration
+            elif core.getTime() - startTrial >= self.maxDur[localType] + maxDurAdd and not endFlag: #reached max trial duration
                 if localType in self.movieEnd:
                     endFlag = True
                 else:
@@ -320,7 +320,7 @@ class PyHabPL(PyHab):
             elif not gazeOn and not gazeOn2: #if they are not looking as of the previous refresh, check if they have been looking away for too long
                 nowOff = core.getTime() - startTrial
                 if sumOn + sumOn2 > self.minOn[localType] and nowOff - startOff >= self.maxOff[localType] and self.playThrough[localType] == 0 and not endFlag:
-                    #if they have previously looked for at least .5s and now looked away for 2 continuous sec
+                    #if they have previously looked for at least minOn seconds and now looked away for maxOff continuous sec
                     if localType in self.movieEnd:
                         endFlag = True
                     else:
@@ -505,7 +505,7 @@ class PyHabPL(PyHab):
         else:
             self.dataRec(onArray, offArray, number, dataType, onArray2, self.stimName, habDataRec)
         if self.habMetWhen == -1 and len(self.habTrialList) > 0 and not abort:   # if still during habituation
-            if dataType in self.calcHabOver:
+            if dataType[0:4] == 'hab.' and dataType[4:] in self.calcHabOver:
                 tempSum = 0
                 for c in range(0, len(onArray)):
                     tempSum += onArray[c]['duration']
