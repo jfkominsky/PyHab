@@ -6,6 +6,7 @@ sys.path.insert(0, os.getcwd())
 
 from PyHab import PyHabClass as PH
 from PyHab import PyHabClassPL as PHL
+from PyHab import PyHabClassHPP as PHPP
 
 """
  
@@ -39,6 +40,8 @@ base_settings = {
     'stimPath': 'stimuli/',
     'stimNames': "{}",
     'stimList': "{}",
+    'HPPstim':'{}',
+    'multiStim':'[]',
     'screenWidth': '1080',
     'screenHeight': '700',
     'screenColor': 'black',
@@ -1168,7 +1171,7 @@ class TestCommands(object):
         self.commandInst.dataMatrix.append(temp5)
         self.commandInst.dataMatrix.append(temp6)
         self.commandInst.habDataCompiled = [0]*self.commandInst.maxHabTrials
-        self.commandInst.habDataCompiled[0:2] = [10,10,10]  # Need to set this manually too.
+        self.commandInst.habDataCompiled[0:2] = [10,10,10]  # Need to set this manually too because it's all handled by doTrial.
         self.commandInst.habCount = 3
 
         assert self.commandInst.checkStop() == False
@@ -1324,7 +1327,7 @@ class TestPrefLook(object):
                                             'condLabel': 'dataTest', 'trial': 2, 'GNG': 1, 'trialType': 'B',
                                             'stimName': 'movie2.mov',
                                             'habCrit': 0, 'habTrialNo':'', 'sumOnL': 3.0, 'numOnL': 2, 'sumOnR': 3.0, 'numOnR': 2,
-                                            'sumOffB': 3.5, 'numOffB': 2}]
+                                            'sumOff': 3.5, 'numOff': 2}]
         self.testDatList = {'verboseOn': [{'trial': 1, 'trialType': 'A', 'startTime': 0, 'endTime': 1.5, 'duration': 1.5},
                            {'trial': 1, 'trialType': 'A', 'startTime': 6.5, 'endTime': 8.0, 'duration': 1.5},
                            {'trial': 2, 'trialType': 'A', 'startTime': 0, 'endTime': 1.5, 'duration': 1.5},
@@ -1369,3 +1372,90 @@ class TestPrefLook(object):
         assert len(self.dataInstPL.dataMatrix) == 1
         assert self.dataInstPL.dataMatrix[0] == self.testMatrix[0]
         assert len(self.dataInstPL.badTrials) == 0
+    # TODO: Add test of blocksave and habsave, both of which are being run from PyHabClass but should nonetheless be responsive to this and HPP.
+    
+
+class TestHPP(object):
+    """Tests for HPP-specific functions that can be tested, basically data and endexp."""
+    def setup_class(self):
+        self.dataInstHPP = PHPP.PyHabHPP(base_settings)
+        # Set values for things that are usually set in the experimenter dialog
+        self.dataInstHPP.sNum = 99
+        self.dataInstHPP.sID = 'TEST'
+        self.dataInstHPP.ageMo = 5
+        self.dataInstHPP.ageDay = 15
+        self.dataInstHPP.sex = 'm'
+        self.dataInstHPP.cond = 'dataTest'
+        self.dataInstHPP.condLabel = 'dataTest'
+        # Create base mock data structures to tinker with
+        self.trialVOnL1 = [{'trial': 1, 'trialType': 'A', 'startTime': 0.0, 'endTime': 1.5, 'duration': 1.5},
+                          {'trial': 1, 'trialType': 'A', 'startTime': 6.5, 'endTime': 8.0, 'duration': 1.5}]  # VerboseOnL
+        self.trialVOff1 = [{'trial': 1, 'trialType': 'A', 'startTime': 1.5, 'endTime': 3.0, 'duration': 1.5},
+                           {'trial': 1, 'trialType': 'A', 'startTime': 4.5, 'endTime': 6.5, 'duration': 2.0}]  # VerboseOff
+        self.trialVOnR1 = [{'trial': 1, 'trialType': 'A', 'startTime': 3.0, 'endTime': 4.5, 'duration': 1.5},
+                          {'trial': 1, 'trialType': 'A', 'startTime': 8.5, 'endTime': 9.0,'duration': 0.5}]  # VerboseOnR
+        self.trialVOnC1 = [{'trial': 1, 'trialType': 'A', 'startTime': 8.0, 'endTime': 8.5, 'duration': 0.5},
+                          {'trial': 1, 'trialType': 'A', 'startTime': 9.0, 'endTime': 10.5, 'duration': 1.5}]  # VerboseOnC
+        self.testMatrix = [{'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                            'condLabel': 'dataTest', 'trial': 1, 'GNG': 1, 'trialType': 'A', 'stimName': 'movie1.mov',
+                            'habCrit': 0, 'habTrialNo':'', 'sumOnL': 3.0, 'numOnL': 2, 'sumOnC': 2.0, 'numOnC': 2,
+                            'sumOnR': 2.0, 'numOnR': 2, 'sumOff': 3.5, 'numOff': 2}, {'sNum': 99, 'sID': 'TEST',
+                                'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest', 'condLabel': 'dataTest',
+                                'trial': 2, 'GNG': 1, 'trialType': 'B', 'stimName': 'movie2.mov',
+                                'habCrit': 0, 'habTrialNo':'', 'sumOnL': 3.0, 'numOnL': 2, 'sumOnC':2.0, 'numOnC':2,
+                                'sumOnR': 3.0, 'numOnR': 2, 'sumOff': 3.5, 'numOff': 2}]
+        self.testDatList = {'verboseOnL': [{'trial': 1, 'trialType': 'A', 'startTime': 0.0, 'endTime': 1.5, 'duration': 1.5},
+                           {'trial': 1, 'trialType': 'A', 'startTime': 6.5, 'endTime': 8.0, 'duration': 1.5},
+                           {'trial': 2, 'trialType': 'A', 'startTime': 0.0, 'endTime': 1.5, 'duration': 1.5},
+                           {'trial': 2, 'trialType': 'A', 'startTime': 6.5, 'endTime': 8.0,'duration': 1.5}],
+             'verboseOff': [{'trial': 1, 'trialType': 'A', 'startTime': 1.5, 'endTime': 3.0, 'duration': 1.5},
+                            {'trial': 1, 'trialType': 'A', 'startTime': 4.5, 'endTime': 6.5, 'duration': 2.0},
+                            {'trial': 2, 'trialType': 'A', 'startTime': 1.5, 'endTime': 3.0, 'duration': 1.5},
+                            {'trial': 2, 'trialType': 'A', 'startTime': 4.5, 'endTime': 6.5, 'duration': 2.0}],
+             'verboseOnR': [{'trial': 1, 'trialType': 'A', 'startTime': 3.0, 'endTime': 4.5, 'duration': 1.5},
+                            {'trial': 1, 'trialType': 'A', 'startTime': 8.5, 'endTime': 9.0,'duration': 0.5},
+                            {'trial': 2, 'trialType': 'A', 'startTime': 3.0, 'endTime': 4.5, 'duration': 1.5},
+                            {'trial': 2, 'trialType': 'A', 'startTime': 8.5, 'endTime': 9.0, 'duration': 0.5}],
+             'verboseOnC': [{'trial': 1, 'trialType': 'A', 'startTime': 8.0, 'endTime': 8.5, 'duration': 0.5},
+                            {'trial': 1, 'trialType': 'A', 'startTime': 9.0, 'endTime': 10.5, 'duration': 1.5},
+                            {'trial': 1, 'trialType': 'A', 'startTime': 8.0, 'endTime': 8.5, 'duration': 0.5},
+                            {'trial': 1, 'trialType': 'A', 'startTime': 9.0, 'endTime': 10.5, 'duration': 1.5}]}
+
+
+    def teardown_class(self):
+        del self.dataInstHPP
+        del self.trialVOnL1
+        del self.trialVOff1
+        del self.trialVOnR1
+        del self.trialVOnC1
+        del self.testMatrix
+
+    def test_HPPsettings(self):
+        assert type(self.dataInstHPP.HPPstim) == dict
+        assert type(self.dataInstHPP.multiStim) == list
+
+    def test_HPPabort(self):
+        self.dataInstHPP.abortTrial(self.trialVOnC, self.trialVOff1, 1, 'A', self.trialVOnL1, self.trialVOnR1, 'movie1.mov')
+
+        assert self.dataInstHPP.badTrials[0]['trial'] == self.trialVOnC1[0]['trial']
+        assert self.dataInstHPP.badTrials[0]['trialType'] == self.trialVOnC1[0]['trialType']
+        assert self.dataInstHPP.badTrials[0]['GNG'] == 0
+        assert self.dataInstHPP.badTrials[0]['habCrit'] == 0
+        assert self.dataInstHPP.badTrials[0]['sumOnC'] == self.trialVOnC1[0]['duration'] + self.trialVOnC1[1]['duration']
+        assert self.dataInstHPP.badTrials[0]['sumOff'] == self.trialVOff1[0]['duration'] + self.trialVOff1[1]['duration']
+        assert self.dataInstHPP.badTrials[0]['numOnC'] == len(self.trialVOnC1)
+        assert self.dataInstHPP.badTrials[0]['numOff'] == len(self.trialVOff1)
+        assert self.dataInstHPP.badTrials[0]['sumOnL'] == self.trialVOnL1[0]['duration'] + self.trialVOnL1[1]['duration']
+        assert self.dataInstHPP.badTrials[0]['numOnL'] == len(self.trialVOnL1)
+        assert self.dataInstHPP.badTrials[0]['sumOnR'] == self.trialVOnR1[0]['duration'] + self.trialVOnR1[1]['duration']
+        assert self.dataInstHPP.badTrials[0]['numOnR'] == len(self.trialVOnR1)
+
+    def test_HPPdatarec(self):
+        self.dataInstHPP.dataMatrix = []
+        self.dataInstHPP.badTrials = []
+
+        self.dataInstHPP.dataRec(self.trialVOnC1, self.trialVOff1, 1, 'A', self.trialVOnL1, self.trialVOnR1, 'movie1.mov')
+
+        assert len(self.dataInstHPP.dataMatrix) == 1
+        assert self.dataInstHPP.dataMatrix[0] == self.testMatrix[0]
+        assert len(self.dataInstHPP.badTrials) == 0
