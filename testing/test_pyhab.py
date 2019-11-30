@@ -627,14 +627,13 @@ class TestDataFunc(object):
         self.dataInst.calcHabOver = ['A']
 
         habSaveData = self.dataInst.saveHabFile()
-        assert len(habSaveData) == 3  # Why is this 5 and the others 3?
-        print(habSaveData)
+        assert len(habSaveData) == 5  # 5 because it includes non-hab trials, of which there are 2 at the start
         assert habSaveData[3]['trialType'] == 'Hab'
         assert habSaveData[3]['sumOnA'] == 10.0
 
         self.dataInst.calcHabOver = ['A', 'B']
         habSaveData = self.dataInst.saveHabFile()
-        assert len(habSaveData) == 3
+        assert len(habSaveData) == 5
         assert habSaveData[3]['trialType'] == 'Hab'
         assert habSaveData[3]['sumOnA'] == 20.0
         assert habSaveData[3]['stimName'] == 'movie1.mov+movie1.mov'
@@ -1403,63 +1402,62 @@ class TestPrefLook(object):
              'habCrit': 0, 'sumOnL': 5.0, 'numOnL': 2, 'sumOnR': 5.0, 'numOnR': 2, 'sumOff': 3.5,
              'numOff': 2})
 
-        testMatrix = self.dataInstPL.saveBlockFile()
-        assert len(testMatrix) == 4
-        assert testMatrix[2]['trialType'] == 'C'
-        assert testMatrix[2]['sumOnL'] == 10.0
-        assert testMatrix[2]['numOnL'] == 4
-        assert testMatrix[2]['sumOnR'] == 10.0
-        assert testMatrix[2]['numOnR'] == 4
+        blockMatrix = self.dataInstPL.saveBlockFile()
+        assert len(blockMatrix) == 4
+        assert blockMatrix[2]['trialType'] == 'C'
+        assert blockMatrix[2]['sumOnL'] == 10.0
+        assert blockMatrix[2]['numOnL'] == 4
+        assert blockMatrix[2]['sumOnR'] == 10.0
+        assert blockMatrix[2]['numOnR'] == 4
 
-        assert testMatrix[3]['sumOnL'] == 10.0
-        assert testMatrix[3]['numOnL'] == 4
-        assert testMatrix[3]['sumOnR'] == 8.0
-        assert testMatrix[3]['numOnR'] == 3
+        assert blockMatrix[3]['sumOnL'] == 10.0
+        assert blockMatrix[3]['numOnL'] == 4
+        assert blockMatrix[3]['sumOnR'] == 8.0
+        assert blockMatrix[3]['numOnR'] == 3
 
-        assert testMatrix[2]['stimName'] == 'movie1.mov+movie1.mov'
-        assert testMatrix[3]['trial'] == 4
+        assert blockMatrix[2]['stimName'] == 'movie1.mov+movie1.mov'
+        assert blockMatrix[3]['trial'] == 4
 
     def test_PLhabSave(self):
-        habMatrix = copy.deepcopy(self.testMatrix)
-        habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+        self.dataInstPL.dataMatrix = copy.deepcopy(self.testMatrix)
+        self.dataInstPL.dataMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
                           'condLabel': 'dataTest', 'trial': 3, 'GNG': 1, 'trialType': 'hab.A', 'stimName': 'movie1.mov',
                           'habCrit': 0, 'habTrialNo': 1, 'sumOnL': 3.5, 'numOnL': 2,
                           'sumOnR': 3.0, 'numOnR': 2, 'sumOff': 3.5,'numOff': 2})
-        habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+        self.dataInstPL.dataMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
                           'condLabel': 'dataTest', 'trial': 4, 'GNG': 1, 'trialType': 'hab.B', 'stimName': 'movie1.mov',
                           'habCrit': 0, 'habTrialNo': 1, 'sumOnL': 3.5, 'numOnL': 2,
                           'sumOnR': 3.0, 'numOnR': 2, 'sumOff': 3.5,'numOff': 2})
-        habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+        self.dataInstPL.dataMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
                           'condLabel': 'dataTest', 'trial': 5, 'GNG': 1, 'trialType': 'hab.A', 'stimName': 'movie1.mov',
                           'habCrit': 0, 'habTrialNo': 1, 'sumOnL': 3.5, 'numOnL': 2,
                           'sumOnR': 3.0, 'numOnR': 2, 'sumOff': 3.5,'numOff': 2})
-        habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+        self.dataInstPL.dataMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
                           'condLabel': 'dataTest', 'trial': 6, 'GNG': 1, 'trialType': 'hab.B', 'stimName': 'movie1.mov',
                           'habCrit': 0, 'habTrialNo': 1, 'sumOnL': 3.5, 'numOnL': 2,
                           'sumOnR': 3.0, 'numOnR': 2, 'sumOff': 3.5,'numOff': 2})
-        habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+        self.dataInstPL.dataMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
                           'condLabel': 'dataTest', 'trial': 7, 'GNG': 1, 'trialType': 'hab.A', 'stimName': 'movie1.mov',
                           'habCrit': 0, 'habTrialNo': 1, 'sumOnL': 3.5, 'numOnL': 2,
                           'sumOnR': 3.0, 'numOnR': 2, 'sumOff': 3.5,'numOff': 2})
-        habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+        self.dataInstPL.dataMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
                           'condLabel': 'dataTest', 'trial': 8, 'GNG': 1, 'trialType': 'hab.B', 'stimName': 'movie1.mov',
                           'habCrit': 0, 'habTrialNo': 1, 'sumOnL': 3.5, 'numOnL': 2,
                           'sumOnR': 3.0, 'numOnR': 2, 'sumOff': 3.5,'numOff': 2})
 
-        self.dataInstPL.dataMatrix = habMatrix  # We can actually use python's pointer thing to our advantage here: dataMatrix will update with habMatrix
         self.dataInstPL.badTrials = []
         self.dataInstPL.habTrialList = ['A', 'B']  # Resetting from the 'redo' tests above.
         self.dataInstPL.calcHabOver = ['A']
 
         habSaveData = self.dataInstPL.saveHabFile()
-        assert len(habSaveData) == 3
+        assert len(habSaveData) == 5
         assert habSaveData[3]['trialType'] == 'Hab'
         assert habSaveData[3]['sumOnL'] == 3.5
         assert habSaveData[3]['sumOnR'] == 3.0
 
         self.dataInstPL.calcHabOver = ['A', 'B']
         habSaveData = self.dataInstPL.saveHabFile()
-        assert len(habSaveData) == 3
+        assert len(habSaveData) == 5
         assert habSaveData[3]['trialType'] == 'Hab'
         assert habSaveData[3]['sumOnL'] == 7.0
         assert habSaveData[3]['sumOnR'] == 6.0
@@ -1493,7 +1491,7 @@ class TestHPP(object):
                             'sumOnR': 2.0, 'numOnR': 2, 'sumOff': 3.5, 'numOff': 2}, {'sNum': 99, 'sID': 'TEST',
                                 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest', 'condLabel': 'dataTest',
                                 'trial': 2, 'GNG': 1, 'trialType': 'B', 'stimName': 'movie2.mov',
-                                'habCrit': 0, 'habTrialNo':'', 'sumOnL': 3.0, 'numOnL': 2, 'sumOnC':2.0, 'numOnC':2,
+                                'habCrit': 0, 'habTrialNo':'', 'sumOnL': 3.0, 'numOnL': 2, 'sumOnC': 2.0, 'numOnC': 2,
                                 'sumOnR': 3.0, 'numOnR': 2, 'sumOff': 3.5, 'numOff': 2}]
         self.testDatList = {'verboseOnL': [{'trial': 1, 'trialType': 'A', 'startTime': 0.0, 'endTime': 1.5, 'duration': 1.5},
                            {'trial': 1, 'trialType': 'A', 'startTime': 6.5, 'endTime': 8.0, 'duration': 1.5},
@@ -1580,60 +1578,61 @@ class TestHPP(object):
              'habCrit': 0, 'sumOnL': 5.0, 'numOnL': 2, 'sumOnC': 5.0, 'numOnC': 2, 'sumOnR': 5.0, 'numOnR': 2,
              'sumOff': 3.5, 'numOff': 2})
 
-        testMatrix = self.dataInstHPP.saveBlockFile()
-        assert len(testMatrix) == 4
-        assert testMatrix[2]['trialType'] == 'C'
-        assert testMatrix[2]['sumOnL'] == 10.0
-        assert testMatrix[2]['numOnL'] == 4
-        assert testMatrix[2]['sumOnC'] == 7.0
-        assert testMatrix[2]['numOnC'] == 4
-        assert testMatrix[2]['sumOnR'] == 10.0
-        assert testMatrix[2]['numOnR'] == 4
+        blockMatrix = self.dataInstHPP.saveBlockFile()
+        assert len(blockMatrix) == 4
+        assert blockMatrix[2]['trialType'] == 'C'
+        assert blockMatrix[2]['sumOnL'] == 10.0
+        assert blockMatrix[2]['numOnL'] == 4
+        assert blockMatrix[2]['sumOnC'] == 7.0
+        assert blockMatrix[2]['numOnC'] == 4
+        assert blockMatrix[2]['sumOnR'] == 10.0
+        assert blockMatrix[2]['numOnR'] == 4
 
-        assert testMatrix[3]['sumOnL'] == 10.0
-        assert testMatrix[3]['numOnL'] == 4
-        assert testMatrix[2]['sumOnC'] == 7.0
-        assert testMatrix[2]['numOnC'] == 4
-        assert testMatrix[3]['sumOnR'] == 8.0
-        assert testMatrix[3]['numOnR'] == 3
+        assert blockMatrix[3]['sumOnL'] == 10.0
+        assert blockMatrix[3]['numOnL'] == 4
+        assert blockMatrix[2]['sumOnC'] == 7.0
+        assert blockMatrix[2]['numOnC'] == 4
+        assert blockMatrix[3]['sumOnR'] == 8.0
+        assert blockMatrix[3]['numOnR'] == 3
 
-        assert testMatrix[2]['stimName'] == 'movie1.mov+movie1.mov'
-        assert testMatrix[3]['trial'] == 4
+        assert blockMatrix[2]['stimName'] == 'movie1.mov+movie1.mov'
+        assert blockMatrix[3]['trial'] == 4
 
     def test_HPPhabSave(self):
-        habMatrix = copy.deepcopy(self.testMatrix)
-        habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+
+        self.dataInstHPP.dataMatrix = copy.deepcopy(self.testMatrix)  # Should get two trials!
+
+        self.dataInstHPP.dataMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
                           'condLabel': 'dataTest', 'trial': 3, 'GNG': 1, 'trialType': 'hab.A', 'stimName': 'movie1.mov',
                           'habCrit': 0, 'habTrialNo': 1, 'sumOnL': 3.5, 'numOnL': 2, 'sumOnC': 3.5, 'numOnC': 2,
                           'sumOnR': 3.0, 'numOnR': 2, 'sumOff': 3.5,'numOff': 2})
-        habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+        self.dataInstHPP.dataMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
                           'condLabel': 'dataTest', 'trial': 4, 'GNG': 1, 'trialType': 'hab.B', 'stimName': 'movie1.mov',
                           'habCrit': 0, 'habTrialNo': 1, 'sumOnL': 3.5, 'numOnL': 2, 'sumOnC': 3.5, 'numOnC': 2,
                           'sumOnR': 3.0, 'numOnR': 2, 'sumOff': 3.5,'numOff': 2})
-        habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+        self.dataInstHPP.dataMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
                           'condLabel': 'dataTest', 'trial': 5, 'GNG': 1, 'trialType': 'hab.A', 'stimName': 'movie1.mov',
                           'habCrit': 0, 'habTrialNo': 1, 'sumOnL': 3.5, 'numOnL': 2, 'sumOnC': 3.5, 'numOnC': 2,
                           'sumOnR': 3.0, 'numOnR': 2, 'sumOff': 3.5,'numOff': 2})
-        habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+        self.dataInstHPP.dataMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
                           'condLabel': 'dataTest', 'trial': 6, 'GNG': 1, 'trialType': 'hab.B', 'stimName': 'movie1.mov',
                           'habCrit': 0, 'habTrialNo': 1, 'sumOnL': 3.5, 'numOnL': 2, 'sumOnC': 3.5, 'numOnC': 2,
                           'sumOnR': 3.0, 'numOnR': 2, 'sumOff': 3.5,'numOff': 2})
-        habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+        self.dataInstHPP.dataMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
                           'condLabel': 'dataTest', 'trial': 7, 'GNG': 1, 'trialType': 'hab.A', 'stimName': 'movie1.mov',
                           'habCrit': 0, 'habTrialNo': 1, 'sumOnL': 3.5, 'numOnL': 2, 'sumOnC': 3.5, 'numOnC': 2,
                           'sumOnR': 3.0, 'numOnR': 2, 'sumOff': 3.5,'numOff': 2})
-        habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+        self.dataInstHPP.dataMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
                           'condLabel': 'dataTest', 'trial': 8, 'GNG': 1, 'trialType': 'hab.B', 'stimName': 'movie1.mov',
                           'habCrit': 0, 'habTrialNo': 1, 'sumOnL': 3.5, 'numOnL': 2, 'sumOnC': 3.5, 'numOnC': 2,
                           'sumOnR': 3.0, 'numOnR': 2, 'sumOff': 3.5,'numOff': 2})
 
-        self.dataInstHPP.dataMatrix = habMatrix  # We can actually use python's pointer thing to our advantage here: dataMatrix will update with habMatrix
         self.dataInstHPP.badTrials = []
         self.dataInstHPP.habTrialList = ['A', 'B']  # Resetting from the 'redo' tests above.
         self.dataInstHPP.calcHabOver = ['A']
 
         habSaveData = self.dataInstHPP.saveHabFile()
-        assert len(habSaveData) == 3
+        assert len(habSaveData) == 5  # How can this come up 3?
         assert habSaveData[3]['trialType'] == 'Hab'
         assert habSaveData[3]['sumOnC'] == 3.5
         assert habSaveData[3]['sumOnL'] == 3.5
@@ -1641,7 +1640,7 @@ class TestHPP(object):
 
         self.dataInstHPP.calcHabOver = ['A', 'B']
         habSaveData = self.dataInstHPP.saveHabFile()
-        assert len(habSaveData) == 3
+        assert len(habSaveData) == 5
         assert habSaveData[3]['trialType'] == 'Hab'
         assert habSaveData[3]['sumOnC'] == 7.0
         assert habSaveData[3]['sumOnL'] == 7.0
