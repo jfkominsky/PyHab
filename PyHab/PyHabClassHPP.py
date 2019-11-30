@@ -70,7 +70,7 @@ class PyHabHPP(PyHab):
             sumOnR = sumOnR + onArrayR[m]['duration']
 
         # needs to be .extend or you get weird array-within-array-within-array issues that become problematic later
-        self.verbBadList['verboseOn'].extend(onArray)
+        self.verbBadList['verboseOnC'].extend(onArray)
         self.verbBadList['verboseOnL'].extend(onArrayL)
         self.verbBadList['verboseOnR'].extend(onArrayR)
         self.verbBadList['verboseOff'].extend(offArray)
@@ -86,7 +86,7 @@ class PyHabHPP(PyHab):
         """
         Records the data for a trial that ended normally.
 
-        :param onArray: Gaze-on Left events
+        :param onArray: Gaze-on Center events
         :type onArray: list of dicts {trial, trialType, startTime, endTime, duration}
         :param offArray: Gaze-off events
         :type offArray: list of dicts {trial, trialType, startTime, endTime, duration}
@@ -94,7 +94,7 @@ class PyHabHPP(PyHab):
         :type trial: int
         :param ttype: Trial type
         :type ttype: string
-        :param onArrayL: Gaze-on Right events
+        :param onArrayL: Gaze-on Left events
         :type onArrayL: list of dicts {trial, trialType, startTime, endTime, duration}
         :param onArrayR: Gaze-on Right events
         :type onArrayR: list of dicts {trial, trialType, startTime, endTime, duration}
@@ -119,7 +119,7 @@ class PyHabHPP(PyHab):
         for m in range(0, len(onArrayR)):
             sumOnR = sumOnR + onArrayR[m]['duration']
         #add to verbose master gaze array
-        self.verbDatList['verboseOn'].extend(onArray)
+        self.verbDatList['verboseOnC'].extend(onArray)
         self.verbDatList['verboseOnL'].extend(onArrayL)
         self.verbDatList['verboseOnR'].extend(onArrayR)
         self.verbDatList['verboseOff'].extend(offArray)
