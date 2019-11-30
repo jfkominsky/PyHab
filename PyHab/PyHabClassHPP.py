@@ -320,7 +320,6 @@ class PyHabHPP(PyHab):
                     j['stim'].seek(0.0)
                     j['stim'].pause()
         startTrial = core.getTime()
-        startTrial2 = core.getTime()
         onArrayC = []
         offArray = []
         onArrayL = []
