@@ -2087,9 +2087,9 @@ class PyHabBuilder:
 
             # Check if everything in stimNames is in HPPstim, if not add and turn to 'C'
             for i, j in self.settings['stimNames'].items():
+                if i not in self.settings['HPPstim'].keys():
+                    self.settings['HPPstim'][i] = {}
                 for k in range(0, len(j)):
-                    if i not in self.settings['HPPstim'].keys():
-                        self.settings['HPPstim'][i] = {}
                     if j[k] not in self.settings['HPPstim'][i].keys():
                         self.settings['HPPstim'][i][j[k]] = 'C'
 
@@ -2171,6 +2171,8 @@ class PyHabBuilder:
         allScrs = defDisp.get_screens()
         if len(allScrs) > 1:
             screenList = list(range(0, len(allScrs)))
+        elif self.settings['prefLook'] in [2, '2']:
+            screenList = [0, 1, 2, 3]  # Because even if you don't have a second screen now, you presumably will later.
         else:
             screenList = [0, 1]  # Because even if you don't have a second screen now, you presumably will later.
         if isinstance(lastSet[6],str):
@@ -3635,6 +3637,8 @@ class PyHabBuilder:
         classTarg = codePath+classPath
         classPLPath = 'PyHabClassPL.py'
         classPLTarg = codePath+classPLPath
+        classHPPPath = 'PyHabClassHPP.py'
+        classHPPTarg = codePath+classHPPPath
         buildPath = 'PyHabBuilder.py'
         buildTarg = codePath+buildPath
         initPath = '__init__.py'
@@ -3644,6 +3648,8 @@ class PyHabBuilder:
                 shutil.copyfile(srcDir+classPath, classTarg)
             if not os.path.exists(classPLTarg):
                 shutil.copyfile(srcDir+classPLPath, classPLTarg)
+            if not os.path.exists(classHPPTarg):
+                shutil.copyfile(srcDir + classHPPPath, classHPPTarg)
             if not os.path.exists(buildTarg):
                 shutil.copyfile(srcDir+buildPath, buildTarg)
             if not os.path.exists(initTarg):
