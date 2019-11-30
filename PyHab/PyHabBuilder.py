@@ -1992,7 +1992,7 @@ class PyHabBuilder:
         dDlg.addText("ANYTHING UNCHECKED WILL NOT BE STORED IN ANY WAY!")
         if self.settings['prefLook'] in [1,'1',True,'True']:
             tempDataCols = self.allDataColumnsPL
-        elif self.settigns['prefLook'] in [2,'2']:
+        elif self.settings['prefLook'] in [2,'2']:
             tempDataCols = self.allDataColumpsHPP
         else:
             tempDataCols = self.allDataColumns
@@ -2039,6 +2039,7 @@ class PyHabBuilder:
             self.buttonList['shapes'][hpIndex].fillColor = 'black'
 
             self.settings['prefLook'] = 0
+            self.settings['dataColumns'] = self.allDataColumns
             while 1 in self.mouse.getPressed():
                 pass # Just a little thing so it doesn't get called for every frame the mouse is down on the button.
 
@@ -2062,6 +2063,7 @@ class PyHabBuilder:
             self.buttonList['shapes'][plIndex].fillColor = 'green'
             self.buttonList['shapes'][hpIndex].fillColor = 'black'
             self.settings['prefLook'] = 1
+            self.settings['dataColumns'] = self.allDataColumnsPL
             while 1 in self.mouse.getPressed():
                 pass # Just a little thing so it doesn't get called for every frame the mouse is down on the button.
 
@@ -2092,6 +2094,8 @@ class PyHabBuilder:
                 for k in range(0, len(j)):
                     if j[k] not in self.settings['HPPstim'][i].keys():
                         self.settings['HPPstim'][i][j[k]] = 'C'
+
+            self.settings['dataColumns'] = self.allDataColumnsHPP
 
             while 1 in self.mouse.getPressed():
                 pass # Just a little thing so it doesn't get called for every frame the mouse is down on the button.
