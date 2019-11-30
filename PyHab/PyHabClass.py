@@ -1862,7 +1862,9 @@ class PyHab:
         blockDone = False
         lastTrialNumber = tempMatrix[-1]['trial']
         # Making this generalizeable for preferential looking studies.
-        if 'sumOnL' in self.dataMatrix[0].keys():
+        if 'sumOnC' in self.dataMatrix[0].keys():  # HPP
+            sumFields = ['sumOnL','numOnL','sumOnC','numOnC','sumOnR','numOnR','sumOff','numOff']
+        elif 'sumOnL' in self.dataMatrix[0].keys():  # PL
             sumFields = ['sumOnL','numOnL','sumOnR', 'numOnR', 'sumOff', 'numOff']
         else:
             sumFields = ['sumOnA', 'numOnA', 'sumOffA', 'numOffA', 'sumOnB', 'numOnB', 'sumOffB', 'numOffB']
@@ -1906,7 +1908,9 @@ class PyHab:
         """
         habMatrix = []
         # Making this generalizeable for preferential looking studies.
-        if 'sumOnL' in self.dataMatrix[0].keys():
+        if 'sumOnC' in self.dataMatrix[0].keys():  # HPP
+            sumFields = ['sumOnL', 'numOnL', 'sumOnC', 'numOnC', 'sumOnR', 'numOnR', 'sumOff', 'numOff']
+        elif 'sumOnL' in self.dataMatrix[0].keys():
             sumFields = ['sumOnL', 'numOnL', 'sumOnR', 'numOnR', 'sumOff', 'numOff']
         else:
             sumFields = ['sumOnA', 'numOnA', 'sumOffA', 'numOffA', 'sumOnB', 'numOnB', 'sumOffB', 'numOffB']
