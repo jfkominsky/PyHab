@@ -731,7 +731,7 @@ class PyHabPL(PyHab):
         headers2 = ['snum', 'sID', 'months', 'days', 'sex', 'cond', 'GNG', 'gazeOnOff', 'trial', 'trialType',
                                 'startTime', 'endTime', 'duration']
         with open(self.verboseFolder+self.prefix+str(self.sNum)+'_'+str(self.sID)+nDupe+'_'+str(self.today.month)+str(self.today.day)+str(self.today.year)+'_VERBOSE.csv','w') as f:
-            outputWriter2 = csv.DictWriter(f, fieldnames=headers2, extrasaction = 'ignore', lineterminator ='\n') #careful! this OVERWRITES the existing file. Fills from snum.
+            outputWriter2 = csv.DictWriter(f, fieldnames=headers2, extrasaction = 'ignore', lineterminator ='\n')
             outputWriter2.writeheader()
             for z in range(0,len(verboseMatrix)):
                 outputWriter2.writerow(verboseMatrix[z])

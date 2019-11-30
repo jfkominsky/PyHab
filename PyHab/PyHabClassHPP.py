@@ -565,13 +565,6 @@ class PyHabHPP(PyHab):
                             elif disMovie['R']['stimType'] == ['Image with audio'] and disMovie['R']['stim']['Audio'].status != PLAYING:
                                 disMovie['R']['stim']['Audio'].play()
                 else:
-                    if localType in self.dynamicPause and self.stimPres:
-                        # TODO: REDO FOR CLR. Maybe actually just move this to the individual gaze-on L/R/C conditions.
-                        """if disMovie['stimType'] in ['Movie','Audio'] and disMovie['stim'].status == PLAYING:
-                            disMovie['stim'].pause()
-                        elif disMovie['stimType'] == ['Image with audio'] and disMovie['stim']['Audio'].status == PLAYING:
-                            disMovie['stim']['Audio'].pause()"""
-
                     if localType in self.midAG and self.stimPres:
                         if nowOff - startOff >= self.midAG[localType]['trigger']:
                             # TODO: Do something here to deal with recording data about mid-trial AG behavior?
@@ -635,7 +628,12 @@ class PyHabHPP(PyHab):
                                      'duration': onDur}
                     onArrayC.append(tempGazeArray)
                     sumOnC = sumOnC + onDur
-                    # TODO: Pause center screen if dynamic pause is engaged.
+                    if localType in self.dynamicPause and self.stimPres:
+                        if disMovie['C'] != 0:
+                            if disMovie['C']['stimType'] in ['Movie','Audio'] and disMovie['C']['stim'].status == PLAYING:
+                                disMovie['C']['stim'].pause()
+                            elif disMovie['C']['stimType'] == ['Image with audio'] and disMovie['C']['stim']['Audio'].status == PLAYING:
+                                disMovie['C']['stim']['Audio'].pause()
                     if self.keyboard[self.leftKey]:
                         gazeOnL = True
                         numOnL = numOnL + 1
@@ -655,7 +653,12 @@ class PyHabHPP(PyHab):
                                      'duration': onDur}
                     onArrayL.append(tempGazeArray)
                     sumOnL = sumOnL + onDur
-                    # TODO: Pause left screen if dynamic pause is engaged.
+                    if localType in self.dynamicPause and self.stimPres:
+                        if disMovie['L'] != 0:
+                            if disMovie['L']['stimType'] in ['Movie','Audio'] and disMovie['L']['stim'].status == PLAYING:
+                                disMovie['L']['stim'].pause()
+                            elif disMovie['L']['stimType'] == ['Image with audio'] and disMovie['L']['stim']['Audio'].status == PLAYING:
+                                disMovie['L']['stim']['Audio'].pause()
                     if self.keyboard[self.centerKey]:
                         gazeOnC = True
                         numOnC = numOnC + 1
@@ -675,7 +678,12 @@ class PyHabHPP(PyHab):
                                      'duration': onDur}
                     onArrayR.append(tempGazeArray)
                     sumOnR = sumOnR + onDur
-                    # TODO: Pause right screen if dynamic pause is engaged.
+                    if localType in self.dynamicPause and self.stimPres:
+                        if disMovie['R'] != 0:
+                            if disMovie['R']['stimType'] in ['Movie','Audio'] and disMovie['R']['stim'].status == PLAYING:
+                                disMovie['R']['stim'].pause()
+                            elif disMovie['R']['stimType'] == ['Image with audio'] and disMovie['R']['stim']['Audio'].status == PLAYING:
+                                disMovie['R']['stim']['Audio'].pause()
                     if self.keyboard[self.centerKey]:
                         gazeOnC = True
                         numOnC = numOnC + 1
@@ -814,9 +822,237 @@ class PyHabHPP(PyHab):
             #Proceed as normal
             return 0
 
+    def endExperiment(self):
+        """
+        End experiment, save all data, calculate reliability if needed, close up shop
+        :return:
+        :rtype:
+        """
+        tempText = visual.TextStim(self.win2, text="Saving data...", pos=[0, 0], color='white', bold=True, height=40)
+        tempText.draw()
+        self.win2.flip()
+        if self.stimPres:
+            self.dummyThing.draw()
+            if self.endImageObject is not None:
+                self.endImageObject.draw()
+            self.win.flip()
+        if len(self.blockDataList) > 0 and self.blockSum:
+            tempMatrix = self.saveBlockFile()
+            # Now write the actual data file
+            nDupe = ''  # This infrastructure eliminates the risk of overwriting existing data
+            o = 1
+            blockfilename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_BlockSumm_' + str(
+                            self.today.month) + str(self.today.day) + str(self.today.year) + '.csv'
+            while os.path.exists(blockfilename):
+                o += 1
+                nDupe = str(o)
+                blockfilename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_BlockSumm_' + str(
+                                self.today.month) + str(self.today.day) + str(self.today.year) + '.csv'
+            with open(blockfilename, 'w') as b:
+                blockWriter = csv.DictWriter(b, fieldnames=self.dataColumns, extrasaction='ignore', lineterminator='\n')
+                blockWriter.writeheader()
+                for z in range(0, len(tempMatrix)):
+                    blockWriter.writerow(tempMatrix[z])
 
+        # If there is habituation data, create hab summary file. Similar to the block one, but a little easier thanks to
+        # the tagging of habituation trial numbers.
+        if self.habSetWhen > 0 and len(self.habTrialList) > 0:  # If there's a 'Hab' trial type, the main summary file does the trick just fine.
+            habMatrix = self.saveHabFile()
+            # Now, actually write the file
+            nDupe = ''  # This infrastructure eliminates the risk of overwriting existing data
+            o = 1
+            habfilename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_HabSumm_' + str(
+                self.today.month) + str(self.today.day) + str(self.today.year) + '.csv'
+            while os.path.exists(habfilename):
+                o += 1
+                nDupe = str(o)
+                habfilename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_HabSumm_' + str(
+                    self.today.month) + str(self.today.day) + str(self.today.year) + '.csv'
+            with open(habfilename, 'w') as h:
+                habWriter = csv.DictWriter(h, fieldnames=self.dataColumns, extrasaction='ignore',
+                                           lineterminator='\n')
+                habWriter.writeheader()
+                for z in range(0, len(habMatrix)):
+                    habWriter.writerow(habMatrix[z])
 
+        # Shuffle together bad data and good data into the appropriate order.
+        if len(self.badTrials) > 0:  # if there are any redos, they need to be shuffled in appropriately.
+            for i in range(0, len(self.badTrials)):
+                x = 0
+                while x < len(self.dataMatrix) and self.dataMatrix[x]['trial'] != self.badTrials[i]['trial']:
+                    x += 1
+                while x < len(self.dataMatrix) and self.dataMatrix[x]['GNG'] == 0:  # this is to get around the possibility that the same trial had multiple 'false starts'
+                    x += 1
+                self.dataMatrix.insert(x, self.badTrials[i])  # python makes this stupid easy
+        # Trial-level summary file:
+        if self.trialSum:
+            nDupe = ''  # This infrastructure eliminates the risk of overwriting existing data
+            o = 1
+            filename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(
+                self.today.month) + str(
+                self.today.day) + str(self.today.year) + '.csv'
+            while os.path.exists(filename):
+                o += 1
+                nDupe = str(o)
+                filename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(
+                    self.sID) + nDupe + '_' + str(
+                    self.today.month) + str(
+                    self.today.day) + str(self.today.year) + '.csv'
+            with open(filename, 'w') as f:
+                outputWriter = csv.DictWriter(f, fieldnames=self.dataColumns, extrasaction='ignore',
+                                              lineterminator='\n')
+                outputWriter.writeheader()
+                for r in range(0, len(self.dataMatrix)):
+                    # print('writing rows')
+                    outputWriter.writerow(self.dataMatrix[r])
 
+        # Verbose data saving.
+        verboseMatrix = []
+        # first, verbose data is not as well organized. However, we should be able to alternate back and forth between
+        # on and off until we reach the end of a given trial, to reconstruct it.
+        # at the start of each line, add information: sNum, ageMo, ageDay, sex, cond, GNG, ON/OFF
+        for n in range(0, len(self.verbDatList['verboseOnC'])):
+            self.verbDatList['verboseOnC'][n].update(
+                {'snum': self.sNum, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex,
+                 'cond': self.cond, 'GNG': 1, 'gazeOnOff': 2})
+        for q in range(0, len(self.verbDatList['verboseOnL'])):
+            self.verbDatList['verboseOnL'][q].update(
+                {'snum': self.sNum, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex,
+                 'cond': self.cond, 'GNG': 1, 'gazeOnOff': 1})
+        for r in range(0, len(self.verbDatList['verboseOnR'])):
+            self.verbDatList['verboseOnR'][r].update(
+                {'snum': self.sNum, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex,
+                 'cond': self.cond, 'GNG': 1, 'gazeOnOff': 3})
+        for m in range(0, len(self.verbDatList['verboseOff'])):  # adding the details to the verbose array
+            self.verbDatList['verboseOff'][m].update(
+                {'snum': self.sNum, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex,
+                 'cond': self.cond, 'GNG': 1, 'gazeOnOff': 0})
+        if len(self.badTrials) > 0:
+            for o in range(0, len(self.verbBadList['verboseOnC'])):
+                self.verbBadList['verboseOnC'][o].update(
+                    {'snum': self.sNum, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex,
+                     'cond': self.cond, 'GNG': 0, 'gazeOnOff': 2})
+            for s in range(0, len(self.verbBadList['verboseOnL'])):
+                self.verbBadList['verboseOnL'][s].update(
+                    {'snum': self.sNum, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex,
+                     'cond': self.cond, 'GNG': 0, 'gazeOnOff': 1})
+            for t in range(0, len(self.verbBadList['verboseOnR'])):
+                self.verbBadList['verboseOnR'][t].update(
+                    {'snum': self.sNum, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex,
+                     'cond': self.cond, 'GNG': 0, 'gazeOnOff': 3})
+            for p in range(0, len(self.verbBadList['verboseOff'])):  # same details for the bad trials
+                self.verbBadList['verboseOff'][p].update(
+                    {'snum': self.sNum, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex,
+                     'cond': self.cond, 'GNG': 0, 'gazeOnOff': 0})
+
+        # read the final data matrix and go trial by trial.
+        # print(verboseOn) #debug, to make sure verboseOn is being constructed correctly
+        for q in range(0, len(self.dataMatrix)):
+            tnum = self.dataMatrix[q]['trial']
+            onIndexL = -1
+            onIndexC = -1
+            onIndexR = -1
+            offIndex = -1
+            if self.dataMatrix[q]['GNG'] == 1:  # separate for good and bad trials
+                for w in range(0, len(self.verbDatList['verboseOnL'])):
+                    if self.verbDatList['verboseOnL'][w]['trial'] == tnum and onIndexL == -1:
+                        onIndexL = w
+                for x in range(0, len(self.verbDatList['verboseOnC'])):
+                    if self.verbDatList['verboseOnC'][x]['trial'] == tnum and onIndexC == -1:  # find the right index in the verbose matrices
+                        onIndexC = x
+                for y in range(0, len(self.verbDatList['verboseOnR'])):
+                    if self.verbDatList['verboseOnR'][y]['trial'] == tnum and onIndexR == -1:  # find the right index in the verbose matrices
+                        onIndexR = y
+                for z in range(0, len(self.verbDatList['verboseOff'])):
+                    if self.verbDatList['verboseOff'][z]['trial'] == tnum and offIndex == -1:
+                        offIndex = z
+                trialVerbose = []
+                if onIndexC >= 0:
+                    while onIndexC < len(self.verbDatList['verboseOnC']):
+                        if self.verbDatList['verboseOnC'][onIndexC]['trial'] == tnum:
+                            trialVerbose.append(self.verbDatList['verboseOnC'][onIndexC])
+                        onIndexC += 1
+                if onIndexL >= 0:
+                    while onIndexL < len(self.verbDatList['verboseOnL']):
+                        if self.verbDatList['verboseOnL'][onIndexL]['trial'] == tnum:
+                            trialVerbose.append(self.verbDatList['verboseOnL'][onIndexL])
+                        onIndexL += 1
+                if onIndexR >= 0:
+                    while onIndexR < len(self.verbDatList['verboseOnR']):
+                        if self.verbDatList['verboseOnR'][onIndexR]['trial'] == tnum:
+                            trialVerbose.append(self.verbDatList['verboseOnR'][onIndexR])
+                        onIndexR += 1
+                if offIndex >= 0:
+                    while offIndex < len(self.verbDatList['verboseOff']):
+                        if self.verbDatList['verboseOff'][offIndex]['trial']==tnum:
+                            trialVerbose.append(self.verbDatList['verboseOff'][offIndex])
+                        offIndex += 1
+                trialVerbose2 = sorted(trialVerbose, key=lambda trialVerbose:trialVerbose['startTime']) #this is the magic bullet, Sorts by timestamp.
+                verboseMatrix.extend(trialVerbose2)
+            elif self.dataMatrix[q]['GNG'] == 0:  # bad trials.
+                if q > 0 and self.dataMatrix[q - 1]['GNG'] == 0:
+                    pass  # stops it from doubling up. If there is more than one consecutive bad trial, it will get all of them in a row the first time,
+                else:
+                    trialVerbose = []
+                    for w in range(0, len(self.verbBadList['verboseOnL'])):
+                        if self.verbBadList['verboseOnL'][w]['trial'] == tnum and onIndexL == -1:
+                            onIndexL = w
+                    for x in range(0, len(self.verbBadList['verboseOnC'])):
+                        if self.verbBadList['verboseOnC'][x]['trial'] == tnum and onIndexC == -1:  # find the right index in the verbose matrices
+                            onIndexC = x
+                    for y in range(0, len(self.verbBadList['verboseOnR'])):
+                        if self.verbBadList['verboseOnR'][y]['trial'] == tnum and onIndexR == -1:  # find the right index in the verbose matrices
+                            onIndexR = y
+                    for z in range(0, len(self.verbBadList['verboseOff'])):
+                        if self.verbBadList['verboseOff'][z]['trial'] == tnum and offIndex == -1:
+                            offIndex = z
+                    if onIndexC >= 0:
+                        while onIndexC < len(self.verbBadList['verboseOnC']):
+                            if self.verbBadList['verboseOnC'][onIndexC]['trial'] == tnum:
+                                trialVerbose.append(self.verbBadList['verboseOnC'][onIndexC])
+                            onIndexC += 1
+                    if onIndexL >= 0:
+                        while onIndexL < len(self.verbBadList['verboseOnL']):
+                            if self.verbBadList['verboseOnL'][onIndexL]['trial'] == tnum:
+                                trialVerbose.append(self.verbBadList['verboseOnL'][onIndexL])
+                            onIndexL += 1
+                    if onIndexR >= 0:
+                        while onIndexR < len(self.verbBadList['verboseOnR']):
+                            if self.verbBadList['verboseOnR'][onIndexR]['trial'] == tnum:
+                                trialVerbose.append(self.verbBadList['verboseOnR'][onIndexR])
+                            onIndexR += 1
+                    if offIndex >= 0:
+                        while offIndex < len(self.verbBadList['verboseOff']):
+                            if self.verbBadList['verboseOff'][offIndex]['trial']==tnum:
+                                trialVerbose.append(self.verbBadList['verboseOff'][offIndex])
+                            offIndex += 1
+                    trialVerbose2 = sorted(trialVerbose, key=lambda trialVerbose:trialVerbose['startTime']) #this is the magic bullet, Sorts by timestamp.
+                    verboseMatrix.extend(trialVerbose2)
+        headers2 = ['snum', 'sID', 'months', 'days', 'sex', 'cond', 'GNG', 'gazeOnOff', 'trial', 'trialType',
+                    'startTime', 'endTime', 'duration']
+        with open(self.verboseFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(
+                self.today.month) + str(self.today.day) + str(self.today.year) + '_VERBOSE.csv', 'w') as f:
+            outputWriter2 = csv.DictWriter(f, fieldnames=headers2, extrasaction='ignore',lineterminator='\n')
+            outputWriter2.writeheader()
+            for z in range(0, len(verboseMatrix)):
+                outputWriter2.writerow(verboseMatrix[z])
+        # core.wait(.3) Replaced by end-of-experiment screen
+        # "end of experiment" screen. By default this will go to a black screen on the stim view
+        # and display "Experiment finished!" on the experimenter view
+        tempText.text = "Experiment finished! Press return to close."
+        tempText.height = 18
+        tempText.draw()
+        self.win2.flip()
+        if self.stimPres:
+            self.dummyThing.draw()  # A safety to stop a weird graphical issue in PsychoPy3.
+            if self.endImageObject is not None:
+                self.endImageObject.draw()
+            self.win.flip()
+        event.waitKeys(keyList='return')
+
+        self.win2.close()
+        if self.stimPres:
+            self.win.close()
 
     def SetupWindow(self):
         """
