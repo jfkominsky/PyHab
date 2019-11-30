@@ -18,6 +18,7 @@ class PyHabHPP(PyHab):
     """
     A head-turn preference procedure version of PyHab. Uses some of the same code, but drastically more complex, needing
     to juggle which screen things are presented on, simultaneous presentation on multiple screens, and more.
+    TODO: We got some problems with simultaneous presentation to work out.
     """
 
     def __init__(self, settingsDict):
@@ -25,7 +26,7 @@ class PyHabHPP(PyHab):
         self.multiStim = eval(settingsDict['multiStim'])
         self.centerKey = self.key.B
         self.secondKey = self.key.V  # Variable that determines what the second key is. Overwrites what is set in the default init
-        self.rightKey = self.key.M
+        self.rightKey = self.key.N
         self.leftKey = self.secondKey  # This is a sort of belts-and-suspenders solution in case there are stray secondKey references.
 
         self.HPPstim = eval(settingsDict['HPPstim'])
@@ -1052,6 +1053,8 @@ class PyHabHPP(PyHab):
         self.win2.close()
         if self.stimPres:
             self.win.close()
+            self.winL.close()
+            self.winR.close()
 
     def SetupWindow(self):
         """
@@ -1064,12 +1067,12 @@ class PyHabHPP(PyHab):
         :rtype:
         """
         if self.stimPres:
-            # Stimulus presentation window
-            self.win = visual.Window((self.screenWidth['C'], self.screenHeight['C']), fullscr=False, screen=self.screenIndex['C'], allowGUI=False,
+            # Stimulus presentation window TODO: REMOVE DEBUG GUI
+            self.win = visual.Window((self.screenWidth['C'], self.screenHeight['C']), fullscr=False, screen=self.screenIndex['C'], allowGUI=True,#allowGUI=False,
                                      units='pix', color=self.screenColor['C'])
-            self.winL = visual.Window((self.screenWidth['L'], self.screenHeight['L']), fullscr=False, screen=self.screenIndex['L'], allowGUI=False,
+            self.winL = visual.Window((self.screenWidth['L'], self.screenHeight['L']), fullscr=False, screen=self.screenIndex['L'], allowGUI=True,#allowGUI=False,
                                      units='pix', color=self.screenColor['L'])
-            self.winR = visual.Window((self.screenWidth['R'], self.screenHeight['R']), fullscr=False, screen=self.screenIndex['R'], allowGUI=False,
+            self.winR = visual.Window((self.screenWidth['R'], self.screenHeight['R']), fullscr=False, screen=self.screenIndex['R'], allowGUI=True,#allowGUI=False,
                                      units='pix', color=self.screenColor['R'])
             self.dummyThing = visual.Circle(self.win, size=1, color=self.win.color)  # This is for fixing a display glitch in PsychoPy3 involving multiple windows of different sizes.
         # Coder window
