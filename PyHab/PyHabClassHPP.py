@@ -236,7 +236,7 @@ class PyHabHPP(PyHab):
             for i,j in dispMovie.items():
                 if j != 0:
                     screens.append(i)
-            t=[]
+            t = []
             for k in screens:
                 if dispMovie[k]['stimType'] == 'Movie':
                     t.append(self.dispMovieStim(trialType, dispMovie[k]['stim'], screen=k))
@@ -312,14 +312,23 @@ class PyHabHPP(PyHab):
             habTrial = True
         else:
             dataType = ttype
-        self.frameCount = 0  # reset display
-        self.pauseCount = 0  # needed for ISI
+        self.frameCount = {k: 0 for k, v in self.frameCount.items()}
+        self.pauseCount = {k: 0 for k, v in self.pauseCount.items()}
         # If we're dealing with a movie or movies, seek to 0.
         for i, j in disMovie.items():
             if j != 0 and self.stimPres:
                 if j['stimType'] == 'Movie':
                     j['stim'].seek(0.0)
                     j['stim'].pause()
+            elif self.stimPres:
+                # This is for an edge case where you autoadvance from one trial into a trial that presents on different
+                # screens, to blank those screens, because by default autoadvance stops PyHab from wiping a screen.
+                if i == 'C':
+                    self.win.flip()
+                elif i == 'L':
+                    self.winL.flip()
+                elif i == 'R':
+                    self.winR.flip()
         startTrial = core.getTime()
         onArrayC = []
         offArray = []
@@ -836,6 +845,8 @@ class PyHabHPP(PyHab):
             if self.endImageObject is not None:
                 self.endImageObject.draw()
             self.win.flip()
+            self.winL.flip()
+            self.winR.flip()
         if len(self.blockDataList) > 0 and self.blockSum:
             tempMatrix = self.saveBlockFile()
             # Now write the actual data file
@@ -1048,6 +1059,8 @@ class PyHabHPP(PyHab):
             if self.endImageObject is not None:
                 self.endImageObject.draw()
             self.win.flip()
+            self.winL.flip()
+            self.winR.flip()
         event.waitKeys(keyList='return')
 
         self.win2.close()
@@ -1089,6 +1102,8 @@ class PyHabHPP(PyHab):
                 tempStimObj = visual.ImageStim(self.win, tempStim['stimLoc'], size=[self.movieWidth['C'], self.movieHeight['C']])
                 tempStimObj.draw()
                 self.win.flip() # This should now be on the screen until the first attngetter
+                self.winL.flip()
+                self.winR.flip()
             self.stimDict = {x: [] for x in self.stimNames.keys()}  # This holds all the loaded movies.
             self.counters = {x: 0 for x in self.stimNames.keys()}  # list of counters, one per index of the dict, so it knows which movie to play
             tempCtr = {x: 0 for x in self.stimNames.keys()}

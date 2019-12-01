@@ -266,8 +266,8 @@ class PyHab:
         self.statusOffset = 0
         self.statusOffsetY = 0
         self.testOffset = 0
-        self.frameCount = 0  # the frame counter for the movement of A and B, based on the refresh rate.
-        self.pauseCount = 0  # used for ISI calculations
+        self.frameCount = {'C':0,'L':0,'R':0}  # the frame counter for the trial. Redone so it works for each screen.
+        self.pauseCount = {'C':0,'L':0,'R':0}  # used for ISI calculations
         self.stimName = ''  # used for adding the name of the stimulus file to the output.
         self.key = pyglet.window.key  # This initiates the keyhandler. Here so we can then set the relevant keys.
         self.secondKey = self.key.L
@@ -604,7 +604,7 @@ class PyHab:
             dMovie.seek(0.0)
             if attnGetter['stimType'] == 'Movie + Audio':
                 attnGetter['audioFile'].play()
-            self.frameCount = 0
+            self.frameCount['C'] = 0
             self.ISI['NobodyNameTheirTrialTypeThis'] = 0.0 # A goofy solution but it'll work. dispMovieStim requires a trial type, and the ISI for an attngetter needs to be 0.
             while self.dispMovieStim('NobodyNameTheirTrialTypeThis', dMovie) < 2:
                 self.statusSquareA.draw()
@@ -731,42 +731,42 @@ class PyHab:
 
         if screen == 'C':
             w = self.win
-        elif screen=='L':
+        elif screen == 'L':
             w = self.winL
-        elif screen=='R':
+        elif screen == 'R':
             w = self.winR
 
-        if self.frameCount == 0:  # initial setup
+        if self.frameCount[screen] == 0:  # initial setup
             self.dummyThing.draw()
-            self.frameCount += 1
+            self.frameCount[screen] += 1
             dispMovie.draw()
             if trialType == 0:
-                self.frameCount = 0  # for post-attn-getter pause
+                self.frameCount[screen] = 0  # for post-attn-getter pause
                 dispMovie.pause()
             else:
-                dispMovie.seek(0.0) # Moved up here from below so that it CAN loop at all
+                dispMovie.seek(0.0)  # Moved up here from below so that it CAN loop at all
             w.flip()
             return 0
-        elif self.frameCount == 1:
+        elif self.frameCount[screen] == 1:
             # print('playing')
             dispMovie.play()
             dispMovie.draw()
-            self.frameCount += 1
+            self.frameCount[screen] += 1
             w.flip()
             return 0
-        elif dispMovie.getCurrentFrameTime() >= dispMovie.duration - dispMovie._frameInterval*2 and self.pauseCount < self.ISI[trialType] * 60:  # pause, check for ISI.
+        elif dispMovie.getCurrentFrameTime() >= dispMovie.duration - dispMovie._frameInterval*2 and self.pauseCount[screen] < self.ISI[trialType] * 60:  # pause, check for ISI.
             self.dummyThing.draw()
             dispMovie.pause()
             dispMovie.draw()  # might want to have it vanish rather than leave it on the screen for the ISI, in which case comment out this line.
-            self.frameCount += 1
-            self.pauseCount += 1
+            self.frameCount[screen] += 1
+            self.pauseCount[screen] += 1
             w.flip() # TODO: Goes blank if ISI is long enough. Pyglet problem.
             return 1
-        elif dispMovie.getCurrentFrameTime() >= dispMovie.duration - dispMovie._frameInterval*2 and self.pauseCount >= self.ISI[trialType] * 60:  # MovieStim's Loop functionality can't do an ISI
+        elif dispMovie.getCurrentFrameTime() >= dispMovie.duration - dispMovie._frameInterval*2 and self.pauseCount[screen] >= self.ISI[trialType] * 60:  # MovieStim's Loop functionality can't do an ISI
             self.dummyThing.draw()
             # print('repeating at ' + str(dispMovie.getCurrentFrameTime()))
-            self.frameCount = 0  # changed to 0 to better enable studies that want to blank between trials
-            self.pauseCount = 0
+            self.frameCount[screen] = 0  # changed to 0 to better enable studies that want to blank between trials
+            self.pauseCount[screen] = 0
             dispMovie.draw()  # Comment this out as well to blank between loops.
             w.flip()
             dispMovie.pause()
@@ -774,7 +774,7 @@ class PyHab:
             return 2
         else:
             dispMovie.draw()
-            self.frameCount += 1
+            self.frameCount[screen] += 1
             w.flip()
             return 0
 
@@ -811,16 +811,16 @@ class PyHab:
             or the audio is looping (2)
         :rtype: int
         """
-        if self.frameCount == 0:  # We're going to use this as a mask for the status of the audio file
+        if self.frameCount['C'] == 0:  # We're going to use this as a mask for the status of the audio file
             dispAudio.play()
-            self.frameCount = 1
+            self.frameCount['C'] = 1
             return 0
-        elif self.frameCount == 1:
-            if dispAudio.status not in [STARTED, PLAYING] and self.pauseCount < self.ISI[trialType] * 60:
-                self.pauseCount += 1
+        elif self.frameCount['C'] == 1:
+            if dispAudio.status not in [STARTED, PLAYING] and self.pauseCount['C'] < self.ISI[trialType] * 60:
+                self.pauseCount['C'] += 1
                 return 1
-            elif dispAudio.status not in [STARTED, PLAYING] and self.pauseCount >= self.ISI[trialType] * 60:
-                self.frameCount = 0
+            elif dispAudio.status not in [STARTED, PLAYING] and self.pauseCount['C'] >= self.ISI[trialType] * 60:
+                self.frameCount['C'] = 0
                 return 2
             else:
                 return 0
@@ -1115,7 +1115,7 @@ class PyHab:
                 self.readyText.text = "No trial active" + self.rdyTextAppend
                 self.dispCoderWindow()
             if not end: #This if statement checks if we're trying to quit.
-                self.frameCount = 0
+                self.frameCount = {k:0 for k,v in self.frameCount.items()}
                 # framerate = win.getActualFrameRate()
                 # print(framerate)               #just some debug code.
                 if self.blindPres < 2:
@@ -1129,12 +1129,12 @@ class PyHab:
                         # Pull relevant arguments out of the attngetter dictionary.
                         self.attnGetter(trialType, self.playAttnGetter[trialType]['cutoff'], self.playAttnGetter[trialType]['onmin'])  # plays the attention-getter
                         core.wait(.1)  # this wait is important to make the attentiongetter not look like it is turning into the stimulus
-                        self.frameCount = 0
+                        self.frameCount = {k: 0 for k, v in self.frameCount.items()}
                         irrel = self.dispTrial(0, disMovie)
                         core.wait(self.freezeFrame)  # this delay ensures that the trial only starts after the images have appeared on the screen, static, for a user-determined length of time
                         waitStart = True
                     else:
-                        self.frameCount = 0
+                        self.frameCount = {k: 0 for k, v in self.frameCount.items()}
                         waitStart = True
                 else:
                     if trialType in self.playAttnGetter:
@@ -1294,8 +1294,8 @@ class PyHab:
             habTrial = True
         else:
             dataType = ttype
-        self.frameCount = 0  # reset display
-        self.pauseCount = 0  # needed for ISI
+        self.frameCount['C'] = 0  # reset display
+        self.pauseCount['C'] = 0  # needed for ISI
         # returns 0 if do next trial, 1 if end hab, 2 if end experiment, 3 if abort/abort
         if self.stimPres and disMovie['stimType'] == 'Movie':
             disMovie['stim'].seek(0.0)

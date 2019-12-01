@@ -171,8 +171,8 @@ class PyHabPL(PyHab):
             habTrial = True
         else:
             dataType = ttype
-        self.frameCount = 0 #reset display
-        self.pauseCount = 0 #needed for ISI
+        self.frameCount = {k: 0 for k, v in self.frameCount.items()}
+        self.pauseCount['C'] = 0 #needed for ISI
         if self.stimPres and disMovie['stimType'] == 'Movie':
             disMovie['stim'].seek(0)
             disMovie['stim'].pause()
