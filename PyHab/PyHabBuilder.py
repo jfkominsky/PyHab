@@ -3409,7 +3409,6 @@ class PyHabBuilder:
                                                          conlines=False)
                         # Drag and drop
                         for j in range(0, len(stims['shapes'])):  # Only need to worry about adding stim
-                            # TODO: Put the drop in "drag and drop"
                             if self.mouse.isPressedIn(stims['shapes'][j], buttons=[0]):
                                 drag = self.mouse.getPressed()
                                 dragShape = stims['shapes'][j]
@@ -3426,6 +3425,8 @@ class PyHabBuilder:
                                     self.win.flip()
                                     drag = self.mouse.getPressed()
                                 finPos = self.mouse.getPos()
+                                # Reset the position of the thing while adding it to the flow
+                                stims = self.loadTypes(bigPaletteLocs, tempStims)
                                 # Now we have to translate this position back into a place in the flow!
                                 minDist = 2 # Maximum possible distance
                                 closest = 0 # index of closest location
@@ -3443,6 +3444,9 @@ class PyHabBuilder:
                                     condOrder.append(0)
                                     condOrder[closest] = dragname
                                 self.mouse.clickReset() # This just prevents the flow-click from tripping instantly, or should
+                                condFlow = self.loadFlow(tOrd=condOrder, space=newFlowArea, locs=newFlowLocs,
+                                                         overflow=newFlowLocs, types=tempStims, trials=False,
+                                                         conlines=False)
 
 
             # Finally, rewrite everything that needs rewriting.
