@@ -199,7 +199,7 @@ class PyHabBuilder:
         self.folderPath = self.settings['folderPath']  # The location where all the pieces are saved.
         self.allDataColumns = ['sNum', 'sID', 'months', 'days', 'sex', 'cond','condLabel', 'trial','GNG','trialType','stimName','habCrit','habTrialNo','sumOnA','numOnA','sumOffA','numOffA','sumOnB','numOnB','sumOffB','numOffB']
         self.allDataColumnsPL = ['sNum', 'sID', 'months', 'days', 'sex', 'cond','condLabel', 'trial','GNG','trialType','stimName','habCrit','habTrialNo', 'sumOnL','numOnL','sumOnR','numOnR','sumOff','numOff']
-        self.allDataColumpsHPP = ['sNum', 'sID', 'months', 'days', 'sex', 'cond','condLabel', 'trial','GNG','trialType','stimName','habCrit','habTrialNo', 'sumOnL','numOnL','sumOnC','numOnC','sumOnR','numOnR','sumOff','numOff']
+        self.allDataColumnsHPP = ['sNum', 'sID', 'months', 'days', 'sex', 'cond','condLabel', 'trial','GNG','trialType','stimName','habCrit','habTrialNo', 'sumOnL','numOnL','sumOnC','numOnC','sumOnR','numOnR','sumOff','numOff']
         self.stimSource={}  # A list of the source folder(s) for each stimulus file, a dict where each key is the filename in stimNames?
         self.delList=[] # A list of stimuli to delete if they are removed from the experiment library.
         self.allDone=False
@@ -3263,11 +3263,11 @@ class PyHabBuilder:
                                             newFlowArea[2] + y * (newFlowArea[3] - newFlowArea[2])])
             else:
                 # For HPP we actually want to number this differently. Two sets of three vertical locations, sequential.
-                for a in [.35, .7]: # Two rows, ultimately, each one with a stack!
+                for a in [.3, .75]: # Two rows, ultimately, each one with a stack!
                     for z in range(1,8):
-                        for y in [.25, .5, .75]:  # Mutlipliers of a.
-                            newFlowLocs.append([newFlowArea[0] + z * (newFlowArea[1] - newFlowArea[0]) * 1.125,
-                                                newFlowArea[2] + (y*a) * (newFlowArea[3] - newFlowArea[2])])
+                        for y in [-.15, 0, .15]:  # additions to a. Multiplication is bad.
+                            newFlowLocs.append([newFlowArea[0] + z * (newFlowArea[1] - newFlowArea[0]) * (self.flowGap*1.125),
+                                                newFlowArea[2] + (y+a) * (newFlowArea[3] - newFlowArea[2])])
 
 
 
@@ -3304,13 +3304,14 @@ class PyHabBuilder:
                         stims['shapes'][invisdex].lineColor='white'
                 else:
                     for l in range(0, round(len(newFlowLocs)/3)):
+                        m = l*3
                         tempBox = visual.Rect(self.win, width=(newFlowLocs[3][0]-newFlowLocs[0][0]),
-                                              height=self.flowHeightObj+.1, pos=newFlowLocs[l*3],
+                                              height=3*(self.flowHeightObj)+.1, pos=newFlowLocs[m],
                                               lineColor='black', fillColor='white')
-                        tempBoxText = visual.TextStim(self.win, text=str(l+1), pos=[tempBox.pos[0], tempBox.pos[1]+self.flowHeightObj+.1], color='black')
-                        tempL = visual.TextStim(self.win, text="L:", pos=[newFlowLocs[l*3][0]-(newFlowLocs[3][0]-newFlowLocs[0][0])/4,newFlowLocs[l*3][1]])
-                        tempC = visual.TextStim(self.win, text="C:", pos=[newFlowLocs[l*3][0]-(newFlowLocs[3][0]-newFlowLocs[0][0])/4,newFlowLocs[l*3+1][1]])
-                        tempR = visual.TextStim(self.win, text="R:", pos=[newFlowLocs[l*3][0]-(newFlowLocs[3][0]-newFlowLocs[0][0])/4,newFlowLocs[l*3+2][1]])
+                        tempBoxText = visual.TextStim(self.win, text=str(l+1), pos=[tempBox.pos[0], tempBox.pos[1]+tempBox.height*.55], color='black')
+                        tempL = visual.TextStim(self.win, text="L:", pos=[newFlowLocs[m][0]-(newFlowLocs[3][0]-newFlowLocs[0][0])/4, newFlowLocs[m][1]],color='black', height=.06)
+                        tempC = visual.TextStim(self.win, text="C:", pos=[newFlowLocs[m][0]-(newFlowLocs[3][0]-newFlowLocs[0][0])/4, newFlowLocs[m+1][1]],color='black', height=.06)
+                        tempR = visual.TextStim(self.win, text="R:", pos=[newFlowLocs[m][0]-(newFlowLocs[3][0]-newFlowLocs[0][0])/4, newFlowLocs[m+2][1]],color='black', height=.06)
                         condUI['bg'].append(tempBox)
                         condUI['bg'].append(tempBoxText)
                         condUI['bg'].append(tempL)
@@ -3320,11 +3321,13 @@ class PyHabBuilder:
                     if ex:
                         tempOrder = deepcopy(self.condDict[cond][tempType])
                         # format: [{L:0,C:stimName,R:0}] etc., need to convert to just a list in LCR order
-                        condOrder=[]
+                        condOrder = []
                         for p in range(0, len(tempOrder)):
                             condOrder.append(tempOrder[p]['L'])
                             condOrder.append(tempOrder[p]['C'])
                             condOrder.append(tempOrder[p]['R'])
+                    else:
+                        condOrder = []
                     stims = self.loadTypes(bigPaletteLocs, tempStims)  # Populates the palette with stimuli. No need to bother with invisibles here.
 
                 condFlow = self.loadFlow(tOrd=condOrder, space=newFlowArea, locs=newFlowLocs, overflow=newFlowLocs,
@@ -3359,38 +3362,89 @@ class PyHabBuilder:
                             while self.mouse.isPressedIn(condUI['buttons']['shapes'][z], buttons=[0]):  # waits until the mouse is released before continuing.
                                 pass
 
-                    # Click on a stimulus to add it. Remove it from the palette when added. Re-add it as appropriate.
-                    for j in range(0, len(stims['shapes'])):  # Only need to worry about adding stim
-                        if self.mouse.isPressedIn(stims['shapes'][j], buttons=[0]):
-                            if stims['labels'][j] not in invisStims:
-                                condOrder.append(stims['labels'][j])
+                    if not HPP:
+                        # Click on a stimulus to add it. Remove it from the palette when added. Re-add it as appropriate.
+                        for j in range(0, len(stims['shapes'])):  # Only need to worry about adding stim
+                            if self.mouse.isPressedIn(stims['shapes'][j], buttons=[0]):
+                                if stims['labels'][j] not in invisStims:
+                                    condOrder.append(stims['labels'][j])
+                                    condFlow = self.loadFlow(tOrd=condOrder, space=newFlowArea, locs=newFlowLocs,
+                                                             overflow=newFlowLocs, types=tempStims, trials=False,
+                                                             conlines=False)
+                                    invisStims.append(stims['labels'][j])
+
+                                while self.mouse.isPressedIn(stims['shapes'][j], buttons=[0]):  # waits until the mouse is released before continuing.
+                                    pass
+                        for k in range(0, len(condFlow['shapes'])):  # Rearrange or remove, as in the usual loop!
+                            if self.mouse.isPressedIn(condFlow['shapes'][k], buttons=[0]):
+                                condOrder = self.moveTrialInFlow(k, condOrder, newFlowArea, condUI, condFlow,
+                                                                  stims)
+                                # Re-initialize the palette if something was deleted.
+                                invisStims=[]
+                                for q in range(0, len(tempStims)):
+                                    if tempStims[q] in condOrder:
+                                        invisStims.append(tempStims[q])
+
                                 condFlow = self.loadFlow(tOrd=condOrder, space=newFlowArea, locs=newFlowLocs,
                                                          overflow=newFlowLocs, types=tempStims, trials=False,
                                                          conlines=False)
-                                invisStims.append(stims['labels'][j])
+                                break
+                        stims = self.loadTypes(bigPaletteLocs, tempStims)  # update the palette.
+                        for n in range(0, len(invisStims)):
+                            invisdex = stims['labels'].index(invisStims[n])
+                            # Can't delete it outright, but can make it not render and non-interactible elsewhere.
+                            stims['shapes'][invisdex].fillColor = 'white'
+                            stims['shapes'][invisdex].lineColor = 'white'
+                    else:
+                        # TODO: W/r/t iterations, the main thing is to see if it's in an extant iteration or the next iteration, and then fill in the rest of that iteration, or remove.
+                        # If they click inside the flow, behavior is as before.
+                        for k in range(0, len(condFlow['shapes'])):  # Rearrange or remove, as in the usual loop!
+                            # Provided that the thing at this location is not 0
+                            if self.mouse.isPressedIn(condFlow['shapes'][k], buttons=[0]) and condOrder[k] not in [0,'0']:
+                                condOrder = self.moveTrialInFlow(k, condOrder, newFlowArea, condUI, condFlow,
+                                                                 stims)
 
-                            while self.mouse.isPressedIn(stims['shapes'][j], buttons=[0]):  # waits until the mouse is released before continuing.
-                                pass
-                    for k in range(0, len(condFlow['shapes'])):  # Rearrange or remove, as in the usual loop!
-                        if self.mouse.isPressedIn(condFlow['shapes'][k], buttons=[0]):
-                            condOrder = self.moveTrialInFlow(k, condOrder, newFlowArea, condUI, condFlow,
-                                                              stims)
-                            # Re-initialize the palette if something was deleted.
-                            invisStims=[]
-                            for q in range(0, len(tempStims)):
-                                if tempStims[q] in condOrder:
-                                    invisStims.append(tempStims[q])
+                                condFlow = self.loadFlow(tOrd=condOrder, space=newFlowArea, locs=newFlowLocs,
+                                                         overflow=newFlowLocs, types=tempStims, trials=False,
+                                                         conlines=False)
+                        # Drag and drop
+                        for j in range(0, len(stims['shapes'])):  # Only need to worry about adding stim
+                            # TODO: Put the drop in "drag and drop"
+                            if self.mouse.isPressedIn(stims['shapes'][j], buttons=[0]):
+                                drag = self.mouse.getPressed()
+                                dragShape = stims['shapes'][j]
+                                dragText = stims['text'][j]
+                                dragname = stims['labels'][j]
+                                while drag[0]: # our drag and drop loop!
+                                    self.showMainUI(condUI, condFlow, stims)
+                                    # Draw the copy of the thing being dragged!
+                                    curPos = self.mouse.getPos()
+                                    dragShape.pos = curPos
+                                    dragText.pos = dragShape.pos
+                                    dragShape.draw()
+                                    dragText.draw()
+                                    self.win.flip()
+                                    drag = self.mouse.getPressed()
+                                finPos = self.mouse.getPos()
+                                # Now we have to translate this position back into a place in the flow!
+                                minDist = 2 # Maximum possible distance
+                                closest = 0 # index of closest location
+                                for loc in range(0, len(newFlowLocs)):
+                                    tmpDist = self._distanceCalc(finPos, newFlowLocs[loc])
+                                    if tmpDist < minDist:
+                                        closest = deepcopy(loc)
+                                        minDist = tmpDist
+                                # now to see if that's a valid place and if so update accordingly!
+                                if closest < len(condOrder):
+                                    condOrder[closest] = dragname
+                                elif closest < len(condOrder)+3:  # +3 to allow us to add to the next trial
+                                    condOrder.append(0)
+                                    condOrder.append(0)
+                                    condOrder.append(0)
+                                    condOrder[closest] = dragname
+                                self.mouse.clickReset() # This just prevents the flow-click from tripping instantly, or should
 
-                            condFlow = self.loadFlow(tOrd=condOrder, space=newFlowArea, locs=newFlowLocs,
-                                                     overflow=newFlowLocs, types=tempStims, trials=False,
-                                                     conlines=False)
-                            break
-                    stims = self.loadTypes(bigPaletteLocs, tempStims)  # update the palette.
-                    for n in range(0, len(invisStims)):
-                        invisdex = stims['labels'].index(invisStims[n])
-                        # Can't delete it outright, but can make it not render and non-interactible elsewhere.
-                        stims['shapes'][invisdex].fillColor = 'white'
-                        stims['shapes'][invisdex].lineColor = 'white'
+
             # Finally, rewrite everything that needs rewriting.
             # This includes making sure that blocks or trial types, whichever were left blank, are not left blank.
             listAll = list(self.settings['stimNames'].keys()) + list(self.settings['blockList'].keys())
@@ -3407,7 +3461,23 @@ class PyHabBuilder:
                 self.settings['condList'].append(str(cond))
 
 
+    def _distanceCalc(self, pos1, pos2):
+        """
+        A simple function for computing distance between two points
 
+        :param pos1: X,Y location 1
+        :type pos1: list
+        :param pos2: X,Y location 2
+        :type pos2: list
+        :return: Distance
+        :rtype: float
+        """
+        x1 = pos1[0]
+        x2 = pos2[0]
+        y1 = pos1[1]
+        y2 = pos2[1]
+        dist = sqrt((x1-x2)**2 + (y1-y2)**2)
+        return dist
 
 
     def delCond(self):
