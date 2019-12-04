@@ -1792,7 +1792,7 @@ class PyHabBuilder:
                     # A special case for the condition thing for HPP!
                     if tOrd[i] == 0:
                         tOrd[i] = str(tOrd[i])  # string conversion helps with the text element later
-                    tempObj = visual.Rect(self.win, width=abs(space[1]-space[0])*(self.flowWidMult + (self.flowGap-self.flowWidMult)), height=self.flowHeightObj, fillColor='white', lineColor='black', pos=flowSpace[j])
+                    tempObj = visual.Rect(self.win, width=self.flowWidthObj, height=self.flowHeightObj, fillColor='white', lineColor='black', pos=flowSpace[j])
                 else:
                     tempObj = visual.Rect(self.win, width=self.flowWidthObj, height=self.flowHeightObj, fillColor=self.colorsArray[c], pos=flowSpace[j])
                 numChar = len(tOrd[i])
@@ -3211,7 +3211,7 @@ class PyHabBuilder:
             # Define new UI. We can reuse a lot of the base UI, happily.
             condUI = {'bg': [], 'buttons': {'shapes': [], 'text': [], 'functions': []}}
 
-            newFlowArea = [-.97, .75, .97, -.97]  # X,X,Y,Y
+            newFlowArea = [-1, .75, 1, -1]  # X,X,Y,Y
             newFlowRect = visual.Rect(self.win, width=newFlowArea[1] - newFlowArea[0],
                                       height=newFlowArea[3] - newFlowArea[2], fillColor='cyan', lineColor='black',
                                       pos=[newFlowArea[0] + float(abs(newFlowArea[1] - newFlowArea[0])) / 2,
@@ -3229,7 +3229,7 @@ class PyHabBuilder:
 
 
 
-            bigPaletteArea = [.7, .95, .97, -.97]  # temporary, bigger palette, without trial type maker buttons!
+            bigPaletteArea = [.7, .98, 1, -1]  # temporary, bigger palette, without trial type maker buttons!
             bigPaletteRect = visual.Rect(self.win, width=bigPaletteArea[1] - bigPaletteArea[0],
                                          height=bigPaletteArea[3] - bigPaletteArea[2], fillColor='white',
                                          lineColor='black',
@@ -3263,10 +3263,10 @@ class PyHabBuilder:
                                             newFlowArea[2] + y * (newFlowArea[3] - newFlowArea[2])])
             else:
                 # For HPP we actually want to number this differently. Two sets of three vertical locations, sequential.
-                for a in [.3, .75]: # Two rows, ultimately, each one with a stack!
+                for a in [.22, .67]: # Two rows, ultimately, each one with a stack!
                     for z in range(1,8):
-                        for y in [-.15, 0, .15]:  # additions to a. Multiplication is bad.
-                            newFlowLocs.append([newFlowArea[0] + z * (newFlowArea[1] - newFlowArea[0]) * (self.flowGap*1.125),
+                        for y in [-.1, 0, .1]:  # additions to a. Multiplication is bad.
+                            newFlowLocs.append([newFlowArea[0] + z * (newFlowArea[1] - newFlowArea[0]) * (self.flowGap*1.25),
                                                 newFlowArea[2] + (y+a) * (newFlowArea[3] - newFlowArea[2])])
 
 
@@ -3303,21 +3303,25 @@ class PyHabBuilder:
                         stims['shapes'][invisdex].fillColor='white'
                         stims['shapes'][invisdex].lineColor='white'
                 else:
-                    for l in range(0, round(len(newFlowLocs)/3)):
-                        m = l*3
-                        tempBox = visual.Rect(self.win, width=(newFlowLocs[3][0]-newFlowLocs[0][0]),
-                                              height=3*(self.flowHeightObj)+.1, pos=newFlowLocs[m],
-                                              lineColor='black', fillColor='white')
-                        tempBoxText = visual.TextStim(self.win, text=str(l+1), pos=[tempBox.pos[0], tempBox.pos[1]+tempBox.height*.55], color='black')
-                        tempL = visual.TextStim(self.win, text="L:", pos=[newFlowLocs[m][0]-(newFlowLocs[3][0]-newFlowLocs[0][0])/4, newFlowLocs[m][1]],color='black', height=.06)
-                        tempC = visual.TextStim(self.win, text="C:", pos=[newFlowLocs[m][0]-(newFlowLocs[3][0]-newFlowLocs[0][0])/4, newFlowLocs[m+1][1]],color='black', height=.06)
-                        tempR = visual.TextStim(self.win, text="R:", pos=[newFlowLocs[m][0]-(newFlowLocs[3][0]-newFlowLocs[0][0])/4, newFlowLocs[m+2][1]],color='black', height=.06)
-                        condUI['bg'].append(tempBox)
-                        condUI['bg'].append(tempBoxText)
-                        condUI['bg'].append(tempL)
-                        condUI['bg'].append(tempC)
-                        condUI['bg'].append(tempR)
+                    for l in range(0, len(newFlowLocs)):
+                        if l % 3 == 0:
+                            txtFill = 'L:'
+                            tempBox = visual.Rect(self.win, width=(newFlowLocs[3][0] - newFlowLocs[0][0])*.975,
+                                                  height=4 * (self.flowHeightObj), pos=[newFlowLocs[l][0], newFlowLocs[l+1][1]],
+                                                  lineColor='black', fillColor='white')
+                            tempBoxText = visual.TextStim(self.win, text=str(round(l/3) + 1),
+                                                          pos=[tempBox.pos[0], tempBox.pos[1] + tempBox.height * .55],
+                                                          color='black')
+                            condUI['bg'].append(tempBox)
+                            condUI['bg'].append(tempBoxText)
+                        elif l % 3 == 1:
+                            txtFill = 'C:'
+                        elif l % 3 == 2:
+                            txtFill = 'R:'
 
+                        tempLabel = visual.TextStim(self.win, text=txtFill, pos=[newFlowLocs[l][0]-(newFlowLocs[3][0]-newFlowLocs[0][0])*.4, newFlowLocs[l][1]],color='black', height=.06)
+
+                        condUI['bg'].append(tempLabel)
                     if ex:
                         tempOrder = deepcopy(self.condDict[cond][tempType])
                         # format: [{L:0,C:stimName,R:0}] etc., need to convert to just a list in LCR order
@@ -3397,16 +3401,19 @@ class PyHabBuilder:
                             stims['shapes'][invisdex].lineColor = 'white'
                     else:
                         # TODO: W/r/t iterations, the main thing is to see if it's in an extant iteration or the next iteration, and then fill in the rest of that iteration, or remove.
+                        # TODO: When you remove a trial from the flow, update appropriately, don't move everything back one as it does now.
                         # If they click inside the flow, behavior is as before.
                         for k in range(0, len(condFlow['shapes'])):  # Rearrange or remove, as in the usual loop!
                             # Provided that the thing at this location is not 0
                             if self.mouse.isPressedIn(condFlow['shapes'][k], buttons=[0]) and condOrder[k] not in [0,'0']:
+                                # TODO: Text needs to be changed
                                 condOrder = self.moveTrialInFlow(k, condOrder, newFlowArea, condUI, condFlow,
                                                                  stims)
 
                                 condFlow = self.loadFlow(tOrd=condOrder, space=newFlowArea, locs=newFlowLocs,
                                                          overflow=newFlowLocs, types=tempStims, trials=False,
                                                          conlines=False)
+                                break
                         # Drag and drop
                         for j in range(0, len(stims['shapes'])):  # Only need to worry about adding stim
                             if self.mouse.isPressedIn(stims['shapes'][j], buttons=[0]):
