@@ -2776,6 +2776,7 @@ class PyHabBuilder:
         Outputs settings condList (labels of each condition), condFile (save conditions to this file)
         and makes new structure condDict (mapping of each label to actual condition it applies to)
         TODO: Remove automake system for HPP, update to use correct function in trial but not block mode
+        TODO: Remove block button when no blocks!
 
         :param rep: Basically whether we are recursing while editing conditions
         :type rep: bool
@@ -3213,7 +3214,7 @@ class PyHabBuilder:
 
             newFlowArea = [-1, .75, 1, -1]  # X,X,Y,Y
             newFlowRect = visual.Rect(self.win, width=newFlowArea[1] - newFlowArea[0],
-                                      height=newFlowArea[3] - newFlowArea[2], fillColor='cyan', lineColor='black',
+                                      height=newFlowArea[3] - newFlowArea[2], fillColor='DarkGrey', lineColor='black',
                                       pos=[newFlowArea[0] + float(abs(newFlowArea[1] - newFlowArea[0])) / 2,
                                            newFlowArea[2] - float(abs(newFlowArea[3] - newFlowArea[2])) / 2])
 
@@ -3274,7 +3275,6 @@ class PyHabBuilder:
             labelList = list(shuffleList.keys())
             i = 0
             while i < len(labelList):
-                # TODO: For HPP, when you add one, you need to choose CLR and it needs to be represented in the thing. You also need to be able to add to an existing iteration....ooof
                 tempType = labelList[i]
                 instrText.text="Set stimulus order for trial type " + tempType
                 # Rebuilding this every time allows us to make boxes for each instance and update the instr text
@@ -3285,7 +3285,7 @@ class PyHabBuilder:
                         tempBox = visual.Rect(self.win, width=(newFlowLocs[1][0]-newFlowLocs[0][0]),
                                               height=self.flowHeightObj+.1, pos=newFlowLocs[l],
                                               lineColor='black', fillColor='white')
-                        tempBoxText = visual.TextStim(self.win, text=str(l+1), pos=[tempBox.pos[0], tempBox.pos[1]+self.flowHeightObj+.1], color='black')
+                        tempBoxText = visual.TextStim(self.win, text=str(l+1), pos=[tempBox.pos[0], tempBox.pos[1]+self.flowHeightObj+.1], color='white')
                         condUI['bg'].append(tempBox)
                         condUI['bg'].append(tempBoxText)
                     invisStims = []
@@ -3311,7 +3311,7 @@ class PyHabBuilder:
                                                   lineColor='black', fillColor='white')
                             tempBoxText = visual.TextStim(self.win, text=str(round(l/3) + 1),
                                                           pos=[tempBox.pos[0], tempBox.pos[1] + tempBox.height * .55],
-                                                          color='black')
+                                                          color='white')
                             condUI['bg'].append(tempBox)
                             condUI['bg'].append(tempBoxText)
                         elif l % 3 == 1:
@@ -3349,14 +3349,14 @@ class PyHabBuilder:
                                 done = True
                                 i += 1
                                 if not HPP:
-                                    outputDict[tempType] = condOrder # should be simple as that.
+                                    outputDict[tempType] = condOrder  # should be simple as that.
                                 else:
                                     # Need to re-interpret condOrder into the right format.
                                     tempOut = []
                                     for b in range(0, round(len(condOrder)/3)):
                                         tmpDict = {}
-                                        tmpDict['L'] = condOrder[b*3]
-                                        tmpDict['C'] = condOrder[b*3+1]
+                                        tmpDict['L'] = condOrder[b * 3]
+                                        tmpDict['C'] = condOrder[b * 3 + 1]
                                         tmpDict['R'] = condOrder[b * 3 + 2]
                                         tempOut.append(tmpDict)
                                     outputDict[tempType] = tempOut
@@ -3400,16 +3400,25 @@ class PyHabBuilder:
                             stims['shapes'][invisdex].fillColor = 'white'
                             stims['shapes'][invisdex].lineColor = 'white'
                     else:
-                        # TODO: W/r/t iterations, the main thing is to see if it's in an extant iteration or the next iteration, and then fill in the rest of that iteration, or remove.
-                        # TODO: When you remove a trial from the flow, update appropriately, don't move everything back one as it does now.
                         # If they click inside the flow, behavior is as before.
                         for k in range(0, len(condFlow['shapes'])):  # Rearrange or remove, as in the usual loop!
                             # Provided that the thing at this location is not 0
                             if self.mouse.isPressedIn(condFlow['shapes'][k], buttons=[0]) and condOrder[k] not in [0,'0']:
-                                # TODO: Text needs to be changed
+                                # TODO: Text needs to be changed for this...
+                                oldOrder = deepcopy(condOrder)
                                 condOrder = self.moveTrialInFlow(k, condOrder, newFlowArea, condUI, condFlow,
                                                                  stims)
-
+                                # Determine if something has been removed, if so update things appropriately
+                                if len(condOrder) < len(oldOrder):
+                                    # Determine what was removed
+                                    wasEnd = True
+                                    for q in range(0, len(condOrder)):
+                                        if condOrder[q] != oldOrder[q]:
+                                            condOrder.insert(q, 0)
+                                            wasEnd = False
+                                            break
+                                    if wasEnd:
+                                        condOrder.append(0)  # A special case for removing the very last thing in the flow
                                 condFlow = self.loadFlow(tOrd=condOrder, space=newFlowArea, locs=newFlowLocs,
                                                          overflow=newFlowLocs, types=tempStims, trials=False,
                                                          conlines=False)
@@ -3458,6 +3467,7 @@ class PyHabBuilder:
 
             # Finally, rewrite everything that needs rewriting.
             # This includes making sure that blocks or trial types, whichever were left blank, are not left blank.
+            # TODO: HPP needs a special format...
             listAll = list(self.settings['stimNames'].keys()) + list(self.settings['blockList'].keys())
             for q in listAll:
                 if q not in outputDict.keys() and not ex:
