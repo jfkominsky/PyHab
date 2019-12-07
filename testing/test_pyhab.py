@@ -40,8 +40,6 @@ base_settings = {
     'stimPath': 'stimuli/',
     'stimNames': "{}",
     'stimList': "{}",
-    'HPPstim':'{}',
-    'multiStim':'[]',
     'screenWidth': '1080',
     'screenHeight': '700',
     'screenColor': 'black',
@@ -1518,10 +1516,6 @@ class TestHPP(object):
         del self.trialVOnR1
         del self.trialVOnC1
         del self.testMatrixHPP
-
-    def test_HPPsettings(self):
-        assert type(self.dataInstHPP.HPPstim) == dict
-        assert type(self.dataInstHPP.multiStim) == list
 
     def test_HPPabort(self):
         self.dataInstHPP.abortTrial(self.trialVOnC1, self.trialVOff1, 1, 'A', self.trialVOnL1, self.trialVOnR1, 'movie1.mov')
