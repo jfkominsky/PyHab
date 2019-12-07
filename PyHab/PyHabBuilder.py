@@ -3404,7 +3404,7 @@ class PyHabBuilder:
                         for k in range(0, len(condFlow['shapes'])):  # Rearrange or remove, as in the usual loop!
                             # Provided that the thing at this location is not 0
                             if self.mouse.isPressedIn(condFlow['shapes'][k], buttons=[0]) and condOrder[k] not in [0,'0']:
-                                # TODO: Text needs to be changed for this...
+                                # TODO: Text in moveTrialInFlow shows up in an awkward spot
                                 oldOrder = deepcopy(condOrder)
                                 condOrder = self.moveTrialInFlow(k, condOrder, newFlowArea, condUI, condFlow,
                                                                  stims)
@@ -3419,6 +3419,21 @@ class PyHabBuilder:
                                             break
                                     if wasEnd:
                                         condOrder.append(0)  # A special case for removing the very last thing in the flow
+                                    # Examine each set of three, determine if all zeroes, remove if so.
+                                    wipeList = []
+                                    for s in range(0, round(len(condOrder)/3)):
+                                        zeroCount = 0
+                                        for t in range(0,3):
+                                            if condOrder[s*3+t] in [0, '0']:
+                                                zeroCount += 1
+                                        if zeroCount == 3:
+                                            wipeList.append(s*3)
+                                    if len(wipeList) > 0:
+                                        for u in range(0, len(wipeList)):
+                                            del condOrder[wipeList[u]+2]
+                                            del condOrder[wipeList[u]+1]
+                                            del condOrder[wipeList[u]]
+
                                 condFlow = self.loadFlow(tOrd=condOrder, space=newFlowArea, locs=newFlowLocs,
                                                          overflow=newFlowLocs, types=tempStims, trials=False,
                                                          conlines=False)
@@ -3467,7 +3482,7 @@ class PyHabBuilder:
 
             # Finally, rewrite everything that needs rewriting.
             # This includes making sure that blocks or trial types, whichever were left blank, are not left blank.
-            # TODO: HPP needs a special format...
+            # TODO: HPP needs a special format for its default.
             listAll = list(self.settings['stimNames'].keys()) + list(self.settings['blockList'].keys())
             for q in listAll:
                 if q not in outputDict.keys() and not ex:
