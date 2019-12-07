@@ -3104,6 +3104,8 @@ class PyHabBuilder:
         condDlg2.addText("You will have separate screens to set the order of movies in each trial type. Press OK to begin")
         condDinfo = condDlg2.show()
         if condDlg2.OK:
+            if os.name is not 'posix':
+                self.win.winHandle.set_visible(visible=True)
             condDinfo[0] = str(condDinfo[0])
             if ex and condDinfo[0] != cond:  # Renamed existing condition
                 self.settings['condList'][self.settings['condList'].index(cond)] = condDinfo[0]
