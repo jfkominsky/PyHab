@@ -18,18 +18,15 @@ class PyHabHPP(PyHab):
     """
     A head-turn preference procedure version of PyHab. Uses some of the same code, but drastically more complex, needing
     to juggle which screen things are presented on, simultaneous presentation on multiple screens, and more.
-    TODO: We got some problems with simultaneous presentation to work out.
     """
 
     def __init__(self, settingsDict):
         PyHab.__init__(self, settingsDict)
-        self.multiStim = eval(settingsDict['multiStim'])
         self.centerKey = self.key.B
         self.secondKey = self.key.V  # Variable that determines what the second key is. Overwrites what is set in the default init
         self.rightKey = self.key.N
         self.leftKey = self.secondKey  # This is a sort of belts-and-suspenders solution in case there are stray secondKey references.
 
-        self.HPPstim = eval(settingsDict['HPPstim'])
 
         self.verbDatList = {'verboseOnC': [], 'verboseOnL': [], 'verboseOnR': [], 'verboseOff': []}  # a dict of the verbose data arrays
         self.verbBadList = {'verboseOnC': [], 'verboseOnL': [], 'verboseOnR': [], 'verboseOff': []}  # Corresponding for bad data
@@ -1116,23 +1113,16 @@ class PyHabHPP(PyHab):
                     i = tempI
                 x = tempCtr[i]  # Changed so hab trials get the same treatment as everything else.
                 # Stimuli data structure: stimDict is a dict of lists for each trial type that the counter iterates through. It now needs to be a list of dicts.
-                # StimDict = {trialType:[{C:,L:,R:}]} 0 if nothing presented on that screen that trial, otherwise each one
+                # StimDict = {trialType:[{C:,L:,R:},{}]} 0 if nothing presented on that screen that trial, otherwise each one
                 # {'stimType': tempStim['stimType'], 'stim': tempStimObj}
                 if x < len(self.stimNames[i]):
                     tempOutput = {'C':0,'L':0,'R':0}
-
-                    finConstruct = False
-                    while not finConstruct:
-                        stim = self.stimNames[i][tempCtr[i]]
-                        scrn = self.HPPstim[i][stim]
-                        tempOutput[scrn] = self.loadStim(stim,scrn)
-                        tempCtr[i] += 1
-                        if i in self.multiStim and tempCtr[i] < len(self.stimNames[i]):
-                            if self.HPPstim[i][self.stimNames[i][tempCtr[i]]] == scrn or tempOutput[self.HPPstim[i][self.stimNames[i][tempCtr[i]]]] != 0:
-                                finConstruct = True
-                        else:
-                            finConstruct = True
-
+                    stim = self.stimNames[i][tempCtr[i]]
+                    for z, j in stim.items():
+                        if j not in [0, '0']:
+                            scrn = z
+                            tempOutput[scrn] = self.loadStim(stim[scrn], scrn)
+                    tempCtr[i] += 1
                     self.stimDict[i].append(tempOutput)
 
             if len(list(self.playAttnGetter.keys())) > 0:

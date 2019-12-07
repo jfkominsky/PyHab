@@ -41,8 +41,7 @@ class PyHabBuilder:
                                                         'minOn': {},
                                                         'blindPres': '0', 
                                                         'autoAdvance': [],
-                                                        'multiStim': [], # 0.9 New, for HPP
-                                                        'randPres': '0', 
+                                                        'randPres': '0',
                                                         'condPath': '', 
                                                         'condFile': '', 
                                                         'condList': [],
@@ -65,7 +64,6 @@ class PyHabBuilder:
                                                         'stimPres': 0,  # Will be set on each run anyways.
                                                         'stimPath': 'stimuli'+self.dirMarker,
                                                         'stimNames': {},
-                                                        'HPPstim': {},  # 0.9, for tracking screens in HPP procedures.
                                                         'stimList': {},
                                                         'screenWidth': {'C':1080,'L':1080,'R':1080},
                                                         'screenHeight': {'C':700,'L':700,'R':700},
@@ -114,13 +112,10 @@ class PyHabBuilder:
             if 'midAG' not in self.settings:
                 self.settings['midAG'] = '{}'
                 self.settings['dynamicPause'] = '[]'
-            if 'multiStim' not in self.settings:
-                self.settings['multiStim'] = '[]'
-                self.settings['HPPstim']='{}'
             # Settings requiring evaluation to get sensible values. Mostly dicts.
             evalList = ['dataColumns','blockSum','trialSum','maxDur','condList','baseCondList','movieEnd','playThrough','trialOrder',
-                        'stimNames', 'stimList', 'ISI', 'maxOff','minOn','autoAdvance','multiStim','playAttnGetter','attnGetterList',
-                        'trialTypes','habTrialList', 'calcHabOver', 'nextFlash', 'blockList', 'dynamicPause','midAG', 'HPPstim',
+                        'stimNames', 'stimList', 'ISI', 'maxOff','minOn','autoAdvance','playAttnGetter','attnGetterList',
+                        'trialTypes','habTrialList', 'calcHabOver', 'nextFlash', 'blockList', 'dynamicPause','midAG',
                         'screenWidth','screenHeight','movieWidth','movieHeight']  # in 0.9, this becomes necessary.
             for i in evalList:
                 self.settings[i] = eval(self.settings[i])
@@ -580,9 +575,7 @@ class PyHabBuilder:
 
         8 = inter-stimulus interveral (ISI) for this trial type
 
-        9 = HPP ONLY: Present multiple stimuli at once? (multiStim)
-
-        [if movies assigned to trial type already, they occupy 2 - N]
+        [if movies assigned to trial type already, they occupy 9 - N]
 
         :param trialType: Name of the trial type
         :type trialType: str
@@ -676,43 +669,21 @@ class PyHabBuilder:
                 chz4 = False
             typeDlg.addField("Only end trial on end of movie repetition? (Only works when presenting stimuli)", initial = chz4)
             typeDlg.addField("Inter-stimulus interval on loops (pause between end of one loop and start of next)", ISI)
-            if self.settings['prefLook'] in [2,'2']: # HPP
-                if trialType in self.settings['multiStim']:
-                    multi = True
-                else:
-                    multi = False
-                typeDlg.addField("Present stimuli on multiple screens at once:", initial=multi)
             if not makeNew:
                 if len(prevInfo) == 0:
                     if len(self.settings['stimNames'][trialType]) > 0:
-                        if self.settings['prefLook'] in [2, '2']: #HPP
-                            typeDlg.addText("Current movie files in trial type (change screens or remove)")
-                            # HPPstim is a structure that is keyed by trial type and stimulus file name. dict of dicts.
-                            # {trialTypes:{stim1:'L'}}
-                            for i in range(0, len(self.settings['stimNames'][trialType])):
-                                stim = self.settings['stimNames'][trialType][i]
-                                scrn = self.settings['HPPstim'][trialType][stim]
-                                locChoice = ['C', 'L', 'R', 'Remove']
-                                locChoice = [x for x in locChoice if x != scrn]
-                                locChoice.insert(0, scrn)
-                                typeDlg.addField(stim, choices=locChoice)
-                        else:
-                            typeDlg.addText("Current movie files in trial type (uncheck to remove)")
-                            for i in range(0, len(self.settings['stimNames'][trialType])):
+                        typeDlg.addText("Current movie files in trial type (uncheck to remove)")
+                        for i in range(0, len(self.settings['stimNames'][trialType])):
+                            if self.settings['prefLook'] in [2,'2']:
+                                typeDlg.addField(self.settings['stimNames'][trialType][i]['C'], initial=True) # HPP defaults to C on everything
+                            else:
                                 typeDlg.addField(self.settings['stimNames'][trialType][i], initial=True)
                 elif len(prevInfo) > 9: # If there were no movies to start with, this will have a length of 9.
-                    if self.settings['prefLook'] in [2, '2']:  # HPP
-                        if len(prevInfo) > 10:
-                            typeDlg.addText("Current movie files in trial type (change screens or remove)")
-                            for i in range(0, len(self.settings['stimNames'][trialType])):
-                                stim = self.settings['stimNames'][trialType][i]
-                                locChoice = ['C', 'L', 'R', 'Remove']
-                                locChoice = [x for x in locChoice if x != prevInfo[i+10]]
-                                locChoice.insert(0, prevInfo[i+10])
-                                typeDlg.addField(stim, choices=locChoice)
-                    else:
-                        typeDlg.addText("Current stimuli in trial type (uncheck to remove)")
-                        for i in range(0,len(self.settings['stimNames'][trialType])):
+                    typeDlg.addText("Current stimuli in trial type (uncheck to remove)")
+                    for i in range(0,len(self.settings['stimNames'][trialType])):
+                        if self.settings['prefLook'] in [2,'2']:
+                            typeDlg.addField(self.settings['stimNames'][trialType][i+9]['C'], initial=prevInfo[i + 9])
+                        else:
                             typeDlg.addField(self.settings['stimNames'][trialType][i], initial=prevInfo[i+9])
 
 
@@ -818,20 +789,8 @@ class PyHabBuilder:
                         elif typeInfo[7] in [True, 1, 'True', '1'] and not trialType in self.settings['movieEnd']:
                             self.settings['movieEnd'].append(trialType)
 
-                        if self.settings['prefLook'] in [2, '2']:
-                            if typeInfo[9] in [False,0,'False','0'] and trialType in self.settings['multiStim']:
-                                self.settings['multiStim'].remove(trialType)
-                            elif typeInfo[9] in [True, 1, 'True', '1'] and not trialType in self.settings['multiStim']:
-                                self.settings['multiStim'].append(trialType)
-
-                        # Remove stimuli if needed, or change screens if HPP
-                        if self.settings['prefLook'] in [2, '2']:
-                            if len(typeInfo) > 10:
-                                for i in range(0, len(self.settings['stimNames'][trialType])):
-                                    stim = self.settings['stimNames'][trialType][i]
-                                    if typeInfo[10+i] in ['C','L','R']:
-                                        self.settings['HPPstim'][trialType][stim] = typeInfo[10+i]
-                        elif len(typeInfo) > 9: #Again, if there were movies to list.
+                        # Remove stimuli if needed
+                        if len(typeInfo) > 9: #Again, if there were movies to list.
                             tempMovies = [] #This will just replace the stimNames list
                             for i in range(0,len(self.settings['stimNames'][trialType])):
                                 if typeInfo[i+9]:
@@ -2051,19 +2010,46 @@ class PyHabBuilder:
         if self.settings['prefLook'] not in [0,'0']:
 
             if self.settings['prefLook'] in [2,'2']:
-                # If we're starting from HPP we got some transforms to do
-                self.buttonList['functions'][self.buttonList['functions'].index(self.HPP_stimSettingsDlg)] = self.stimSettingsDlg
+                # If we're coming from HPP we have some transforms to do
+                warnDlg = gui.Dlg("Warning, HPP conversion!")
+                warnDlg.addText("You are about to convert the experiment away from head-turn preference procedure.")
+                warnDlg.addText("This will remove all HPP stimulus and data settings, and all conditions settings")
+                warnDlg.addText("Press OK to continue, or cancel to cancel.")
+                if os.name is not 'posix':
+                    self.win.winHandle.set_visible(visible=False)
+                irrel = warnDlg.show()
+                if warnDlg.OK:
+                    self.buttonList['functions'][
+                        self.buttonList['functions'].index(self.HPP_stimSettingsDlg)] = self.stimSettingsDlg
+                    stIndex = self.buttonList['functions'].index(self.toST)
+                    plIndex = self.buttonList['functions'].index(self.toPL)
+                    hpIndex = self.buttonList['functions'].index(self.toHPP)
+                    self.buttonList['shapes'][stIndex].fillColor = 'green'
+                    self.buttonList['shapes'][plIndex].fillColor = 'black'
+                    self.buttonList['shapes'][hpIndex].fillColor = 'black'
+                    self.settings['prefLook'] = 0
+                    self.settings['dataColumns'] = self.allDataColumnsPL
+                    for i, j in self.settings['stimNames'].items():
+                        for x in range(0, len(j)):
+                            tmp = deepcopy(j[x]['C'])
+                            j[x] = tmp
+                    self.settings['condFile'] = ""
+                    self.settings['condList'] = []
+                    self.condDict = {}
+                    self.settings['randPres'] = 0
+                if os.name is not 'posix':
+                    self.win.winHandle.set_visible(visible=True)
 
+            else:
+                stIndex = self.buttonList['functions'].index(self.toST)
+                plIndex = self.buttonList['functions'].index(self.toPL)
+                hpIndex = self.buttonList['functions'].index(self.toHPP)
+                self.buttonList['shapes'][stIndex].fillColor='green'
+                self.buttonList['shapes'][plIndex].fillColor='black'
+                self.buttonList['shapes'][hpIndex].fillColor = 'black'
 
-            stIndex = self.buttonList['functions'].index(self.toST)
-            plIndex = self.buttonList['functions'].index(self.toPL)
-            hpIndex = self.buttonList['functions'].index(self.toHPP)
-            self.buttonList['shapes'][stIndex].fillColor='green'
-            self.buttonList['shapes'][plIndex].fillColor='black'
-            self.buttonList['shapes'][hpIndex].fillColor = 'black'
-
-            self.settings['prefLook'] = 0
-            self.settings['dataColumns'] = self.allDataColumns
+                self.settings['prefLook'] = 0
+                self.settings['dataColumns'] = self.allDataColumns
             while 1 in self.mouse.getPressed():
                 pass # Just a little thing so it doesn't get called for every frame the mouse is down on the button.
 
@@ -2077,17 +2063,45 @@ class PyHabBuilder:
         if self.settings['prefLook'] not in [1, '1']:
             if self.settings['prefLook'] in [2, '2']:
                 # If we're coming from HPP we have some transforms to do
-                self.buttonList['functions'][self.buttonList['functions'].index(self.HPP_stimSettingsDlg)] = self.stimSettingsDlg
+                warnDlg = gui.Dlg("Warning, HPP conversion!")
+                warnDlg.addText("You are about to convert the experiment away from head-turn preference procedure.")
+                warnDlg.addText("This will remove all HPP stimulus and data settings, and all conditions settings")
+                warnDlg.addText("Press OK to continue, or cancel to cancel.")
+                if os.name is not 'posix':
+                    self.win.winHandle.set_visible(visible=False)
+                irrel = warnDlg.show()
+                if warnDlg.OK:
+                    self.buttonList['functions'][self.buttonList['functions'].index(self.HPP_stimSettingsDlg)] = self.stimSettingsDlg
+                    stIndex = self.buttonList['functions'].index(self.toST)
+                    plIndex = self.buttonList['functions'].index(self.toPL)
+                    hpIndex = self.buttonList['functions'].index(self.toHPP)
+                    self.buttonList['shapes'][stIndex].fillColor = 'black'
+                    self.buttonList['shapes'][plIndex].fillColor = 'green'
+                    self.buttonList['shapes'][hpIndex].fillColor = 'black'
+                    self.settings['prefLook'] = 1
+                    self.settings['dataColumns'] = self.allDataColumnsPL
+                    for i, j in self.settings['stimNames'].items():
+                        for x in range(0, len(j)):
+                            tmp = deepcopy(j[x]['C'])
+                            j[x] = tmp
+                    self.settings['condFile'] = ""
+                    self.settings['condList'] = []
+                    self.condDict = {}
+                    self.settings['randPres'] = 0
+                if os.name is not 'posix':
+                    self.win.winHandle.set_visible(visible=True)
 
 
-            stIndex = self.buttonList['functions'].index(self.toST)
-            plIndex = self.buttonList['functions'].index(self.toPL)
-            hpIndex = self.buttonList['functions'].index(self.toHPP)
-            self.buttonList['shapes'][stIndex].fillColor = 'black'
-            self.buttonList['shapes'][plIndex].fillColor = 'green'
-            self.buttonList['shapes'][hpIndex].fillColor = 'black'
-            self.settings['prefLook'] = 1
-            self.settings['dataColumns'] = self.allDataColumnsPL
+            else:
+                # No warning just do it
+                stIndex = self.buttonList['functions'].index(self.toST)
+                plIndex = self.buttonList['functions'].index(self.toPL)
+                hpIndex = self.buttonList['functions'].index(self.toHPP)
+                self.buttonList['shapes'][stIndex].fillColor = 'black'
+                self.buttonList['shapes'][plIndex].fillColor = 'green'
+                self.buttonList['shapes'][hpIndex].fillColor = 'black'
+                self.settings['prefLook'] = 1
+                self.settings['dataColumns'] = self.allDataColumnsPL
             while 1 in self.mouse.getPressed():
                 pass # Just a little thing so it doesn't get called for every frame the mouse is down on the button.
 
@@ -2095,32 +2109,47 @@ class PyHabBuilder:
     def toHPP(self):
         """
         A function that converts ST or PL experiments to HPP. Always a little complicated.
-        TODO: Conditions
 
         :return:
         :rtype:
         """
         if self.settings['prefLook'] not in [2, '2']:
-            stIndex = self.buttonList['functions'].index(self.toST)
-            plIndex = self.buttonList['functions'].index(self.toPL)
-            hpIndex = self.buttonList['functions'].index(self.toHPP)
-            self.buttonList['shapes'][stIndex].fillColor = 'black'
-            self.buttonList['shapes'][plIndex].fillColor = 'black'
-            self.buttonList['shapes'][hpIndex].fillColor = 'green'
-            self.settings['prefLook'] = 2
-            # find the stim settings button and change its behavior
-            self.buttonList['functions'][self.buttonList['functions'].index(self.stimSettingsDlg)] = self.HPP_stimSettingsDlg
+            warnDlg = gui.Dlg("Warning, HPP conversion!")
+            warnDlg.addText("You are about to convert the experiment to head-turn preference procedure.")
+            warnDlg.addText("You will need to update stimulus settings for multiple screens, and use ")
+            warnDlg.addText("the conditions interface to control which screen stimuli appear on. Any")
+            warnDlg.addText("existing conditions settings and conditions will be removed.")
+            warnDlg.addText("Press OK to continue, or cancel to cancel.")
+            if os.name is not 'posix':
+                self.win.winHandle.set_visible(visible=False)
+            irrel = warnDlg.show()
+            if warnDlg.OK:
+                stIndex = self.buttonList['functions'].index(self.toST)
+                plIndex = self.buttonList['functions'].index(self.toPL)
+                hpIndex = self.buttonList['functions'].index(self.toHPP)
+                self.buttonList['shapes'][stIndex].fillColor = 'black'
+                self.buttonList['shapes'][plIndex].fillColor = 'black'
+                self.buttonList['shapes'][hpIndex].fillColor = 'green'
+                self.settings['prefLook'] = 2
+                # find the stim settings button and change its behavior
+                self.buttonList['functions'][self.buttonList['functions'].index(self.stimSettingsDlg)] = self.HPP_stimSettingsDlg
 
-            # Check if everything in stimNames is in HPPstim, if not add and turn to 'C'
-            for i, j in self.settings['stimNames'].items():
-                if i not in self.settings['HPPstim'].keys():
-                    self.settings['HPPstim'][i] = {}
-                for k in range(0, len(j)):
-                    if j[k] not in self.settings['HPPstim'][i].keys():
-                        self.settings['HPPstim'][i][j[k]] = 'C'
+                # Convert stimNames into the right format, move all things to 'C'
+                for i, j in self.settings['stimNames'].items():
+                    for x in range(0, len(j)):
+                        tmp = {'L':0,'C':j[x],'R':0}
+                        j[x] = tmp
 
-            self.settings['dataColumns'] = self.allDataColumnsHPP
+                self.settings['dataColumns'] = self.allDataColumnsHPP
 
+                # Forget any extant conditions
+                self.settings['condFile'] = ""
+                self.settings['condList'] = []
+                self.condDict = {}
+                self.settings['randPres'] = 0
+
+            if os.name is not 'posix':
+                self.win.winHandle.set_visible(visible=True)
             while 1 in self.mouse.getPressed():
                 pass # Just a little thing so it doesn't get called for every frame the mouse is down on the button.
 
@@ -2413,11 +2442,10 @@ class PyHabBuilder:
                     except:
                         print("Could not remove from stimList!")
                     for q in self.settings['stimNames'].keys(): # Remove from trial types it has been assigned to.
-                        self.settings['stimNames'][q] = [x for x in self.settings['stimNames'][q] if x != toRemove]
-                    if len(self.settings['HPPstim'])>0:
-                        for r in self.settings['HPPstim'].keys():
-                            if toRemove in self.settings['HPPstim'][r].keys():
-                                del self.settings['HPPstim'][r][toRemove]
+                        if self.settings['prefLook'] in [2, '2']:
+                            self.settings['stimNames'][q] = [x for x in self.settings['stimNames'][q] if x['C'] != toRemove]
+                        else:
+                            self.settings['stimNames'][q] = [x for x in self.settings['stimNames'][q] if x != toRemove]
 
 
 
@@ -2428,9 +2456,6 @@ class PyHabBuilder:
         A series dialog boxes, the first selecting a trial type and the number of stimuli to add to it,
         a second allowing you to add stimuli from the stimulus library that is stimList in the settings.
         Also used for adding beginning and end of experiment images
-
-        TODO: HPP
-
 
         :return:
         :rtype:
@@ -2455,8 +2480,6 @@ class PyHabBuilder:
             d1.addField("Number of stimuli to add (you will select them in the next window)",1)
             d1.addText("Note: You can only select stimuli you have already added to the experiment library")
             d1.addText("Note: You can only REMOVE stimuli from a trial type in the trial type's own settings, this will add to whatever is already there")
-            if self.settings['prefLook'] in [2, '2']:
-                d1.addField("Screen for new stimuli", choices=['C','L','R'])
             d = d1.show()
             if d1.OK and isinstance(d[1], int):
                 self.showMainUI(self.UI, self.studyFlowArray, self.trialTypesArray)
@@ -2475,8 +2498,7 @@ class PyHabBuilder:
                     if d2.OK:
                         for z in range(0, len(newList)):
                             if self.settings['prefLook'] in [2, '2']: # HPP
-                                self.settings['stimNames'][tType].append(newList[z])
-                                self.settings['HPPstim'][tType][newList[z]]=d[2]
+                                self.settings['stimNames'][tType].append({'L':0, 'C':newList[z], 'R':0})
                             else:
                                 self.settings['stimNames'][tType].append(newList[z])
                 else:
@@ -2719,6 +2741,8 @@ class PyHabBuilder:
             chkBox = True
         cDlg.addField("Use random presentation? If yes, a new interface will open",initial=chkBox)
         cDlg.addField("Pre-existing condition file (optional, leave blank to make new file called conditions.csv)", self.settings['condFile'])
+        if not chkBox:
+            cDlg.addText("NOTE: This will overwrite any existing file named conditions.csv! If you have an existing conditions file, rename it first.")
         if len(self.baseCondDict) > 0:
             cDlg.addField("Reload base conditions instead of randomized conditions? (WARNING: You will need to re-randomize)", initial=False)
         condInfo = cDlg.show()
@@ -2733,7 +2757,7 @@ class PyHabBuilder:
                 else:
                     baseConds = False
                 allReady = True
-                if len(self.settings['trialTypes']) == 0: # If there are no trial types
+                if len(self.settings['trialTypes']) == 0:  # If there are no trial types
                     allReady = False
                 for i in range(0,len(self.settings['trialTypes'])):
                     if self.settings['trialTypes'][i] not in self.settings['blockList'].keys(): # If a trial type has no movies associated with it
@@ -2747,7 +2771,7 @@ class PyHabBuilder:
                     if len(condInfo[1]) > 0:
                         self.settings['condFile'] = condInfo[1]
                     else:
-                        self.settings['condFile'] = "conditions.csv"
+                        self.settings['condFile'] = ""
                     if os.name is not 'posix':
                         self.win.winHandle.set_visible(visible=True)
                     if baseConds:
@@ -2775,8 +2799,7 @@ class PyHabBuilder:
 
         Outputs settings condList (labels of each condition), condFile (save conditions to this file)
         and makes new structure condDict (mapping of each label to actual condition it applies to)
-        TODO: Remove automake system for HPP, update to use correct function in trial but not block mode
-        TODO: Remove block button when no blocks!
+
 
         :param rep: Basically whether we are recursing while editing conditions
         :type rep: bool
@@ -2805,7 +2828,7 @@ class PyHabBuilder:
             condPath = self.settings['condFile']
             condDict = self.condDict
             condList = self.settings['condList']
-        if os.path.exists(condPath) and not rep:  # If we already have a pre-existing cond file and aren't in the process of looping.
+        if condPath != "" and os.path.exists(condPath) and not rep:  # If we already have a pre-existing cond file and aren't in the process of looping.
             testReader=csv.reader(open(condPath, 'rU'))
             testStuff=[]
             for row in testReader:
@@ -2833,6 +2856,9 @@ class PyHabBuilder:
                     condContent.append(condDict[condList[i]])
                 else:
                     condContent.append({})
+        if condPath == "":
+            self.settings['condFile'] = 'conditions.csv'
+            condPath = 'conditions.csv'
         doneButton = visual.Rect(self.win, width=.2, height=.67*(.15/self.aspect),fillColor="green",pos=[-.87,-.85])
         doneText = visual.TextStim(self.win, text="Done", bold=True, pos=doneButton.pos)
         cancelButton = visual.Rect(self.win, width=.2, height=.67*(.15/self.aspect), fillColor="red", pos=[-.62, -.85])
@@ -2848,10 +2874,10 @@ class PyHabBuilder:
             txt = 'Trial mode'
         blockModeText = visual.TextStim(self.win, text=txt, bold=True, height=blockModeButton.height*.3, pos=blockModeButton.pos)
         randomCondsButton = visual.Rect(self.win, width=.25, height=.67*(.15/self.aspect),fillColor="purple",pos=[.04,-.85])
-        if len(self.settings['condList']) > 0:
-            txt2 = "Randomize\nover subjects"
-        else:
+        if self.settings['prefLook'] not in [2, '2'] and len(self.settings['condList']) == 0:
             txt2 = "Auto-generate\nconditions"
+        else:
+            txt2 = "Randomize\nover subjects"
         randomCondsText = visual.TextStim(self.win, text=txt2, bold=True, height=randomCondsButton.height*.3, pos=randomCondsButton.pos)
 
         if trialMode:
@@ -2924,8 +2950,9 @@ class PyHabBuilder:
             addCondText.draw()
             deleteCondButton.draw()
             deleteCondText.draw()
-            blockModeButton.draw()
-            blockModeText.draw()
+            if len(self.settings['blockList']) > 0:
+                blockModeButton.draw()
+                blockModeText.draw()
             randomCondsButton.draw()
             randomCondsText.draw()
             instrText.draw()
@@ -2962,7 +2989,7 @@ class PyHabBuilder:
                             thisDict = self.settings['stimNames']
                         else:
                             thisDict = self.settings['blockList']
-                        self.condSetterNew(thisDict, cond=condList[i],ex=True)
+                        self.condSetter(thisDict, cond=condList[i], ex=True)
                         if os.name is not 'posix':
                             self.win.winHandle.set_visible(visible=True)
                         while 1 in self.mouse.getPressed():
@@ -2980,7 +3007,7 @@ class PyHabBuilder:
                         thisDict = self.settings['stimNames']
                     else:
                         thisDict = self.settings['blockList']
-                    self.condSetterNew(thisDict, ex=False)
+                    self.condSetter(thisDict, ex=False)
                     if os.name is not 'posix':
                         self.win.winHandle.set_visible(visible=True)
                     while 1 in self.mouse.getPressed():
@@ -2988,7 +3015,7 @@ class PyHabBuilder:
                     done = True
                     # Start this over...
                     self.condMaker(rep=True, currPage=currPage, bc=bc, trialMode=trialMode, resetDict=resetDict)
-                if self.mouse.isPressedIn(blockModeButton):
+                if self.mouse.isPressedIn(blockModeButton) and len(self.settings['blockList'])>0:
                     while 1 in self.mouse.getPressed():
                         pass
                     done = True
@@ -3017,7 +3044,7 @@ class PyHabBuilder:
                     while len(self.mouse.getPressed()) < 0:
                         pass
                     done = True
-                elif self.mouse.isPressedIn(randomCondsButton) and len(condList) == 0:
+                elif self.mouse.isPressedIn(randomCondsButton) and len(condList) == 0 and self.settings['prefLook'] not in [2, '2']:
                     if os.name is not 'posix':
                         while 1 in self.mouse.getPressed():
                             pass
@@ -3051,131 +3078,9 @@ class PyHabBuilder:
                     done = True
                     while 1 in self.mouse.getPressed():
                         pass  # Just to make it not auto-click something on return to the main window
-                
-    
-    def condSetter(self, shuffleList, cond='NEW', ex=False):
-        """
-        One dialog per trial type. Each dialog has a list of all the movies in that type
-        This is not intuitive under the hood. The output of this is a dict with a list of movies, in order, for each
-        trial type. This makes it slightly more human-intelligible than the previous system, which had a list of indexes
 
 
-        :param shuffleList: Either the stimNames dict or the blockList dict. Defines which one we are modifying.
-        :type shuffleList: dict
-        :param cond: Condition name
-        :type cond: str
-        :param ex: Whether the condition already exists
-        :type ex: bool
-        :return:
-        :rtype:
-        """
-        condDlg2=gui.Dlg(title="Define condition")
-        condDlg2.addField("Condition label:", cond)
-        condDlg2.addText("You will have separate dialogs to set the order of movies in each trial type. Press OK to begin")
-        condDinfo = condDlg2.show()
-        if condDlg2.OK:
-            condDinfo[0] = str(condDinfo[0])
-            if ex and condDinfo[0] != cond:  # Renamed existing condition
-                self.settings['condList'][self.settings['condList'].index(cond)] = condDinfo[0] 
-                if cond in self.condDict.keys():
-                    self.condDict[condDinfo[0]] = self.condDict.pop(cond)
-            cond = condDinfo[0]
-            outputDict = {}
-            i = 0
-            labelList = list(shuffleList.keys())
-            while i < len(labelList):
-                tempType = labelList[i]
-                condTyDlg = gui.Dlg(title="Order for " + tempType)
-                condTyDlg.addText("Enter order in which you want items to appear. If you do not want an item to appear in this condition, leave blank or put 0.")
-                if ex:  # If there is an existing condition that we are modifying.
-                    try:
-                        movieOrder = self.condDict[cond][tempType]
-                        for z in range(0, len(movieOrder)):
-                            if type(movieOrder[z]) is int:  # Convert old condition files
-                                tempNum = movieOrder[z]
-                                movieOrder[z] = shuffleList[tempType][tempNum-1]
-                    except:
-                        movieOrder = []
-                        for k in range(0, len(shuffleList[tempType])):
-                            movieOrder.append(shuffleList[tempType][k])  # default order.
-                else:
-                    movieOrder = []
-                    for k in range(0, len(shuffleList[tempType])):
-                        movieOrder.append(shuffleList[tempType][k])  # default order.
-                movieOrder = deepcopy(movieOrder)
-                for x in range(0, len(shuffleList[tempType])):  # Yeah we gotta loop it again.
-                    thisMov = shuffleList[tempType][x]
-                    if movieOrder.count(thisMov) >= 1:  # If that movie appears in the movie order already.
-                        condTyDlg.addField(thisMov, movieOrder.index(thisMov)+1)
-                        movieOrder[movieOrder.index(thisMov)] = ''
-                    else:
-                        condTyDlg.addField(thisMov)
-                condTyInfo = condTyDlg.show()
-                if condTyDlg.OK:
-                    stop = False
-                    i += 1
-                    # Now we need to reinterpret all that input ot make the output.
-                    # First, try converting everything to ints to make sure no foolishness is happening.
-                    for x in range(0,len(condTyInfo)):
-                        if type(condTyInfo[x]) is str and len(condTyInfo[x]) > 0:  # If they have put something where there was nothing
-                            try:
-                                condTyInfo[x] = int(condTyInfo[x])
-                            except:
-                                errDlg = gui.Dlg(title="Warning, invalid input!")
-                                errDlg.addText("Non-number entered, please use only numbers or leave blank.")
-                                i -= 1  # This is why our for loop became a while loop. So we could go back and fix things.
-                                irrel = errDlg.show()
-                                stop = True
-                    condTyInfo = [0 if type(x) is not int or x <= 0 else x for x in condTyInfo]
-                    # Identify any doubles other than 0s, if so error msg and redo
-                    maxNum = max(condTyInfo)
-                    for q in range(1, maxNum+1):
-                        if condTyInfo.count(q) > 1 and not stop:
-                            errDlg = gui.Dlg(title="Warning, invalid order!")
-                            errDlg.addText("Order has a repeat of the same number. Please re-enter.")
-                            i -= 1  # This is why our for loop became a while loop. So we could go back and fix things.
-                            irrel = errDlg.show()
-                            stop = True
-                    if maxNum == 0 and not stop:
-                        errDlg = gui.Dlg(title="Warning, invalid order!")
-                        errDlg.addText("No stimuli selected. Please re-enter")
-                        i -= 1
-                        irrel = errDlg.show()
-                        stop = True
-                    if not stop:
-                        # Go through and construct the new trial order.
-                        tempOrder = []
-                        for q in range(1, maxNum+1):
-                            try:
-                                tMov = condTyInfo.index(q) # Finds the movie index to add the movie to the order
-                                tempOrder.append(shuffleList[tempType][tMov])
-                            except ValueError:
-                                errDlg = gui.Dlg(title="Warning, invalid order!")
-                                errDlg.addText("Non-consecutive numbering (e.g. 1,2,5). Please re-enter with consecutive numbering!")
-                                i -= 1
-                                irrel = errDlg.show()
-                                stop = True
-                                break
-                    if not stop: # Stops it from accidentally saving bad orders due to non-consecutive numbering.
-                        outputDict[tempType] = tempOrder
-            # Finally, rewrite everything that needs rewriting.
-            # This includes making sure that blocks or trial types, whichever were left blank, are not left blank.
-            listAll = list(self.settings['stimNames'].keys()) + list(self.settings['blockList'].keys())
-            for q in listAll:
-                if q not in outputDict.keys() and not ex:
-                    if q in self.settings['blockList'].keys():
-                        outputDict[q] = self.settings['blockList'][q]
-                    elif q in self.settings['stimNames'].keys():
-                        outputDict[q] = self.settings['stimNames'][q]
-                elif q not in outputDict.keys():  # Implied: ex == True
-                    outputDict[q] = self.condDict[cond][q]
-            self.condDict[cond] = outputDict
-            if not ex:
-                self.settings['condList'].append(str(cond))
-        
-
-
-    def condSetterNew(self, shuffleList, cond='NEW', ex=False):
+    def condSetter(self, shuffleList, cond='NEW', ex=False, blockmode=False):
         """
         A new interface for ordering stimuli within a trial type or trials within a block for a specific condition.
         Increases flexibility and usability. Uses an overlay like the block-constructor interface
@@ -3189,6 +3094,8 @@ class PyHabBuilder:
         :type cond: str
         :param ex: Whether the condition already exists
         :type ex: bool
+        :param blockmode: Are we reordering a block or a trial? Matters because even in HPP need to be blocks
+        :type blockmode: bool
         :return:
         :rtype:
         """
@@ -3257,18 +3164,18 @@ class PyHabBuilder:
                                            bigPaletteArea[2] + .05 * (bigPaletteArea[3] - bigPaletteArea[2]) +
                                            z * .09 * (bigPaletteArea[3] - bigPaletteArea[2])])
 
-            if not HPP:
-                for y in [.2, .4, .6, .8]:  # four rows for the block flow.
-                    for z in range(1, 11):
-                        newFlowLocs.append([newFlowArea[0] + z * (newFlowArea[1] - newFlowArea[0]) * self.flowGap,
-                                            newFlowArea[2] + y * (newFlowArea[3] - newFlowArea[2])])
-            else:
+            if HPP and not blockmode:
                 # For HPP we actually want to number this differently. Two sets of three vertical locations, sequential.
                 for a in [.22, .67]: # Two rows, ultimately, each one with a stack!
                     for z in range(1,8):
                         for y in [-.1, 0, .1]:  # additions to a. Multiplication is bad.
                             newFlowLocs.append([newFlowArea[0] + z * (newFlowArea[1] - newFlowArea[0]) * (self.flowGap*1.25),
                                                 newFlowArea[2] + (y+a) * (newFlowArea[3] - newFlowArea[2])])
+            else:
+                for y in [.2, .4, .6, .8]:  # four rows for the block flow.
+                    for z in range(1, 11):
+                        newFlowLocs.append([newFlowArea[0] + z * (newFlowArea[1] - newFlowArea[0]) * self.flowGap,
+                                            newFlowArea[2] + y * (newFlowArea[3] - newFlowArea[2])])
 
 
 
@@ -3280,29 +3187,8 @@ class PyHabBuilder:
                 # Rebuilding this every time allows us to make boxes for each instance and update the instr text
                 condUI['bg'] = [newFlowRect, bigPaletteRect, instrText]
                 tempStims = deepcopy(shuffleList[tempType])
-                if not HPP:
-                    for l in range(0, len(tempStims)):
-                        tempBox = visual.Rect(self.win, width=(newFlowLocs[1][0]-newFlowLocs[0][0]),
-                                              height=self.flowHeightObj+.1, pos=newFlowLocs[l],
-                                              lineColor='black', fillColor='white')
-                        tempBoxText = visual.TextStim(self.win, text=str(l+1), pos=[tempBox.pos[0], tempBox.pos[1]+self.flowHeightObj+.1], color='white')
-                        condUI['bg'].append(tempBox)
-                        condUI['bg'].append(tempBoxText)
-                    invisStims = []
-                    if ex:
-                        condOrder = deepcopy(self.condDict[cond][tempType])
-                        for q in range(0, len(tempStims)):
-                            if tempStims[q] in condOrder:
-                                invisStims.append(tempStims[q])
-                    else:
-                        condOrder = []
-                    stims = self.loadTypes(bigPaletteLocs, tempStims)  # Populates the palette with stimuli.
-                    for n in range(0, len(invisStims)):
-                        invisdex = stims['labels'].index(invisStims[n])
-                        # Can't delete it outright, but can make it not render...
-                        stims['shapes'][invisdex].fillColor='white'
-                        stims['shapes'][invisdex].lineColor='white'
-                else:
+                if HPP and not blockmode:
+                    tempStims = [x['C'] for x in tempStims]
                     for l in range(0, len(newFlowLocs)):
                         if l % 3 == 0:
                             txtFill = 'L:'
@@ -3333,6 +3219,29 @@ class PyHabBuilder:
                     else:
                         condOrder = []
                     stims = self.loadTypes(bigPaletteLocs, tempStims)  # Populates the palette with stimuli. No need to bother with invisibles here.
+                else:
+                    for l in range(0, len(tempStims)):
+                        tempBox = visual.Rect(self.win, width=(newFlowLocs[1][0]-newFlowLocs[0][0]),
+                                              height=self.flowHeightObj+.1, pos=newFlowLocs[l],
+                                              lineColor='black', fillColor='white')
+                        tempBoxText = visual.TextStim(self.win, text=str(l+1), pos=[tempBox.pos[0], tempBox.pos[1]+self.flowHeightObj+.1], color='white')
+                        condUI['bg'].append(tempBox)
+                        condUI['bg'].append(tempBoxText)
+                    invisStims = []
+                    if ex:
+                        condOrder = deepcopy(self.condDict[cond][tempType])
+                        for q in range(0, len(tempStims)):
+                            if tempStims[q] in condOrder:
+                                invisStims.append(tempStims[q])
+                    else:
+                        condOrder = []
+                    stims = self.loadTypes(bigPaletteLocs, tempStims)  # Populates the palette with stimuli.
+                    for n in range(0, len(invisStims)):
+                        invisdex = stims['labels'].index(invisStims[n])
+                        # Can't delete it outright, but can make it not render...
+                        stims['shapes'][invisdex].fillColor='white'
+                        stims['shapes'][invisdex].lineColor='white'
+
 
                 condFlow = self.loadFlow(tOrd=condOrder, space=newFlowArea, locs=newFlowLocs, overflow=newFlowLocs,
                                          types=tempStims, trials=False, conlines=False)
@@ -3348,9 +3257,7 @@ class PyHabBuilder:
                             if condUI['buttons']['text'][z].text == 'Done':
                                 done = True
                                 i += 1
-                                if not HPP:
-                                    outputDict[tempType] = condOrder  # should be simple as that.
-                                else:
+                                if HPP and not blockmode:
                                     # Need to re-interpret condOrder into the right format.
                                     tempOut = []
                                     for b in range(0, round(len(condOrder)/3)):
@@ -3360,46 +3267,15 @@ class PyHabBuilder:
                                         tmpDict['R'] = condOrder[b * 3 + 2]
                                         tempOut.append(tmpDict)
                                     outputDict[tempType] = tempOut
+                                else:
+                                    outputDict[tempType] = condOrder  # should be simple as that.
                             else:
                                 done = True
                                 i = len(labelList)
                             while self.mouse.isPressedIn(condUI['buttons']['shapes'][z], buttons=[0]):  # waits until the mouse is released before continuing.
                                 pass
 
-                    if not HPP:
-                        # Click on a stimulus to add it. Remove it from the palette when added. Re-add it as appropriate.
-                        for j in range(0, len(stims['shapes'])):  # Only need to worry about adding stim
-                            if self.mouse.isPressedIn(stims['shapes'][j], buttons=[0]):
-                                if stims['labels'][j] not in invisStims:
-                                    condOrder.append(stims['labels'][j])
-                                    condFlow = self.loadFlow(tOrd=condOrder, space=newFlowArea, locs=newFlowLocs,
-                                                             overflow=newFlowLocs, types=tempStims, trials=False,
-                                                             conlines=False)
-                                    invisStims.append(stims['labels'][j])
-
-                                while self.mouse.isPressedIn(stims['shapes'][j], buttons=[0]):  # waits until the mouse is released before continuing.
-                                    pass
-                        for k in range(0, len(condFlow['shapes'])):  # Rearrange or remove, as in the usual loop!
-                            if self.mouse.isPressedIn(condFlow['shapes'][k], buttons=[0]):
-                                condOrder = self.moveTrialInFlow(k, condOrder, newFlowArea, condUI, condFlow,
-                                                                  stims)
-                                # Re-initialize the palette if something was deleted.
-                                invisStims=[]
-                                for q in range(0, len(tempStims)):
-                                    if tempStims[q] in condOrder:
-                                        invisStims.append(tempStims[q])
-
-                                condFlow = self.loadFlow(tOrd=condOrder, space=newFlowArea, locs=newFlowLocs,
-                                                         overflow=newFlowLocs, types=tempStims, trials=False,
-                                                         conlines=False)
-                                break
-                        stims = self.loadTypes(bigPaletteLocs, tempStims)  # update the palette.
-                        for n in range(0, len(invisStims)):
-                            invisdex = stims['labels'].index(invisStims[n])
-                            # Can't delete it outright, but can make it not render and non-interactible elsewhere.
-                            stims['shapes'][invisdex].fillColor = 'white'
-                            stims['shapes'][invisdex].lineColor = 'white'
-                    else:
+                    if HPP and not blockmode:
                         # If they click inside the flow, behavior is as before.
                         for k in range(0, len(condFlow['shapes'])):  # Rearrange or remove, as in the usual loop!
                             # Provided that the thing at this location is not 0
@@ -3478,11 +3354,43 @@ class PyHabBuilder:
                                 condFlow = self.loadFlow(tOrd=condOrder, space=newFlowArea, locs=newFlowLocs,
                                                          overflow=newFlowLocs, types=tempStims, trials=False,
                                                          conlines=False)
+                    else:
+                        # Click on a stimulus to add it. Remove it from the palette when added. Re-add it as appropriate.
+                        for j in range(0, len(stims['shapes'])):  # Only need to worry about adding stim
+                            if self.mouse.isPressedIn(stims['shapes'][j], buttons=[0]):
+                                if stims['labels'][j] not in invisStims:
+                                    condOrder.append(stims['labels'][j])
+                                    condFlow = self.loadFlow(tOrd=condOrder, space=newFlowArea, locs=newFlowLocs,
+                                                             overflow=newFlowLocs, types=tempStims, trials=False,
+                                                             conlines=False)
+                                    invisStims.append(stims['labels'][j])
+
+                                while self.mouse.isPressedIn(stims['shapes'][j], buttons=[0]):  # waits until the mouse is released before continuing.
+                                    pass
+                        for k in range(0, len(condFlow['shapes'])):  # Rearrange or remove, as in the usual loop!
+                            if self.mouse.isPressedIn(condFlow['shapes'][k], buttons=[0]):
+                                condOrder = self.moveTrialInFlow(k, condOrder, newFlowArea, condUI, condFlow,
+                                                                  stims)
+                                # Re-initialize the palette if something was deleted.
+                                invisStims=[]
+                                for q in range(0, len(tempStims)):
+                                    if tempStims[q] in condOrder:
+                                        invisStims.append(tempStims[q])
+
+                                condFlow = self.loadFlow(tOrd=condOrder, space=newFlowArea, locs=newFlowLocs,
+                                                         overflow=newFlowLocs, types=tempStims, trials=False,
+                                                         conlines=False)
+                                break
+                        stims = self.loadTypes(bigPaletteLocs, tempStims)  # update the palette.
+                        for n in range(0, len(invisStims)):
+                            invisdex = stims['labels'].index(invisStims[n])
+                            # Can't delete it outright, but can make it not render and non-interactible elsewhere.
+                            stims['shapes'][invisdex].fillColor = 'white'
+                            stims['shapes'][invisdex].lineColor = 'white'
 
 
             # Finally, rewrite everything that needs rewriting.
             # This includes making sure that blocks or trial types, whichever were left blank, are not left blank.
-            # TODO: HPP needs a special format for its default.
             listAll = list(self.settings['stimNames'].keys()) + list(self.settings['blockList'].keys())
             for q in listAll:
                 if q not in outputDict.keys() and not ex:
@@ -3875,6 +3783,13 @@ class PyHabBuilder:
             warnDlg = gui.Dlg("Warning: No trials in study flow!")
             warnDlg.addText("You haven't added any trials to the study flow yet! You won't be able to run this experiment.")
             warnDlg.addText("Hit 'OK' to save anyways (you can add trials later and save then) or cancel to go back.")
+            warnDlg.show()
+            if not warnDlg.OK:
+                go = False
+        elif self.settings['prefLook'] in [2, '2'] and self.settings['randPres'] in [0, '0', False, 'False']:
+            warnDlg = gui.Dlg("Warning: HPP without conditions!")
+            warnDlg.addText("No conditions in HPP experiment! All stimuli will appear on center screen")
+            warnDlg.addText("Hit 'OK' to save anyways (you can add conditions later and save then) or cancel to go back.")
             warnDlg.show()
             if not warnDlg.OK:
                 go = False
