@@ -853,7 +853,7 @@ class PyHabBuilder:
         self.win.flip()
 
         adTypeDlg = gui.Dlg("Advanced trial settings")
-        adTypeDlg.addText("Advanced trial settings for trial type" + trialType)
+        adTypeDlg.addText("Advanced trial settings for trial type " + trialType)
         if trialType in self.settings['playAttnGetter']:
             if self.settings['playAttnGetter'][trialType]['cutoff'] in [1, '1', True, 'True']:
                 chz1 = True
@@ -3139,7 +3139,7 @@ class PyHabBuilder:
 
 
 
-            bigPaletteArea = [.7, .98, 1, -1]  # temporary, bigger palette, without trial type maker buttons!
+            bigPaletteArea = [.7, 1, 1, -1]  # temporary, bigger palette, without trial type maker buttons!
             bigPaletteRect = visual.Rect(self.win, width=bigPaletteArea[1] - bigPaletteArea[0],
                                          height=bigPaletteArea[3] - bigPaletteArea[2], fillColor='white',
                                          lineColor='black',
