@@ -1077,7 +1077,7 @@ class PyHabHPP(PyHab):
         :rtype:
         """
         if self.stimPres:
-            # Stimulus presentation window 
+            # Stimulus presentation window
             self.win = visual.Window((self.screenWidth['C'], self.screenHeight['C']), fullscr=False, screen=self.screenIndex['C'], allowGUI=False,
                                      units='pix', color=self.screenColor['C'])
             self.winL = visual.Window((self.screenWidth['L'], self.screenHeight['L']), fullscr=False, screen=self.screenIndex['L'], allowGUI=False,
