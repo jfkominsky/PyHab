@@ -2987,9 +2987,11 @@ class PyHabBuilder:
                             self.win.winHandle.set_visible(visible=False)
                         if trialMode:
                             thisDict = self.settings['stimNames']
+                            bm = False
                         else:
                             thisDict = self.settings['blockList']
-                        self.condSetter(thisDict, cond=condList[i], ex=True)
+                            bm = True
+                        self.condSetter(thisDict, cond=condList[i], ex=True, blockmode=bm)
                         if os.name is not 'posix':
                             self.win.winHandle.set_visible(visible=True)
                         while 1 in self.mouse.getPressed():
@@ -3005,9 +3007,11 @@ class PyHabBuilder:
                         self.win.winHandle.set_visible(visible=False)
                     if trialMode:
                         thisDict = self.settings['stimNames']
+                        bm = False
                     else:
                         thisDict = self.settings['blockList']
-                    self.condSetter(thisDict, ex=False)
+                        bm = True
+                    self.condSetter(thisDict, ex=False, blockmode=bm)
                     if os.name is not 'posix':
                         self.win.winHandle.set_visible(visible=True)
                     while 1 in self.mouse.getPressed():
@@ -3222,13 +3226,14 @@ class PyHabBuilder:
                         condOrder = []
                     stims = self.loadTypes(bigPaletteLocs, tempStims)  # Populates the palette with stimuli. No need to bother with invisibles here.
                 else:
-                    for l in range(0, len(tempStims)):
-                        tempBox = visual.Rect(self.win, width=(newFlowLocs[1][0]-newFlowLocs[0][0]),
-                                              height=self.flowHeightObj+.1, pos=newFlowLocs[l],
-                                              lineColor='black', fillColor='white')
-                        tempBoxText = visual.TextStim(self.win, text=str(l+1), pos=[tempBox.pos[0], tempBox.pos[1]+self.flowHeightObj+.1], color='white')
-                        condUI['bg'].append(tempBox)
-                        condUI['bg'].append(tempBoxText)
+                    if not blockmode:
+                        for l in range(0, len(tempStims)):
+                            tempBox = visual.Rect(self.win, width=(newFlowLocs[1][0]-newFlowLocs[0][0]),
+                                                  height=self.flowHeightObj+.1, pos=newFlowLocs[l],
+                                                  lineColor='black', fillColor='white')
+                            tempBoxText = visual.TextStim(self.win, text=str(l+1), pos=[tempBox.pos[0], tempBox.pos[1]+self.flowHeightObj+.1], color='white')
+                            condUI['bg'].append(tempBox)
+                            condUI['bg'].append(tempBoxText)
                     invisStims = []
                     if ex:
                         condOrder = deepcopy(self.condDict[cond][tempType])
@@ -3246,7 +3251,7 @@ class PyHabBuilder:
 
 
                 condFlow = self.loadFlow(tOrd=condOrder, space=newFlowArea, locs=newFlowLocs, overflow=newFlowLocs,
-                                         types=tempStims, trials=False, conlines=False)
+                                         types=tempStims, trials=False, conlines=blockmode)
 
                 done = False
 
@@ -3314,7 +3319,7 @@ class PyHabBuilder:
 
                                 condFlow = self.loadFlow(tOrd=condOrder, space=newFlowArea, locs=newFlowLocs,
                                                          overflow=newFlowLocs, types=tempStims, trials=False,
-                                                         conlines=False)
+                                                         conlines=blockmode)
                                 break
                         # Drag and drop
                         for j in range(0, len(stims['shapes'])):  # Only need to worry about adding stim
@@ -3355,7 +3360,7 @@ class PyHabBuilder:
                                 self.mouse.clickReset() # This just prevents the flow-click from tripping instantly, or should
                                 condFlow = self.loadFlow(tOrd=condOrder, space=newFlowArea, locs=newFlowLocs,
                                                          overflow=newFlowLocs, types=tempStims, trials=False,
-                                                         conlines=False)
+                                                         conlines=blockmode)
                     else:
                         # Click on a stimulus to add it. Remove it from the palette when added. Re-add it as appropriate.
                         for j in range(0, len(stims['shapes'])):  # Only need to worry about adding stim
@@ -3364,7 +3369,7 @@ class PyHabBuilder:
                                     condOrder.append(stims['labels'][j])
                                     condFlow = self.loadFlow(tOrd=condOrder, space=newFlowArea, locs=newFlowLocs,
                                                              overflow=newFlowLocs, types=tempStims, trials=False,
-                                                             conlines=False)
+                                                             conlines=blockmode)
                                     invisStims.append(stims['labels'][j])
 
                                 while self.mouse.isPressedIn(stims['shapes'][j], buttons=[0]):  # waits until the mouse is released before continuing.
@@ -3381,7 +3386,7 @@ class PyHabBuilder:
 
                                 condFlow = self.loadFlow(tOrd=condOrder, space=newFlowArea, locs=newFlowLocs,
                                                          overflow=newFlowLocs, types=tempStims, trials=False,
-                                                         conlines=False)
+                                                         conlines=blockmode)
                                 break
                         stims = self.loadTypes(bigPaletteLocs, tempStims)  # update the palette.
                         for n in range(0, len(invisStims)):
