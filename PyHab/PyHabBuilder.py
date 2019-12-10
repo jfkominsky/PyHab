@@ -449,7 +449,7 @@ class PyHabBuilder:
                     if os.name is not 'posix':
                         while self.mouse.getPressed()[0] == 1:
                             pass
-                        if self.buttonList['function'][i] not in [self.toST, self.toPL, self.toHPP]:
+                        if self.buttonList['functions'][i] not in [self.toST, self.toPL, self.toHPP]:
                             # If we're opening a dialog box, basically.
                             self.win.winHandle.set_visible(visible=False)
 
