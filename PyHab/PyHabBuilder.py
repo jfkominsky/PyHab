@@ -2222,7 +2222,7 @@ class PyHabBuilder:
                             pass
                         elif self.settings['trialTypes'][i] not in self.settings['stimNames'].keys():
                             allReady = False
-                        elif len(self.settings['stimNames'][self.trialTypesArray['labels'][i]]) == 0:  # Another way that it can have no movies associated with it.
+                        elif len(self.settings['stimNames'][self.settings['trialTypes'][i]]) == 0:  # Another way that it can have no movies associated with it.
                             allReady = False
                 if allReady:
                     if len(condInfo[1]) > 0:
