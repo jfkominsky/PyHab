@@ -116,7 +116,7 @@ class PyHabBuilder:
             evalList = ['dataColumns','blockSum','trialSum','maxDur','condList','baseCondList','movieEnd','playThrough','trialOrder',
                         'stimNames', 'stimList', 'ISI', 'maxOff','minOn','autoAdvance','playAttnGetter','attnGetterList',
                         'trialTypes','habTrialList', 'calcHabOver', 'nextFlash', 'blockList', 'dynamicPause','midAG',
-                        'screenWidth','screenHeight','movieWidth','movieHeight']  # in 0.9, this becomes necessary.
+                        'screenWidth','screenHeight','screenIndex','movieWidth','movieHeight']  # in 0.9, this becomes necessary.
             for i in evalList:
                 self.settings[i] = eval(self.settings[i])
                 if i in ['stimList','attnGetterList']:
