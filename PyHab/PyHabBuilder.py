@@ -1976,7 +1976,7 @@ class PyHabBuilder:
         if self.settings['prefLook'] in [1,'1',True,'True']:
             tempDataCols = self.allDataColumnsPL
         elif self.settings['prefLook'] in [2,'2']:
-            tempDataCols = self.allDataColumpsHPP
+            tempDataCols = self.allDataColumnsHPP
         else:
             tempDataCols = self.allDataColumns
         for i in range(0, len(tempDataCols)):
