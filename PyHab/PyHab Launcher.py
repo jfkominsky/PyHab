@@ -4,6 +4,7 @@ from PyHab import PyHabClassPL as PHL
 from PyHab import PyHabClassHPP as PHPP
 from PyHab import PyHabBuilder as PB
 import csv, os
+os.chdir(os.path.dirname(os.path.realpath(__file__))) # require for PsychoPy3 2020.1.0 and later (for now)
 
 setName = 'DUMMY FILENAME'
 
