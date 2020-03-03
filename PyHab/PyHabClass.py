@@ -85,6 +85,13 @@ class PyHab:
         if len(self.condPath) > 0 and self.condPath[-1] is not self.dirMarker:
             self.condPath = [self.dirMarker if x == otherOS else x for x in self.condPath]
             self.condPath = ''.join(self.condPath)
+        # New settings for 0.9, pause if they look away and play AG mid-trial.
+        try:
+            self.dynamicPause = eval(settingsDict['dynamicPause'])
+            self.midAG = eval(settingsDict['midAG'])
+        except:
+            self.dynamicPause = []
+            self.midAG = {}
 
 
         # ORDER OF PRESENTATION
@@ -134,13 +141,39 @@ class PyHab:
                 j['audioLoc'] = ''.join([self.dirMarker if x == otherOS else x for x in j['audioLoc']])
                 j['imageLoc'] = ''.join([self.dirMarker if x == otherOS else x for x in j['imageLoc']])
 
+
+        # 0.9: Screen-specific settings: ['screenWidth','screenHeight','screenColor','movieWidth','movieHeight','screenIndex']
         self.screenWidth = eval(settingsDict['screenWidth'])  # Display window width, in pixels
         self.screenHeight = eval(settingsDict['screenHeight'])  # Display window height, in pixels
-        self.screenColor = settingsDict['screenColor']  #Background color of stim window.
         self.movieWidth = eval(settingsDict['movieWidth'])  # movie width
         self.movieHeight = eval(settingsDict['movieHeight'])  # movie height
         self.screenIndex = eval(settingsDict['screenIndex'])  # which monitor stimuli are presented on. 1 for secondary monitor, 0 for primary monitor.
         self.ISI = eval(settingsDict['ISI'])  # time between loops (by trial type)
+        # Backwards compatibility with pre-0.9
+        if not isinstance(self.screenWidth, dict):
+            tmpDict = {'L': self.screenWidth, 'C': self.screenWidth,
+                       'R': self.screenWidth}
+            self.screenWidth = tmpDict
+            tmpDict2 = {'L': self.screenHeight, 'C': self.screenHeight,
+                        'R': self.screenHeight}
+            self.screenHeight = tmpDict2
+            tmpDict3 = {'L': self.movieWidth, 'C': self.movieWidth,
+                        'R': self.movieWidth}
+            self.movieWidth = tmpDict3
+            tmpDict4 = {'L': self.movieHeight, 'C': self.movieHeight,
+                        'R': self.movieHeight}
+            self.movieHeight = tmpDict4
+            tmpDict5 = {'L': settingsDict['screenColor'], 'C': settingsDict['screenColor'],
+                        'R': settingsDict['screenColor']}
+            self.screenColor = tmpDict5
+            tmpDict6 = {'L': self.screenIndex, 'C': self.screenIndex,
+                        'R': self.screenIndex}
+            self.screenIndex = tmpDict6
+        else:
+            # Screencolor is special. Eval breaks if it's a pre-0.9 version that's just a string. Otherwise, we need to eval it
+            self.screenColor = eval(settingsDict['screenColor'])
+
+
         # Backwards compatibility time!
         if type(self.ISI) is not dict:
             # Go through stimNames and make everything work
@@ -171,6 +204,11 @@ class PyHab:
 
         self.freezeFrame = eval(settingsDict['freezeFrame'])  # time that movie remains on first frame at start of trial.
         self.playAttnGetter = eval(settingsDict['playAttnGetter'])  # Trial-by-trial marker of which attngetter goes with which trial (if applicable).
+        # v0.9: Check if this is a dict of strings or a dict of dicts, if it's the former, convert it to the new version.
+        if len(self.playAttnGetter) > 0:
+            for i, j in self.playAttnGetter.items():
+                if not isinstance(j, dict):  # update to new expected version of this.
+                    self.playAttnGetter[i] = {'attnGetter': j, 'cutoff': 0, 'onmin': 0}
         self.attnGetterList = eval(settingsDict['attnGetterList'])  # List of all attention-getters
         # Go through each item in attnGetterList, find its stimloc parameter, and replace \\ with / or vise-versa
         for [i,j] in self.attnGetterList.items():
@@ -228,8 +266,8 @@ class PyHab:
         self.statusOffset = 0
         self.statusOffsetY = 0
         self.testOffset = 0
-        self.frameCount = 0  # the frame counter for the movement of A and B, based on the refresh rate.
-        self.pauseCount = 0  # used for ISI calculations
+        self.frameCount = {'C':0,'L':0,'R':0}  # the frame counter for the trial. Redone so it works for each screen.
+        self.pauseCount = {'C':0,'L':0,'R':0}  # used for ISI calculations
         self.stimName = ''  # used for adding the name of the stimulus file to the output.
         self.key = pyglet.window.key  # This initiates the keyhandler. Here so we can then set the relevant keys.
         self.secondKey = self.key.L
@@ -404,7 +442,7 @@ class PyHab:
         Prior to any criteria being set, self.HabCrit is 0, and self.habSetWhen is -1.
 
         Uses a sort of parallel data structure that just tracks hab-relevant gaze totals. As a bonus, this means it now
-        works for both single-target and preferential looking designs with no modification.
+        works for both single-target and preferential looking designs (and HPP designs) with no modification.
 
         :return: True if hab criteria have been met, False otherwise
         :rtype:
@@ -486,11 +524,17 @@ class PyHab:
         else:
             return False
 
-
-    def attnGetter(self, trialType):
+    def attnGetter(self, trialType, cutoff=False, onmin=0):
         """
         Plays either a default attention-getter animation or a user-defined one.
         Separate settings for audio w/shape and video file attention-getters.
+
+        :param trialType: Current trial type
+        :type trialType: string
+        :return:
+        :rtype:
+        """
+        """
 
         :return:
         :rtype:
@@ -509,7 +553,10 @@ class PyHab:
                 self.readyText.draw()
         self.win2.flip()
 
-        attnGetter = self.attnGetterList[self.playAttnGetter[trialType]]  # Reads attention-getter from list of AGs.
+        onCheck = 0
+
+        # Read off the relevant properties from the attention-getter settings
+        attnGetter = self.attnGetterList[self.playAttnGetter[trialType]['attnGetter']]  # Reads attention-getter from list of AGs.
         if attnGetter['stimType'] is 'Audio':
             if attnGetter['shape'] is 'Rectangle':
                 useShape = self.attnGetterSquare
@@ -528,24 +575,60 @@ class PyHab:
                 useShape.ori += 5  # Defines rotation speed in degrees. Arbitrary.
                 x += .1
                 if attnGetter['shape'] is 'Rectangle':
-                    useShape.height = sin(x) * (2*animDur) # I don't know why this one works so well, but it does.
+                    useShape.height = sin(x) * (2*animDur)  # I don't know why this one works so well, but it does.
                     useShape.width = tan(.25 * x) * (2*animDur)
                 else:
                     useShape.size = tan(.025 * x) * (sizeMult*self.baseSize)
                 useShape.draw()
                 self.win.flip()
+                self.statusSquareA.draw()
+                self.statusTextA.draw()
+                self.statusSquareB.draw()
+                self.statusTextB.draw()
+                if self.blindPres < 2:
+                    self.trialText.draw()
+                    if self.blindPres < 1:
+                        self.readyText.draw()
+                self.win2.flip()  # If you don't refresh the expeirmenter window it doesn't read the keyboard!
+                if cutoff and self.lookKeysPressed():
+                    if onCheck == 0 and onmin > 0:
+                        onCheck = core.getTime()
+                    elif core.getTime() - onCheck > onmin:
+                        # End early, reset audio
+                        attnGetter['file'].stop(reset=True)
+                        break
+                elif cutoff and onCheck > 0: # A clever little way to say "if they aren't looking but were earlier"
+                    onCheck = 0
         else:
             dMovie = attnGetter['file']
             dMovie.seek(0.0)
             if attnGetter['stimType'] == 'Movie + Audio':
                 attnGetter['audioFile'].play()
-            self.frameCount = 0
+            self.frameCount['C'] = 0
             self.ISI['NobodyNameTheirTrialTypeThis'] = 0.0 # A goofy solution but it'll work. dispMovieStim requires a trial type, and the ISI for an attngetter needs to be 0.
             while self.dispMovieStim('NobodyNameTheirTrialTypeThis', dMovie) < 2:
-                pass
+                self.statusSquareA.draw()
+                self.statusTextA.draw()
+                self.statusSquareB.draw()
+                self.statusTextB.draw()
+                if self.blindPres < 2:
+                    self.trialText.draw()
+                    if self.blindPres < 1:
+                        self.readyText.draw()
+                self.win2.flip() # If you don't refresh the expeirmenter window, it doesn't read the keyboard!
+                if cutoff and self.lookKeysPressed():
+                    if onCheck == 0 and onmin > 0:
+                        onCheck = core.getTime()
+                    elif core.getTime() - onCheck > onmin:
+                        if attnGetter['stimType'] == 'Movie + Audio':
+                            attnGetter['audioFile'].stop(reset=True)
+                        dMovie.pause()
+                        break
+                elif cutoff and onCheck > 0:  # A clever little way to say "if they aren't looking but were earlier"
+                    onCheck = 0
 
         self.dispCoderWindow(0)
-        #self.win.flip()  # clear screen (change?)
+        #self.win.flip()  # clear screen (change?) TODO: For audio-only stim you need it...
 
     def flashCoderWindow(self, rep=False):
         """
@@ -573,7 +656,7 @@ class PyHab:
                     break
             if flashing and not rep:
                 self.flashCoderWindow(rep=True)
-        self.win2.color='black'
+        self.win2.color = 'black'
 
 
 
@@ -631,71 +714,90 @@ class PyHab:
                 self.readyText.draw()
         self.win2.flip()  # flips the status screen without delaying the stimulus onset.
 
-    def dispMovieStim(self, trialType, dispMovie):
+    def dispMovieStim(self, trialType, dispMovie, screen='C'):
         """
         Draws movie stimuli to the stimulus display, including movie-based attention-getters.
+        TODO: Framecount needs to be rethought for HPP.
 
         :param trialType: 0 for paused, otherwise a string
         :type trialType: int or str
         :param dispMovie: The moviestim3 object for the stimuli
         :type dispMovie: moviestim3 object
+        :param screen: The screen on which the movie should display. Only relevant for HPP.
+        :type screen: str
         :return: an int specifying whether the movie is in progress (0), paused on its last frame (1), or ending and looping (2)
         :rtype: int
         """
 
-        if self.frameCount == 0:  # initial setup
+        if screen == 'C':
+            w = self.win
+        elif screen == 'L':
+            w = self.winL
+        elif screen == 'R':
+            w = self.winR
+
+        if self.frameCount[screen] == 0:  # initial setup
             self.dummyThing.draw()
-            self.frameCount += 1
+            self.frameCount[screen] += 1
             dispMovie.draw()
             if trialType == 0:
-                self.frameCount = 0  # for post-attn-getter pause
+                self.frameCount[screen] = 0  # for post-attn-getter pause
                 dispMovie.pause()
             else:
-                dispMovie.seek(0.0) # Moved up here from below so that it CAN loop at all
-            self.win.flip()
+                dispMovie.seek(0.0)  # Moved up here from below so that it CAN loop at all
+            w.flip()
             return 0
-        elif self.frameCount == 1:
+        elif self.frameCount[screen] == 1:
             # print('playing')
             dispMovie.play()
             dispMovie.draw()
-            self.frameCount += 1
-            self.win.flip()
+            self.frameCount[screen] += 1
+            w.flip()
             return 0
-        elif dispMovie.getCurrentFrameTime() >= dispMovie.duration - dispMovie._frameInterval*2 and self.pauseCount < self.ISI[trialType] * 60:  # pause, check for ISI.
+        elif dispMovie.getCurrentFrameTime() >= dispMovie.duration - dispMovie._frameInterval*2 and self.pauseCount[screen] < self.ISI[trialType] * 60:  # pause, check for ISI.
             self.dummyThing.draw()
             dispMovie.pause()
             dispMovie.draw()  # might want to have it vanish rather than leave it on the screen for the ISI, in which case comment out this line.
-            self.frameCount += 1
-            self.pauseCount += 1
-            self.win.flip() # TODO: Goes blank if ISI is long enough. Pyglet problem.
+            self.frameCount[screen] += 1
+            self.pauseCount[screen] += 1
+            w.flip() # TODO: Goes blank if ISI is long enough. Pyglet problem.
             return 1
-        elif dispMovie.getCurrentFrameTime() >= dispMovie.duration - dispMovie._frameInterval*2 and self.pauseCount >= self.ISI[trialType] * 60:  # MovieStim's Loop functionality can't do an ISI
+        elif dispMovie.getCurrentFrameTime() >= dispMovie.duration - dispMovie._frameInterval*2 and self.pauseCount[screen] >= self.ISI[trialType] * 60:  # MovieStim's Loop functionality can't do an ISI
             self.dummyThing.draw()
             # print('repeating at ' + str(dispMovie.getCurrentFrameTime()))
-            self.frameCount = 0  # changed to 0 to better enable studies that want to blank between trials
-            self.pauseCount = 0
+            self.frameCount[screen] = 0  # changed to 0 to better enable studies that want to blank between trials
+            self.pauseCount[screen] = 0
             dispMovie.draw()  # Comment this out as well to blank between loops.
-            self.win.flip()
+            w.flip()
             dispMovie.pause()
             #dispMovie.seek(0.0) #This seek seems to cause the replays.
             return 2
         else:
             dispMovie.draw()
-            self.frameCount += 1
-            self.win.flip()
+            self.frameCount[screen] += 1
+            w.flip()
             return 0
 
-    def dispImageStim(self, dispImage):
+    def dispImageStim(self, dispImage, screen='C'):
         """
         Very simple. Draws still-image stimuli and flips window
 
         :param dispImage: the visual.ImageStim object
         :type dispImage: visual.ImageStim object
+        :param screen: For HPP, which screen the image is to appear on
+        :type screen: str
         :return: constant, 1
         :rtype: int
         """
+        if screen == 'C':
+            w = self.win
+        elif screen == 'L':
+            w = self.winL
+        elif screen == 'R':
+            w = self.winR
+
         dispImage.draw()
-        self.win.flip()
+        w.flip()
         return 1  # This essentially allows it to end at any time if this is set to "movieend"
 
     def dispAudioStim(self, trialType, dispAudio):
@@ -709,16 +811,16 @@ class PyHab:
             or the audio is looping (2)
         :rtype: int
         """
-        if self.frameCount == 0:  # We're going to use this as a mask for the status of the audio file
+        if self.frameCount['C'] == 0:  # We're going to use this as a mask for the status of the audio file
             dispAudio.play()
-            self.frameCount = 1
+            self.frameCount['C'] = 1
             return 0
-        elif self.frameCount == 1:
-            if dispAudio.status not in [STARTED, PLAYING] and self.pauseCount < self.ISI[trialType] * 60:
-                self.pauseCount += 1
+        elif self.frameCount['C'] == 1:
+            if dispAudio.status not in [STARTED, PLAYING] and self.pauseCount['C'] < self.ISI[trialType] * 60:
+                self.pauseCount['C'] += 1
                 return 1
-            elif dispAudio.status not in [STARTED, PLAYING] and self.pauseCount >= self.ISI[trialType] * 60:
-                self.frameCount = 0
+            elif dispAudio.status not in [STARTED, PLAYING] and self.pauseCount['C'] >= self.ISI[trialType] * 60:
+                self.frameCount['C'] = 0
                 return 2
             else:
                 return 0
@@ -917,6 +1019,25 @@ class PyHab:
             self.rdyTextAppend = " NEXT: " + self.actualTrialOrder[trialNum - 1] + " TRIAL"
         return [disMovie,trialType]
 
+    def printCurrentData(self):
+        """
+        A function which prints the current data to the output window, made into its own function to facilitate having
+        working versions for PL and HPP studies as well. Only called when stimulus presentation is off.
+
+
+        :return:
+        :rtype:
+        """
+        print("hab crit, on-timeA, numOnA, offtimeA, numOffA, onTimeB, numOnB, offTimeB, numOffB")
+        print("-------------------------------------------------------------------------------------------")
+        for i in range(0, len(self.dataMatrix)):
+            dataList = [self.dataMatrix[i]['habCrit'], round(self.dataMatrix[i]['sumOnA'],1),
+                        self.dataMatrix[i]['numOnA'], round(self.dataMatrix[i]['sumOffA'],1),
+                        self.dataMatrix[i]['numOffA'], round(self.dataMatrix[i]['sumOnB'],1),
+                        self.dataMatrix[i]['numOnB'], round(self.dataMatrix[i]['sumOffB'],1),
+                        self.dataMatrix[i]['numOffB']]
+            print(dataList)
+
     def doExperiment(self):
         """
         The primary control function and main trial loop.
@@ -978,9 +1099,6 @@ class PyHab:
                         if self.counters[trialType] > 0:
                             self.counters[trialType] -= 1
                     [disMovie,trialNum] = self.redoSetup(trialNum, AA) #This returns a new value for DisMovie and trialNum
-                    if self.stimPres:
-                        if disMovie['stimType'] == 'Movie':
-                            disMovie['stim'].loadMovie(disMovie['stim'].filename) # "Seek" causes audio bugs. This just reloads the movie. More memory load, but reliable.
                     trialType = self.actualTrialOrder[trialNum - 1]
                     while '.' in trialType:
                         trialType = trialType[trialType.index('.') + 1:]
@@ -993,19 +1111,11 @@ class PyHab:
                         trialType = trialType[trialType.index('.') + 1:]
                 elif trialNum > 1 and not self.stimPres and self.keyboard[self.key.P] and not reviewed:  # Print data so far, as xHab. Non-stimulus version only. Only between trials.
                     reviewed = True
-                    print("hab crit, on-timeA, numOnA, offtimeA, numOffA, onTimeB, numOnB, offTimeB, numOffB")
-                    print("-------------------------------------------------------------------------------------------")
-                    for i in range(0, len(self.dataMatrix)):
-                        dataList = [self.dataMatrix[i]['habCrit'], self.dataMatrix[i]['sumOnA'],
-                                    self.dataMatrix[i]['numOnA'], self.dataMatrix[i]['sumOffA'],
-                                    self.dataMatrix[i]['numOffA'], self.dataMatrix[i]['sumOnB'],
-                                    self.dataMatrix[i]['numOnB'], self.dataMatrix[i]['sumOffB'],
-                                    self.dataMatrix[i]['numOffB']]
-                        print(dataList)
+                    self.printCurrentData()
                 self.readyText.text = "No trial active" + self.rdyTextAppend
                 self.dispCoderWindow()
             if not end: #This if statement checks if we're trying to quit.
-                self.frameCount = 0
+                self.frameCount = {k:0 for k,v in self.frameCount.items()}
                 # framerate = win.getActualFrameRate()
                 # print(framerate)               #just some debug code.
                 if self.blindPres < 2:
@@ -1014,18 +1124,34 @@ class PyHab:
                     self.dispCoderWindow(0)
                 if self.stimPres:
                     if trialType in self.playAttnGetter: #Shockingly, this will work.
-                        self.attnGetter(trialType)  # plays the attention-getter
+                        # TODO: Data might want to record AG length, repeats. Add data columns? "AGreps" and "AGtime"?
+                        # TODO: Maybe put mid-AG data in verbose...? We end up adding four columns otherwise. Adding two is bad enough.
+                        # Pull relevant arguments out of the attngetter dictionary.
+                        self.attnGetter(trialType, self.playAttnGetter[trialType]['cutoff'], self.playAttnGetter[trialType]['onmin'])  # plays the attention-getter
                         core.wait(.1)  # this wait is important to make the attentiongetter not look like it is turning into the stimulus
-                        self.frameCount = 0
+                        self.frameCount = {k: 0 for k, v in self.frameCount.items()}
                         irrel = self.dispTrial(0, disMovie)
-                        core.wait(self.freezeFrame)  # this delay ensures that the trial only starts after the images have appeared on the screen, static, for 200ms
+                        core.wait(self.freezeFrame)  # this delay ensures that the trial only starts after the images have appeared on the screen, static, for a user-determined length of time
                         waitStart = True
                     else:
-                        self.frameCount = 0
+                        self.frameCount = {k: 0 for k, v in self.frameCount.items()}
                         waitStart = True
                 else:
                     if trialType in self.playAttnGetter:
-                        core.wait(self.attnGetterList[self.playAttnGetter[trialType]]['stimDur'] + self.freezeFrame)  # an attempt to match the delay caused by the attention-getter playing.
+                        simAG = True
+                        startAG = core.getTime()
+                        onCheck = 0
+                        while simAG:
+                            if core.getTime() - startAG >= self.attnGetterList[self.playAttnGetter[trialType]]['stimDur']:
+                                simAG = False
+                            elif self.playAttnGetter[trialType]['cutoff'] and self.lookKeysPressed():
+                                if onCheck == 0 and self.playAttnGetter[trialType]['onmin'] > 0:
+                                    onCheck = core.getTime()
+                                elif core.getTime() - onCheck > self.playAttnGetter[trialType]['onmin']:
+                                    simAG = False
+                                elif onCheck > 0:  # A clever little way to say "if they aren't looking but were earlier"
+                                    onCheck = 0
+                        core.wait(self.freezeFrame)  # an attempt to match the delay caused by the attention-getter playing.
                         waitStart = True
                     else:
                         waitStart = True
@@ -1036,13 +1162,28 @@ class PyHab:
                         self.dispCoderWindow(0)
                         if self.stimPres:
                             if trialType in self.playAttnGetter:
-                                self.attnGetter(trialType)
+                                self.attnGetter(trialType, self.playAttnGetter[trialType]['cutoff'],
+                                                self.playAttnGetter[trialType]['onmin'])  # plays the attention-getter
                                 core.wait(.1)
                             irrel = self.dispTrial(0, disMovie)
                             core.wait(self.freezeFrame)
                         else:
                             if trialType in self.playAttnGetter:
-                                core.wait(self.attnGetterList[self.playAttnGetter[trialType]]['stimDur'] + self.freezeFrame)  # an attempt to match the delay caused by the attention-getter playing.
+                                # an attempt to match the timing of the attention-getter
+                                simAG = True
+                                startAG = core.getTime()
+                                onCheck = 0
+                                while simAG:
+                                    if core.getTime() - startAG >= self.attnGetterList[self.playAttnGetter[trialType]]['stimDur']:
+                                        simAG = False
+                                    elif self.playAttnGetter[trialType]['cutoff'] and self.lookKeysPressed():
+                                        if onCheck == 0 and self.playAttnGetter[trialType]['onmin'] > 0:
+                                            onCheck = core.getTime()
+                                        elif core.getTime() - onCheck > self.playAttnGetter[trialType]['onmin']:
+                                            simAG = False
+                                        elif onCheck > 0:  # A clever little way to say "if they aren't looking but were earlier"
+                                            onCheck = 0
+                                core.wait(self.freezeFrame)
                     elif self.lookKeysPressed():
                         waitStart = False
                         self.dispCoderWindow(trialType)
@@ -1050,8 +1191,7 @@ class PyHab:
                         if self.counters[trialType] > 0:
                             self.counters[trialType] -= 1
                         [disMovie, trialNum] = self.redoSetup(trialNum, AA)  # This returns a new value for DisMovie and trialNum
-                        if disMovie['stimType'] == 'Movie':
-                            disMovie['stim'].loadMovie(disMovie['stim'].filename)
+
                         trialType = self.actualTrialOrder[trialNum - 1]
                         while '.' in trialType:
                             trialType = trialType[trialType.index('.') + 1:]
@@ -1111,6 +1251,8 @@ class PyHab:
         Basically, allows you to set an arbitrary set of keys to start a trial once the attngetter has played.
         In this case, only B (coder A on) is sufficient.
 
+        TODO: This function will become the eye-tracker interface, basically. It will listen for the eye-tracker input.
+
         :return: True if the B key is pressed, False otherwise.
         :rtype:
         """
@@ -1152,8 +1294,8 @@ class PyHab:
             habTrial = True
         else:
             dataType = ttype
-        self.frameCount = 0  # reset display
-        self.pauseCount = 0  # needed for ISI
+        self.frameCount['C'] = 0  # reset display
+        self.pauseCount['C'] = 0  # needed for ISI
         # returns 0 if do next trial, 1 if end hab, 2 if end experiment, 3 if abort/abort
         if self.stimPres and disMovie['stimType'] == 'Movie':
             disMovie['stim'].seek(0.0)
@@ -1170,11 +1312,12 @@ class PyHab:
         sumOn2 = 0
         numOff2 = 0
         numOn2 = 0
+        maxDurAdd = 0
         abort = False
         runTrial = True
         endFlag = False
         self.readyText.text = "Trial running"
-        if self.keyboard[self.key.B]:
+        if self.lookKeysPressed():
             gazeOn = True
             startOn = 0  # we want these to be 0 because every other time is put in reference to the startTrial timestamp so it's not some absurd number
             numOn = 1
@@ -1244,7 +1387,7 @@ class PyHab:
                     offArray.append({'trial':0, 'trialType':0, 'startTime':0, 'endTime':0, 'duration':0})  # keeps it from crashing while trying to write data.
                 ttype = 4  # to force an immediate quit.
             # Now for the non-abort states.
-            elif core.getTime() - startTrial >= self.maxDur[localType] and not endFlag:  # reached max trial duration
+            elif core.getTime() - startTrial >= self.maxDur[localType] + maxDurAdd and not endFlag:  # reached max trial duration
                 if localType in self.movieEnd:
                     endFlag = True
                 else:
@@ -1264,6 +1407,7 @@ class PyHab:
                         offArray.append(tempGazeArray)
             elif not gazeOn:  # if they are not looking as of the previous refresh, check if they have been looking away for too long
                 nowOff = core.getTime() - startTrial
+
                 if sumOn >= self.minOn[localType] and nowOff - startOff >= self.maxOff[localType] and self.playThrough[localType] == 0 and not endFlag:
                     # if they have previously looked for at least .5s and now looked away for 2 continuous sec
                     if localType in self.movieEnd:
@@ -1278,7 +1422,7 @@ class PyHab:
                         offDur = nowOff - startOff
                         tempGazeArray = {'trial':number, 'trialType':dataType, 'startTime':startOff, 'endTime':endOff, 'duration':offDur}
                         offArray.append(tempGazeArray)
-                elif self.keyboard[self.key.B]:  # if they have started looking since the last refresh and not met criterion
+                elif self.lookKeysPressed():  # if they have started looking since the last refresh and not met criterion
                     gazeOn = True
                     numOn = numOn + 1
                     startOn = core.getTime() - startTrial
@@ -1287,6 +1431,35 @@ class PyHab:
                     offDur = endOff - startOff
                     tempGazeArray = {'trial':number, 'trialType':dataType, 'startTime':startOff, 'endTime':endOff, 'duration':offDur}
                     offArray.append(tempGazeArray)
+                    if localType in self.dynamicPause and self.stimPres:
+                        if disMovie['stimType'] in ['Movie', 'Audio'] and disMovie['stim'].status != PLAYING:
+                            disMovie['stim'].play()
+                        elif disMovie['stimType'] == ['Image with audio'] and disMovie['stim']['Audio'].status != PLAYING:
+                            disMovie['stim']['Audio'].play()
+                else:
+                    if localType in self.dynamicPause and self.stimPres:
+                        if disMovie['stimType'] in ['Movie','Audio'] and disMovie['stim'].status == PLAYING:
+                            disMovie['stim'].pause()
+                        elif disMovie['stimType'] == ['Image with audio'] and disMovie['stim']['Audio'].status == PLAYING:
+                            disMovie['stim']['Audio'].pause()
+                    if localType in self.midAG and self.stimPres:
+                        if nowOff - startOff >= self.midAG[localType]['trigger']:
+                            # TODO: Do something here to deal with recording data about mid-trial AG behavior?
+                            if localType not in self.dynamicPause: # Need to pause it anyways to play the AG so they don't overlap
+                                if disMovie['stimType'] in ['Movie', 'Audio'] and disMovie['stim'].status == PLAYING:
+                                    disMovie['stim'].pause()
+                                elif disMovie['stimType'] == ['Image with audio'] and disMovie['stim']['Audio'].status == PLAYING:
+                                    disMovie['stim']['Audio'].pause()
+                            startAG = core.getTime()
+                            self.attnGetter(localType, self.midAG[localType]['cutoff'], self.midAG[localType]['onmin'])
+                            durAG = core.getTime() - startAG
+                            maxDurAdd = maxDurAdd + durAG  # Increase max length of trial by duration that AG played.
+                            if localType not in self.dynamicPause:
+                                if disMovie['stimType'] in ['Movie', 'Audio'] and disMovie['stim'].status != PLAYING:
+                                    disMovie['stim'].play()
+                                elif disMovie['stimType'] == ['Image with audio'] and disMovie['stim']['Audio'].status != PLAYING:
+                                    disMovie['stim']['Audio'].play()
+
             elif gazeOn:
                 nowOn = core.getTime() - startTrial
                 if self.playThrough[localType] == 1 and sumOn + (nowOn - startOn) >= self.minOn[localType] and not endFlag:  # For trial types where the only crit is min-on.
@@ -1302,7 +1475,7 @@ class PyHab:
                         onDur = endOn - startOn
                         tempGazeArray = {'trial':number, 'trialType':dataType, 'startTime':startOn, 'endTime':endOn, 'duration':onDur}
                         onArray.append(tempGazeArray)
-                if gazeOn and not self.keyboard[self.key.B]:  # if they were looking and have looked away.
+                if gazeOn and not self.lookKeysPressed():  # if they were looking and have looked away.
                     gazeOn = False
                     endOn = core.getTime() - startTrial
                     onDur = endOn - startOn
@@ -1689,7 +1862,9 @@ class PyHab:
         blockDone = False
         lastTrialNumber = tempMatrix[-1]['trial']
         # Making this generalizeable for preferential looking studies.
-        if 'sumOnL' in self.dataMatrix[0].keys():
+        if 'sumOnC' in self.dataMatrix[0].keys():  # HPP
+            sumFields = ['sumOnL','numOnL','sumOnC','numOnC','sumOnR','numOnR','sumOff','numOff']
+        elif 'sumOnL' in self.dataMatrix[0].keys():  # PL
             sumFields = ['sumOnL','numOnL','sumOnR', 'numOnR', 'sumOff', 'numOff']
         else:
             sumFields = ['sumOnA', 'numOnA', 'sumOffA', 'numOffA', 'sumOnB', 'numOnB', 'sumOffB', 'numOffB']
@@ -1733,7 +1908,9 @@ class PyHab:
         """
         habMatrix = []
         # Making this generalizeable for preferential looking studies.
-        if 'sumOnL' in self.dataMatrix[0].keys():
+        if 'sumOnC' in self.dataMatrix[0].keys():  # HPP
+            sumFields = ['sumOnL', 'numOnL', 'sumOnC', 'numOnC', 'sumOnR', 'numOnR', 'sumOff', 'numOff']
+        elif 'sumOnL' in self.dataMatrix[0].keys():
             sumFields = ['sumOnL', 'numOnL', 'sumOnR', 'numOnR', 'sumOff', 'numOff']
         else:
             sumFields = ['sumOnA', 'numOnA', 'sumOffA', 'numOffA', 'sumOnB', 'numOnB', 'sumOffB', 'numOffB']
@@ -2137,6 +2314,43 @@ class PyHab:
                     self.actualTrialOrder.insert(insert, tempName)
                     insert += 1
 
+    def loadStim(self, stim, screen='C'):
+        """
+        A general function for loading stimuli that can be called repeatedly.
+
+        :param stim: stimulus name, key for stimList dict
+        :type stim: str
+        :param screen: Screen to load stimuli to, doesn't matter except for HPP, defaults to center
+        :type screen: str
+        :return: a dictionary with type and stimulus object
+        :rtype: dict
+        """
+        tempStim = self.stimList[stim]
+        if screen == 'C':
+            w = self.win
+        elif screen == 'L':
+            w = self.winL
+        elif screen == 'R':
+            w = self.winR
+
+        if tempStim['stimType'] == 'Movie':
+            tempStimObj = visual.MovieStim3(w, tempStim['stimLoc'],
+                                            size=[self.movieWidth[screen], self.movieHeight[screen]], flipHoriz=False,
+                                            flipVert=False, loop=False)
+        elif tempStim['stimType'] == 'Image':
+            tempStimObj = visual.ImageStim(w, tempStim['stimLoc'],
+                                           size=[self.movieWidth[screen], self.movieHeight[screen]])
+        elif tempStim['stimType'] == 'Audio':
+            tempStimObj = sound.Sound(tempStim['stimLoc'])
+        else:  # The eternal problem of audio/image pair. Just creates an object that's a dict of audio and image.
+            audioObj = sound.Sound(tempStim['audioLoc'])
+            imageObj = visual.ImageStim(w, tempStim['imageLoc'],
+                                        size=[self.movieWidth[screen], self.movieHeight[screen]])
+            tempStimObj = {'Audio': audioObj, 'Image': imageObj}
+        tempAdd = {'stimType': tempStim['stimType'], 'stim': tempStimObj}
+        return tempAdd
+
+
     def SetupWindow(self):
         """
         Sets up the stimulus presentation and coder windows, loads all the stimuli, then starts the experiment
@@ -2148,8 +2362,8 @@ class PyHab:
         # Important to do this first because it gets the windows in the correct order for focus etc.
         if self.stimPres:
             # Stimulus presentation window
-            self.win = visual.Window((self.screenWidth, self.screenHeight), fullscr=False, screen=self.screenIndex, allowGUI=False,
-                                     units='pix', color=self.screenColor)
+            self.win = visual.Window((self.screenWidth['C'], self.screenHeight['C']), fullscr=False, screen=self.screenIndex['C'], allowGUI=False,
+                                     units='pix', color=self.screenColor['C'])
             self.dummyThing = visual.Circle(self.win, size=1, color=self.win.color) # This is for fixing a display glitch in PsychoPy3 involving multiple windows of different sizes.
         # Coder window
         self.win2 = visual.Window((400, 400), fullscr=False, screen=self.expScreenIndex, allowGUI=True, units='pix', waitBlanking=False,
@@ -2162,7 +2376,7 @@ class PyHab:
             if self.startImage is not '':
                 self.dummyThing.draw()
                 tempStim = self.stimList[self.startImage]
-                tempStimObj = visual.ImageStim(self.win, tempStim['stimLoc'], size=[self.movieWidth, self.movieHeight])
+                tempStimObj = visual.ImageStim(self.win, tempStim['stimLoc'], size=[self.movieWidth['C'], self.movieHeight['C']])
                 tempStimObj.draw()
                 self.win.flip() # This should now be on the screen until the first attngetter
             self.stimDict = {x: [] for x in self.stimNames.keys()}  # This holds all the loaded movies.
@@ -2177,23 +2391,7 @@ class PyHab:
                     i = tempI
                 x = tempCtr[i]  # Changed so hab trials get the same treatment as everything else.
                 if x < len(self.stimNames[i]):
-                    tempStim = self.stimList[self.stimNames[i][x]]
-                    if tempStim['stimType'] == 'Movie':
-                        tempStimObj = visual.MovieStim3(self.win, tempStim['stimLoc'],
-                                                      size=[self.movieWidth, self.movieHeight], flipHoriz=False,
-                                                      flipVert=False, loop=False)
-                    elif tempStim['stimType'] == 'Image':
-                        tempStimObj = visual.ImageStim(self.win, tempStim['stimLoc'],
-                                                       size=[self.movieWidth, self.movieHeight])
-                    elif tempStim['stimType'] == 'Audio':
-                        tempStimObj = sound.Sound(tempStim['stimLoc'])
-                    else: # The eternal problem of audio/image pair. Just creates an object that's a dict of audio and image.
-                        audioObj = sound.Sound(tempStim['audioLoc'])
-                        imageObj = visual.ImageStim(self.win, tempStim['imageLoc'],
-                                                       size=[self.movieWidth, self.movieHeight])
-                        tempStimObj = {'Audio': audioObj, 'Image': imageObj}
-                    tempAdd = {'stimType':tempStim['stimType'], 'stim':tempStimObj}
-                    self.stimDict[i].append(tempAdd)
+                    self.stimDict[i].append(self.loadStim(self.stimNames[i][x]))
                 tempCtr[i] += 1
 
             if len(list(self.playAttnGetter.keys())) > 0:
@@ -2202,13 +2400,13 @@ class PyHab:
                         self.attnGetterList[i]['file'] = sound.Sound(self.attnGetterList[i]['stimLoc'])
                     else:
                         self.attnGetterList[i]['file'] = visual.MovieStim3(self.win, self.attnGetterList[i]['stimLoc'],
-                                                                           size=[self.movieWidth, self.movieHeight],
+                                                                           size=[self.movieWidth['C'], self.movieHeight['C']],
                                                                            flipHoriz=False, flipVert=False, loop=False)
                         if self.attnGetterList[i]['stimType'] == 'Movie + Audio':
                             self.attnGetterList[i]['audioFile'] = sound.Sound(self.attnGetterList[i]['audioLoc'])
             if self.endImage is not '': # Load image for end of experiment, if needed.
                 tempStim = self.stimList[self.endImage]
-                self.endImageObject = visual.ImageStim(self.win, tempStim['stimLoc'], size=[self.movieWidth, self.movieHeight])
+                self.endImageObject = visual.ImageStim(self.win, tempStim['stimLoc'], size=[self.movieWidth['C'], self.movieHeight['C']])
             else:
                 self.endImageObject = None
         self.keyboard = self.key.KeyStateHandler()

@@ -1,5 +1,6 @@
 import os, sys
 from psychopy import visual, event, core, data, gui, monitors, tools, prefs, logging
+from psychopy.constants import (STARTED, PLAYING)  # Added for new stimulus types
 prefs.hardware['audioLib'] = ['sounddevice']
 if os.name is 'posix':
     prefs.general['audioDevice'] = ['Built-in Output']
@@ -121,6 +122,22 @@ class PyHabPL(PyHab):
         else:
             return False
 
+    def printCurrentData(self):
+        """
+        Prints the current data, preferential looking variant. Only called when stimulus presentation is off
+        :return:
+        :rtype:
+        """
+
+        print("hab crit, on-timeL, numOnL, onTimeR, numOnR, offTime, numOff")
+        print("-------------------------------------------------------------------------------------------")
+        for i in range(0, len(self.dataMatrix)):
+            dataList = [self.dataMatrix[i]['habCrit'], round(self.dataMatrix[i]['sumOnL'],1),
+                        self.dataMatrix[i]['numOnL'], round(self.dataMatrix[i]['sumOnR'],1),
+                        self.dataMatrix[i]['numOnR'], round(self.dataMatrix[i]['sumOff'],1),
+                        self.dataMatrix[i]['numOff']]
+            print(dataList)
+
     def doTrial(self, number, ttype, disMovie):
         """
         Control function for individual trials, to be called by doExperiment
@@ -130,8 +147,8 @@ class PyHabPL(PyHab):
         :type number: int
         :param ttype: Trial type
         :type ttype: string
-        :param disMovie: Movie object for stimulus presentation
-        :type disMovie: movieStim3 object
+        :param  disMovie: A dictionary as follows {'stim':[psychopy object for stimulus presentation], 'stimType':[movie,image,audio, pair]}
+        :type disMovie: dictionary
         :return: int, 0 = proceed to next trial, 1 = hab crit met, 2 = end experiment, 3 = trial aborted
         :rtype:
         """
@@ -154,22 +171,22 @@ class PyHabPL(PyHab):
             habTrial = True
         else:
             dataType = ttype
-        self.frameCount = 0 #reset display
-        self.pauseCount = 0 #needed for ISI
+        self.frameCount = {k: 0 for k, v in self.frameCount.items()}
+        self.pauseCount['C'] = 0 #needed for ISI
         if self.stimPres and disMovie['stimType'] == 'Movie':
             disMovie['stim'].seek(0)
+            disMovie['stim'].pause()
         startTrial = core.getTime()
         startTrial2=core.getTime()
         onArray = []
         offArray = []
         onArray2=[]
-        offArray2=[]
         numOn = 0
+        numOn2 = 0
         numOff = 0
         sumOn = 0
         sumOn2 = 0
-        numOff2 = 0
-        numOn2 = 0
+        maxDurAdd = 0
         abort = False
         runTrial = True
         endFlag = False
@@ -212,7 +229,7 @@ class PyHabPL(PyHab):
                     tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOff, 'endTime': endTrial,
                                      'duration': offDur}
                     offArray.append(tempGazeArray)
-            elif core.getTime() - startTrial >= .5 and self.keyboard[self.key.J] and 'Hab' not in self.actualTrialOrder[(number-1):]:
+            elif core.getTime() - startTrial >= .5 and self.keyboard[self.key.S] and ttype != 'Hab' and '^' not in ttype:
                 # End this trial, move to next, do not mark as bad.
                 if localType in self.movieEnd:
                     endFlag = True
@@ -271,7 +288,7 @@ class PyHabPL(PyHab):
                     offArray.append({'trial': 0, 'trialType': 0, 'startTime': 0, 'endTime': 0,'duration': 0}) #keeps it from crashing while trying to write data.
                 ttype = 4 #to force an immediate quit.
             #Now for the non-abort states.
-            elif core.getTime() - startTrial >= self.maxDur[localType] and not endFlag: #reached max trial duration
+            elif core.getTime() - startTrial >= self.maxDur[localType] + maxDurAdd and not endFlag: #reached max trial duration
                 if localType in self.movieEnd:
                     endFlag = True
                 else:
@@ -303,7 +320,7 @@ class PyHabPL(PyHab):
             elif not gazeOn and not gazeOn2: #if they are not looking as of the previous refresh, check if they have been looking away for too long
                 nowOff = core.getTime() - startTrial
                 if sumOn + sumOn2 > self.minOn[localType] and nowOff - startOff >= self.maxOff[localType] and self.playThrough[localType] == 0 and not endFlag:
-                    #if they have previously looked for at least .5s and now looked away for 2 continuous sec
+                    #if they have previously looked for at least minOn seconds and now looked away for maxOff continuous sec
                     if localType in self.movieEnd:
                         endFlag = True
                     else:
@@ -327,6 +344,11 @@ class PyHabPL(PyHab):
                     tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOff, 'endTime': endOff,
                                      'duration': offDur}
                     offArray.append(tempGazeArray)
+                    if localType in self.dynamicPause and self.stimPres:
+                        if disMovie['stimType'] in ['Movie', 'Audio'] and disMovie['stim'].status != PLAYING:
+                            disMovie['stim'].play()
+                        elif disMovie['stimType'] == ['Image with audio'] and disMovie['stim']['Audio'].status != PLAYING:
+                            disMovie['stim']['Audio'].play()
                 elif self.keyboard[self.key.M]: #if they have started looking since the last refresh and not met criterion
                     gazeOn2 = True
                     numOn2 = numOn2 + 1
@@ -337,6 +359,34 @@ class PyHabPL(PyHab):
                     tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOff, 'endTime': endOff,
                                      'duration': offDur}
                     offArray.append(tempGazeArray)
+                    if localType in self.dynamicPause and self.stimPres:
+                        if disMovie['stimType'] in ['Movie', 'Audio'] and disMovie['stim'].status != PLAYING:
+                            disMovie['stim'].play()
+                        elif disMovie['stimType'] == ['Image with audio'] and disMovie['stim']['Audio'].status != PLAYING:
+                            disMovie['stim']['Audio'].play()
+                else:
+                    if localType in self.dynamicPause and self.stimPres:
+                        if disMovie['stimType'] in ['Movie','Audio'] and disMovie['stim'].status == PLAYING:
+                            disMovie['stim'].pause()
+                        elif disMovie['stimType'] == ['Image with audio'] and disMovie['stim']['Audio'].status == PLAYING:
+                            disMovie['stim']['Audio'].pause()
+                    if localType in self.midAG and self.stimPres:
+                        if nowOff - startOff >= self.midAG[localType]['trigger']:
+                            # TODO: Do something here to deal with recording data about mid-trial AG behavior?
+                            if localType not in self.dynamicPause: # Need to pause it anyways to play the AG so they don't overlap
+                                if disMovie['stimType'] in ['Movie', 'Audio'] and disMovie['stim'].status == PLAYING:
+                                    disMovie['stim'].pause()
+                                elif disMovie['stimType'] == ['Image with audio'] and disMovie['stim']['Audio'].status == PLAYING:
+                                    disMovie['stim']['Audio'].pause()
+                            startAG = core.getTime()
+                            self.attnGetter(localType, self.midAG[localType]['cutoff'], self.midAG[localType]['onmin'])
+                            durAG = core.getTime() - startAG
+                            maxDurAdd = maxDurAdd + durAG  # Increase max length of trial by duration that AG played.
+                            if localType not in self.dynamicPause:
+                                if disMovie['stimType'] in ['Movie', 'Audio'] and disMovie['stim'].status != PLAYING:
+                                    disMovie['stim'].play()
+                                elif disMovie['stimType'] == ['Image with audio'] and disMovie['stim']['Audio'].status != PLAYING:
+                                    disMovie['stim']['Audio'].play()
             elif gazeOn or gazeOn2:
                 nowOn = core.getTime() - startTrial
                 if gazeOn:
@@ -455,7 +505,7 @@ class PyHabPL(PyHab):
         else:
             self.dataRec(onArray, offArray, number, dataType, onArray2, self.stimName, habDataRec)
         if self.habMetWhen == -1 and len(self.habTrialList) > 0 and not abort:   # if still during habituation
-            if dataType in self.calcHabOver:
+            if dataType[0:4] == 'hab.' and dataType[4:] in self.calcHabOver:
                 tempSum = 0
                 for c in range(0, len(onArray)):
                     tempSum += onArray[c]['duration']
@@ -681,7 +731,7 @@ class PyHabPL(PyHab):
         headers2 = ['snum', 'sID', 'months', 'days', 'sex', 'cond', 'GNG', 'gazeOnOff', 'trial', 'trialType',
                                 'startTime', 'endTime', 'duration']
         with open(self.verboseFolder+self.prefix+str(self.sNum)+'_'+str(self.sID)+nDupe+'_'+str(self.today.month)+str(self.today.day)+str(self.today.year)+'_VERBOSE.csv','w') as f:
-            outputWriter2 = csv.DictWriter(f, fieldnames=headers2, extrasaction = 'ignore', lineterminator ='\n') #careful! this OVERWRITES the existing file. Fills from snum.
+            outputWriter2 = csv.DictWriter(f, fieldnames=headers2, extrasaction = 'ignore', lineterminator ='\n')
             outputWriter2.writeheader()
             for z in range(0,len(verboseMatrix)):
                 outputWriter2.writerow(verboseMatrix[z])

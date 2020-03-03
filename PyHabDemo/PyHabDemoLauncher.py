@@ -1,11 +1,14 @@
 from psychopy import gui,core
 from PyHab import PyHabClass as PH
 from PyHab import PyHabClassPL as PHL
+from PyHab import PyHabClassHPP as PHPP
 from PyHab import PyHabBuilder as PB
 import csv, os
+os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
 setName = "PyHabDemoSettings.csv"
 #Created in PsychoPy version 3.1.2
+
 def run():
     setFile=csv.reader(open(setName,'rU'))
     setArr=[]
@@ -29,13 +32,15 @@ def run():
                     setDict['stimPres'] = '1'
                 else:
                     setDict['stimPres'] = '0'
-            if setDict['prefLook'] in['0',0,'False',False]:
+            if setDict['prefLook'] in ['0',0,'False',False]:
                 experiment = PH.PyHab(setDict)
-            else:
+            elif setDict['prefLook'] in [1,'1',True,'True']:
                 experiment = PHL.PyHabPL(setDict)
+            elif setDict['prefLook'] in [2,'2']:
+                experiment = PHPP.PyHabHPP(setDict)
             experiment.run()
         else:
-            builder = PB.PyHabBuilder(loadedSaved = True, settingsDict=setDict)
+            builder = PB.PyHabBuilder(loadedSaved=True, settingsDict=setDict)
             builder.run()
         #After you're done: Relaunch launcher!
         run()
