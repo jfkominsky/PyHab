@@ -116,7 +116,7 @@ class PyHabBuilder:
             evalList = ['dataColumns','blockSum','trialSum','maxDur','condList','baseCondList','movieEnd','playThrough','trialOrder',
                         'stimNames', 'stimList', 'ISI', 'maxOff','minOn','autoAdvance','playAttnGetter','attnGetterList',
                         'trialTypes','habTrialList', 'calcHabOver', 'nextFlash', 'blockList', 'dynamicPause','midAG',
-                        'screenWidth','screenHeight','movieWidth','movieHeight']  # in 0.9, this becomes necessary.
+                        'screenWidth','screenHeight','screenIndex','movieWidth','movieHeight']  # in 0.9, this becomes necessary.
             for i in evalList:
                 self.settings[i] = eval(self.settings[i])
                 if i in ['stimList','attnGetterList']:
@@ -449,7 +449,7 @@ class PyHabBuilder:
                     if os.name is not 'posix':
                         while self.mouse.getPressed()[0] == 1:
                             pass
-                        if self.buttonList['function'][i] not in [self.toST, self.toPL, self.toHPP]:
+                        if self.buttonList['functions'][i] not in [self.toST, self.toPL, self.toHPP]:
                             # If we're opening a dialog box, basically.
                             self.win.winHandle.set_visible(visible=False)
 
@@ -1976,7 +1976,7 @@ class PyHabBuilder:
         if self.settings['prefLook'] in [1,'1',True,'True']:
             tempDataCols = self.allDataColumnsPL
         elif self.settings['prefLook'] in [2,'2']:
-            tempDataCols = self.allDataColumpsHPP
+            tempDataCols = self.allDataColumnsHPP
         else:
             tempDataCols = self.allDataColumns
         for i in range(0, len(tempDataCols)):
@@ -2765,7 +2765,7 @@ class PyHabBuilder:
                             pass
                         elif self.settings['trialTypes'][i] not in self.settings['stimNames'].keys():
                             allReady = False
-                        elif len(self.settings['stimNames'][self.trialTypesArray['labels'][i]]) == 0:  # Another way that it can have no movies associated with it.
+                        elif len(self.settings['stimNames'][self.settings['trialTypes'][i]]) == 0:  # Another way that it can have no movies associated with it.
                             allReady = False
                 if allReady:
                     if len(condInfo[1]) > 0:

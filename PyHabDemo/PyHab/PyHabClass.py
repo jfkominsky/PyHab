@@ -628,7 +628,7 @@ class PyHab:
                     onCheck = 0
 
         self.dispCoderWindow(0)
-        #self.win.flip()  # clear screen (change?)
+        #self.win.flip()  # clear screen (change?) TODO: For audio-only stim you need it...
 
     def flashCoderWindow(self, rep=False):
         """
