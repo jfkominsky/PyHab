@@ -717,7 +717,6 @@ class PyHab:
     def dispMovieStim(self, trialType, dispMovie, screen='C'):
         """
         Draws movie stimuli to the stimulus display, including movie-based attention-getters.
-        TODO: Framecount needs to be rethought for HPP.
 
         :param trialType: 0 for paused, otherwise a string
         :type trialType: int or str
