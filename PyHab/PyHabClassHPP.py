@@ -132,7 +132,7 @@ class PyHabHPP(PyHab):
         """
         A simple boolean function to allow for more modularity with preferential looking
         Basically, allows you to set an arbitrary set of keys to start a trial once the attngetter has played.
-        In this case, only B or M are sufficient.
+        In this case, any of V, B, or N are sufficient.
 
         :return: True if the V, B, or N key is pressed, False otherwise.
         :rtype:
@@ -260,6 +260,7 @@ class PyHabHPP(PyHab):
     def printCurrentData(self):
         """
         Prints current data to output window, HPP variant. Only called when stimulus presentation is off.
+
         :return:
         :rtype:
         """
