@@ -316,7 +316,7 @@ class PyHabBuilder:
         self.buttonList['text'].append(self.lastPaletteText)
         self.buttonList['functions'].append(self.lastPalettePage)
         if len(self.settings['trialTypes']) > 8:
-            self.totalPalettePages = round(len(self.settings['trialTypes'])/8) + 1
+            self.totalPalettePages = floor((len(self.settings['trialTypes'])-1)/8) + 1
         self.trialTypesArray = self.loadTypes(self.typeLocs, self.settings['trialTypes'], page=self.trialPalettePage)
         self.studyFlowArray = self.loadFlow(self.settings['trialOrder'], self.flowArea, self.flowLocs,self.overFlowLocs, self.settings['trialTypes'])
 
@@ -803,9 +803,8 @@ class PyHabBuilder:
                         if makeNew:
                             self.settings['trialTypes'].append(typeInfo[0])
                             self.settings['stimNames'][typeInfo[0]] = []
-                            if len(self.settings['trialTypes']) in [9, 17]:
-                                self.totalPalettePages += 1
-                                self.trialPalettePage = deepcopy(self.totalPalettePages)
+                            self.totalPalettePages = floor((len(self.settings['trialTypes'])-1)/8)+1  # Update if needed
+                            self.trialPalettePage = deepcopy(self.totalPalettePages)
                             self.trialTypesArray = self.loadTypes(self.typeLocs, self.settings['trialTypes'], page=self.trialPalettePage)
                             # If there exists a condition file or condition settings, warn the user that they will need to be updated!
                             if self.settings['condFile'] is not '':
@@ -1405,9 +1404,9 @@ class PyHabBuilder:
                             if new:
                                 self.settings['calcHabOver'] = [blockOrder[-1]]  # Default to last trial.
                                 self.settings['trialTypes'].append('Hab')
-                                if len(self.settings['trialTypes']) in [9, 17]:
-                                    self.totalPalettePages += 1
-                                    self.trialPalettePage = deepcopy(self.totalPalettePages)
+                                # Update palette pages if needed.
+                                self.totalPalettePages = floor((len(self.settings['trialTypes'])-1) / 8) + 1
+                                self.trialPalettePage = deepcopy(self.totalPalettePages)
                                 self.trialTypesArray = self.loadTypes(self.typeLocs, self.settings['trialTypes'], page=self.trialPalettePage)
                             done = True
                             self.habSettingsDlg()  # For setting which things to hab over.
@@ -1415,9 +1414,9 @@ class PyHabBuilder:
                             self.settings['blockList'][blockName] = blockOrder
                             if new:
                                 self.settings['trialTypes'].append(blockName)
-                                if len(self.settings['trialTypes']) in [9, 17]:  # TODO: capped at 24.
-                                    self.totalPalettePages += 1
-                                    self.trialPalettePage = deepcopy(self.totalPalettePages)
+                                # Update palette pages if needed.
+                                self.totalPalettePages = floor((len(self.settings['trialTypes'])-1) / 8) + 1
+                                self.trialPalettePage = deepcopy(self.totalPalettePages)
                                 self.trialTypesArray = self.loadTypes(self.typeLocs, self.settings['trialTypes'], page=self.trialPalettePage)
                             else:
                                 self.studyFlowArray=self.loadFlow(self.settings['trialOrder'], self.flowArea, self.flowLocs, self.overFlowLocs, types=self.settings['trialTypes'])
@@ -1598,6 +1597,10 @@ class PyHabBuilder:
         for i, j in self.settings['blockList'].items():  # If it's part of a block
             while dType in j:
                 j.remove(dType)
+        if len(self.settings['trialTypes']) > 0:  # A catch if we've deleted the last trial type so it doesn't break the palette
+            self.totalPalettePages = floor((len(self.settings['trialTypes']) - 1) / 8) + 1  # Update if needed
+            if self.trialPalettePage > self.totalPalettePages:  # In case we've lost the page we're on. Otherwise, stay on current page
+                self.trialPalettePage = deepcopy(self.totalPalettePages)
         self.trialTypesArray = self.loadTypes(self.typeLocs,self.settings['trialTypes'], page=self.trialPalettePage)  # easiest to just reload the trial types.
         # For the study flow, it's easiest just to remove it from the trial order and reload the study flow.
         if dType in self.settings['trialOrder']:
