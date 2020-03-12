@@ -315,6 +315,8 @@ class PyHabBuilder:
         self.buttonList['shapes'].append(self.lastPaletteArrow)
         self.buttonList['text'].append(self.lastPaletteText)
         self.buttonList['functions'].append(self.lastPalettePage)
+        if len(self.settings['trialTypes']) > 8:
+            self.totalPalettePages = round(len(self.settings['trialTypes'])/8) + 1
         self.trialTypesArray = self.loadTypes(self.typeLocs, self.settings['trialTypes'], page=self.trialPalettePage)
         self.studyFlowArray = self.loadFlow(self.settings['trialOrder'], self.flowArea, self.flowLocs,self.overFlowLocs, self.settings['trialTypes'])
 
@@ -1403,6 +1405,9 @@ class PyHabBuilder:
                             if new:
                                 self.settings['calcHabOver'] = [blockOrder[-1]]  # Default to last trial.
                                 self.settings['trialTypes'].append('Hab')
+                                if len(self.settings['trialTypes']) in [9, 17]:
+                                    self.totalPalettePages += 1
+                                    self.trialPalettePage = deepcopy(self.totalPalettePages)
                                 self.trialTypesArray = self.loadTypes(self.typeLocs, self.settings['trialTypes'], page=self.trialPalettePage)
                             done = True
                             self.habSettingsDlg()  # For setting which things to hab over.
@@ -1410,6 +1415,9 @@ class PyHabBuilder:
                             self.settings['blockList'][blockName] = blockOrder
                             if new:
                                 self.settings['trialTypes'].append(blockName)
+                                if len(self.settings['trialTypes']) in [9, 17]:  # TODO: capped at 24.
+                                    self.totalPalettePages += 1
+                                    self.trialPalettePage = deepcopy(self.totalPalettePages)
                                 self.trialTypesArray = self.loadTypes(self.typeLocs, self.settings['trialTypes'], page=self.trialPalettePage)
                             else:
                                 self.studyFlowArray=self.loadFlow(self.settings['trialOrder'], self.flowArea, self.flowLocs, self.overFlowLocs, types=self.settings['trialTypes'])
