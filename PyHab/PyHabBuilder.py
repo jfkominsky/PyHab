@@ -3979,12 +3979,16 @@ class PyHabBuilder:
                     for i in range(0, len(fileList)):
                         if fileList[i][-11:] == 'Launcher.py':
                             launcherSource = fileList[i]
-                # Open file and find line 5, aka the path to the settings file, replace it appropriately
+                # Open file and find the line that sets the path to the settings file, update it appropriately
                 with open(launcherSource,'r') as file:
                     launcherFile = file.readlines()
                 newLine = 'setName = \"' + self.settings['prefix']+'Settings.csv\"\r\n'  # Simplified, so it always runs the settings file in that folder.
-                launcherFile[6] = newLine
-                launcherFile[7] = "#Created in PsychoPy version " + __version__ + "\r\n"
+                for i in range(0, 20): # An inelegant solution but one flexible enough to find the right line to overwrite
+                    if launcherFile[i][0:7] == 'setName':
+                        targetLine = i
+                        break
+                launcherFile[targetLine] = newLine
+                launcherFile[targetLine+1] = "#Created in PsychoPy version " + __version__ + "\r\n"
                 # now write the new file!
                 with open(launcherPath, 'w') as t:
                     t.writelines(launcherFile)
