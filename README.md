@@ -18,7 +18,7 @@ Looking time and stimulus presentation system for PsychoPy.
 <li>If you do use PyHab for a study that you then submit for publication, please cite <b>both PsychoPy and PyHab</b>. PyHab relies very heavily on PsychoPy (but is not directly affiliated with or developed by the makers of PsychoPy), so credit is due as much to them as it is to me.</li>
 <li><a href="https://groups.google.com/forum/#!forum/pyhab-announcements">Please join the Pyhab announcements mailing list for news about updates and important technical information</a></li>
 <li><b>KNOWN ISSUES:</b> There may be an issue with multi-monitor displays where one of them is a Mac Retina display, starting with MacOS 10.13.5 (High Sierra June 2018). I am investigating the problem, but non-Retina displays or earlier versions of MacOS should be unaffected. Non-Macs are obviously unaffected.</li>
-<li><b>PsychoPy 2020.1.0-1:</b> Versions 2020.1.0-1 of PsychoPy introduced a bug in how PsychoPy runs scripts. This was fixed in PsychoPy version 2020.1.2. <b>I strongly recommend updating PsychoPy to 2020.1.2 or later</b>.
+<li><b>PsychoPy 2020.1.0-1:</b> Versions 2020.1.0-1 of PsychoPy introduced a bug in how PsychoPy runs scripts. This was fixed in PsychoPy version 2020.1.2. <b>I strongly recommend updating PsychoPy to 2020.1.3 or later</b>.
 </ul>
 <h2>Installing PyHab and Getting Started</h2>
 <p><a href="https://pyhab.readthedocs.io/en/latest/?badge=latest" target="_blank">Click here for the installation and quick-start guides</a></p>
