@@ -524,13 +524,21 @@ class PyHab:
         else:
             return False
 
-    def attnGetter(self, trialType, cutoff=False, onmin=0):
+    def attnGetter(self, trialType, cutoff=False, onmin=0.0, midTrial=False):
         """
         Plays either a default attention-getter animation or a user-defined one.
         Separate settings for audio w/shape and video file attention-getters.
 
+        TODO: Need to fix how this handles mid-trial AGs, which can differ from start-of-trial AGs
+
         :param trialType: Current trial type
         :type trialType: string
+        :param cutoff: Cut off AG immediately on gaze-on? Defaut False
+        :type cutoff: bool
+        :param onmin: Delay in listening for gaze-on to immediately end AG. Default 0
+        :type onmin: float
+        :param midTrial: Is this a mid-trial attention-getter? Default False
+        :type midTrial: bool
         :return:
         :rtype:
         """
@@ -556,7 +564,10 @@ class PyHab:
         onCheck = 0
 
         # Read off the relevant properties from the attention-getter settings
-        attnGetter = self.attnGetterList[self.playAttnGetter[trialType]['attnGetter']]  # Reads attention-getter from list of AGs.
+        if not midTrial:
+            attnGetter = self.attnGetterList[self.playAttnGetter[trialType]['attnGetter']]  # Reads attention-getter from list of AGs.
+        else:
+            attnGetter = self.attnGetterList[self.midAG[trialType]['attnGetter']]
         if attnGetter['stimType'] is 'Audio':
             if attnGetter['shape'] is 'Rectangle':
                 useShape = self.attnGetterSquare
@@ -1442,16 +1453,24 @@ class PyHab:
                         elif disMovie['stimType'] == ['Image with audio'] and disMovie['stim']['Audio'].status == PLAYING:
                             disMovie['stim']['Audio'].pause()
                     if localType in self.midAG and self.stimPres:
-                        if nowOff - startOff >= self.midAG[localType]['trigger']:
+                        try:
+                            startAG
+                        except NameError:
+                            startAG = startOff
+                        else:
+                            if startAG - startOff < 0:  # was this startAG from a previous gaze-off? If so set to current gaze-off.
+                                startAG = startOff
+                        if nowOff - startAG >= self.midAG[localType]['trigger']:
                             # TODO: Do something here to deal with recording data about mid-trial AG behavior?
                             if localType not in self.dynamicPause: # Need to pause it anyways to play the AG so they don't overlap
                                 if disMovie['stimType'] in ['Movie', 'Audio'] and disMovie['stim'].status == PLAYING:
                                     disMovie['stim'].pause()
                                 elif disMovie['stimType'] == ['Image with audio'] and disMovie['stim']['Audio'].status == PLAYING:
                                     disMovie['stim']['Audio'].pause()
-                            startAG = core.getTime()
-                            self.attnGetter(localType, self.midAG[localType]['cutoff'], self.midAG[localType]['onmin'])
-                            durAG = core.getTime() - startAG
+                            startAG = core.getTime() - startTrial
+                            self.attnGetter(localType, cutoff=self.midAG[localType]['cutoff'], onmin=self.midAG[localType]['onmin'], midTrial=True)
+                            endAG = core.getTime() - startTrial  # Keeping everything relative to start of trial
+                            durAG = endAG - startAG
                             maxDurAdd = maxDurAdd + durAG  # Increase max length of trial by duration that AG played.
                             if localType not in self.dynamicPause:
                                 if disMovie['stimType'] in ['Movie', 'Audio'] and disMovie['stim'].status != PLAYING:
