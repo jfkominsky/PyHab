@@ -922,6 +922,9 @@ class PyHabBuilder:
             # Pause behavior
             if adTypeInfo[len(adTypeInfo)-5] in [True, 1, 'True', '1'] and trialType not in self.settings['dynamicPause']:
                 self.settings['dynamicPause'].append(trialType)
+            elif adTypeInfo[len(adTypeInfo)-5] in [False, 0, 'False', '0'] and trialType in self.settings['dynamicPause']:
+                # Remove if this behavior has been turned off.
+                self.settings['dynamicPause'].pop(self.setting['dynamicPause'].index(trialType))
             # Mid-trial AG
             if adTypeInfo[len(adTypeInfo)-4] in self.settings['attnGetterList']:
                 # We have the luxury of only caring about certain inputs if there is a mid-trial AG
