@@ -949,6 +949,10 @@ class PyHabBuilder:
                     midmin = 0.0
                 self.settings['midAG'][trialType] = {'attnGetter':adTypeInfo[len(adTypeInfo)-4], 'trigger':trigger,
                                                      'cutoff':midcut, 'onmin':midmin}
+            elif trialType in self.settings['midAG'].keys():
+                # If the mid-trial AG has been set to "none" but was previously set to something, remove it.
+                self.settings['midAG'].pop(trialType)
+
             if len(fail) > 0:
                 errDlg = gui.Dlg("Problem!")
                 errDlg.addText("The following fields received invalid input, please re-enter! (Other fields have been saved)")
