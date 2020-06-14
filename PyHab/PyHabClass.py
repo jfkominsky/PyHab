@@ -450,7 +450,8 @@ class PyHab:
 
 
 
-        if self.habCount == self.setCritWindow and self.setCritType != 'Threshold':  # time to set the hab criterion. This will be true for both dynamic and first
+        if self.habCount == self.setCritWindow and self.setCritType != 'Threshold':  # time to set the hab criterion.
+            # This condition sets the initial criterion for peak/max, first, and last. Threshold needs more.
             sumOnTimes = 0
             for j in range(0,self.habCount):
                 sumOnTimes = sumOnTimes + self.habDataCompiled[j]
@@ -518,6 +519,13 @@ class PyHab:
                         self.habMetWhen = self.habCount
                         return True
                     else:
+                        if self.setCritType == 'Last':  # For the "recent" crit type, we must update after checking.
+                            sumOnTimes = 0
+                            index = self.habCount - self.setCritWindow
+                            for j in range(index, self.habCount):
+                                sumOnTimes = sumOnTimes + self.habDataCompiled[j]
+                            self.habCrit = sumOnTimes / self.setCritDivisor
+                            self.habSetWhen = deepcopy(self.habCount)
                         return False
                 else:
                     return False

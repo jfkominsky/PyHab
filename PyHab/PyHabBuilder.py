@@ -3657,7 +3657,7 @@ class PyHabBuilder:
         2 = setCritDivisor (denominator of criterion calculation . e.g., sum of first 3 trials
             divided by 2 would have 3 for setCritWindow and 2 for this.)
 
-        3 = setCritType (peak window, max trials, first N, or first N above threshold)
+        3 = setCritType (peak window, max trials, first N, last N, or first N above threshold)
 
         4 = habThresh (threshold for N above threshold)
 
@@ -3689,7 +3689,7 @@ class PyHabBuilder:
             lastSet.append(self.settings['metCritStatic'])
 
         hDlg = gui.Dlg(title="Habituation block settings")
-        windowtypes = ['First', 'Peak', 'Max', 'Threshold']
+        windowtypes = ['First', 'Peak', 'Max', 'Last', 'Threshold']
         winchz = [x for x in windowtypes if x != lastSet[3]]
         winchz.insert(0, lastSet[3])
         if lastSet[-1] == 'Fixed':
