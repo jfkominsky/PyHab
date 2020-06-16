@@ -1160,7 +1160,7 @@ class PyHab:
                         startAG = core.getTime()
                         onCheck = 0
                         while simAG:
-                            if core.getTime() - startAG >= self.attnGetterList[self.playAttnGetter[trialType]]['stimDur']:
+                            if core.getTime() - startAG >= self.attnGetterList[self.playAttnGetter[trialType]['attnGetter']]['stimDur']:
                                 simAG = False
                             elif self.playAttnGetter[trialType]['cutoff'] and self.lookKeysPressed():
                                 if onCheck == 0 and self.playAttnGetter[trialType]['onmin'] > 0:
