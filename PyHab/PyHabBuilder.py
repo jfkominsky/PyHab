@@ -2276,7 +2276,7 @@ class PyHabBuilder:
                     for q in range(0, len(allScreenSets)):
                         # Iterates through the dicts of screen-specific settings
                         for i,j in self.settings[allScreenSets[q]].items():
-                            j = stimfo[indList[q]]
+                            self.settings[allScreenSets[q]][i] = stimfo[indList[q]]
                 else:
                     self.settings['screenWidth'][screen] = stimfo[0]
                     self.settings['screenHeight'][screen] = stimfo[1]
