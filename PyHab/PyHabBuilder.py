@@ -2666,9 +2666,10 @@ class PyHabBuilder:
                 aDlg2 = gui.Dlg(title="Make new attention-getter: step 1")
                 aDlg2.addField("Attention-getter name: ", 'NewAttnGetter')
                 aDlg2.addField("Audio (with built-in shape) or movie, or silent movie with sep. audio track?", choices=['Audio','Movie','Movie + Audio'])
+                aDlg2.addField("Attention-getter background color (default = same as stimuli)", choices=['default','white','black','gray'])
                 ans2 = aDlg2.show()
                 if aDlg2.OK:
-                    tempGetter={'stimType': ans2[1]}
+                    tempGetter={'stimType': ans2[1], 'bgColor': ans2[2]}
                     if tempGetter['stimType'] is 'Movie':
                         newTempGet = self.attnGetterVideoDlg()
                     elif tempGetter['stimType'] is 'Audio':

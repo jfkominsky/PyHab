@@ -576,6 +576,9 @@ class PyHab:
             attnGetter = self.attnGetterList[self.playAttnGetter[trialType]['attnGetter']]  # Reads attention-getter from list of AGs.
         else:
             attnGetter = self.attnGetterList[self.midAG[trialType]['attnGetter']]
+        if 'bgColor' in attnGetter.keys():
+            if attnGetter['bgColor'] != 'default':
+                self.win.setColor(attnGetter['bgColor'])
         if attnGetter['stimType'] is 'Audio':
             if attnGetter['shape'] is 'Rectangle':
                 useShape = self.attnGetterSquare
@@ -646,8 +649,11 @@ class PyHab:
                 elif cutoff and onCheck > 0:  # A clever little way to say "if they aren't looking but were earlier"
                     onCheck = 0
 
+        if 'bgColor' in attnGetter.keys():
+            if attnGetter['bgColor'] != 'default':
+                self.win.setColor(self.screenColor['C'])
         self.dispCoderWindow(0)
-        #self.win.flip()  # clear screen (change?) TODO: For audio-only stim you need it...
+        #self.win.flip()  # clear screen (change?) TODO: For audio-only stim you may need it...
 
     def flashCoderWindow(self, rep=False):
         """
