@@ -2697,6 +2697,11 @@ class PyHabBuilder:
                 else:
                     chz = ['Movie + Audio', 'Movie', 'Audio']
                 aDlg2b.addField("Attention-getter type: ", choices=chz)
+                ch2 = ['default','white','black','gray']
+                if 'bgColor' in currAG.keys():
+                    ch2 = [x for x in ch2 if x != currAG['bgColor']]
+                    ch2.insert(0, currAG['bgColor'])
+                aDlg2b.addField("Attention-getter background color: ", choices=ch2) # Index 2
                 aDlg2b.addField("Change current file (%s)?" % currAG['stimName'], choices=["No","Yes"])
                 if currAG['stimType'] is 'Movie + Audio':
                     aDlg2b.addField("Change audio file (%s)?" % currAG['audioName'], choices=["No","Yes"])
@@ -2730,7 +2735,7 @@ class PyHabBuilder:
                             tempGetter.update(newTempGet)
                             self.settings['attnGetterList'][ans2b[0]] = tempGetter # Overwrite existing.
                     else:
-                        if ans2b[2] is "Yes":  # Same stim type, change file. Ignore shape settings for now
+                        if ans2b[3] is "Yes":  # Same stim type, change file. Ignore shape settings for now
                             fileSelectDlg = gui.fileOpenDlg(prompt="Select attention-getter file")
                             if type(fileSelectDlg) is not NoneType:
                                 path, namething = os.path.split(fileSelectDlg[0])
@@ -2745,8 +2750,9 @@ class PyHabBuilder:
                         if currAG['stimType'] is 'Movie + Audio' and ans2b[3] is "Yes":
                             self.settings['attnGetterList'][ans2b[0]].update({'audioLoc': fileSelectDlg[0],
                                                                               'audioName': namething})
-                    if len(ans2b) > 4:  # If we had shape/color settings
-                        self.settings['attnGetterList'][ans2b[0]].update({'shape': ans2b[3], 'color': ans2b[4]})
+                    if len(ans2b) > 5:  # If we had shape/color settings
+                        self.settings['attnGetterList'][ans2b[0]].update({'shape': ans2b[4], 'color': ans2b[5]})
+                    self.settings['attnGetterList'][ans2b[0]].update({'bgColor': ans2b[2]}) # update BGcolor
 
     def condSettingsDlg(self): #Settings relating to conditions and randomization
         """
