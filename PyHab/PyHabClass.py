@@ -662,6 +662,7 @@ class PyHab:
         if 'bgColor' in attnGetter.keys():
             if attnGetter['bgColor'] != 'default':
                 self.win.setColor(self.screenColor['C'])
+                self.win.flip()  # needed if you're changing bg color w/out starting trial....
         self.dispCoderWindow(0)
         #self.win.flip()  # clear screen (change?) TODO: For audio-only stim you may need it...
 
@@ -1167,6 +1168,7 @@ class PyHab:
                         irrel = self.dispTrial(0, disMovie)
                         core.wait(self.freezeFrame)  # this delay ensures that the trial only starts after the images have appeared on the screen, static, for a user-determined length of time
                         waitStart = True
+                        AA = self.autoAdvance # This is specific to attention-getters so that if you skip the AG, it immediately plays the first stimuli.
                     else:
                         self.frameCount = {k: 0 for k, v in self.frameCount.items()}
                         waitStart = True
@@ -1187,6 +1189,7 @@ class PyHab:
                                     onCheck = 0
                         core.wait(self.freezeFrame)  # an attempt to match the delay caused by the attention-getter playing.
                         waitStart = True
+                        AA = self.autoAdvance
                     else:
                         waitStart = True
                 while waitStart and trialType not in AA and not end:  # Wait for first gaze-on
