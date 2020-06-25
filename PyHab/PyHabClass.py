@@ -624,6 +624,9 @@ class PyHab:
                 elif i > 30 and self.keyboard[self.key.S]:
                     # If more than half a second (30 frames) has passed and "S" is pressed.
                     attnGetter['file'].stop(reset=True)
+                    if midTrial:
+                        while self.keyboard[self.key.S]:
+                            self.dispCoderWindow(0)  # an awkward fix to stop it from insta-ending trials when S is pressed during a mid-trial AG
                     break
         else:
             dMovie = attnGetter['file']
@@ -657,6 +660,9 @@ class PyHab:
                     if attnGetter['stimType'] == 'Movie + Audio':
                         attnGetter['audioFile'].stop(reset=True)
                     dMovie.pause()
+                    if midTrial:
+                        while self.keyboard[self.key.S]:
+                            self.dispCoderWindow(0)  # an awkward fix to stop it from insta-ending trials when S is pressed during a mid-trial AG
                     break
 
         if 'bgColor' in attnGetter.keys():
