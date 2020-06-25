@@ -620,29 +620,33 @@ class PyHabBuilder:
                     if self.studyFlowArray['labels'][i] == trialType:
                         flowIndexes.append(i) 
                 typeIndex = self.trialTypesArray['labels'].index(trialType)
-                if self.settings['playThrough'][trialType] == 2:
-                    chz = ["No", "OnOnly", "Yes"]
+                if self.settings['playThrough'][trialType] == 3:
+                    chz = ["EitherOr", "Yes", "OnOnly", "No"]
+                elif self.settings['playThrough'][trialType] == 2:
+                    chz = ["No", "OnOnly", "Yes", "EitherOr"]
                 elif self.settings['playThrough'][trialType] == 1:
-                    chz = ["OnOnly", "Yes", "No"]
+                    chz = ["OnOnly", "Yes", "No", "EitherOr"]
                 else:
-                    chz = ["Yes", "OnOnly", "No"]
+                    chz = ["Yes", "OnOnly", "No", "EitherOr"]
             elif len(prevInfo) > 0:
                 typeDlg.addField("Max duration", prevInfo[1])
                 maxOff = prevInfo[3]
                 minOn = prevInfo[4]
                 ISI = prevInfo[8]
-                if prevInfo[5] == 2:
-                    chz = ["No", "OnOnly", "Yes"]
+                if prevInfo[5] == 3:
+                    chz = ["EitherOr", "Yes", "OnOnly", "No"]
+                elif prevInfo[5] == 2:
+                    chz = ["No", "Yes", "OnOnly", "EitherOr"]
                 elif prevInfo[5] == 1:
-                    chz = ["OnOnly", "Yes", "No"]
+                    chz = ["OnOnly", "Yes", "EitherOr", "No"]
                 else:
-                    chz = ["Yes", "OnOnly", "No"]
+                    chz = ["Yes", "OnOnly", "EitherOr", "No"]
             else:  # if there are no existing indexes to refer to
                 typeDlg.addField("Max duration", 60.0)
                 maxOff = 2.0
                 minOn = 1.0
                 ISI = 0.0
-                chz = ["Yes", "OnOnly", "No"]
+                chz = ["Yes", "OnOnly", "EitherOr", "No"]
             typeDlg.addField("Gaze-contingent trial type (next two lines ignored otherwise)", choices=chz)
             typeDlg.addField("Number of continuous seconds looking away to end trial", maxOff)
             typeDlg.addField("Minimum time looking at screen before stimuli can be ended (not consecutive)", minOn)
@@ -765,6 +769,8 @@ class PyHabBuilder:
                             self.settings['playThrough'][trialType] = 2
                         elif typeInfo[2] == "OnOnly" and self.settings['playThrough'][trialType] is not 1:
                             self.settings['playThrough'][trialType] = 1
+                        elif typeInfo[2] == "EitherOr" and self.settings['playThrough'][trialType] is not 3:
+                            self.settings['playThrough'][trialType] = 3 # TODO: wacky order, clean up.
 
                         # Auto-advance settings
                         if typeInfo[5] in [False,0,'False','0'] and trialType in self.settings['autoAdvance']: #gaze-contingent trial type, not already tagged as such.

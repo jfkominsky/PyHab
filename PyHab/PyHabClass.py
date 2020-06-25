@@ -1450,9 +1450,17 @@ class PyHab:
                         offArray.append(tempGazeArray)
             elif not gazeOn:  # if they are not looking as of the previous refresh, check if they have been looking away for too long
                 nowOff = core.getTime() - startTrial
+                # Compartmentalizing conditions to end trial here for new either/or functionality
+                endCondMet = False
+                if self.playThrough[localType] == 0:
+                    if sumOn >= self.minOn[localType] and nowOff - startOff >= self.maxOff[localType] and not endFlag:
+                        endCondMet = True
+                if self.playThrough[localType] == 3:
+                    if nowOff - startOff >= self.maxOff[localType] and not endFlag:
+                        endCondMet = True
 
-                if sumOn >= self.minOn[localType] and nowOff - startOff >= self.maxOff[localType] and self.playThrough[localType] == 0 and not endFlag:
-                    # if they have previously looked for at least .5s and now looked away for 2 continuous sec
+                if endCondMet:
+                    # if they have previously looked for at least minOn and now looked away for maxOff continuous sec
                     if localType in self.movieEnd:
                         endFlag = True
                     else:
@@ -1513,7 +1521,7 @@ class PyHab:
 
             elif gazeOn:
                 nowOn = core.getTime() - startTrial
-                if self.playThrough[localType] == 1 and sumOn + (nowOn - startOn) >= self.minOn[localType] and not endFlag:  # For trial types where the only crit is min-on.
+                if self.playThrough[localType] in [1, 3] and sumOn + (nowOn - startOn) >= self.minOn[localType] and not endFlag:  # For trial types where the only crit is min-on.
                     if localType in self.movieEnd:
                         endFlag = True
                     else:
