@@ -621,6 +621,10 @@ class PyHab:
                         break
                 elif cutoff and onCheck > 0: # A clever little way to say "if they aren't looking but were earlier"
                     onCheck = 0
+                elif i > 30 and self.keyboard[self.key.S]:
+                    # If more than half a second (30 frames) has passed and "S" is pressed.
+                    attnGetter['file'].stop(reset=True)
+                    break
         else:
             dMovie = attnGetter['file']
             dMovie.seek(0.0)
@@ -648,6 +652,12 @@ class PyHab:
                         break
                 elif cutoff and onCheck > 0:  # A clever little way to say "if they aren't looking but were earlier"
                     onCheck = 0
+                elif self.frameCount['C'] > 30 and self.keyboard[self.key.S]:
+                    # If more than half a second (30 frames) has passed and "S" is pressed.
+                    if attnGetter['stimType'] == 'Movie + Audio':
+                        attnGetter['audioFile'].stop(reset=True)
+                    dMovie.pause()
+                    break
 
         if 'bgColor' in attnGetter.keys():
             if attnGetter['bgColor'] != 'default':
