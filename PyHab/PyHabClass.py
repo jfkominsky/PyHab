@@ -621,12 +621,9 @@ class PyHab:
                         break
                 elif cutoff and onCheck > 0: # A clever little way to say "if they aren't looking but were earlier"
                     onCheck = 0
-                elif i > 30 and self.keyboard[self.key.S]:
+                elif i > 30 and self.keyboard[self.key.K]:
                     # If more than half a second (30 frames) has passed and "S" is pressed.
                     attnGetter['file'].stop(reset=True)
-                    if midTrial:
-                        while self.keyboard[self.key.S]:
-                            self.dispCoderWindow(0)  # an awkward fix to stop it from insta-ending trials when S is pressed during a mid-trial AG
                     break
         else:
             dMovie = attnGetter['file']
@@ -655,14 +652,11 @@ class PyHab:
                         break
                 elif cutoff and onCheck > 0:  # A clever little way to say "if they aren't looking but were earlier"
                     onCheck = 0
-                elif self.frameCount['C'] > 30 and self.keyboard[self.key.S]:
-                    # If more than half a second (30 frames) has passed and "S" is pressed.
+                elif self.frameCount['C'] > 30 and self.keyboard[self.key.K]:
+                    # If more than half a second (30 frames) has passed and "K" is pressed.
                     if attnGetter['stimType'] == 'Movie + Audio':
                         attnGetter['audioFile'].stop(reset=True)
                     dMovie.pause()
-                    if midTrial:
-                        while self.keyboard[self.key.S]:
-                            self.dispCoderWindow(0)  # an awkward fix to stop it from insta-ending trials when S is pressed during a mid-trial AG
                     break
 
         if 'bgColor' in attnGetter.keys():
@@ -2376,6 +2370,8 @@ class PyHab:
     def loadStim(self, stim, screen='C'):
         """
         A general function for loading stimuli that can be called repeatedly.
+
+        TODO: Windows audio bug when loading an audio file before a movie file means that we should change load order for everything to movie first.
 
         :param stim: stimulus name, key for stimList dict
         :type stim: str
