@@ -812,6 +812,7 @@ class TestDataFunc(object):
 
         # Test "last" hab criterion.
         self.dataInst.setCritType = 'Last'
+        self.dataInst.metCritStatic = 'Moving'
         # Test requires that the hab-crit is reset so that the current set doesn't meet it..
         self.dataInst.habCrit = 0
         self.dataInst.setCritWindow = 3

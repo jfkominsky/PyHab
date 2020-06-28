@@ -520,11 +520,11 @@ class PyHab:
                         return True
                     else:
                         if self.setCritType == 'Last':  # For the "recent" crit type, we must update after checking.
-                            sumOnTimes = 0
+                            sumOnTimeSet = 0
                             index = self.habCount - self.setCritWindow
                             for j in range(index, self.habCount):
-                                sumOnTimes = sumOnTimes + self.habDataCompiled[j]
-                            self.habCrit = sumOnTimes / self.setCritDivisor
+                                sumOnTimeSet = sumOnTimeSet + self.habDataCompiled[j]
+                            self.habCrit = sumOnTimeSet / self.setCritDivisor
                             self.habSetWhen = deepcopy(self.habCount)
                         return False
                 else:
