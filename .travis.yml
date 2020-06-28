@@ -45,9 +45,24 @@ before_install:
   - travis_retry sudo apt-get install -qq libwebkitgtk-1.0-0
   - flac -version
 
+  # Changing to be closer to how PsychoPy does its testing environment
+  - travis_retry sudo pip install --upgrade -qq pip==9.0.3
+  - travis_retry sudo apt-get install -qq flac
+  - travis_retry sudo apt-get install -qq libav-tools  # this installs ffmpeg
+  - travis_retry sudo apt-get install -qq python-xlib python-pygame python-opengl
+  - travis_retry sudo apt-get install -qq python-numpy python-scipy python-matplotlib python-pandas
+  - travis_retry sudo apt-get install -qq python-yaml python-lxml python-configobj
+  - travis_retry sudo apt-get install -qq python-imaging python-mock
+  - travis_retry sudo apt-get install -qq python-qt4 #python-wxgtk3.0 does not exist in trusty
+  - travis_retry sudo apt-get install -qq python-pyo python-opencv
+  - travis_retry sudo apt-get install -qq python-mock
+  # Addressing an issue with wx imports.
+  - travis_retry sudo apt-get install git curl libsdl2-mixer-2.0-0 libsdl2-image-2.0-0 libsdl2-2.0-0
+
+
   # Locales
-  # - travis_retry sudo apt-get install -qq language-pack-en-base  # English locales
-  - travis_retry sudo apt-get install -qq language-pack-ja-base  # Japanese locale
+  #- travis_retry sudo apt-get install -qq language-pack-en-base  # English locales
+  #- travis_retry sudo apt-get install -qq language-pack-ja-base  # Japanese locale
   # - sudo dpkg-reconfigure locales
   # - locale -a  # list available locales
 
