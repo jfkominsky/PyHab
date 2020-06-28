@@ -498,10 +498,11 @@ class PyHab:
                     self.endHabSound = sound.Sound('G', octave=4, sampleRate=44100, secs=0.2)
             self.habMetWhen = self.habCount
             return True
-        elif self.habCount >= self.setCritWindow + self.metCritWindow and self.habSetWhen > -1:  # if we're far enough in that we can plausibly meet the hab criterion
+        elif self.habCount > self.setCritWindow and self.habSetWhen > -1:  # if we're far enough in that we can plausibly meet the hab criterion
             # Problem: Fixed window, peak, and max as relates to habsetwhen....
             # Fixed window is probably the only thing that should ignore habsetwhen.
-            if self.habCount < self.habSetWhen + self.metCritWindow and self.metCritStatic == 'Moving': # Was the hab set "late" and are we too early as a result
+            # Last needs to ignore HabSetWhen, or rather, cannot wait MetCritWindow trials past when it is set.
+            if self.habCount < self.habSetWhen + self.metCritWindow and self.metCritStatic == 'Moving' and self.setCritType != 'Last': # Was the hab set "late" and are we too early as a result
                 return False
             else:
                 sumOnTimes = 0
@@ -519,7 +520,7 @@ class PyHab:
                         self.habMetWhen = self.habCount
                         return True
                     else:
-                        if self.setCritType == 'Last':  # For the "recent" crit type, we must update after checking.
+                        if self.setCritType == 'Last':  # For the 'last' crit type, we must update after checking.
                             sumOnTimeSet = 0
                             index = self.habCount - self.setCritWindow
                             for j in range(index, self.habCount):
