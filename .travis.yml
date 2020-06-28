@@ -47,6 +47,7 @@ before_install:
 
 
   # Trying to even out how python installation is done.
+  - pwd
   - ./travis/python_setup.sh
 
   # Locales
