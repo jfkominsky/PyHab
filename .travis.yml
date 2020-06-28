@@ -44,12 +44,14 @@ before_install:
   - travis_retry sudo apt-get install -qq libav-tools  # this install ffmpeg
   - travis_retry sudo apt-get install -qq libwebkitgtk-1.0-0
   - flac -version
-  # Trying to fix pyqt bug
-  - travis_retry sudo apt-get install -qq python-qt4 #python-wxgtk3.0
+
+
+  # Trying to even out how python installation is done.
+  - ./travis/python_setup.sh
 
   # Locales
-  - travis_retry sudo apt-get install -qq language-pack-en-base  # English locales
-  - travis_retry sudo apt-get install -qq language-pack-ja-base  # Japanese locale
+  #- travis_retry sudo apt-get install -qq language-pack-en-base  # English locales
+  #- travis_retry sudo apt-get install -qq language-pack-ja-base  # Japanese locale
   # - sudo dpkg-reconfigure locales
   # - locale -a  # list available locales
 
