@@ -45,7 +45,7 @@ before_install:
   - travis_retry sudo apt-get install -qq libwebkitgtk-1.0-0
   - flac -version
   # Trying to fix pyqt bug
-  - travis_retry sudo apt-get install -qq python-qt4 python-wxgtk3.0
+  - travis_retry sudo apt-get install -qq python-qt4 #python-wxgtk3.0
 
   # Locales
   - travis_retry sudo apt-get install -qq language-pack-en-base  # English locales
