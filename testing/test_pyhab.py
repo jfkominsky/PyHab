@@ -810,6 +810,31 @@ class TestDataFunc(object):
         assert self.dataInst.checkStop() == True
         assert self.dataInst.habCrit == 55.0  # should not have changed.
 
+        # Test "last" hab criterion.
+        self.dataInst.setCritType = 'Last'
+        # Test requires that the hab-crit is reset so that the current set doesn't meet it..
+        self.dataInst.habCrit = 0
+        self.dataInst.setCritWindow = 3
+        self.dataInst.metCritWindow = 3
+        assert self.dataInst.checkStop() == False
+        assert self.dataInst.habCrit == 20.1 # 5+10+5.1, divisor = 1
+        assert self.dataInst.habSetWhen == 8
+
+        # add one more trials to ensure it tests correctly.
+        habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                          'condLabel': 'dataTest', 'trial': 11, 'GNG': 1, 'trialType': 'Hab', 'stimName': 'movie1.mov',
+                          'habCrit': 0, 'sumOnA': 5.1, 'numOnA': 2, 'sumOffA': 3.5,
+                          'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
+                          'numOffB': 2})
+
+        self.dataInst.habDataCompiled[self.dataInst.habCount] = habMatrix[-1]['sumOnA']  # 8, 5.1
+        self.dataInst.habCount += 1  # 9
+
+        self.dataInst.metCritDivisor = 2
+        assert self.dataInst.checkStop() == True
+        assert self.dataInst.habMetWhen == 9
+
+
         # Hab sub-trial tracking does not need its own tests here because data from habituation trials are recorded in
         # their own data structure, which is compiled during doTrial.
 
