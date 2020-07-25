@@ -862,6 +862,81 @@ class PyHab:
                 return 0
 
 
+    def dispTripleStim(self, trialType, dispMovie, dispImageL, dispImageR, screen='C'):
+        """
+        MODIFICATION: This is for the movie + two images display type. It is almost identical to dispmoviestim except
+        that it has arguments for the two images and draws them before dealing with the movie at all.
+
+        :param trialType: 0 for paused, otherwise a string
+        :type trialType: int or str
+        :param dispMovie: The moviestim3 object for the stimuli
+        :type dispMovie: moviestim3 object
+        :param dispImageL: The left image
+        :type dispImageL: ImageStim object
+        :param dispImageR: The right image
+        :type dispImageR: ImageStim object
+        :param screen: The screen on which the movie should display. Only relevant for HPP.
+        :type screen: str
+        :return: an int specifying whether the movie is in progress (0), paused on its last frame (1), or ending and looping (2)
+        :rtype: int
+        """
+
+        if screen == 'C':
+            w = self.win
+        elif screen == 'L':
+            w = self.winL
+        elif screen == 'R':
+            w = self.winR
+
+        # Before anything else happens, we draw both images
+        dispImageL.draw()
+        dispImageR.draw()
+
+        # and now it's just business as usual.
+
+        if self.frameCount[screen] == 0:  # initial setup
+            self.dummyThing.draw()
+            self.frameCount[screen] += 1
+            dispMovie.draw()
+            if trialType == 0:
+                self.frameCount[screen] = 0  # for post-attn-getter pause
+                dispMovie.pause()
+            else:
+                dispMovie.seek(0.0)  # Moved up here from below so that it CAN loop at all
+            w.flip()
+            return 0
+        elif self.frameCount[screen] == 1:
+            # print('playing')
+            dispMovie.play()
+            dispMovie.draw()
+            self.frameCount[screen] += 1
+            w.flip()
+            return 0
+        elif dispMovie.getCurrentFrameTime() >= dispMovie.duration - dispMovie._frameInterval*2 and self.pauseCount[screen] < self.ISI[trialType] * 60:  # pause, check for ISI.
+            self.dummyThing.draw()
+            dispMovie.pause()
+            dispMovie.draw()  # might want to have it vanish rather than leave it on the screen for the ISI, in which case comment out this line.
+            self.frameCount[screen] += 1
+            self.pauseCount[screen] += 1
+            w.flip() # TODO: Goes blank if ISI is long enough. Pyglet problem.
+            return 1
+        elif dispMovie.getCurrentFrameTime() >= dispMovie.duration - dispMovie._frameInterval*2 and self.pauseCount[screen] >= self.ISI[trialType] * 60:  # MovieStim's Loop functionality can't do an ISI
+            self.dummyThing.draw()
+            # print('repeating at ' + str(dispMovie.getCurrentFrameTime()))
+            self.frameCount[screen] = 0  # changed to 0 to better enable studies that want to blank between trials
+            self.pauseCount[screen] = 0
+            dispMovie.draw()  # Comment this out as well to blank between loops.
+            w.flip()
+            dispMovie.pause()
+            #dispMovie.seek(0.0) #This seek seems to cause the replays.
+            return 2
+        else:
+            dispMovie.draw()
+            self.frameCount[screen] += 1
+            w.flip()
+            return 0
+
+
     def dispTrial(self, trialType, dispMovie = False): #If no stim, dispMovie defaults to false.
         """
         Draws each frame of the trial. For stimPres, returns a movie-status value for determining when the movie has
@@ -889,6 +964,9 @@ class PyHab:
                 else:
                     t = 0
                 p = self.dispImageStim(dispMovie['stim']['Image'])
+            elif dispMovie['stimType'] == 'Movie with images':
+                t=self.dispTripleStim(trialType, dispMovie['stim']['Movie'], dispMovie['stim']['ImageL'],
+                                      dispMovie['stim']['ImageR'])
             else:
                 t = 0
         else:
@@ -2398,11 +2476,19 @@ class PyHab:
                                            size=[self.movieWidth[screen], self.movieHeight[screen]])
         elif tempStim['stimType'] == 'Audio':
             tempStimObj = sound.Sound(tempStim['stimLoc'])
-        else:  # The eternal problem of audio/image pair. Just creates an object that's a dict of audio and image.
+        elif tempStim['stimType'] == 'Image with audio':  # The eternal problem of audio/image pair. Just creates an object that's a dict of audio and image.
             audioObj = sound.Sound(tempStim['audioLoc'])
             imageObj = visual.ImageStim(w, tempStim['imageLoc'],
                                         size=[self.movieWidth[screen], self.movieHeight[screen]])
             tempStimObj = {'Audio': audioObj, 'Image': imageObj}
+        elif tempStim['stimType'] == 'Movie with images':
+            # MODIFICATION: This loads the stimulus type that is a movie with two images. All visual entities will
+            # display at their native resolution. Location must be manually adjusted for now.
+            movieObj = visual.MovieStim3(w, tempStim['movieLoc'], pos=[0,200], flipHoriz=False,  # modify position to change display location
+                                         flipVert=False, loop=False)
+            imageL = visual.ImageStim(w, tempStim['imageLocL'], pos=[-400,-200]) # modify position to change display location
+            imageR = visual.ImageStim(w, tempStim['imageLocR'], pos=[400,-200]) # modify position to change display location
+            tempStimObj = {'Movie': movieObj, 'ImageL': imageL, 'ImageR': imageR}
         tempAdd = {'stimType': tempStim['stimType'], 'stim': tempStimObj}
         return tempAdd
 
