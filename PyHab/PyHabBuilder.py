@@ -2331,6 +2331,8 @@ class PyHabBuilder:
         Works a bit like the attention-getter construction dialogs, but different in that it allows audio or images alone.
         The image/audio pairs are complicated, but not worth splitting into their own function at this time.
 
+        MODIFICATON: Now with additional stimulus type, "Movie with images"
+
         :return:
         :rtype:
         """
@@ -2346,10 +2348,10 @@ class PyHabBuilder:
             else:
                 add = 0
         if add == 1:
-            cz = ['Movie', 'Image', 'Audio', 'Image with audio']
+            cz = ['Movie', 'Image', 'Audio', 'Image with audio', 'Movie with images']
             sDlg1 = gui.Dlg(title="Add stimuli to library, step 1")
             sDlg1.addField("What kind of stimuli would you like to add? (Please add each type separately)", choices=cz)
-            sDlg1.addField("How many? (For image with audio, how many pairs?) You will select them one at a time.", 1)
+            sDlg1.addField("How many? (For image with audio or movie with images, how many sets?) You will select them one at a time.", 1)
             sd1 = sDlg1.show()
             allowedStrings = {'Audio': "Audio (*.aac, *.aiff, *.flac, *.m4a, *.mp3, *.ogg, *.raw, *.wav, *.m4b, *.m4p)",
                               'Movie': "Movies (*.mov, *.avi, *.ogv, *.mkv, *.mp4, *.mpeg, *.mpe, *.mpg, *.dv, *.wmv, *.3gp)",
@@ -2358,14 +2360,14 @@ class PyHabBuilder:
                 stType = sd1[0]  # Type of stimuli (from drop-down).
                 stNum = sd1[1]  # Number to add.
                 NoneType = type(None)
-                if stType != 'Image with audio':  # Image w/ audio is complicated, so we will take care of that separately.
+                if stType in ['Movie', 'Image', 'Audio']:  # Image w/ audio is complicated, so we will take care of that separately.
                     for i in range(0, stNum):
                         stimDlg = gui.fileOpenDlg(prompt="Select stimulus file (only one!)")
                         if type(stimDlg) is not NoneType:
                             fileName = os.path.split(stimDlg[0])[1] # Gets the file name in isolation.
                             self.stimSource[fileName] = stimDlg[0]  # Creates a "Find this file" path for the save function.
                             self.settings['stimList'][fileName] = {'stimType': stType, 'stimLoc': stimDlg[0]}
-                else:  # Creating image/audio pairs is more complicated.
+                elif stType == 'Image with audio':  # Creating image/audio pairs is more complicated.
                     for i in range(0, stNum):
                         stimDlg1 = gui.Dlg(title="Pair number " + str(i+1))
                         stimDlg1.addField("Unique name for this stimulus pair (you will use this to add it to trials later)", 'pairName')
@@ -2395,6 +2397,55 @@ class PyHabBuilder:
                                             fileName2 = os.path.split(stimDlg2[0])[1] # Gets the file name in isolation.
                                             self.stimSource[fileName2] = stimDlg2[0]
                                             self.settings['stimList'][sd2[0]].update({'imageLoc': stimDlg2[0]})
+                                    else:
+                                        del self.settings['stimList'][sd2[0]]
+
+                else:  # Modification, movie with images
+                    for i in range(0, stNum):
+                        stimDlg1 = gui.Dlg(title="Set number " + str(i + 1))
+                        stimDlg1.addField(
+                            "Unique name for this stimulus set (you will use this to add it to trials later)",
+                            'setName')
+                        stimDlg1.addText("Click OK to select the MOVIE file for this set")
+                        sd2 = stimDlg1.show()
+                        if stimDlg1.OK:
+                            a = True
+                            if sd2[0] in list(self.settings['stimList'].keys()):  # If the set name exists already
+                                a = False
+                                errDlg = gui.Dlg("Change existing pair?")
+                                errDlg.addText(
+                                    "Warning: Stimulus name already in use! Press OK to overwrite existing set, or cancel to skip to next set.")
+                                ea = errDlg.show()
+                                if errDlg.OK:
+                                    a = True
+                            if a:
+                                stimDlg = gui.fileOpenDlg(prompt="Select MOVIE file (only one!)")
+                                if type(stimDlg) is not NoneType:
+                                    fileName = os.path.split(stimDlg[0])[1]  # Gets the file name in isolation.
+                                    self.stimSource[fileName] = stimDlg[0]  # Creates a "Find this file" path for the save function.
+                                    self.settings['stimList'][sd2[0]] = {'stimType': stType, 'movieLoc': stimDlg[0]}
+                                    tempDlg = gui.Dlg(title="Now select left image")
+                                    tempDlg.addText(
+                                        "Now, select the LEFT image for this stimulus (cancel to erase movie and skip set)")
+                                    t = tempDlg.show()
+                                    if tempDlg.OK:
+                                        stimDlg2 = gui.fileOpenDlg(prompt="Select left image file (only one!)")
+                                        if type(stimDlg2) is not NoneType:
+                                            fileName2 = os.path.split(stimDlg2[0])[1]  # Gets the file name in isolation.
+                                            self.stimSource[fileName2] = stimDlg2[0]
+                                            self.settings['stimList'][sd2[0]].update({'imageLocL': stimDlg2[0]})
+
+                                            tempDlg2 = gui.Dlg(title="Now select right image")
+                                            tempDlg2.addText("Now, select the RIGHT image for this stimulus (cancel to erase set)")
+                                            if tempDlg2.OK:
+                                                stimDlg3 = gui.fileOpenDlg(prompt="Select right image file (only one!)")
+                                                if type(stimDlg3) is not NoneType:
+                                                    fileName3 = os.path.split(stimDlg3[0])[1]  # Gets the file name in isolation.
+                                                    self.stimSource[fileName3] = stimDlg3[0]
+                                                    self.settings['stimList'][sd2[0]].update({'imageLocR': stimDlg3[0]})
+
+                                            else:
+                                                del self.settings['stimList'][sd2[0]]
                                     else:
                                         del self.settings['stimList'][sd2[0]]
 
