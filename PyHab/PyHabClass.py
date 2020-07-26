@@ -1565,12 +1565,16 @@ class PyHab:
                             disMovie['stim'].play()
                         elif disMovie['stimType'] == ['Image with audio'] and disMovie['stim']['Audio'].status != PLAYING:
                             disMovie['stim']['Audio'].play()
+                        elif disMovie['stimType'] == ['Movie with images'] and disMovie['stim']['Movie'].status != PLAYING:
+                            disMovie['stim']['Movie'].play()
                 else:
                     if localType in self.dynamicPause and self.stimPres:
                         if disMovie['stimType'] in ['Movie','Audio'] and disMovie['stim'].status == PLAYING:
                             disMovie['stim'].pause()
                         elif disMovie['stimType'] == ['Image with audio'] and disMovie['stim']['Audio'].status == PLAYING:
                             disMovie['stim']['Audio'].pause()
+                        elif disMovie['stimType'] == ['Movie with images'] and disMovie['stim']['Movie'].status == PLAYING:
+                            disMovie['stim']['Movie'].pause()
                     if localType in self.midAG and self.stimPres:
                         try:
                             startAG
@@ -1586,6 +1590,8 @@ class PyHab:
                                     disMovie['stim'].pause()
                                 elif disMovie['stimType'] == ['Image with audio'] and disMovie['stim']['Audio'].status == PLAYING:
                                     disMovie['stim']['Audio'].pause()
+                                elif disMovie['stimType'] == ['Movie with images'] and disMovie['stim']['Movie'].status == PLAYING:
+                                    disMovie['stim']['Movie'].pause()
                             startAG = core.getTime() - startTrial
                             self.attnGetter(localType, cutoff=self.midAG[localType]['cutoff'], onmin=self.midAG[localType]['onmin'], midTrial=True)
                             endAG = core.getTime() - startTrial  # Keeping everything relative to start of trial
@@ -1596,6 +1602,8 @@ class PyHab:
                                     disMovie['stim'].play()
                                 elif disMovie['stimType'] == ['Image with audio'] and disMovie['stim']['Audio'].status != PLAYING:
                                     disMovie['stim']['Audio'].play()
+                                elif disMovie['stimType'] == ['Movie with images'] and disMovie['stim']['Movie'].status != PLAYING:
+                                    disMovie['stim']['Movie'].play()
 
             elif gazeOn:
                 nowOn = core.getTime() - startTrial
