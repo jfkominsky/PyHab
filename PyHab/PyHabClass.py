@@ -138,8 +138,13 @@ class PyHab:
             try:
                 j['stimLoc'] = ''.join([self.dirMarker if x == otherOS else x for x in j['stimLoc']])
             except KeyError:  # For image/audio pairs
-                j['audioLoc'] = ''.join([self.dirMarker if x == otherOS else x for x in j['audioLoc']])
-                j['imageLoc'] = ''.join([self.dirMarker if x == otherOS else x for x in j['imageLoc']])
+                if 'audioLoc' in j.keys():
+                    j['audioLoc'] = ''.join([self.dirMarker if x == otherOS else x for x in j['audioLoc']])
+                    j['imageLoc'] = ''.join([self.dirMarker if x == otherOS else x for x in j['imageLoc']])
+                else:
+                    j['movieLoc'] = ''.join([self.dirMarker if x == otherOS else x for x in j['movieLoc']])
+                    j['imageLocL'] = ''.join([self.dirMarker if x == otherOS else x for x in j['imageLocL']])
+                    j['imageLocR'] = ''.join([self.dirMarker if x == otherOS else x for x in j['imageLocR']])
 
 
         # 0.9: Screen-specific settings: ['screenWidth','screenHeight','screenColor','movieWidth','movieHeight','screenIndex']

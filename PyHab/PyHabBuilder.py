@@ -2437,12 +2437,17 @@ class PyHabBuilder:
 
                                             tempDlg2 = gui.Dlg(title="Now select right image")
                                             tempDlg2.addText("Now, select the RIGHT image for this stimulus (cancel to erase set)")
+                                            t2 = tempDlg2.show()
                                             if tempDlg2.OK:
                                                 stimDlg3 = gui.fileOpenDlg(prompt="Select right image file (only one!)")
                                                 if type(stimDlg3) is not NoneType:
                                                     fileName3 = os.path.split(stimDlg3[0])[1]  # Gets the file name in isolation.
                                                     self.stimSource[fileName3] = stimDlg3[0]
                                                     self.settings['stimList'][sd2[0]].update({'imageLocR': stimDlg3[0]})
+                                                    # This extra dialog is needed to stop qtgui from breaking on mac.
+                                                    finishDlg = gui.Dlg(title="Success!")
+                                                    finishDlg.addText("Successfully created stimulus " + sd2[0])
+                                                    f = finishDlg.show()
 
                                             else:
                                                 del self.settings['stimList'][sd2[0]]
