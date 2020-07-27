@@ -124,8 +124,13 @@ class PyHabBuilder:
                         try:
                             j['stimLoc'] = ''.join([self.dirMarker if x == otherOS else x for x in j['stimLoc']])
                         except KeyError: # For image/audio pairs
-                            j['audioLoc'] = ''.join([self.dirMarker if x == otherOS else x for x in j['audioLoc']])
-                            j['imageLoc'] = ''.join([self.dirMarker if x == otherOS else x for x in j['imageLoc']])
+                            if 'audioLoc' in j.keys():
+                                j['audioLoc'] = ''.join([self.dirMarker if x == otherOS else x for x in j['audioLoc']])
+                                j['imageLoc'] = ''.join([self.dirMarker if x == otherOS else x for x in j['imageLoc']])
+                            else: #Modification for movie w/images
+                                j['movieLoc'] = ''.join([self.dirMarker if x == otherOS else x for x in j['movieLoc']])
+                                j['imageLocL'] = ''.join([self.dirMarker if x == otherOS else x for x in j['imageLocL']])
+                                j['imageLocR'] = ''.join([self.dirMarker if x == otherOS else x for x in j['imageLocR']])
             # Backwards compatibility for ISI
             if type(self.settings['ISI']) is not dict:
                 tempISI = {}
@@ -2497,14 +2502,14 @@ class PyHabBuilder:
                 if not remList[j]:
                     toRemove = orderList[j]
                     #Things to remove it from: stimlist, stimsource, stimNames(if assigned to trial types). Doesn't apply to attngetter, has its own system.
-                    if self.settings['stimList'][toRemove]['stimType'] != 'Image with audio':
+                    if self.settings['stimList'][toRemove]['stimType'] in ['Movie', 'Audio', 'Image']:
                         self.delList.append(toRemove)
                         if toRemove in self.stimSource.keys():
                             try:
                                 del self.stimSource[toRemove]
                             except:
                                 print("Could not remove from stimSource!")
-                    else:
+                    elif self.settings['stimList'][toRemove]['stimType'] == 'Image with audio':
                         #If it's an image/audio pair, need to append both files.
                         tempAname = os.path.split(self.settings['stimList'][toRemove]['audioLoc'])[1]
                         tempIname = os.path.split(self.settings['stimList'][toRemove]['imageLoc'])[1]
@@ -2516,6 +2521,22 @@ class PyHabBuilder:
                                 del self.stimSource[tempIname]
                             except:
                                 print("Could not remove from stimSource!")
+                    elif self.settings['stimList'][toRemove]['stimType'] == 'Movie with images':
+                        # Modification: Removing movie with images
+                        tempMname = os.path.split(self.settings['stimList'][toRemove]['movieLoc'])[1]
+                        tempLname = os.path.split(self.settings['stimList'][toRemove]['imageLocL'])[1]
+                        tempRname = os.path.split(self.settings['stimList'][toRemove]['imageLocR'])[1]
+                        self.delList.append(tempMname)
+                        self.delList.append(tempLname)
+                        self.delList.append(tempRname)
+                        if tempMname in self.stimSource.keys():
+                            try:
+                                del self.stimSource[tempMname]
+                                del self.stimSource[tempLname]
+                                del self.stimSource[tempRname]
+                            except:
+                                print("Could not remove from stimSource!")
+
 
                     try:
                         del self.settings['stimList'][toRemove]
@@ -3891,13 +3912,20 @@ class PyHabBuilder:
             NoneType = type(None)
             if len(self.folderPath) > 0:
                 for i,j in self.settings['stimList'].items():
-                    if self.settings['stimList'][i]['stimType'] != 'Image with audio':
+                    if self.settings['stimList'][i]['stimType'] in ['Movie','Image','Audio']:
                        self.stimSource[i] = j['stimLoc'] # Re-initializes the stimSource dict to incorporate both existing and new stim.
-                    else:
+                    elif self.settings['stimList'][i]['stimType'] == 'Image with audio':
                         tempAname = os.path.split(j['audioLoc'])[1]
                         tempIname = os.path.split(j['imageLoc'])[1]
                         self.stimSource[tempAname] = j['audioLoc']
                         self.stimSource[tempIname] = j['imageLoc']
+                    elif self.settings['stimList'][i]['stimType'] == 'Movie with images':
+                        tempMname = os.path.split(j['movieLoc'])[1]
+                        tempLname = os.path.split(j['imageLocL'])[1]
+                        tempRname = os.path.split(j['imageLocR'])[1]
+                        self.stimSource[tempMname] = j['movieLoc']
+                        self.stimSource[tempLname] = j['imageLocL']
+                        self.stimSource[tempRname] = j['imageLocR']
             sDlg = gui.fileSaveDlg(initFilePath=os.getcwd(), initFileName=self.settings['prefix'], prompt="Name a folder to save study into", allowed="")
             if type(sDlg) is not NoneType:
                 self.settings['folderPath'] = sDlg + self.dirMarker #Makes a folder of w/e they entered
@@ -3965,14 +3993,21 @@ class PyHabBuilder:
                     print('Could not copy file ' + j + ' to location ' + targPath + '. Make sure both exist!')
                 if success:
                     for q, r in self.settings['stimList'].items():
-                        if r['stimType'] != 'Image with audio':
+                        if r['stimType'] in ['Movie','Image','Audio']:
                             if q == i:  # For movies, images, or audio in isolation, the keys match.
                                 r['stimLoc'] = 'stimuli' + self.dirMarker + q
-                        else:  # Here we have to look at the file paths themselves
+                        elif r['stimType'] == 'Image with audio':  # Here we have to look at the file paths themselves
                             if os.path.split(r['audioLoc'])[1] == i:
                                 r['audioLoc'] = 'stimuli' + self.dirMarker + os.path.split(j)[1]
                             elif os.path.split(r['imageLoc'])[1] == i:
                                 r['imageLoc'] = 'stimuli' + self.dirMarker + os.path.split(j)[1]
+                        elif r['stimType'] == 'Movie with images':
+                            if os.path.split(r['movieLoc'])[1] == i:
+                                r['movieLoc'] = 'stimuli' + self.dirMarker + os.path.split(j)[1]
+                            elif os.path.split(r['imageLocL'])[1] == i:
+                                r['imageLocL'] = 'stimuli' + self.dirMarker + os.path.split(j)[1]
+                            elif os.path.split(r['imageLocR'])[1] == i:
+                                r['imageLocR'] = 'stimuli' + self.dirMarker + os.path.split(j)[1]
 
         if len(list(self.settings['attnGetterList'].keys())) > 0:  # This should virtually always be true b/c default attngetter.
             for i, j in self.settings['attnGetterList'].items():
