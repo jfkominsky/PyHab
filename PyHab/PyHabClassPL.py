@@ -137,21 +137,19 @@ class PyHabPL(PyHab):
         :rtype:
         """
 
-        print("hab crit, on-timeL, numOnL, onTimeR, numOnR, offTime, numOff")
+        print("hab crit, on-timeL, numOnL, onTimeR, numOnR, offTime, numOff, trialDuration")
         print("-------------------------------------------------------------------------------------------")
         for i in range(0, len(self.dataMatrix)):
             dataList = [self.dataMatrix[i]['habCrit'], round(self.dataMatrix[i]['sumOnL'],1),
                         self.dataMatrix[i]['numOnL'], round(self.dataMatrix[i]['sumOnR'],1),
                         self.dataMatrix[i]['numOnR'], round(self.dataMatrix[i]['sumOff'],1),
-                        self.dataMatrix[i]['numOff']]
+                        self.dataMatrix[i]['numOff'], self.dataMatrix[i]['trialDuration']]
             print(dataList)
 
     def doTrial(self, number, ttype, disMovie):
         """
         Control function for individual trials, to be called by doExperiment
         Returns a status value (int) that tells doExperiment what to do next
-
-        TODO: Duration system, autoredo
 
         :param number: Trial number
         :type number: int
