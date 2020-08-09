@@ -9,7 +9,7 @@ from PyHab import PyHabClassPL as PHL
 from PyHab import PyHabClassHPP as PHPP
 
 """
- 
+ TODO: duration mode tests
 """
 
 base_settings = {

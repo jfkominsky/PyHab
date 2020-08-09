@@ -281,6 +281,8 @@ class PyHabHPP(PyHab):
         Returns a status value (int) that tells doExperiment what to do next
         HPP experiments works very differently from everything else, and this is where the bulk of that is happening.
 
+        TODO: Duration system, autoredo.
+
         :param number: Trial number
         :type number: int
         :param ttype: Trial type
@@ -1072,6 +1074,8 @@ class PyHabHPP(PyHab):
         An HPP-specific version of the function that sets up the windows and loads everything. With four windows to set
         up it's a real doozy, and has the added problem of needing to assign things properly to each window for stim
         presentation.
+
+        TODO: Windows audio bug when loading an audio file before a movie means that we should change load order to movie first
 
 
         :return:

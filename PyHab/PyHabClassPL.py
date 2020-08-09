@@ -143,6 +143,8 @@ class PyHabPL(PyHab):
         Control function for individual trials, to be called by doExperiment
         Returns a status value (int) that tells doExperiment what to do next
 
+        TODO: Duration system, autoredo
+
         :param number: Trial number
         :type number: int
         :param ttype: Trial type

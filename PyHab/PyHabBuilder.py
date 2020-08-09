@@ -39,6 +39,9 @@ class PyHabBuilder:
                                                         'movieEnd': [],
                                                         'maxOff': {},
                                                         'minOn': {},
+                                                        'durationCriterion': [],
+                                                        'autoRedo': [],
+                                                        'onTimeDeadline': {},
                                                         'blindPres': '0', 
                                                         'autoAdvance': [],
                                                         'randPres': '0',
@@ -112,11 +115,16 @@ class PyHabBuilder:
             if 'midAG' not in self.settings:
                 self.settings['midAG'] = '{}'
                 self.settings['dynamicPause'] = '[]'
+            if 'autoRedo' not in self.settings:
+                self.settings['durationCriterion'] = '[]'
+                self.settings['autoRedo'] = '[]'
+                self.settings['onTimeDeadline'] = '{}'
             # Settings requiring evaluation to get sensible values. Mostly dicts.
-            evalList = ['dataColumns','blockSum','trialSum','maxDur','condList','baseCondList','movieEnd','playThrough','trialOrder',
-                        'stimNames', 'stimList', 'ISI', 'maxOff','minOn','autoAdvance','playAttnGetter','attnGetterList',
-                        'trialTypes','habTrialList', 'calcHabOver', 'nextFlash', 'blockList', 'dynamicPause','midAG',
-                        'screenWidth','screenHeight','screenIndex','movieWidth','movieHeight']  # in 0.9, this becomes necessary.
+            evalList = ['dataColumns','blockSum','trialSum','maxDur','condList','baseCondList','movieEnd','playThrough',
+                        'trialOrder','stimNames', 'stimList', 'ISI', 'maxOff','minOn','durationCriterion','autoRedo',
+                        'onTimeDeadline','autoAdvance','playAttnGetter','attnGetterList','trialTypes','habTrialList',
+                        'calcHabOver', 'nextFlash', 'blockList', 'dynamicPause','midAG','screenWidth','screenHeight',
+                        'screenIndex','movieWidth','movieHeight']  # in 0.9, this becomes necessary.
             for i in evalList:
                 self.settings[i] = eval(self.settings[i])
                 if i in ['stimList','attnGetterList']:
@@ -557,6 +565,8 @@ class PyHabBuilder:
         from it, and also set whether the trial type is gaze contingent.
         Now also sets whether the study should auto-advance into this
         trial and whether the built-in attention-getter should be used.
+
+        TODO: Auto-redo, duration criteria instead of on-time, and check if on-time has been reached by a specific point.
 
         The dialog by default outputs a list with 8 items in it.
         0 = trial type name
