@@ -29,8 +29,6 @@ class PyHabPL(PyHab):
         """
         Aborts a trial in progress, saves any data recorded thus far to the bad-data structures
 
-        TODO: total duration
-
         :param onArray: Gaze-on Left events
         :type onArray: list of dicts {trial, trialType, startTime, endTime, duration}
         :param offArray: Gaze-off events
@@ -61,17 +59,20 @@ class PyHabPL(PyHab):
         self.verbBadList['verboseOn'].extend(onArray)
         self.verbBadList['verboseOn2'].extend(onArray2)
         self.verbBadList['verboseOff'].extend(offArray)
+        totalduration = sumOn + sumOn2 + sumOff
+        if offArray[-1]['endTime'] > onArray[-1]['endTime'] and offArray[-1]['endTime'] > onArray2[-1]['endTime']:
+            totalduration = totalduration - offArray[-1]['duration']
         tempData = {'sNum': self.sNum, 'sID': self.sID, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex, 'cond': self.cond,
                     'condLabel': self.condLabel,
                     'trial': trial, 'GNG': 0, 'trialType': ttype, 'stimName': stimName, 'habCrit': self.habCrit, 'habTrialNo': habTrialNo,
                     'sumOnL': sumOn, 'numOnL': len(onArray),
-                    'sumOnR': sumOn2, 'numOnR': len(onArray2), 'sumOff': sumOff, 'numOff': len(offArray)}
+                    'sumOnR': sumOn2, 'numOnR': len(onArray2), 'sumOff': sumOff, 'numOff': len(offArray),
+                    'trialDuration': totalduration}
         self.badTrials.append(tempData)
 
     def dataRec(self, onArray, offArray, trial, type, onArray2, stimName = '', habTrialNo = 0):
         """
         Records the data for a trial that ended normally.
-        TODO: Total duration
 
         :param onArray: Gaze-on Left events
         :type onArray: list of dicts {trial, trialType, startTime, endTime, duration}
@@ -104,10 +105,14 @@ class PyHabPL(PyHab):
         self.verbDatList['verboseOn'].extend(onArray)
         self.verbDatList['verboseOff'].extend(offArray)
         self.verbDatList['verboseOn2'].extend(onArray2)
+        totalduration = sumOn + sumOn2 + sumOff
+        if offArray[-1]['endTime'] > onArray[-1]['endTime'] and offArray[-1]['endTime'] > onArray2[-1]['endTime']:
+            totalduration = totalduration - offArray[-1]['duration']
         tempData={'sNum':self.sNum, 'sID': self.sID, 'months':self.ageMo, 'days':self.ageDay, 'sex':self.sex, 'cond':self.cond,'condLabel':self.condLabel,
                                 'trial':trial, 'GNG':1, 'trialType':type, 'stimName':stimName, 'habCrit':self.habCrit, 'habTrialNo': habTrialNo,
                                 'sumOnL':sumOn, 'numOnL':len(onArray),
-                                'sumOnR':sumOn2,'numOnR':len(onArray2),'sumOff':sumOff, 'numOff':len(offArray)}
+                                'sumOnR':sumOn2,'numOnR':len(onArray2),'sumOff':sumOff, 'numOff':len(offArray),
+                                'trialDuration': totalduration}
         self.dataMatrix.append(tempData)
 
 

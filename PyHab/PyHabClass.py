@@ -292,8 +292,6 @@ class PyHab:
         Only happens when the 'abort' button is pressed during a trial. Creates a "bad trial" entry
         out of any data recorded for the trial so far, to be saved later.
 
-        TODO: Can compute "total duration" column from existing data, everything except last gaze-off.
-
         :param onArray: Gaze-on events for coder 1
         :type onArray: list of dicts {trial, trialType, startTime, endTime, duration}
         :param offArray: Gaze-off events for coder 1
@@ -1081,20 +1079,17 @@ class PyHab:
         A function which prints the current data to the output window, made into its own function to facilitate having
         working versions for PL and HPP studies as well. Only called when stimulus presentation is off.
 
-        TODO: Trial duration
-
-
         :return:
         :rtype:
         """
-        print("hab crit, on-timeA, numOnA, offtimeA, numOffA, onTimeB, numOnB, offTimeB, numOffB")
+        print("hab crit, on-timeA, numOnA, offtimeA, numOffA, onTimeB, numOnB, offTimeB, numOffB, trialDuration")
         print("-------------------------------------------------------------------------------------------")
         for i in range(0, len(self.dataMatrix)):
             dataList = [self.dataMatrix[i]['habCrit'], round(self.dataMatrix[i]['sumOnA'],1),
                         self.dataMatrix[i]['numOnA'], round(self.dataMatrix[i]['sumOffA'],1),
                         self.dataMatrix[i]['numOffA'], round(self.dataMatrix[i]['sumOnB'],1),
                         self.dataMatrix[i]['numOnB'], round(self.dataMatrix[i]['sumOffB'],1),
-                        self.dataMatrix[i]['numOffB']]
+                        self.dataMatrix[i]['numOffB'], self.dataMatrix[i]['trialDuration']]
             print(dataList)
 
     def doExperiment(self):
@@ -1331,8 +1326,6 @@ class PyHab:
         1 = "OnOnly", only requires that cumulative on-time > MinOn
         2 = "None", plays to max duration no matter what.
         3 = "Either/or", as standard but with "or" instead of "and". Whichever comes first.
-
-        TODO: duration instead of on-time, auto-redo trials, on-time deadline w/autoredo.
 
         :param number: Trial number
         :type number: int

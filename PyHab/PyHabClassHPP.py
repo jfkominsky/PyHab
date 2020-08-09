@@ -35,8 +35,6 @@ class PyHabHPP(PyHab):
         """
         Aborts a trial in progress, saves any data recorded thus far to the bad-data structures
 
-        TODO: total duration
-
         :param onArray: Gaze-on Center events
         :type onArray: list of dicts {trial, trialType, startTime, endTime, duration}
         :param offArray: Gaze-off events
@@ -74,19 +72,21 @@ class PyHabHPP(PyHab):
         self.verbBadList['verboseOnL'].extend(onArrayL)
         self.verbBadList['verboseOnR'].extend(onArrayR)
         self.verbBadList['verboseOff'].extend(offArray)
+        totalduration = sumOn + sumOnL + sumOnR + sumOff
+        if offArray[-1]['endTime'] > onArray[-1]['endTime'] and offArray[-1]['endTime'] > onArrayL[-1]['endTime'] and offArray[-1]['endTime'] > onArrayR[-1]['endTime']:
+            totalduration = totalduration - offArray[-1]['duration']
         tempData = {'sNum': self.sNum, 'sID': self.sID, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex, 'cond': self.cond,
                     'condLabel': self.condLabel,
                     'trial': trial, 'GNG': 0, 'trialType': ttype, 'stimName': stimName, 'habCrit': self.habCrit, 'habTrialNo': habTrialNo,
                     'sumOnC': sumOn, 'numOnC': len(onArray),
                     'sumOnL': sumOnL, 'numOnL': len(onArrayL),
-                    'sumOnR': sumOnR, 'numOnR': len(onArrayR), 'sumOff': sumOff, 'numOff': len(offArray)}
+                    'sumOnR': sumOnR, 'numOnR': len(onArrayR), 'sumOff': sumOff, 'numOff': len(offArray),
+                    'trialDuration': totalduration}
         self.badTrials.append(tempData)
 
     def dataRec(self, onArray, offArray, trial, type, onArrayL, onArrayR, stimName = '', habTrialNo = 0):
         """
         Records the data for a trial that ended normally.
-
-        TODO: total duration
 
         :param onArray: Gaze-on Center events
         :type onArray: list of dicts {trial, trialType, startTime, endTime, duration}
@@ -125,11 +125,15 @@ class PyHabHPP(PyHab):
         self.verbDatList['verboseOnL'].extend(onArrayL)
         self.verbDatList['verboseOnR'].extend(onArrayR)
         self.verbDatList['verboseOff'].extend(offArray)
+        totalduration = sumOn + sumOnL + sumOnR + sumOff
+        if offArray[-1]['endTime'] > onArray[-1]['endTime'] and offArray[-1]['endTime'] > onArrayL[-1]['endTime'] and offArray[-1]['endTime'] > onArrayR[-1]['endTime']:
+            totalduration = totalduration - offArray[-1]['duration']
         tempData={'sNum':self.sNum, 'sID': self.sID, 'months':self.ageMo, 'days':self.ageDay, 'sex':self.sex, 'cond':self.cond,'condLabel':self.condLabel,
                                 'trial':trial, 'GNG':1, 'trialType':type, 'stimName':stimName, 'habCrit':self.habCrit, 'habTrialNo': habTrialNo,
                                 'sumOnC':sumOn, 'numOnC':len(onArray),
                                 'sumOnL':sumOnL,'numOnL':len(onArrayL),
-                                'sumOnR':sumOnR,'numOnR':len(onArrayR),'sumOff':sumOff, 'numOff':len(offArray)}
+                                'sumOnR':sumOnR,'numOnR':len(onArrayR),'sumOff':sumOff, 'numOff':len(offArray),
+                                'trialDuration': totalduration}
         self.dataMatrix.append(tempData)
 
     def lookKeysPressed(self):
