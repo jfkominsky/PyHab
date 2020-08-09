@@ -35,6 +35,8 @@ class PyHabHPP(PyHab):
         """
         Aborts a trial in progress, saves any data recorded thus far to the bad-data structures
 
+        TODO: total duration
+
         :param onArray: Gaze-on Center events
         :type onArray: list of dicts {trial, trialType, startTime, endTime, duration}
         :param offArray: Gaze-off events
@@ -83,6 +85,8 @@ class PyHabHPP(PyHab):
     def dataRec(self, onArray, offArray, trial, type, onArrayL, onArrayR, stimName = '', habTrialNo = 0):
         """
         Records the data for a trial that ended normally.
+
+        TODO: total duration
 
         :param onArray: Gaze-on Center events
         :type onArray: list of dicts {trial, trialType, startTime, endTime, duration}

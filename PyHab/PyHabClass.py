@@ -332,18 +332,21 @@ class PyHab:
                 sumOff2 = sumOff2 + offArray2[j]['duration']
             self.verbBadList['verboseOn2'].extend(onArray2)
             self.verbBadList['verboseOff2'].extend(offArray2)
+        # Total duration calculation is complicated by the fact that we need to omit the last gaze-off but only if it
+        # ended the trial.
+        totalduration = sumOn + sumOff
+        if offArray[-1]['endTime'] > onArray[-1]['endTime']:  # A kludge because it doesn't attend to whether it ended the trial.
+            totalduration = totalduration - offArray[-1]['duration']
         tempData = {'sNum': self.sNum, 'sID':self.sID, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex, 'cond': self.cond,
                     'condLabel': self.condLabel,'trial': trial, 'GNG': 0, 'trialType': ttype, 'stimName': stimName,
                     'habCrit': self.habCrit, 'habTrialNo': habTrialNo, 'sumOnA': sumOn, 'numOnA': len(onArray), 'sumOffA': sumOff,
                     'numOffA': len(offArray), 'sumOnB': sumOn2, 'numOnB': len(onArray2), 'sumOffB': sumOff2,
-                    'numOffB': len(offArray2)}
+                    'numOffB': len(offArray2), 'trialDuration': totalduration}
         self.badTrials.append(tempData)
 
     def dataRec(self, onArray, offArray, trial, type, onArray2, offArray2, stimName = '', habTrialNo = 0):
         """
         Records the data for a trial that ended normally.
-
-        TODO: Can compute "total duration" column from existing data, everything except last gaze-off.
 
         :param onArray: Gaze-on events for coder 1
         :type onArray: list of dicts {trial, trialType, startTime, endTime, duration}
@@ -385,11 +388,16 @@ class PyHab:
         # add to verbose master gaze array
         self.verbDatList['verboseOn'].extend(onArray)
         self.verbDatList['verboseOff'].extend(offArray)
+        # Total duration calculation is complicated by the fact that we need to omit the last gaze-off but only if it
+        # ended the trial.
+        totalduration = sumOn + sumOff
+        if offArray[-1]['endTime'] > onArray[-1]['endTime']:  # A kludge because it doesn't attend to whether it ended the trial.
+            totalduration = totalduration - offArray[-1]['duration']
         tempData = {'sNum': self.sNum, 'sID': self.sID, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex, 'cond': self.cond,
                     'condLabel': self.condLabel, 'trial': trial, 'GNG': 1, 'trialType': type, 'stimName': stimName,
                     'habCrit': self.habCrit, 'habTrialNo': habTrialNo, 'sumOnA': sumOn, 'numOnA': len(onArray), 'sumOffA': sumOff,
                     'numOffA': len(offArray), 'sumOnB': sumOn2, 'numOnB': len(onArray2), 'sumOffB': sumOff2,
-                    'numOffB': len(offArray2)}
+                    'numOffB': len(offArray2), 'trialDuration': totalduration}
         self.dataMatrix.append(tempData)
 
     def redoTrial(self, trialNum):

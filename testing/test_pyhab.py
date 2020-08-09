@@ -23,6 +23,9 @@ base_settings = {
     'minOn': "{'A':1.0,'B':1.0,'C':6.0,'D':8.0}",
     'blindPres': '0',
     'autoAdvance': "['D']",
+    'durationCriterion': "[]",
+    'autoRedo': "[]",
+    'onTimeDeaadline': '{}',
     'randPres': '0',
     'condPath': '',
     'condFile': '',
@@ -68,9 +71,10 @@ def test_init():
     itest = PH.PyHab(base_settings)
     TheDicts = [itest.maxDur, itest.playThrough, itest.maxOff, itest.minOn, itest.stimNames,
                 itest.stimList, itest.playAttnGetter, itest.attnGetterList, itest.ISI, itest.screenColor,
-                itest.screenWidth, itest.screenHeight, itest.movieWidth, itest.movieHeight, itest.screenIndex]
+                itest.screenWidth, itest.screenHeight, itest.movieWidth, itest.movieHeight, itest.screenIndex,
+                itest.onTimeDeadline]
     TheLists = [itest.dataColumns, itest.movieEnd, itest.autoAdvance, itest.condList, itest.trialOrder,
-                itest.habTrialList]
+                itest.habTrialList, itest.autoRedo, itest.durationCriterion]
     TheStrings = [itest.prefix, itest.dataFolder, itest.stimPath, itest.condFile, itest.setCritType,
                   itest.metCritStatic]
     TheFloats = [itest.freezeFrame]
