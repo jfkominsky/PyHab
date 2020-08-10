@@ -29,7 +29,7 @@ class PyHabBuilder:
         # loadedSaved is "is this a new experiment or are we operating inside an existing experiment's folder?"
         if not loadedSaved:  # A new blank experiment
             # Load some defaults to start with.
-            self.settings = {'dataColumns': ['sNum', 'sID', 'months', 'days', 'sex', 'cond','condLabel', 'trial','GNG','trialType','stimName','habCrit','habTrialNo','sumOnA','numOnA','sumOffA','numOffA','sumOnB','numOnB','sumOffB','numOffB'],
+            self.settings = {'dataColumns': ['sNum', 'sID', 'months', 'days', 'sex', 'cond','condLabel', 'trial','GNG','trialType','stimName','habCrit','habTrialNo','sumOnA','numOnA','sumOffA','numOffA','sumOnB','numOnB','sumOffB','numOffB','trialDuration'],
                                                         'blockSum': '1',
                                                         'trialSum': '1',
                                                         'prefix': 'PyHabExperiment',
@@ -568,9 +568,7 @@ class PyHabBuilder:
         Now also sets whether the study should auto-advance into this
         trial and whether the built-in attention-getter should be used.
 
-        TODO: Auto-redo, duration criteria instead of on-time, and check if on-time has been reached by a specific point.
-
-        The dialog by default outputs a list with 8 items in it.
+        The dialog by default outputs a list with 12 items in it.
         0 = trial type name
 
         1 = Maximum duration of trials of this type
@@ -579,17 +577,23 @@ class PyHabBuilder:
 
         3 = Maximum continuous looking-away to end trial of type
 
-        4 = Minimum on-time to enable off-time criterion (not continuous)
+        4 = Minimum on-time (cumulative)
 
-        5 = Auto-advance into trial?
+        5 = auto-redo trial if minimum on-time not met?
 
-        6 = Attention-getter selection
+        6 = on-time deadline
 
-        7 = End trial on movie end or mid-movie
+        7 = duration criterion rather than on-time
 
-        8 = inter-stimulus interveral (ISI) for this trial type
+        8 = Auto-advance into trial?
 
-        [if movies assigned to trial type already, they occupy 9 - N]
+        9 = Attention-getter selection
+
+        10 = End trial on movie end or mid-movie
+
+        11 = inter-stimulus interveral (ISI) for this trial type
+
+        [if movies assigned to trial type already, they occupy 12 - N]
 
         :param trialType: Name of the trial type
         :type trialType: str
@@ -612,19 +616,19 @@ class PyHabBuilder:
             errDlg.show()
         else:
             typeDlg = gui.Dlg(title="Trial Type " + trialType)
-            typeDlg.addField("Trial type name: ", trialType)
+            typeDlg.addField("Trial type name: ", trialType)  # Index 0
             if not makeNew:  # if this modifying an existing trial type, pre-fill the existing info.
                 if len(prevInfo) == 0:  # allows for removal of movies from the trial type
-                    typeDlg.addField("Max duration", self.settings['maxDur'][trialType])
+                    typeDlg.addField("Max duration", self.settings['maxDur'][trialType])  # Index 1
                     maxOff = self.settings['maxOff'][trialType]
                     minOn = self.settings['minOn'][trialType]
                     ISI = self.settings['ISI'][trialType]
 
                 else:
-                    typeDlg.addField("Max duration", prevInfo[1])
+                    typeDlg.addField("Max duration", prevInfo[1])  # Index 1
                     maxOff = prevInfo[3]
                     minOn = prevInfo[4]
-                    ISI = prevInfo[8]
+                    ISI = prevInfo[11]
 
                 # Find the index of the existing trial type in the study flow and type pane.
                 flowIndexes=[]
@@ -641,32 +645,60 @@ class PyHabBuilder:
                 else:
                     chz = ["Yes", "OnOnly", "No", "EitherOr"]
             elif len(prevInfo) > 0:
-                typeDlg.addField("Max duration", prevInfo[1])
+                typeDlg.addField("Max duration", prevInfo[1])  # Index 1
                 maxOff = prevInfo[3]
                 minOn = prevInfo[4]
-                ISI = prevInfo[8]
-                if prevInfo[5] == 3:
+                ISI = prevInfo[11]
+                if prevInfo[2] == 3:
                     chz = ["EitherOr", "Yes", "OnOnly", "No"]
-                elif prevInfo[5] == 2:
+                elif prevInfo[2] == 2:
                     chz = ["No", "Yes", "OnOnly", "EitherOr"]
-                elif prevInfo[5] == 1:
+                elif prevInfo[2] == 1:
                     chz = ["OnOnly", "Yes", "EitherOr", "No"]
                 else:
                     chz = ["Yes", "OnOnly", "EitherOr", "No"]
             else:  # if there are no existing indexes to refer to
-                typeDlg.addField("Max duration", 60.0)
+                typeDlg.addField("Max duration", 60.0)  # Index 1
                 maxOff = 2.0
                 minOn = 1.0
                 ISI = 0.0
                 chz = ["Yes", "OnOnly", "EitherOr", "No"]
-            typeDlg.addField("Gaze-contingent trial type (next two lines ignored otherwise)", choices=chz)
-            typeDlg.addField("Number of continuous seconds looking away to end trial", maxOff)
-            typeDlg.addField("Minimum time looking at screen before stimuli can be ended (not consecutive)", minOn)
-            if trialType in self.settings['autoAdvance']:
+            typeDlg.addField("Gaze-contingent trial type (next three lines ignored otherwise)", choices=chz)  # Index 2
+            typeDlg.addField("Number of continuous seconds looking away to end trial", maxOff)  # Index 3
+            typeDlg.addField("Minimum time looking at screen before stimuli can be ended (not consecutive)", minOn)  # Index 4
+            # On-time deadline
+            if len(prevInfo) > 0:
+                if prevInfo[5] in [True, 'True', 1, '1']:
+                    autoredo = True
+                otdl = prevInfo[6]
+                if prevInfo[7] in [True, 'True', 1, '1']:
+                    durCrit = True
+            else:
+                if trialType in self.settings['autoRedo']:
+                    autoRedo = True
+                else:
+                    autoRedo = False
+                if trialType in self.settings['onTimeDeadline'].keys():
+                    otdl = self.settings['onTimeDeadline'][trialType]
+                else:
+                    otdl = -1
+                if trialType in self.settings['durationCriterion']:
+                    durCrit = True
+                else:
+                    durCrit = False
+            typeDlg.addField("Auto-redo of minimum on-time criterion not met?", autoRedo)  # Index 5
+            typeDlg.addField("Deadline to meet on-time criterion (ignored if <= 0)", otdl)  # Index 6
+            typeDlg.addField("Check to use total trial duration instead of gaze-on time for trial length calculation", durCrit)  # Index 7
+
+            if len(prevInfo) > 0:
+                if prevInfo[8] in [True, 'True', 1, '1']:
+                    chz2 = True
+            elif trialType in self.settings['autoAdvance']:
                 chz2 = True
             else:
                 chz2 = False
-            typeDlg.addField("Auto-advance INTO trial without waiting for expeirmenter?", initial=chz2)
+            typeDlg.addField("Auto-advance INTO trial without waiting for expeirmenter?", initial=chz2)  # Index 8
+
             if trialType not in self.settings['playAttnGetter']:
                 ags = list(self.settings['attnGetterList'].keys())
                 chz3 = [x for x in ags if x is not 'PyHabDefault']
@@ -680,13 +712,13 @@ class PyHabBuilder:
                 chz3 = [x for x in list(self.settings['attnGetterList'].keys()) if x != self.settings['playAttnGetter'][trialType]['attnGetter']]
                 chz3.insert(0, 'None')
                 chz3.insert(0, self.settings['playAttnGetter'][trialType]['attnGetter'])
-            typeDlg.addField("Attention-getter for this trial type (Stim presentation mode only)", choices = chz3)
+            typeDlg.addField("Attention-getter for this trial type (Stim presentation mode only)", choices = chz3)  # Index 9
             if trialType in self.settings['movieEnd']:
                 chz4 = True
             else:
                 chz4 = False
-            typeDlg.addField("Only end trial on end of movie repetition? (Only works when presenting stimuli)", initial = chz4)
-            typeDlg.addField("Inter-stimulus interval on loops (pause between end of one loop and start of next)", ISI)
+            typeDlg.addField("Only end trial on end of movie repetition? (Only works when presenting stimuli)", initial = chz4)  # Index 10
+            typeDlg.addField("Inter-stimulus interval on loops (pause between end of one loop and start of next)", ISI)  # Index 11
             if not makeNew:
                 if len(prevInfo) == 0:
                     if len(self.settings['stimNames'][trialType]) > 0:
@@ -696,27 +728,27 @@ class PyHabBuilder:
                                 typeDlg.addField(self.settings['stimNames'][trialType][i]['C'], initial=True) # HPP defaults to C on everything
                             else:
                                 typeDlg.addField(self.settings['stimNames'][trialType][i], initial=True)
-                elif len(prevInfo) > 9: # If there were no movies to start with, this will have a length of 9.
+                elif len(prevInfo) > 12: # If there were no movies to start with, this will have a length of 12.
                     typeDlg.addText("Current stimuli in trial type (uncheck to remove)")
                     for i in range(0,len(self.settings['stimNames'][trialType])):
                         if self.settings['prefLook'] in [2,'2']:
-                            typeDlg.addField(self.settings['stimNames'][trialType][i+9]['C'], initial=prevInfo[i + 9])
+                            typeDlg.addField(self.settings['stimNames'][trialType][i+9]['C'], initial=prevInfo[i + 12])
                         else:
-                            typeDlg.addField(self.settings['stimNames'][trialType][i], initial=prevInfo[i+9])
+                            typeDlg.addField(self.settings['stimNames'][trialType][i], initial=prevInfo[i+12])
 
 
             typeInfo = typeDlg.show()
 
             if typeDlg.OK:
                 # Check if all the things that need to be numbers are actually numbers.
-                for i in [1, 3, 4]:
+                for i in [1, 3, 4, 6]:
                     if not isinstance(typeInfo[i], float) and not isinstance(typeInfo[i], int):
                         try:
                             typeInfo[i] = eval(typeInfo[i])
                         except:
                             warnDlg = gui.Dlg(title="Warning!")
                             warnDlg.addText(
-                                "Number expected, got text instead. \nPlease make sure maximum duration, minimum on-time, and maximum off-time are all numbers!")
+                                "Number expected, got text instead. \nPlease make sure maximum duration, minimum on-time, maximum off-time, and on-time deadline are all numbers!")
                             warnDlg.show()
                             skip = True
                             self.trialTypeDlg(str(typeInfo[0]), makeNew, typeInfo)
@@ -731,6 +763,10 @@ class PyHabBuilder:
                             self.settings['playThrough'][typeInfo[0]] = self.settings['playThrough'].pop(trialType)
                             self.settings['maxOff'][typeInfo[0]] = self.settings['maxOff'].pop(trialType)
                             self.settings['minOn'][typeInfo[0]] = self.settings['minOn'].pop(trialType)
+                            if trialType in self.settings['playAttnGetter'].keys():
+                                self.settings['playAttnGetter'][typeInfo[0]] = self.settings['playAttnGetter'].pop(trialType)
+                            if trialType in self.settings['onTimeDeadline'].keys():
+                                self.settings['onTimeDeadline'][typeInfo[0]] = self.settings['onTimeDeadline'].pop(trialType)
                             # update trial type and study flow too
                             numChar = len(typeInfo[0])
                             if numChar <= 3:
@@ -742,6 +778,12 @@ class PyHabBuilder:
                             self.settings['trialTypes'] = [typeInfo[0] if x == trialType else x for x in self.settings['trialTypes']]
                             self.settings['trialOrder'] = [typeInfo[0] if x == trialType else x for x in self.settings['trialOrder']]
                             self.trialTypesArray = self.loadTypes(self.typeLocs, self.settings['trialTypes'], page=self.trialPalettePage)
+                            # Update in all the things that are lists of filenames with a given property
+                            listsList = ['autoRedo','autoAdvance','movieEnd','durationCriterion']
+                            for k in range(0, len(listsList)):
+                                if trialType in self.settings[listsList[k]]:
+                                    self.settings[listsList[k]].remove(trialType)
+                                    self.settings[listsList[k]].append(typeInfo[0])
                             if len(self.settings['habTrialList']) > 0:
                                 for z in range(0, len(self.settings['habTrialList'])):
                                     if self.settings['habTrialList'][z] == trialType:
@@ -770,7 +812,7 @@ class PyHabBuilder:
                         self.settings['maxDur'][trialType] = typeInfo[1] #Update maxDur
                         self.settings['maxOff'][trialType] = typeInfo[3]
                         self.settings['minOn'][trialType] = typeInfo[4]
-                        self.settings['ISI'][trialType] = typeInfo[8]
+                        self.settings['ISI'][trialType] = typeInfo[11]
 
                         # Gaze-contingency settings
                         if trialType not in self.settings['playThrough'].keys(): #Initialize if needed.
@@ -782,38 +824,54 @@ class PyHabBuilder:
                         elif typeInfo[2] == "OnOnly" and self.settings['playThrough'][trialType] is not 1:
                             self.settings['playThrough'][trialType] = 1
                         elif typeInfo[2] == "EitherOr" and self.settings['playThrough'][trialType] is not 3:
-                            self.settings['playThrough'][trialType] = 3 # TODO: wacky order, clean up.
+                            self.settings['playThrough'][trialType] = 3
+
+                        # Auto-redo trial settings
+                        if typeInfo[5] in [False,0,'False','0'] and trialType in self.settings['autoRedo']: #gaze-contingent trial type, not already tagged as such.
+                            self.settings['autoRedo'].remove(trialType)
+                        elif typeInfo[5] in [True, 1, 'True', '1'] and not trialType in self.settings['autoRedo']:
+                            self.settings['autoRedo'].append(trialType)
+
+                        if typeInfo[6] > 0:
+                            self.settings['onTimeDeadline'][trialType] = typeInfo[6]
+                        elif trialType in self.settings['onTimeDeadline'].keys():
+                            del self.settings['onTimeDeadline'][trialType]
+
+                        if typeInfo[7] in [False,0,'False','0'] and trialType in self.settings['durationCriterion']:
+                            self.settings['durationCriterion'].remove(trialType)
+                        elif typeInfo[7] in [True, 1, 'True', '1'] and not trialType in self.settings['durationCriterion']:
+                            self.settings['durationCriterion'].append(trialType)
 
                         # Auto-advance settings
-                        if typeInfo[5] in [False,0,'False','0'] and trialType in self.settings['autoAdvance']: #gaze-contingent trial type, not already tagged as such.
+                        if typeInfo[8] in [False,0,'False','0'] and trialType in self.settings['autoAdvance']: #gaze-contingent trial type, not already tagged as such.
                             self.settings['autoAdvance'].remove(trialType)
-                        elif typeInfo[5] in [True, 1, 'True', '1'] and not trialType in self.settings['autoAdvance']:
+                        elif typeInfo[8] in [True, 1, 'True', '1'] and not trialType in self.settings['autoAdvance']:
                             self.settings['autoAdvance'].append(trialType)
 
                         # Attention-getter settings
-                        if typeInfo[6] == 'None':
+                        if typeInfo[9] == 'None':
                             if trialType in self.settings['playAttnGetter']:
                                 del self.settings['playAttnGetter'][trialType]
                         else:
                             if trialType not in self.settings['playAttnGetter']:  # If it did not have an attngetter before.
-                                agname = typeInfo[6]
+                                agname = typeInfo[9]
                                 self.settings['playAttnGetter'][trialType] = {'attnGetter':agname, 'cutoff':0, 'onmin':0.0}
-                            elif typeInfo[6] is not self.settings['playAttnGetter'][trialType]:
+                            elif typeInfo[9] is not self.settings['playAttnGetter'][trialType]:
                                 # If a different attention-getter has been selected
-                                agname = typeInfo[6]
+                                agname = typeInfo[9]
                                 self.settings['playAttnGetter'][trialType]['attnGetter'] = agname # leaves cutoff and onmin intact
 
                         # End-trial-on-movie-end settings
-                        if typeInfo[7] in [False,0,'False','0'] and trialType in self.settings['movieEnd']:
+                        if typeInfo[10] in [False,0,'False','0'] and trialType in self.settings['movieEnd']:
                             self.settings['movieEnd'].remove(trialType)
-                        elif typeInfo[7] in [True, 1, 'True', '1'] and not trialType in self.settings['movieEnd']:
+                        elif typeInfo[10] in [True, 1, 'True', '1'] and not trialType in self.settings['movieEnd']:
                             self.settings['movieEnd'].append(trialType)
 
                         # Remove stimuli if needed
-                        if len(typeInfo) > 9: #Again, if there were movies to list.
+                        if len(typeInfo) > 12: #Again, if there were movies to list.
                             tempMovies = [] #This will just replace the stimNames list
                             for i in range(0,len(self.settings['stimNames'][trialType])):
-                                if typeInfo[i+9]:
+                                if typeInfo[i+12]:
                                     tempMovies.append(self.settings['stimNames'][trialType][i])
                             self.settings['stimNames'][trialType] = tempMovies
 
@@ -847,9 +905,9 @@ class PyHabBuilder:
         """
         A dialog for advanced trial settings mostly having to do with attention-getters and stimulus presentation
 
-        0/-7 = cutoff attention-getter on gaze-on? T/F [if trial has an AG]
+        0/-7 = cutoff attention-getter on gaze-on? T/F [if trial has an AG - not always present]
 
-        1/-6 = cutoff on-time: How long do they have to look to cut off presentation? [if trial has an AG]
+        1/-6 = cutoff on-time: How long do they have to look to cut off presentation? [if trial has an AG - not always present]
 
         2/-5 = Pause stimulus presentation when infant is not looking at screen?
 
@@ -860,6 +918,8 @@ class PyHabBuilder:
         5/-2 = mid-trial AG cutoff: Stop mid-trial AG on gaze-on?
 
         6/-1 = mid-trial AG cutoff ontime
+
+
 
         :param trialType: The trial type being modified.
         :type trialType: str
@@ -1942,6 +2002,8 @@ class PyHabBuilder:
         2 = nextFlash: Whether to have the coder window flash to alert the experimenter they need to manually trigger
             the next trial
 
+        3 = durationInclude: Trial duration calculations include last gaze-off or not
+
         :return:
         :rtype:
         """
@@ -1965,6 +2027,12 @@ class PyHabBuilder:
         else:
             ch3= ["No","Yes"]
         uDlg.addField("Flash to alert experimenter to manually start next trial?", choices=ch3)
+        if self.settings['durationInclude'] in ['1',1,'True',True]:
+            ch4 = ["Yes","No"]
+        else:
+            ch4 = ["No","Yes"]
+        uDlg.addField("Trial duration calculations include last gaze-off event?", choices=ch4)
+
         uInfo = uDlg.show()
         if uDlg.OK:
             tryAgain = False
@@ -1979,6 +2047,10 @@ class PyHabBuilder:
                 self.settings['nextFlash'] = 1
             else:
                 self.settings['nextFlash'] = 0
+            if uInfo[3] == "Yes":
+                self.settings['durationInclude'] = 1
+            else:
+                self.settings['durationInclude'] = 0
             if tryAgain:
                 self.univSettingsDlg()
         

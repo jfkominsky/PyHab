@@ -824,7 +824,7 @@ class PyHabHPP(PyHab):
                 finalSumOn = finalSumOn + onArrayR[q]['duration']
         else:
             finalSumOn = core.getTime() - startTrial  # Checks total duration, ignores last-look issue.
-        if localType in self.autoRedoTrials and finalSumOn < self.minOn[localType] and ttype != 4:
+        if localType in self.autoRedo and finalSumOn < self.minOn[localType] and ttype != 4:
             # Determine if total on-time is less that minOn, if so, flag trial as bad and repeat it
             abort = True
         if abort:  # if the abort button was pressed

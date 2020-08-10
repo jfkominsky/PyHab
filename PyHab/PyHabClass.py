@@ -391,7 +391,7 @@ class PyHab:
         # Total duration calculation is complicated by the fact that we need to omit the last gaze-off but only if it
         # ended the trial.
         totalduration = sumOn + sumOff
-        if offArray[-1]['endTime'] > onArray[-1]['endTime']:  # A kludge because it doesn't attend to whether it ended the trial.
+        if offArray[-1]['endTime'] > onArray[-1]['endTime'] and self.durationInclude == 0:  # A kludge because it doesn't attend to whether it ended the trial.
             totalduration = totalduration - offArray[-1]['duration']
         tempData = {'sNum': self.sNum, 'sID': self.sID, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex, 'cond': self.cond,
                     'condLabel': self.condLabel, 'trial': trial, 'GNG': 1, 'trialType': type, 'stimName': stimName,
@@ -465,7 +465,7 @@ class PyHab:
         Uses a sort of parallel data structure that just tracks hab-relevant gaze totals. As a bonus, this means it now
         works for both single-target and preferential looking designs (and HPP designs) with no modification.
 
-        TODO: Habituation using trial duration instead of on-time?
+        TODO: Habituation using trial duration instead of on-time
 
         :return: True if hab criteria have been met, False otherwise
         :rtype:
@@ -1231,7 +1231,7 @@ class PyHab:
                                 startAG = core.getTime()
                                 onCheck = 0
                                 while simAG:
-                                    if core.getTime() - startAG >= self.attnGetterList[self.playAttnGetter[trialType]]['stimDur']:
+                                    if core.getTime() - startAG >= self.attnGetterList[self.playAttnGetter[trialType]['attnGetter']]['stimDur']:
                                         simAG = False
                                     elif self.playAttnGetter[trialType]['cutoff'] and self.lookKeysPressed():
                                         if onCheck == 0 and self.playAttnGetter[trialType]['onmin'] > 0:
@@ -1655,12 +1655,13 @@ class PyHab:
                 self.dummyThing.draw()
                 self.win.flip()  # blanks the screen outright between trials if NOT auto-advancing into the next trial
         # Check if this is an auto-redo situation
+        finalSumOn = 0
         if localType not in self.durationCriterion:
             for o in range(0, len(onArray)):
                 finalSumOn = finalSumOn + onArray[o]['duration']
         else:
             finalSumOn = core.getTime() - startTrial # Checks total duration.
-        if localType in self.autoRedoTrials and finalSumOn < self.minOn[localType] and ttype != 4:
+        if localType in self.autoRedo and finalSumOn < self.minOn[localType] and ttype != 4:
             # Determine if total on-time is less that minOn, if so, flag trial as bad and repeat it
             abort = True
         if abort:  # if the abort button was pressed
