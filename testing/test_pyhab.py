@@ -25,7 +25,7 @@ base_settings = {
     'durationCriterion': "[]",
     'durationInclude': "0",
     'autoRedo': "[]",
-    'onTimeDeaadline': '{}',
+    'onTimeDeadline': '{}',
     'randPres': '0',
     'condPath': '',
     'condFile': '',
@@ -90,8 +90,6 @@ def test_init():
         assert type(l) == float
     for m in TheInts:
         assert type(m) == int
-
-    assert itest.durationInclude == 0
 
     del itest
 
