@@ -42,6 +42,7 @@ class PyHabBuilder:
                                                         'durationCriterion': [],
                                                         'autoRedo': [],
                                                         'onTimeDeadline': {},
+                                                        'durationInclude': '1',
                                                         'blindPres': '0', 
                                                         'autoAdvance': [],
                                                         'randPres': '0',
@@ -119,12 +120,13 @@ class PyHabBuilder:
                 self.settings['durationCriterion'] = '[]'
                 self.settings['autoRedo'] = '[]'
                 self.settings['onTimeDeadline'] = '{}'
+                self.settings['durationInclude'] = '1'
             # Settings requiring evaluation to get sensible values. Mostly dicts.
             evalList = ['dataColumns','blockSum','trialSum','maxDur','condList','baseCondList','movieEnd','playThrough',
                         'trialOrder','stimNames', 'stimList', 'ISI', 'maxOff','minOn','durationCriterion','autoRedo',
                         'onTimeDeadline','autoAdvance','playAttnGetter','attnGetterList','trialTypes','habTrialList',
                         'calcHabOver', 'nextFlash', 'blockList', 'dynamicPause','midAG','screenWidth','screenHeight',
-                        'screenIndex','movieWidth','movieHeight']  # in 0.9, this becomes necessary.
+                        'screenIndex','movieWidth','movieHeight', 'durationInclude']  # in 0.9, this becomes necessary.
             for i in evalList:
                 self.settings[i] = eval(self.settings[i])
                 if i in ['stimList','attnGetterList']:

@@ -60,7 +60,7 @@ class PyHabPL(PyHab):
         self.verbBadList['verboseOn2'].extend(onArray2)
         self.verbBadList['verboseOff'].extend(offArray)
         totalduration = sumOn + sumOn2 + sumOff
-        if offArray[-1]['endTime'] > onArray[-1]['endTime'] and offArray[-1]['endTime'] > onArray2[-1]['endTime']:
+        if offArray[-1]['endTime'] > onArray[-1]['endTime'] and offArray[-1]['endTime'] > onArray2[-1]['endTime'] and self.durationInclude == 0:
             totalduration = totalduration - offArray[-1]['duration']
         tempData = {'sNum': self.sNum, 'sID': self.sID, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex, 'cond': self.cond,
                     'condLabel': self.condLabel,

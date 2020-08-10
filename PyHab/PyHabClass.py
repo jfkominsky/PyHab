@@ -97,10 +97,12 @@ class PyHab:
             self.durationCriterion = eval(settingsDict['durationCriterion'])  # List of trials using duration instead of on-time
             self.autoRedo = eval(settingsDict['autoRedo'])  # List of trials with auto-redo behavior
             self.onTimeDeadline = eval(settingsDict['onTimeDeadline'])  # Dict of trials w/ a deadline to meet on-time, plus deadline.
+            self.durationInclude = eval(settingsDict['durationInclude'])  # Duration calculation reports full duration (True) or excludes last gaze-off (False)
         except:
             self.durationCriterion = []
             self.autoRedo = []
             self.onTimeDeadline = {}
+            self.durationInclude = 1
 
 
         # ORDER OF PRESENTATION
@@ -333,7 +335,7 @@ class PyHab:
         # Total duration calculation is complicated by the fact that we need to omit the last gaze-off but only if it
         # ended the trial.
         totalduration = sumOn + sumOff
-        if offArray[-1]['endTime'] > onArray[-1]['endTime']:  # A kludge because it doesn't attend to whether it ended the trial.
+        if offArray[-1]['endTime'] > onArray[-1]['endTime'] and self.durationInclude == 0:  # A kludge because it doesn't attend to whether it ended the trial.
             totalduration = totalduration - offArray[-1]['duration']
         tempData = {'sNum': self.sNum, 'sID':self.sID, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex, 'cond': self.cond,
                     'condLabel': self.condLabel,'trial': trial, 'GNG': 0, 'trialType': ttype, 'stimName': stimName,

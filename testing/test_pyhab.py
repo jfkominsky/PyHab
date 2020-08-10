@@ -23,6 +23,7 @@ base_settings = {
     'blindPres': '0',
     'autoAdvance': "['D']",
     'durationCriterion': "[]",
+    'durationInclude': "0",
     'autoRedo': "[]",
     'onTimeDeaadline': '{}',
     'randPres': '0',
@@ -78,7 +79,7 @@ def test_init():
                   itest.metCritStatic]
     TheFloats = [itest.freezeFrame]
     TheInts = [itest.blindPres, itest.maxHabTrials, itest.setCritWindow, itest.setCritDivisor, itest.metCritDivisor,
-               itest.metCritWindow]
+               itest.metCritWindow, itest.durationInclude]
     for i in TheDicts:
         assert type(i) == dict
     for j in TheLists:

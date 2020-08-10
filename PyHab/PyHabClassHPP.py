@@ -73,7 +73,7 @@ class PyHabHPP(PyHab):
         self.verbBadList['verboseOnR'].extend(onArrayR)
         self.verbBadList['verboseOff'].extend(offArray)
         totalduration = sumOn + sumOnL + sumOnR + sumOff
-        if offArray[-1]['endTime'] > onArray[-1]['endTime'] and offArray[-1]['endTime'] > onArrayL[-1]['endTime'] and offArray[-1]['endTime'] > onArrayR[-1]['endTime']:
+        if offArray[-1]['endTime'] > onArray[-1]['endTime'] and offArray[-1]['endTime'] > onArrayL[-1]['endTime'] and offArray[-1]['endTime'] > onArrayR[-1]['endTime'] and self.durationInclude == 0:
             totalduration = totalduration - offArray[-1]['duration']
         tempData = {'sNum': self.sNum, 'sID': self.sID, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex, 'cond': self.cond,
                     'condLabel': self.condLabel,
@@ -288,8 +288,6 @@ class PyHabHPP(PyHab):
         Control function for individual trials, to be called by doExperiment
         Returns a status value (int) that tells doExperiment what to do next
         HPP experiments works very differently from everything else, and this is where the bulk of that is happening.
-
-        TODO: Duration system, autoredo.
 
         :param number: Trial number
         :type number: int
