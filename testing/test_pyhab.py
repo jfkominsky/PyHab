@@ -91,6 +91,8 @@ def test_init():
     for m in TheInts:
         assert type(m) == int
 
+    assert itest.durationInclude == 0
+
     del itest
 
 
