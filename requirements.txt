@@ -1,4 +1,4 @@
 pyqt5==5.14
-scikit-build
+opencv==4.3.0.36
 psychopy == 1.90.3; python_version== '2.7'
 psychopy; python_version>'2.7'
