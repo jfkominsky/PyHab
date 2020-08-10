@@ -98,11 +98,13 @@ class PyHab:
             self.autoRedo = eval(settingsDict['autoRedo'])  # List of trials with auto-redo behavior
             self.onTimeDeadline = eval(settingsDict['onTimeDeadline'])  # Dict of trials w/ a deadline to meet on-time, plus deadline.
             self.durationInclude = eval(settingsDict['durationInclude'])  # Duration calculation reports full duration (True) or excludes last gaze-off (False)
+            self.habByDuration = eval(settingsDict['habByDuration'])
         except:
             self.durationCriterion = []
             self.autoRedo = []
             self.onTimeDeadline = {}
             self.durationInclude = 1
+            self.habByDuration = 0
 
 
         # ORDER OF PRESENTATION
@@ -1675,8 +1677,18 @@ class PyHab:
         if self.habMetWhen == -1 and len(self.habTrialList) > 0 and not abort:   # if still during habituation
             if dataType[0:4] == 'hab.' and dataType[4:] in self.calcHabOver:
                 tempSum = 0
-                for c in range(0, len(onArray)):
-                    tempSum += onArray[c]['duration']
+                # Check if computing habituation by duration or on-time
+                if self.habByDuration == 1:
+                    for c in range(0, len(onArray)):
+                        tempSum += onArray[c]['duration']
+                    for d in range(0, len(offArray)):
+                        tempSum += offArray[d]['duration']
+                    if self.durationInclude == 0 and len(offArray) > 0:
+                        if offArray[-1]['endTime'] > onArray[-1]['endTime']:
+                            tempSum = tempSum - offArray[-1]['duration']
+                else:
+                    for c in range(0, len(onArray)):
+                        tempSum += onArray[c]['duration']
                 self.habDataCompiled[self.habCount] += tempSum
             if ttype == 4:
                 return 2
@@ -1695,8 +1707,17 @@ class PyHab:
                 return 0
         elif ttype == 'Hab' and self.habMetWhen == -1 and not abort:
             tempSum = 0
-            for c in range(0, len(onArray)):
-                tempSum += onArray[c]['duration']
+            if self.habByDuration == 1:
+                for c in range(0, len(onArray)):
+                    tempSum += onArray[c]['duration']
+                for d in range(0, len(offArray)):
+                    tempSum += offArray[d]['duration']
+                if self.durationInclude == 0 and len(offArray) > 0:
+                    if offArray[-1]['endTime'] > onArray[-1]['endTime']:
+                        tempSum = tempSum - offArray[-1]['duration']
+            else:
+                for c in range(0, len(onArray)):
+                    tempSum += onArray[c]['duration']
             self.habDataCompiled[self.habCount] += tempSum
             self.habCount += 1
             if self.checkStop():  # If criteria met

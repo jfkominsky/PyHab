@@ -26,6 +26,7 @@ base_settings = {
     'durationInclude': "0",
     'autoRedo': "[]",
     'onTimeDeadline': '{}',
+    'habByDuration': '0',
     'randPres': '0',
     'condPath': '',
     'condFile': '',
@@ -79,7 +80,7 @@ def test_init():
                   itest.metCritStatic]
     TheFloats = [itest.freezeFrame]
     TheInts = [itest.blindPres, itest.maxHabTrials, itest.setCritWindow, itest.setCritDivisor, itest.metCritDivisor,
-               itest.metCritWindow, itest.durationInclude]
+               itest.metCritWindow, itest.durationInclude, itest.habByDuration]
     for i in TheDicts:
         assert type(i) == dict
     for j in TheLists:
