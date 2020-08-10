@@ -841,12 +841,25 @@ class PyHabHPP(PyHab):
         if self.habMetWhen == -1 and len(self.habTrialList) > 0 and not abort:   # if still during habituation
             if dataType[0:4] == 'hab.' and dataType[4:] in self.calcHabOver:
                 tempSum = 0
-                for c in range(0, len(onArrayC)):
-                    tempSum += onArrayC[c]['duration']
-                for d in range(0, len(onArrayL)):
-                    tempSum += onArrayL[d]['duration']
-                for e in range(0, len(onArrayR)):
-                    tempSum += onArrayR[e]['duration']
+                if self.habByDuration == 1:
+                    for c in range(0, len(onArrayC)):
+                        tempSum += onArrayC[c]['duration']
+                    for d in range(0, len(onArrayL)):
+                        tempSum += onArrayL[d]['duration']
+                    for e in range(0, len(onArrayR)):
+                        tempSum += onArrayR[e]['duration']
+                    for f in range(0, len(offArray)):
+                        tempSum += offArray[f]['duration']
+                    if self.durationInclude == 0 and len(offArray) > 0:
+                        if offArray[-1]['endTime'] > onArrayC[-1]['endTime'] and offArray[-1]['endTime'] > onArrayL[-1]['endTime'] and offArray[-1]['endTime'] > onArrayR[-1]['endTime']:
+                            tempSum = tempSum - offArray[-1]['duration']
+                else:
+                    for c in range(0, len(onArrayC)):
+                        tempSum += onArrayC[c]['duration']
+                    for d in range(0, len(onArrayL)):
+                        tempSum += onArrayL[d]['duration']
+                    for e in range(0, len(onArrayR)):
+                        tempSum += onArrayR[e]['duration']
                 self.habDataCompiled[self.habCount] += tempSum
             if ttype == 4:
                 return 2

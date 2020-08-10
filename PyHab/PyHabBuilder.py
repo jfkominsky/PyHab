@@ -43,6 +43,7 @@ class PyHabBuilder:
                                                         'autoRedo': [],
                                                         'onTimeDeadline': {},
                                                         'durationInclude': '1',
+                                                        'habByDuration': '0',
                                                         'blindPres': '0', 
                                                         'autoAdvance': [],
                                                         'randPres': '0',
@@ -3764,7 +3765,9 @@ class PyHabBuilder:
 
         7 = metCritStatic (static or moving window?)
 
-        8-N = Which trials to calculate hab over for multi-trial blocks. Hab selected by default, populated only if the
+        8 = habByDuration (habituation by duration or by on-time)
+
+        9-N = Which trials to calculate hab over for multi-trial blocks. Hab selected by default, populated only if the
         block structure is used
 
         :param lastSet: If information entered is invalid and the dialog needs to be shown again, this allows it to remember what was previously entered.
@@ -3784,15 +3787,21 @@ class PyHabBuilder:
             lastSet.append(self.settings['metCritWindow'])
             lastSet.append(self.settings['metCritDivisor'])
             lastSet.append(self.settings['metCritStatic'])
+            lastSet.append(self.settings['habByDuration'])
 
         hDlg = gui.Dlg(title="Habituation block settings")
         windowtypes = ['First', 'Peak', 'Max', 'Last', 'Threshold']
         winchz = [x for x in windowtypes if x != lastSet[3]]
         winchz.insert(0, lastSet[3])
-        if lastSet[-1] == 'Fixed':
+        if lastSet[7] == 'Fixed':
             evalChz = ['Fixed','Moving']
         else:
             evalChz = ['Moving', 'Fixed']
+
+        if lastSet[8] in ['1',1,'True',True]:
+            byDur = True
+        else:
+            byDur = False
 
         hDlg.addField("Max number of habituation trials (if criterion not met)", self.settings['maxHabTrials'])
         hDlg.addField("Number of trials to sum looking time over when making hab criterion", self.settings['setCritWindow'])
@@ -3802,6 +3811,7 @@ class PyHabBuilder:
         hDlg.addField("Number of trials to sum looking time over when determining whether criterion has been met", self.settings['metCritWindow'])
         hDlg.addField("Number to divide sum of looking time by when determining whether criterion has been met", self.settings['metCritDivisor'])
         hDlg.addField("Evaluate criterion over moving window or fixed windows?", choices=evalChz)
+        hDlg.addField("Compute habituation over total trial duration instead of on-time?", byDur)
         if len(self.settings['habTrialList']) > 0:
             hDlg.addText("Check which trial types criteria should be computed over (both setting and checking)")
             expandedHabList = []
@@ -3871,10 +3881,15 @@ class PyHabBuilder:
                 self.settings['metCritWindow'] = habDat[5]
                 self.settings['metCritDivisor'] = habDat[6]
                 self.settings['metCritStatic'] = habDat[7]
+                if habDat[8] in [1, '1', True, 'True']:
+                    self.settings['habByDuration'] = 1
+                else:
+                    self.settings['habByDuration'] = 0
+
                 if len(self.settings['habTrialList']) > 0:
                     tempArr = []
                     for i in range(0, len(expandedHabList)):
-                        if habDat[i+8]:
+                        if habDat[i+9]:
                            tempArr.append(expandedHabList[i])
                     if len(tempArr) > 0:
                         self.settings['calcHabOver'] = tempArr
