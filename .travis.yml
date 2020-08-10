@@ -48,7 +48,6 @@ before_install:
 
   # Changing to be closer to how PsychoPy does its testing environment
   - travis_retry sudo pip install --upgrade -qq pip==9.0.3
-  - travis_retry sudo pip install scikit-build # attempting to fix an opencv bug in the latest version.
   - travis_retry sudo apt-get install -qq flac
   - travis_retry sudo apt-get install -qq libav-tools  # this installs ffmpeg
   - travis_retry sudo apt-get install -qq python-xlib python-pygame python-opengl
@@ -56,7 +55,8 @@ before_install:
   - travis_retry sudo apt-get install -qq python-yaml python-lxml python-configobj
   - travis_retry sudo apt-get install -qq python-imaging python-mock
   - travis_retry sudo apt-get install -qq python-qt4 #python-wxgtk3.0 does not exist in trusty
-  - travis_retry sudo apt-get install -qq python-pyo python-opencv # Problem with opencv missing scikit?
+  - travis_retry sudo apt-get install -qq python-pyo
+  - travis_retry sudo apt-get install -qq python-opencv=4.3.0.36 # Problem with opencv missing scikit. opencv problem.
   - travis_retry sudo apt-get install -qq python-mock
   # Addressing an issue with wx imports.
   - travis_retry sudo apt-get install git curl libsdl2-mixer-2.0-0 libsdl2-image-2.0-0 libsdl2-2.0-0
