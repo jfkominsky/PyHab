@@ -72,12 +72,16 @@ class PyHabHPP(PyHab):
         self.verbBadList['verboseOnL'].extend(onArrayL)
         self.verbBadList['verboseOnR'].extend(onArrayR)
         self.verbBadList['verboseOff'].extend(offArray)
+        totalduration = sumOn + sumOnL + sumOnR + sumOff
+        if offArray[-1]['endTime'] > onArray[-1]['endTime'] and offArray[-1]['endTime'] > onArrayL[-1]['endTime'] and offArray[-1]['endTime'] > onArrayR[-1]['endTime'] and self.durationInclude == 0:
+            totalduration = totalduration - offArray[-1]['duration']
         tempData = {'sNum': self.sNum, 'sID': self.sID, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex, 'cond': self.cond,
                     'condLabel': self.condLabel,
                     'trial': trial, 'GNG': 0, 'trialType': ttype, 'stimName': stimName, 'habCrit': self.habCrit, 'habTrialNo': habTrialNo,
                     'sumOnC': sumOn, 'numOnC': len(onArray),
                     'sumOnL': sumOnL, 'numOnL': len(onArrayL),
-                    'sumOnR': sumOnR, 'numOnR': len(onArrayR), 'sumOff': sumOff, 'numOff': len(offArray)}
+                    'sumOnR': sumOnR, 'numOnR': len(onArrayR), 'sumOff': sumOff, 'numOff': len(offArray),
+                    'trialDuration': totalduration}
         self.badTrials.append(tempData)
 
     def dataRec(self, onArray, offArray, trial, type, onArrayL, onArrayR, stimName = '', habTrialNo = 0):
@@ -121,18 +125,22 @@ class PyHabHPP(PyHab):
         self.verbDatList['verboseOnL'].extend(onArrayL)
         self.verbDatList['verboseOnR'].extend(onArrayR)
         self.verbDatList['verboseOff'].extend(offArray)
+        totalduration = sumOn + sumOnL + sumOnR + sumOff
+        if offArray[-1]['endTime'] > onArray[-1]['endTime'] and offArray[-1]['endTime'] > onArrayL[-1]['endTime'] and offArray[-1]['endTime'] > onArrayR[-1]['endTime']:
+            totalduration = totalduration - offArray[-1]['duration']
         tempData={'sNum':self.sNum, 'sID': self.sID, 'months':self.ageMo, 'days':self.ageDay, 'sex':self.sex, 'cond':self.cond,'condLabel':self.condLabel,
                                 'trial':trial, 'GNG':1, 'trialType':type, 'stimName':stimName, 'habCrit':self.habCrit, 'habTrialNo': habTrialNo,
                                 'sumOnC':sumOn, 'numOnC':len(onArray),
                                 'sumOnL':sumOnL,'numOnL':len(onArrayL),
-                                'sumOnR':sumOnR,'numOnR':len(onArrayR),'sumOff':sumOff, 'numOff':len(offArray)}
+                                'sumOnR':sumOnR,'numOnR':len(onArrayR),'sumOff':sumOff, 'numOff':len(offArray),
+                                'trialDuration': totalduration}
         self.dataMatrix.append(tempData)
 
     def lookKeysPressed(self):
         """
         A simple boolean function to allow for more modularity with preferential looking
         Basically, allows you to set an arbitrary set of keys to start a trial once the attngetter has played.
-        In this case, only B or M are sufficient.
+        In this case, any of V, B, or N are sufficient.
 
         :return: True if the V, B, or N key is pressed, False otherwise.
         :rtype:
@@ -260,18 +268,19 @@ class PyHabHPP(PyHab):
     def printCurrentData(self):
         """
         Prints current data to output window, HPP variant. Only called when stimulus presentation is off.
+
         :return:
         :rtype:
         """
 
-        print("hab crit, on-timeC, numOnC, on-timeL, numOnL, onTimeR, numOnR, offTime, numOff")
+        print("hab crit, on-timeC, numOnC, on-timeL, numOnL, onTimeR, numOnR, offTime, numOff, trialDuration")
         print("-------------------------------------------------------------------------------------------")
         for i in range(0, len(self.dataMatrix)):
             dataList = [self.dataMatrix[i]['habCrit'], round(self.dataMatrix[i]['sumOnC'],1),
                         self.dataMatrix[i]['numOnC'], round(self.dataMatrix[i]['sumOnL'],1),
                         self.dataMatrix[i]['numOnL'], round(self.dataMatrix[i]['sumOnR'],1),
                         self.dataMatrix[i]['numOnR'], round(self.dataMatrix[i]['sumOff'],1),
-                        self.dataMatrix[i]['numOff']]
+                        self.dataMatrix[i]['numOff'], self.dataMatrix[i]['trialDuration']]
             print(dataList)
 
     def doTrial(self, number, ttype, disMovie):
@@ -345,6 +354,18 @@ class PyHabHPP(PyHab):
         gazeOnC = False
         gazeOnL = False
         gazeOnR = False
+        endNow = False
+
+        def onDuration(adds=0, subs=0):  # A function for the duration switch, while leaving sumOn intact
+            if localType in self.durationCriterion:
+                return core.getTime() - startTrial - subs
+            else:
+                return sumOnC + sumOnL + sumOnR + adds
+
+        if localType in self.onTimeDeadline.keys():
+            deadlineChecked = False
+        else:
+            deadlineChecked = True
         self.readyText.text = "Trial running"
         if self.keyboard[self.centerKey]:
             gazeOnC = True
@@ -503,9 +524,33 @@ class PyHabHPP(PyHab):
                         offArray.append(tempGazeArray)
             elif not gazeOnC and not gazeOnL and not gazeOnR: # This should happen rarely, but if it does...
                 nowOff = core.getTime() - startTrial
-                if sumOnC + sumOnL + sumOnR > self.minOn[localType] and nowOff - startOff >= self.maxOff[localType] and self.playThrough[localType] == 0 and not endFlag:
+                endCondMet = False
+                if self.playThrough[localType] == 0:  # Standard gaze-on then gaze-off
+                    if onDuration(subs=nowOff-startOff) >= self.minOn[localType] and nowOff - startOff >= self.maxOff[localType] and not endFlag:
+                        endCondMet = True
+                    elif localType in self.autoRedo and nowOff - startOff >= self.maxOff[localType] and not endFlag:
+                        endCondMet = True
+                        endNow = True
+                elif self.playThrough[localType] == 3:  # Either/or
+                    if nowOff - startOff >= self.maxOff[localType] and not endFlag:
+                        endCondMet = True
+                        if localType in self.autoRedo and sumOnC + sumOnL + sumOnR < self.minOn[localType]:
+                            endNow = True
+                elif localType in self.autoRedo and sumOnC + sumOnL + sumOnR < self.minOn[localType]:
+                    if nowOff - startOff >= self.maxOff[localType] and not endFlag:
+                        endCondMet = True
+                        endNow = True
+
+                if localType in self.autoRedo and not deadlineChecked and nowOff >= self.onTimeDeadline[localType]:
+                    # NB: nowOff in this context is just duration of the trial, period.
+                    deadlineChecked = True
+                    if sumOnC + sumOnL + sumOnR < self.minOn[localType]:  # this specifically uses sumOn, always.
+                        endCondMet = True
+                        endNow = True
+
+                if endCondMet:
                     # if they have previously looked for at least minOn seconds and now looked away for maxOff continuous sec
-                    if localType in self.movieEnd:
+                    if localType in self.movieEnd and not endNow:
                         endFlag = True
                     else:
                         runTrial = False
@@ -601,9 +646,10 @@ class PyHabHPP(PyHab):
                     tempOn = startOnL
                 elif gazeOnR:
                     tempOn = startOnR
-                if self.playThrough[localType] == 1 and sumOnC + sumOnL + sumOnR + (nowOn - tempOn) >= self.minOn[localType] and not endFlag:
+
+                if self.playThrough[localType] in [1,3] and onDuration(adds=nowOn - tempOn) >= self.minOn[localType] and not endFlag:
                     # If the "on-only" condition has been met
-                    if localType in self.movieEnd:
+                    if localType in self.movieEnd and not endNow:
                         endFlag = True
                     else:
                         runTrial = False
@@ -767,6 +813,20 @@ class PyHabHPP(PyHab):
                 self.win.flip()  # blanks the screen outright between trials if NOT auto-advancing into the next trial
                 self.winL.flip()
                 self.winR.flip()
+        finalSumOn = 0
+        # Check if this is an auto-redo situation
+        if localType not in self.durationCriterion:
+            for o in range(0, len(onArrayC)):
+                finalSumOn = finalSumOn + onArrayC[o]['duration']
+            for p in range(0, len(onArrayL)):
+                finalSumOn = finalSumOn + onArrayL[p]['duration']
+            for q in range(0, len(onArrayR)):
+                finalSumOn = finalSumOn + onArrayR[q]['duration']
+        else:
+            finalSumOn = core.getTime() - startTrial  # Checks total duration, ignores last-look issue.
+        if localType in self.autoRedo and finalSumOn < self.minOn[localType] and ttype != 4:
+            # Determine if total on-time is less that minOn, if so, flag trial as bad and repeat it
+            abort = True
         if abort:  # if the abort button was pressed
             if self.stimPres:
                 for i, j in disMovie.items():
@@ -781,12 +841,25 @@ class PyHabHPP(PyHab):
         if self.habMetWhen == -1 and len(self.habTrialList) > 0 and not abort:   # if still during habituation
             if dataType[0:4] == 'hab.' and dataType[4:] in self.calcHabOver:
                 tempSum = 0
-                for c in range(0, len(onArrayC)):
-                    tempSum += onArrayC[c]['duration']
-                for d in range(0, len(onArrayL)):
-                    tempSum += onArrayL[d]['duration']
-                for e in range(0, len(onArrayR)):
-                    tempSum += onArrayR[e]['duration']
+                if self.habByDuration == 1:
+                    for c in range(0, len(onArrayC)):
+                        tempSum += onArrayC[c]['duration']
+                    for d in range(0, len(onArrayL)):
+                        tempSum += onArrayL[d]['duration']
+                    for e in range(0, len(onArrayR)):
+                        tempSum += onArrayR[e]['duration']
+                    for f in range(0, len(offArray)):
+                        tempSum += offArray[f]['duration']
+                    if self.durationInclude == 0 and len(offArray) > 0:
+                        if offArray[-1]['endTime'] > onArrayC[-1]['endTime'] and offArray[-1]['endTime'] > onArrayL[-1]['endTime'] and offArray[-1]['endTime'] > onArrayR[-1]['endTime']:
+                            tempSum = tempSum - offArray[-1]['duration']
+                else:
+                    for c in range(0, len(onArrayC)):
+                        tempSum += onArrayC[c]['duration']
+                    for d in range(0, len(onArrayL)):
+                        tempSum += onArrayL[d]['duration']
+                    for e in range(0, len(onArrayR)):
+                        tempSum += onArrayR[e]['duration']
                 self.habDataCompiled[self.habCount] += tempSum
             if ttype == 4:
                 return 2
@@ -1071,6 +1144,8 @@ class PyHabHPP(PyHab):
         An HPP-specific version of the function that sets up the windows and loads everything. With four windows to set
         up it's a real doozy, and has the added problem of needing to assign things properly to each window for stim
         presentation.
+
+        TODO: Windows audio bug when loading an audio file before a movie means that we should change load order to movie first
 
 
         :return:
