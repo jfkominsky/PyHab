@@ -1591,6 +1591,8 @@ class PyHab:
                     if sumOn <= 0:  # this specifically uses sumOn, always. MODIFICATION: now uses 0 instead of minOn
                         endCondMet = True
                         endNow = True
+                    if sumOn < self.minOn[localType]: # However, even if the trial does not end immediately, it should restart
+                        abort = True
 
                 if endCondMet:
                     # if they have previously looked for at least minOn and now looked away for maxOff continuous sec

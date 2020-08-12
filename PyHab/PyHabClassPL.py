@@ -362,6 +362,8 @@ class PyHabPL(PyHab):
                     if sumOn + sumOn2 <= 0:  # this specifically uses sumOn, always. MODIFICATION: 0 instead of minon
                         endCondMet = True
                         endNow = True
+                    if sumOn + sumOn2 < self.minOn[localType]:  # However, even if the trial does not end immediately, it should restart
+                        abort = True
 
                 if endCondMet:
                     if localType in self.movieEnd and not endNow:
