@@ -1,4 +1,4 @@
-dataColumns,"['sNum', 'sID', 'months', 'days', 'sex', 'cond', 'condLabel', 'trial', 'GNG', 'trialType', 'stimName', 'habCrit', 'habTrialNo', 'sumOnA', 'numOnA', 'sumOffA', 'numOffA', 'sumOnB', 'numOnB', 'sumOffB', 'numOffB']"
+dataColumns,"['sNum', 'sID', 'months', 'days', 'sex', 'cond', 'condLabel', 'trial', 'GNG', 'trialType', 'stimName', 'habCrit', 'habTrialNo', 'sumOnA', 'numOnA', 'sumOffA', 'numOffA', 'sumOnB', 'numOnB', 'sumOffB', 'numOffB', 'trialDuration']"
 prefix,PyHabDemo
 dataloc,data/
 maxDur,"{'Intro': 60.0, 'Fam': 60.0, 'Test': 60.0}"
