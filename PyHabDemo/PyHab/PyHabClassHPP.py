@@ -73,8 +73,14 @@ class PyHabHPP(PyHab):
         self.verbBadList['verboseOnR'].extend(onArrayR)
         self.verbBadList['verboseOff'].extend(offArray)
         totalduration = sumOn + sumOnL + sumOnR + sumOff
-        if offArray[-1]['endTime'] > onArray[-1]['endTime'] and offArray[-1]['endTime'] > onArrayL[-1]['endTime'] and offArray[-1]['endTime'] > onArrayR[-1]['endTime'] and self.durationInclude == 0:
-            totalduration = totalduration - offArray[-1]['duration']
+        lastOn = 0
+        for i in [onArray, onArrayL, onArrayR]:
+            if len(i) > 0:
+                if i[-1]['endTime'] > lastOn:
+                    lastOn = i[-1]['endTime']
+        if len(offArray) > 0:
+            if offArray[-1]['endTime'] > lastOn:
+                totalduration = totalduration - offArray[-1]['duration']
         tempData = {'sNum': self.sNum, 'sID': self.sID, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex, 'cond': self.cond,
                     'condLabel': self.condLabel,
                     'trial': trial, 'GNG': 0, 'trialType': ttype, 'stimName': stimName, 'habCrit': self.habCrit, 'habTrialNo': habTrialNo,
@@ -126,8 +132,15 @@ class PyHabHPP(PyHab):
         self.verbDatList['verboseOnR'].extend(onArrayR)
         self.verbDatList['verboseOff'].extend(offArray)
         totalduration = sumOn + sumOnL + sumOnR + sumOff
-        if offArray[-1]['endTime'] > onArray[-1]['endTime'] and offArray[-1]['endTime'] > onArrayL[-1]['endTime'] and offArray[-1]['endTime'] > onArrayR[-1]['endTime']:
-            totalduration = totalduration - offArray[-1]['duration']
+        lastOn = 0
+        for i in [onArray, onArrayL, onArrayR]:
+            if len(i) > 0:
+                if i[-1]['endTime'] > lastOn:
+                    lastOn = i[-1]['endTime']
+        if len(offArray) > 0:
+            if offArray[-1]['endTime'] > lastOn:
+                totalduration = totalduration - offArray[-1]['duration']
+
         tempData={'sNum':self.sNum, 'sID': self.sID, 'months':self.ageMo, 'days':self.ageDay, 'sex':self.sex, 'cond':self.cond,'condLabel':self.condLabel,
                                 'trial':trial, 'GNG':1, 'trialType':type, 'stimName':stimName, 'habCrit':self.habCrit, 'habTrialNo': habTrialNo,
                                 'sumOnC':sumOn, 'numOnC':len(onArray),
@@ -528,7 +541,7 @@ class PyHabHPP(PyHab):
                 if self.playThrough[localType] == 0:  # Standard gaze-on then gaze-off
                     if onDuration(subs=nowOff-startOff) >= self.minOn[localType] and nowOff - startOff >= self.maxOff[localType] and not endFlag:
                         endCondMet = True
-                    elif localType in self.autoRedo and nowOff - startOff >= self.maxOff[localType] and not endFlag:
+                    elif localType in self.autoRedo and deadlineChecked and nowOff - startOff >= self.maxOff[localType] and not endFlag:
                         endCondMet = True
                         endNow = True
                 elif self.playThrough[localType] == 3:  # Either/or
@@ -541,7 +554,7 @@ class PyHabHPP(PyHab):
                         endCondMet = True
                         endNow = True
 
-                if localType in self.autoRedo and not deadlineChecked and nowOff >= self.onTimeDeadline[localType]:
+                if localType in self.autoRedo and nowOff >= self.onTimeDeadline[localType] and not deadlineChecked:
                     # NB: nowOff in this context is just duration of the trial, period.
                     deadlineChecked = True
                     if sumOnC + sumOnL + sumOnR < self.minOn[localType]:  # this specifically uses sumOn, always.

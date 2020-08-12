@@ -337,8 +337,9 @@ class PyHab:
         # Total duration calculation is complicated by the fact that we need to omit the last gaze-off but only if it
         # ended the trial.
         totalduration = sumOn + sumOff
-        if offArray[-1]['endTime'] > onArray[-1]['endTime'] and self.durationInclude == 0:  # A kludge because it doesn't attend to whether it ended the trial.
-            totalduration = totalduration - offArray[-1]['duration']
+        if len(offArray) > 0 and len(onArray) > 0:
+            if offArray[-1]['endTime'] > onArray[-1]['endTime'] and self.durationInclude == 0:  # A kludge because it doesn't attend to whether it ended the trial.
+                totalduration = totalduration - offArray[-1]['duration']
         tempData = {'sNum': self.sNum, 'sID':self.sID, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex, 'cond': self.cond,
                     'condLabel': self.condLabel,'trial': trial, 'GNG': 0, 'trialType': ttype, 'stimName': stimName,
                     'habCrit': self.habCrit, 'habTrialNo': habTrialNo, 'sumOnA': sumOn, 'numOnA': len(onArray), 'sumOffA': sumOff,
@@ -393,8 +394,9 @@ class PyHab:
         # Total duration calculation is complicated by the fact that we need to omit the last gaze-off but only if it
         # ended the trial.
         totalduration = sumOn + sumOff
-        if offArray[-1]['endTime'] > onArray[-1]['endTime'] and self.durationInclude == 0:  # A kludge because it doesn't attend to whether it ended the trial.
-            totalduration = totalduration - offArray[-1]['duration']
+        if len(offArray) > 0 and len(onArray) > 0:
+            if offArray[-1]['endTime'] > onArray[-1]['endTime'] and self.durationInclude == 0:  # A kludge because it doesn't attend to whether it ended the trial.
+                totalduration = totalduration - offArray[-1]['duration']
         tempData = {'sNum': self.sNum, 'sID': self.sID, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex, 'cond': self.cond,
                     'condLabel': self.condLabel, 'trial': trial, 'GNG': 1, 'trialType': type, 'stimName': stimName,
                     'habCrit': self.habCrit, 'habTrialNo': habTrialNo, 'sumOnA': sumOn, 'numOnA': len(onArray), 'sumOffA': sumOff,
@@ -1489,7 +1491,7 @@ class PyHab:
                 if self.playThrough[localType] == 0:  # Standard gaze-on then gaze-off
                     if onDuration(subs=nowOff-startOff) >= self.minOn[localType] and nowOff - startOff >= self.maxOff[localType] and not endFlag:
                         endCondMet = True
-                    elif localType in self.autoRedo and nowOff - startOff >= self.maxOff[localType] and not endFlag:
+                    elif localType in self.autoRedo and deadlineChecked and nowOff - startOff >= self.maxOff[localType] and not endFlag:
                         endCondMet = True
                         endNow = True
                 elif self.playThrough[localType] == 3:  # Either/or
@@ -1502,7 +1504,7 @@ class PyHab:
                         endCondMet = True
                         endNow = True
 
-                if localType in self.autoRedo and not deadlineChecked and nowOff >= self.onTimeDeadline[localType]:
+                if localType in self.autoRedo and nowOff >= self.onTimeDeadline[localType] and not deadlineChecked:
                     # NB: nowOff in this context is just duration of the trial, period.
                     deadlineChecked = True
                     if sumOn < self.minOn[localType]: # this specifically uses sumOn, always.
@@ -2002,11 +2004,11 @@ class PyHab:
         lastTrialNumber = tempMatrix[-1]['trial']
         # Making this generalizeable for preferential looking studies.
         if 'sumOnC' in self.dataMatrix[0].keys():  # HPP
-            sumFields = ['sumOnL','numOnL','sumOnC','numOnC','sumOnR','numOnR','sumOff','numOff']
+            sumFields = ['sumOnL','numOnL','sumOnC','numOnC','sumOnR','numOnR','sumOff','numOff','trialDuration']
         elif 'sumOnL' in self.dataMatrix[0].keys():  # PL
-            sumFields = ['sumOnL','numOnL','sumOnR', 'numOnR', 'sumOff', 'numOff']
+            sumFields = ['sumOnL','numOnL','sumOnR', 'numOnR', 'sumOff', 'numOff','trialDuration']
         else:
-            sumFields = ['sumOnA', 'numOnA', 'sumOffA', 'numOffA', 'sumOnB', 'numOnB', 'sumOffB', 'numOffB']
+            sumFields = ['sumOnA', 'numOnA', 'sumOffA', 'numOffA', 'sumOnB', 'numOnB', 'sumOffB', 'numOffB','trialDuration']
         while not blockDone:
             nt = tempMatrix[tempIndex]['trial']
             for i, j in self.blockDataTags.items():
