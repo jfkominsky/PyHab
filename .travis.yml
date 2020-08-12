@@ -45,7 +45,6 @@ before_install:
   - travis_retry sudo apt-get install -qq libwebkitgtk-1.0-0
   - flac -version
 
-
   # Changing to be closer to how PsychoPy does its testing environment
   - travis_retry sudo pip install --upgrade -qq pip==9.0.3
   - travis_retry sudo apt-get install -qq flac
