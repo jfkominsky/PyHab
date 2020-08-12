@@ -87,11 +87,24 @@ class PyHab:
             self.condPath = ''.join(self.condPath)
         # New settings for 0.9, pause if they look away and play AG mid-trial.
         try:
-            self.dynamicPause = eval(settingsDict['dynamicPause'])
-            self.midAG = eval(settingsDict['midAG'])
+            self.dynamicPause = eval(settingsDict['dynamicPause'])  # List of trials w/dynamic pause behavior
+            self.midAG = eval(settingsDict['midAG'])  # Dict of trials with mid-trial AG and info.
         except:
             self.dynamicPause = []
             self.midAG = {}
+        # New settings for 0.9.3
+        try:
+            self.durationCriterion = eval(settingsDict['durationCriterion'])  # List of trials using duration instead of on-time
+            self.autoRedo = eval(settingsDict['autoRedo'])  # List of trials with auto-redo behavior
+            self.onTimeDeadline = eval(settingsDict['onTimeDeadline'])  # Dict of trials w/ a deadline to meet on-time, plus deadline.
+            self.durationInclude = eval(settingsDict['durationInclude'])  # Duration calculation reports full duration (True) or excludes last gaze-off (False)
+            self.habByDuration = eval(settingsDict['habByDuration'])
+        except:
+            self.durationCriterion = []
+            self.autoRedo = []
+            self.onTimeDeadline = {}
+            self.durationInclude = 1
+            self.habByDuration = 0
 
 
         # ORDER OF PRESENTATION
@@ -321,11 +334,16 @@ class PyHab:
                 sumOff2 = sumOff2 + offArray2[j]['duration']
             self.verbBadList['verboseOn2'].extend(onArray2)
             self.verbBadList['verboseOff2'].extend(offArray2)
+        # Total duration calculation is complicated by the fact that we need to omit the last gaze-off but only if it
+        # ended the trial.
+        totalduration = sumOn + sumOff
+        if offArray[-1]['endTime'] > onArray[-1]['endTime'] and self.durationInclude == 0:  # A kludge because it doesn't attend to whether it ended the trial.
+            totalduration = totalduration - offArray[-1]['duration']
         tempData = {'sNum': self.sNum, 'sID':self.sID, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex, 'cond': self.cond,
                     'condLabel': self.condLabel,'trial': trial, 'GNG': 0, 'trialType': ttype, 'stimName': stimName,
                     'habCrit': self.habCrit, 'habTrialNo': habTrialNo, 'sumOnA': sumOn, 'numOnA': len(onArray), 'sumOffA': sumOff,
                     'numOffA': len(offArray), 'sumOnB': sumOn2, 'numOnB': len(onArray2), 'sumOffB': sumOff2,
-                    'numOffB': len(offArray2)}
+                    'numOffB': len(offArray2), 'trialDuration': totalduration}
         self.badTrials.append(tempData)
 
     def dataRec(self, onArray, offArray, trial, type, onArray2, offArray2, stimName = '', habTrialNo = 0):
@@ -372,11 +390,16 @@ class PyHab:
         # add to verbose master gaze array
         self.verbDatList['verboseOn'].extend(onArray)
         self.verbDatList['verboseOff'].extend(offArray)
+        # Total duration calculation is complicated by the fact that we need to omit the last gaze-off but only if it
+        # ended the trial.
+        totalduration = sumOn + sumOff
+        if offArray[-1]['endTime'] > onArray[-1]['endTime'] and self.durationInclude == 0:  # A kludge because it doesn't attend to whether it ended the trial.
+            totalduration = totalduration - offArray[-1]['duration']
         tempData = {'sNum': self.sNum, 'sID': self.sID, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex, 'cond': self.cond,
                     'condLabel': self.condLabel, 'trial': trial, 'GNG': 1, 'trialType': type, 'stimName': stimName,
                     'habCrit': self.habCrit, 'habTrialNo': habTrialNo, 'sumOnA': sumOn, 'numOnA': len(onArray), 'sumOffA': sumOff,
                     'numOffA': len(offArray), 'sumOnB': sumOn2, 'numOnB': len(onArray2), 'sumOffB': sumOff2,
-                    'numOffB': len(offArray2)}
+                    'numOffB': len(offArray2), 'trialDuration': totalduration}
         self.dataMatrix.append(tempData)
 
     def redoTrial(self, trialNum):
@@ -444,13 +467,16 @@ class PyHab:
         Uses a sort of parallel data structure that just tracks hab-relevant gaze totals. As a bonus, this means it now
         works for both single-target and preferential looking designs (and HPP designs) with no modification.
 
+        TODO: Habituation using trial duration instead of on-time
+
         :return: True if hab criteria have been met, False otherwise
         :rtype:
         """
 
 
 
-        if self.habCount == self.setCritWindow and self.setCritType != 'Threshold':  # time to set the hab criterion. This will be true for both dynamic and first
+        if self.habCount == self.setCritWindow and self.setCritType != 'Threshold':  # time to set the hab criterion.
+            # This condition sets the initial criterion for peak/max, first, and last. Threshold needs more.
             sumOnTimes = 0
             for j in range(0,self.habCount):
                 sumOnTimes = sumOnTimes + self.habDataCompiled[j]
@@ -497,10 +523,11 @@ class PyHab:
                     self.endHabSound = sound.Sound('G', octave=4, sampleRate=44100, secs=0.2)
             self.habMetWhen = self.habCount
             return True
-        elif self.habCount >= self.setCritWindow + self.metCritWindow and self.habSetWhen > -1:  # if we're far enough in that we can plausibly meet the hab criterion
+        elif self.habCount > self.setCritWindow and self.habSetWhen > -1:  # if we're far enough in that we can plausibly meet the hab criterion
             # Problem: Fixed window, peak, and max as relates to habsetwhen....
             # Fixed window is probably the only thing that should ignore habsetwhen.
-            if self.habCount < self.habSetWhen + self.metCritWindow and self.metCritStatic == 'Moving': # Was the hab set "late" and are we too early as a result
+            # Last needs to ignore HabSetWhen, or rather, cannot wait MetCritWindow trials past when it is set.
+            if self.habCount < self.habSetWhen + self.metCritWindow and self.metCritStatic == 'Moving' and self.setCritType != 'Last': # Was the hab set "late" and are we too early as a result
                 return False
             else:
                 sumOnTimes = 0
@@ -518,19 +545,32 @@ class PyHab:
                         self.habMetWhen = self.habCount
                         return True
                     else:
+                        if self.setCritType == 'Last':  # For the 'last' crit type, we must update after checking.
+                            sumOnTimeSet = 0
+                            index = self.habCount - self.setCritWindow
+                            for j in range(index, self.habCount):
+                                sumOnTimeSet = sumOnTimeSet + self.habDataCompiled[j]
+                            self.habCrit = sumOnTimeSet / self.setCritDivisor
+                            self.habSetWhen = deepcopy(self.habCount)
                         return False
                 else:
                     return False
         else:
             return False
 
-    def attnGetter(self, trialType, cutoff=False, onmin=0):
+    def attnGetter(self, trialType, cutoff=False, onmin=0.0, midTrial=False):
         """
         Plays either a default attention-getter animation or a user-defined one.
         Separate settings for audio w/shape and video file attention-getters.
 
         :param trialType: Current trial type
         :type trialType: string
+        :param cutoff: Cut off AG immediately on gaze-on? Defaut False
+        :type cutoff: bool
+        :param onmin: Delay in listening for gaze-on to immediately end AG. Default 0
+        :type onmin: float
+        :param midTrial: Is this a mid-trial attention-getter? Default False
+        :type midTrial: bool
         :return:
         :rtype:
         """
@@ -556,7 +596,13 @@ class PyHab:
         onCheck = 0
 
         # Read off the relevant properties from the attention-getter settings
-        attnGetter = self.attnGetterList[self.playAttnGetter[trialType]['attnGetter']]  # Reads attention-getter from list of AGs.
+        if not midTrial:
+            attnGetter = self.attnGetterList[self.playAttnGetter[trialType]['attnGetter']]  # Reads attention-getter from list of AGs.
+        else:
+            attnGetter = self.attnGetterList[self.midAG[trialType]['attnGetter']]
+        if 'bgColor' in attnGetter.keys():
+            if attnGetter['bgColor'] != 'default':
+                self.win.setColor(attnGetter['bgColor'])
         if attnGetter['stimType'] is 'Audio':
             if attnGetter['shape'] is 'Rectangle':
                 useShape = self.attnGetterSquare
@@ -599,6 +645,10 @@ class PyHab:
                         break
                 elif cutoff and onCheck > 0: # A clever little way to say "if they aren't looking but were earlier"
                     onCheck = 0
+                elif i > 30 and self.keyboard[self.key.K]:
+                    # If more than half a second (30 frames) has passed and "S" is pressed.
+                    attnGetter['file'].stop(reset=True)
+                    break
         else:
             dMovie = attnGetter['file']
             dMovie.seek(0.0)
@@ -626,9 +676,19 @@ class PyHab:
                         break
                 elif cutoff and onCheck > 0:  # A clever little way to say "if they aren't looking but were earlier"
                     onCheck = 0
+                elif self.frameCount['C'] > 30 and self.keyboard[self.key.K]:
+                    # If more than half a second (30 frames) has passed and "K" is pressed.
+                    if attnGetter['stimType'] == 'Movie + Audio':
+                        attnGetter['audioFile'].stop(reset=True)
+                    dMovie.pause()
+                    break
 
+        if 'bgColor' in attnGetter.keys():
+            if attnGetter['bgColor'] != 'default':
+                self.win.setColor(self.screenColor['C'])
+                self.win.flip()  # needed if you're changing bg color w/out starting trial....
         self.dispCoderWindow(0)
-        #self.win.flip()  # clear screen (change?) TODO: For audio-only stim you need it...
+        #self.win.flip()  # clear screen (change?) TODO: For audio-only stim you may need it...
 
     def flashCoderWindow(self, rep=False):
         """
@@ -717,7 +777,6 @@ class PyHab:
     def dispMovieStim(self, trialType, dispMovie, screen='C'):
         """
         Draws movie stimuli to the stimulus display, including movie-based attention-getters.
-        TODO: Framecount needs to be rethought for HPP.
 
         :param trialType: 0 for paused, otherwise a string
         :type trialType: int or str
@@ -1024,18 +1083,17 @@ class PyHab:
         A function which prints the current data to the output window, made into its own function to facilitate having
         working versions for PL and HPP studies as well. Only called when stimulus presentation is off.
 
-
         :return:
         :rtype:
         """
-        print("hab crit, on-timeA, numOnA, offtimeA, numOffA, onTimeB, numOnB, offTimeB, numOffB")
+        print("hab crit, on-timeA, numOnA, offtimeA, numOffA, onTimeB, numOnB, offTimeB, numOffB, trialDuration")
         print("-------------------------------------------------------------------------------------------")
         for i in range(0, len(self.dataMatrix)):
             dataList = [self.dataMatrix[i]['habCrit'], round(self.dataMatrix[i]['sumOnA'],1),
                         self.dataMatrix[i]['numOnA'], round(self.dataMatrix[i]['sumOffA'],1),
                         self.dataMatrix[i]['numOffA'], round(self.dataMatrix[i]['sumOnB'],1),
                         self.dataMatrix[i]['numOnB'], round(self.dataMatrix[i]['sumOffB'],1),
-                        self.dataMatrix[i]['numOffB']]
+                        self.dataMatrix[i]['numOffB'], self.dataMatrix[i]['trialDuration']]
             print(dataList)
 
     def doExperiment(self):
@@ -1124,8 +1182,7 @@ class PyHab:
                     self.dispCoderWindow(0)
                 if self.stimPres:
                     if trialType in self.playAttnGetter: #Shockingly, this will work.
-                        # TODO: Data might want to record AG length, repeats. Add data columns? "AGreps" and "AGtime"?
-                        # TODO: Maybe put mid-AG data in verbose...? We end up adding four columns otherwise. Adding two is bad enough.
+                        # TODO: Data might want to record AG length, repeats. Add data columns? "AGreps" and "AGtime"? Also, duration
                         # Pull relevant arguments out of the attngetter dictionary.
                         self.attnGetter(trialType, self.playAttnGetter[trialType]['cutoff'], self.playAttnGetter[trialType]['onmin'])  # plays the attention-getter
                         core.wait(.1)  # this wait is important to make the attentiongetter not look like it is turning into the stimulus
@@ -1133,6 +1190,7 @@ class PyHab:
                         irrel = self.dispTrial(0, disMovie)
                         core.wait(self.freezeFrame)  # this delay ensures that the trial only starts after the images have appeared on the screen, static, for a user-determined length of time
                         waitStart = True
+                        AA = self.autoAdvance # This is specific to attention-getters so that if you skip the AG, it immediately plays the first stimuli.
                     else:
                         self.frameCount = {k: 0 for k, v in self.frameCount.items()}
                         waitStart = True
@@ -1142,7 +1200,7 @@ class PyHab:
                         startAG = core.getTime()
                         onCheck = 0
                         while simAG:
-                            if core.getTime() - startAG >= self.attnGetterList[self.playAttnGetter[trialType]]['stimDur']:
+                            if core.getTime() - startAG >= self.attnGetterList[self.playAttnGetter[trialType]['attnGetter']]['stimDur']:
                                 simAG = False
                             elif self.playAttnGetter[trialType]['cutoff'] and self.lookKeysPressed():
                                 if onCheck == 0 and self.playAttnGetter[trialType]['onmin'] > 0:
@@ -1153,6 +1211,7 @@ class PyHab:
                                     onCheck = 0
                         core.wait(self.freezeFrame)  # an attempt to match the delay caused by the attention-getter playing.
                         waitStart = True
+                        AA = self.autoAdvance
                     else:
                         waitStart = True
                 while waitStart and trialType not in AA and not end:  # Wait for first gaze-on
@@ -1174,7 +1233,7 @@ class PyHab:
                                 startAG = core.getTime()
                                 onCheck = 0
                                 while simAG:
-                                    if core.getTime() - startAG >= self.attnGetterList[self.playAttnGetter[trialType]]['stimDur']:
+                                    if core.getTime() - startAG >= self.attnGetterList[self.playAttnGetter[trialType]['attnGetter']]['stimDur']:
                                         simAG = False
                                     elif self.playAttnGetter[trialType]['cutoff'] and self.lookKeysPressed():
                                         if onCheck == 0 and self.playAttnGetter[trialType]['onmin'] > 0:
@@ -1251,7 +1310,7 @@ class PyHab:
         Basically, allows you to set an arbitrary set of keys to start a trial once the attngetter has played.
         In this case, only B (coder A on) is sufficient.
 
-        TODO: This function will become the eye-tracker interface, basically. It will listen for the eye-tracker input.
+        TODO: This function can become the eye-tracker interface, basically. It will listen for the eye-tracker input.
 
         :return: True if the B key is pressed, False otherwise.
         :rtype:
@@ -1265,6 +1324,12 @@ class PyHab:
         """
         Control function for individual trials, to be called by doExperiment
         Returns a status value (int) that tells doExperiment what to do next
+
+        self.playThrough registers the end-trial crieria
+        0 = standard "cumulative on-time >= MinOn and consecutive off-time >= MaxOff"
+        1 = "OnOnly", only requires that cumulative on-time > MinOn
+        2 = "None", plays to max duration no matter what.
+        3 = "Either/or", as standard but with "or" instead of "and". Whichever comes first.
 
         :param number: Trial number
         :type number: int
@@ -1316,6 +1381,18 @@ class PyHab:
         abort = False
         runTrial = True
         endFlag = False
+        endNow = False  # A special case for auto-redo that overrides end on movie end
+
+        def onDuration(adds=0, subs=0):  # A function for the duration switch, while leaving sumOn intact
+            if localType in self.durationCriterion:
+                return core.getTime() - startTrial - subs
+            else:
+                return sumOn + adds
+
+        if localType in self.onTimeDeadline.keys():
+            deadlineChecked = False
+        else:
+            deadlineChecked = True
         self.readyText.text = "Trial running"
         if self.lookKeysPressed():
             gazeOn = True
@@ -1407,10 +1484,34 @@ class PyHab:
                         offArray.append(tempGazeArray)
             elif not gazeOn:  # if they are not looking as of the previous refresh, check if they have been looking away for too long
                 nowOff = core.getTime() - startTrial
+                # Compartmentalizing conditions to end trial here for new either/or functionality
+                endCondMet = False
+                if self.playThrough[localType] == 0:  # Standard gaze-on then gaze-off
+                    if onDuration(subs=nowOff-startOff) >= self.minOn[localType] and nowOff - startOff >= self.maxOff[localType] and not endFlag:
+                        endCondMet = True
+                    elif localType in self.autoRedo and nowOff - startOff >= self.maxOff[localType] and not endFlag:
+                        endCondMet = True
+                        endNow = True
+                elif self.playThrough[localType] == 3:  # Either/or
+                    if nowOff - startOff >= self.maxOff[localType] and not endFlag:
+                        endCondMet = True
+                        if localType in self.autoRedo and sumOn < self.minOn[localType]:
+                            endNow = True
+                elif localType in self.autoRedo and sumOn < self.minOn[localType]:
+                    if nowOff - startOff >= self.maxOff[localType] and not endFlag:
+                        endCondMet = True
+                        endNow = True
 
-                if sumOn >= self.minOn[localType] and nowOff - startOff >= self.maxOff[localType] and self.playThrough[localType] == 0 and not endFlag:
-                    # if they have previously looked for at least .5s and now looked away for 2 continuous sec
-                    if localType in self.movieEnd:
+                if localType in self.autoRedo and not deadlineChecked and nowOff >= self.onTimeDeadline[localType]:
+                    # NB: nowOff in this context is just duration of the trial, period.
+                    deadlineChecked = True
+                    if sumOn < self.minOn[localType]: # this specifically uses sumOn, always.
+                        endCondMet = True
+                        endNow = True
+
+                if endCondMet:
+                    # if they have previously looked for at least minOn and now looked away for maxOff continuous sec
+                    if localType in self.movieEnd and not endNow:
                         endFlag = True
                     else:
                         runTrial = False
@@ -1427,7 +1528,7 @@ class PyHab:
                     numOn = numOn + 1
                     startOn = core.getTime() - startTrial
                     endOff = core.getTime() - startTrial
-                    # by definition, if this is tripped there will be a preceding 'off' section if this is tripped because gazeOn is set at start
+                    # by definition, if this is tripped there will be a preceding 'off' section because gazeOn is set at start
                     offDur = endOff - startOff
                     tempGazeArray = {'trial':number, 'trialType':dataType, 'startTime':startOff, 'endTime':endOff, 'duration':offDur}
                     offArray.append(tempGazeArray)
@@ -1443,16 +1544,24 @@ class PyHab:
                         elif disMovie['stimType'] == ['Image with audio'] and disMovie['stim']['Audio'].status == PLAYING:
                             disMovie['stim']['Audio'].pause()
                     if localType in self.midAG and self.stimPres:
-                        if nowOff - startOff >= self.midAG[localType]['trigger']:
+                        try:
+                            startAG
+                        except NameError:
+                            startAG = startOff
+                        else:
+                            if startAG - startOff < 0:  # was this startAG from a previous gaze-off? If so set to current gaze-off.
+                                startAG = startOff
+                        if nowOff - startAG >= self.midAG[localType]['trigger']:
                             # TODO: Do something here to deal with recording data about mid-trial AG behavior?
                             if localType not in self.dynamicPause: # Need to pause it anyways to play the AG so they don't overlap
                                 if disMovie['stimType'] in ['Movie', 'Audio'] and disMovie['stim'].status == PLAYING:
                                     disMovie['stim'].pause()
                                 elif disMovie['stimType'] == ['Image with audio'] and disMovie['stim']['Audio'].status == PLAYING:
                                     disMovie['stim']['Audio'].pause()
-                            startAG = core.getTime()
-                            self.attnGetter(localType, self.midAG[localType]['cutoff'], self.midAG[localType]['onmin'])
-                            durAG = core.getTime() - startAG
+                            startAG = core.getTime() - startTrial
+                            self.attnGetter(localType, cutoff=self.midAG[localType]['cutoff'], onmin=self.midAG[localType]['onmin'], midTrial=True)
+                            endAG = core.getTime() - startTrial  # Keeping everything relative to start of trial
+                            durAG = endAG - startAG
                             maxDurAdd = maxDurAdd + durAG  # Increase max length of trial by duration that AG played.
                             if localType not in self.dynamicPause:
                                 if disMovie['stimType'] in ['Movie', 'Audio'] and disMovie['stim'].status != PLAYING:
@@ -1462,8 +1571,9 @@ class PyHab:
 
             elif gazeOn:
                 nowOn = core.getTime() - startTrial
-                if self.playThrough[localType] == 1 and sumOn + (nowOn - startOn) >= self.minOn[localType] and not endFlag:  # For trial types where the only crit is min-on.
-                    if localType in self.movieEnd:
+                # the argument for oncheck accounts for the current gaze-on, if we aren't using duration mode.
+                if self.playThrough[localType] in [1, 3] and onDuration(adds=nowOn-startOn) > self.minOn[localType] and not endFlag:  # For trial types where the only crit is min-on.
+                    if localType in self.movieEnd and not endNow:
                         endFlag = True
                     else:
                         runTrial = False
@@ -1546,6 +1656,16 @@ class PyHab:
             if tmpNxt not in self.autoAdvance:
                 self.dummyThing.draw()
                 self.win.flip()  # blanks the screen outright between trials if NOT auto-advancing into the next trial
+        # Check if this is an auto-redo situation
+        finalSumOn = 0
+        if localType not in self.durationCriterion:
+            for o in range(0, len(onArray)):
+                finalSumOn = finalSumOn + onArray[o]['duration']
+        else:
+            finalSumOn = core.getTime() - startTrial # Checks total duration.
+        if localType in self.autoRedo and finalSumOn < self.minOn[localType] and ttype != 4:
+            # Determine if total on-time is less that minOn, if so, flag trial as bad and repeat it
+            abort = True
         if abort:  # if the abort button was pressed
             if self.stimPres and disMovie['stimType'] == 'Movie':
                 disMovie['stim'].seek(0.0)
@@ -1557,8 +1677,18 @@ class PyHab:
         if self.habMetWhen == -1 and len(self.habTrialList) > 0 and not abort:   # if still during habituation
             if dataType[0:4] == 'hab.' and dataType[4:] in self.calcHabOver:
                 tempSum = 0
-                for c in range(0, len(onArray)):
-                    tempSum += onArray[c]['duration']
+                # Check if computing habituation by duration or on-time
+                if self.habByDuration == 1:
+                    for c in range(0, len(onArray)):
+                        tempSum += onArray[c]['duration']
+                    for d in range(0, len(offArray)):
+                        tempSum += offArray[d]['duration']
+                    if self.durationInclude == 0 and len(offArray) > 0:
+                        if offArray[-1]['endTime'] > onArray[-1]['endTime']:
+                            tempSum = tempSum - offArray[-1]['duration']
+                else:
+                    for c in range(0, len(onArray)):
+                        tempSum += onArray[c]['duration']
                 self.habDataCompiled[self.habCount] += tempSum
             if ttype == 4:
                 return 2
@@ -1577,8 +1707,17 @@ class PyHab:
                 return 0
         elif ttype == 'Hab' and self.habMetWhen == -1 and not abort:
             tempSum = 0
-            for c in range(0, len(onArray)):
-                tempSum += onArray[c]['duration']
+            if self.habByDuration == 1:
+                for c in range(0, len(onArray)):
+                    tempSum += onArray[c]['duration']
+                for d in range(0, len(offArray)):
+                    tempSum += offArray[d]['duration']
+                if self.durationInclude == 0 and len(offArray) > 0:
+                    if offArray[-1]['endTime'] > onArray[-1]['endTime']:
+                        tempSum = tempSum - offArray[-1]['duration']
+            else:
+                for c in range(0, len(onArray)):
+                    tempSum += onArray[c]['duration']
             self.habDataCompiled[self.habCount] += tempSum
             self.habCount += 1
             if self.checkStop():  # If criteria met
@@ -2317,6 +2456,8 @@ class PyHab:
     def loadStim(self, stim, screen='C'):
         """
         A general function for loading stimuli that can be called repeatedly.
+
+        TODO: Windows audio bug when loading an audio file before a movie file means that we should change load order for everything to movie first.
 
         :param stim: stimulus name, key for stimList dict
         :type stim: str
