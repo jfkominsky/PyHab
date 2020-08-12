@@ -2002,11 +2002,11 @@ class PyHab:
         lastTrialNumber = tempMatrix[-1]['trial']
         # Making this generalizeable for preferential looking studies.
         if 'sumOnC' in self.dataMatrix[0].keys():  # HPP
-            sumFields = ['sumOnL','numOnL','sumOnC','numOnC','sumOnR','numOnR','sumOff','numOff']
+            sumFields = ['sumOnL','numOnL','sumOnC','numOnC','sumOnR','numOnR','sumOff','numOff','trialDuration']
         elif 'sumOnL' in self.dataMatrix[0].keys():  # PL
-            sumFields = ['sumOnL','numOnL','sumOnR', 'numOnR', 'sumOff', 'numOff']
+            sumFields = ['sumOnL','numOnL','sumOnR', 'numOnR', 'sumOff', 'numOff','trialDuration']
         else:
-            sumFields = ['sumOnA', 'numOnA', 'sumOffA', 'numOffA', 'sumOnB', 'numOnB', 'sumOffB', 'numOffB']
+            sumFields = ['sumOnA', 'numOnA', 'sumOffA', 'numOffA', 'sumOnB', 'numOnB', 'sumOffB', 'numOffB','trialDuration']
         while not blockDone:
             nt = tempMatrix[tempIndex]['trial']
             for i, j in self.blockDataTags.items():

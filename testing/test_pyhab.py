@@ -496,27 +496,29 @@ class TestDataFunc(object):
              'condLabel': 'dataTest', 'trial': 3, 'GNG': 1, 'trialType': 'C.A', 'stimName': 'movie1.mov',
              'habCrit': 0, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
              'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
-             'numOffB': 2})
+             'numOffB': 2, 'trialDuration':11.5})
         self.dataInst.dataMatrix.append(
             {'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
              'condLabel': 'dataTest', 'trial': 4, 'GNG': 1, 'trialType': 'C.B', 'stimName': 'movie1.mov',
              'habCrit': 0, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
              'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
-             'numOffB': 2})
+             'numOffB': 2, 'trialDuration':11.5})
         self.dataInst.dataMatrix.append(
             {'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
              'condLabel': 'dataTest', 'trial': 5, 'GNG': 1, 'trialType': 'C.A', 'stimName': 'movie1.mov',
              'habCrit': 0, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
              'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
-             'numOffB': 2})
+             'numOffB': 2, 'trialDuration':11.5})
 
         testMatrix = self.dataInst.saveBlockFile()
         assert len(testMatrix) == 4 # Should still have the first half of the last block.
         assert testMatrix[2]['trialType'] == 'C'
         assert testMatrix[2]['sumOnA'] == 20.0
         assert testMatrix[2]['numOnA'] == 4
+        assert testMatrix[2]['trialDuration'] == 23.0
         assert testMatrix[3]['sumOnA'] == 10.0
         assert testMatrix[3]['numOnA'] == 2
+        assert testMatrix[3]['trialDuration'] == 11.5
         assert testMatrix[2]['stimName'] == 'movie1.mov+movie1.mov'
         assert testMatrix[3]['trial'] == 4
 
@@ -534,13 +536,13 @@ class TestDataFunc(object):
              'condLabel': 'dataTest', 'trial': 3, 'GNG': 1, 'trialType': 'C.A', 'stimName': 'movie1.mov',
              'habCrit': 0, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
              'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
-             'numOffB': 2})
+             'numOffB': 2, 'trialDuration':11.5})
         self.dataInst.dataMatrix.append(
             {'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
              'condLabel': 'dataTest', 'trial': 4, 'GNG': 1, 'trialType': 'C.B', 'stimName': 'movie1.mov',
              'habCrit': 0, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
              'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
-             'numOffB': 2})
+             'numOffB': 2, 'trialDuration':11.5})
         self.dataInst.dataMatrix.append(
             {'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
              'condLabel': 'dataTest', 'trial': 5, 'GNG': 1, 'trialType': 'C.A', 'stimName': 'movie1.mov',
@@ -552,25 +554,25 @@ class TestDataFunc(object):
              'condLabel': 'dataTest', 'trial': 6, 'GNG': 1, 'trialType': 'C.B', 'stimName': 'movie1.mov',
              'habCrit': 0, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
              'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
-             'numOffB': 2})
+             'numOffB': 2, 'trialDuration':11.5})
         self.dataInst.dataMatrix.append(
             {'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
              'condLabel': 'dataTest', 'trial': 7, 'GNG': 1, 'trialType': 'D.B', 'stimName': 'movie1.mov',
              'habCrit': 0, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
              'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
-             'numOffB': 2})
+             'numOffB': 2, 'trialDuration':11.5})
         self.dataInst.dataMatrix.append(
             {'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
              'condLabel': 'dataTest', 'trial': 8, 'GNG': 1, 'trialType': 'D.C.A', 'stimName': 'movie1.mov',
              'habCrit': 0, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
              'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
-             'numOffB': 2})
+             'numOffB': 2, 'trialDuration':11.5})
         self.dataInst.dataMatrix.append(
             {'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
              'condLabel': 'dataTest', 'trial': 9, 'GNG': 1, 'trialType': 'D.C.B', 'stimName': 'movie1.mov',
              'habCrit': 0, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
              'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
-             'numOffB': 2})
+             'numOffB': 2, 'trialDuration':11.5})
 
         testMatrix = self.dataInst.saveBlockFile()
         assert len(testMatrix) == 6
@@ -578,10 +580,13 @@ class TestDataFunc(object):
         assert testMatrix[5]['trialType'] == 'D.C'
         assert testMatrix[2]['sumOnA'] == 20.0
         assert testMatrix[2]['numOnA'] == 4
+        assert testMatrix[2]['trialDuration'] == 23.0
         assert testMatrix[3]['sumOnA'] == 20.0
         assert testMatrix[3]['numOnA'] == 4
+        assert testMatrix[3]['trialDuration'] == 23.0
         assert testMatrix[5]['sumOnA'] == 20.0
         assert testMatrix[5]['numOnA'] == 4
+        assert testMatrix[5]['trialDuration'] == 23.0
         assert testMatrix[2]['stimName'] == 'movie1.mov+movie1.mov'
         assert testMatrix[3]['trial'] == 4
         assert testMatrix[5]['trial'] == 6
