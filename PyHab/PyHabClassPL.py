@@ -357,7 +357,7 @@ class PyHabPL(PyHab):
                 if self.playThrough[localType] == 0:  # Standard gaze-on then gaze-off
                     if onDuration(subs=nowOff-startOff) >= self.minOn[localType] and nowOff - startOff >= self.maxOff[localType] and not endFlag:
                         endCondMet = True
-                    elif localType in self.autoRedo and nowOff - startOff >= self.maxOff[localType] and not endFlag:
+                    elif localType in self.autoRedo and deadlineChecked and nowOff - startOff >= self.maxOff[localType] and not endFlag:
                         endCondMet = True
                         endNow = True
                 elif self.playThrough[localType] == 3:  # Either/or
@@ -370,7 +370,7 @@ class PyHabPL(PyHab):
                         endCondMet = True
                         endNow = True
 
-                if localType in self.autoRedo and not deadlineChecked and nowOff >= self.onTimeDeadline[localType]:
+                if localType in self.autoRedo and nowOff >= self.onTimeDeadline[localType] and not deadlineChecked:
                     # NB: nowOff in this context is just duration of the trial, period.
                     deadlineChecked = True
                     if sumOn + sumOn2 < self.minOn[localType]:  # this specifically uses sumOn, always.
