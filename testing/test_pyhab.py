@@ -1451,7 +1451,7 @@ class TestPrefLook(object):
         assert blockMatrix[3]['numOnL'] == 4
         assert blockMatrix[3]['sumOnR'] == 8.0
         assert blockMatrix[3]['numOnR'] == 3
-        assert blockMatrix[3]['trialDuration'] == 20.0
+        assert blockMatrix[3]['trialDuration'] == 21.0
 
         assert blockMatrix[2]['stimName'] == 'movie1.mov+movie1.mov'
         assert blockMatrix[3]['trial'] == 4
