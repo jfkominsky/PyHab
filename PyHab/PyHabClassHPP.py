@@ -544,7 +544,7 @@ class PyHabHPP(PyHab):
                 if localType in self.autoRedo and not deadlineChecked and nowOff >= self.onTimeDeadline[localType]:
                     # NB: nowOff in this context is just duration of the trial, period.
                     deadlineChecked = True
-                    if sumOnC + sumOnL + sumOnR < self.minOn[localType]:  # this specifically uses sumOn, always.
+                    if sumOnC + sumOnL + sumOnR <= 0:  # this specifically uses sumOn, always. MODIFICATION: Now comparing against 0, specifically
                         endCondMet = True
                         endNow = True
 
