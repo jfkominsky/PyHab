@@ -199,6 +199,7 @@ class PyHabPL(PyHab):
         runTrial = True
         endFlag = False
         endNow = False  # special case for autoredo
+        modifier = 0  # MODIFICAITON: deals with an edge case
 
         def onDuration(adds=0, subs=0):  # A function for the duration switch, while leaving sumOn intact
             if localType in self.durationCriterion:
@@ -340,8 +341,18 @@ class PyHabPL(PyHab):
             elif not gazeOn and not gazeOn2: #if they are not looking as of the previous refresh, check if they have been looking away for too long
                 nowOff = core.getTime() - startTrial
                 endCondMet = False
+                if localType in self.autoRedo and not deadlineChecked and nowOff >= self.onTimeDeadline[localType]:
+                    # NB: nowOff in this context is just duration of the trial, period.
+                    deadlineChecked = True
+                    if sumOn + sumOn2 <= 0:  # this specifically uses sumOn, always. MODIFICATION: 0 instead of minon
+                        endCondMet = True
+                        endNow = True
+                    if sumOn + sumOn2 < self.minOn[localType]:  # However, even if the trial does not end immediately, it should restart
+                        abort = True
+                        modifier = self.minOn[localType]
+
                 if self.playThrough[localType] == 0:  # Standard gaze-on then gaze-off
-                    if onDuration(subs=nowOff-startOff) >= self.minOn[localType] and nowOff - startOff >= self.maxOff[localType] and not endFlag:
+                    if onDuration(subs=nowOff-startOff) + modifier >= self.minOn[localType] and nowOff - startOff >= self.maxOff[localType] and not endFlag:
                         endCondMet = True
                     elif localType in self.autoRedo and nowOff - startOff >= self.maxOff[localType] and not endFlag:
                         endCondMet = True
@@ -356,14 +367,6 @@ class PyHabPL(PyHab):
                         endCondMet = True
                         endNow = True
 
-                if localType in self.autoRedo and not deadlineChecked and nowOff >= self.onTimeDeadline[localType]:
-                    # NB: nowOff in this context is just duration of the trial, period.
-                    deadlineChecked = True
-                    if sumOn + sumOn2 <= 0:  # this specifically uses sumOn, always. MODIFICATION: 0 instead of minon
-                        endCondMet = True
-                        endNow = True
-                    if sumOn + sumOn2 < self.minOn[localType]:  # However, even if the trial does not end immediately, it should restart
-                        abort = True
 
                 if endCondMet:
                     if localType in self.movieEnd and not endNow:

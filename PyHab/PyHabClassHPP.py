@@ -355,7 +355,7 @@ class PyHabHPP(PyHab):
         gazeOnL = False
         gazeOnR = False
         endNow = False
-
+        modifier = 0 # MODIFICATION
         def onDuration(adds=0, subs=0):  # A function for the duration switch, while leaving sumOn intact
             if localType in self.durationCriterion:
                 return core.getTime() - startTrial - subs
@@ -525,8 +525,19 @@ class PyHabHPP(PyHab):
             elif not gazeOnC and not gazeOnL and not gazeOnR: # This should happen rarely, but if it does...
                 nowOff = core.getTime() - startTrial
                 endCondMet = False
+
+                if localType in self.autoRedo and not deadlineChecked and nowOff >= self.onTimeDeadline[localType]:
+                    # NB: nowOff in this context is just duration of the trial, period.
+                    deadlineChecked = True
+                    if sumOnC + sumOnL + sumOnR <= 0:  # this specifically uses sumOn, always. MODIFICATION: Now comparing against 0, specifically
+                        endCondMet = True
+                        endNow = True
+                    elif sumOnC + sumOnL + sumOnR < self.minOn[localType]:
+                        abort = True  # Regardless of whether it ends immediately, it should still redo the trial afterward
+                        modifier = self.minOn[localType]  # This is for an edge case so it ends after the next 2-second look-away regardless.
+
                 if self.playThrough[localType] == 0:  # Standard gaze-on then gaze-off
-                    if onDuration(subs=nowOff-startOff) >= self.minOn[localType] and nowOff - startOff >= self.maxOff[localType] and not endFlag:
+                    if onDuration(subs=nowOff-startOff) + modifier >= self.minOn[localType] and nowOff - startOff >= self.maxOff[localType] and not endFlag:
                         endCondMet = True
                     elif localType in self.autoRedo and nowOff - startOff >= self.maxOff[localType] and not endFlag:
                         endCondMet = True
@@ -541,14 +552,7 @@ class PyHabHPP(PyHab):
                         endCondMet = True
                         endNow = True
 
-                if localType in self.autoRedo and not deadlineChecked and nowOff >= self.onTimeDeadline[localType]:
-                    # NB: nowOff in this context is just duration of the trial, period.
-                    deadlineChecked = True
-                    if sumOnC + sumOnL + sumOnR <= 0:  # this specifically uses sumOn, always. MODIFICATION: Now comparing against 0, specifically
-                        endCondMet = True
-                        endNow = True
-                    if sumOnC + sumOnL + sumOnR < self.minOn[localType]:
-                        abort = True  # Regardless of whether it ends immediately, it should still redo the trial afterward
+
 
                 if endCondMet:
                     # if they have previously looked for at least minOn seconds and now looked away for maxOff continuous sec
