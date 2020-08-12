@@ -342,8 +342,11 @@ class PyHab:
         # Total duration calculation is complicated by the fact that we need to omit the last gaze-off but only if it
         # ended the trial.
         totalduration = sumOn + sumOff
-        if offArray[-1]['endTime'] > onArray[-1]['endTime'] and self.durationInclude == 0:  # A kludge because it doesn't attend to whether it ended the trial.
-            totalduration = totalduration - offArray[-1]['duration']
+        totalduration = sumOn + sumOff
+        if len(offArray) > 0 and len(onArray) > 0:
+            if offArray[-1]['endTime'] > onArray[-1][
+                'endTime'] and self.durationInclude == 0:  # A kludge because it doesn't attend to whether it ended the trial.
+                totalduration = totalduration - offArray[-1]['duration']
         tempData = {'sNum': self.sNum, 'sID':self.sID, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex, 'cond': self.cond,
                     'condLabel': self.condLabel,'trial': trial, 'GNG': 0, 'trialType': ttype, 'stimName': stimName,
                     'habCrit': self.habCrit, 'habTrialNo': habTrialNo, 'sumOnA': sumOn, 'numOnA': len(onArray), 'sumOffA': sumOff,
@@ -398,8 +401,10 @@ class PyHab:
         # Total duration calculation is complicated by the fact that we need to omit the last gaze-off but only if it
         # ended the trial.
         totalduration = sumOn + sumOff
-        if offArray[-1]['endTime'] > onArray[-1]['endTime'] and self.durationInclude == 0:  # A kludge because it doesn't attend to whether it ended the trial.
-            totalduration = totalduration - offArray[-1]['duration']
+        totalduration = sumOn + sumOff
+        if len(offArray) > 0 and len(onArray) > 0:
+            if offArray[-1]['endTime'] > onArray[-1]['endTime'] and self.durationInclude == 0:  # A kludge because it doesn't attend to whether it ended the trial.
+                totalduration = totalduration - offArray[-1]['duration']
         tempData = {'sNum': self.sNum, 'sID': self.sID, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex, 'cond': self.cond,
                     'condLabel': self.condLabel, 'trial': trial, 'GNG': 1, 'trialType': type, 'stimName': stimName,
                     'habCrit': self.habCrit, 'habTrialNo': habTrialNo, 'sumOnA': sumOn, 'numOnA': len(onArray), 'sumOffA': sumOff,
