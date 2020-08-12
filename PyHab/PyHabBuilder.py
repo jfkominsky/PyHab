@@ -1798,18 +1798,18 @@ class PyHabBuilder:
         j = 0 # This serves a purpose, trust me. It's for rendering hab blocks.
         if specNumItems > 0:
             numItems = specNumItems  # Currently this deals with the edge of edge cases, a hab in position 20 looping into the second line.
-        if numItems < 21:  # Past 20 we can't render it, but it won't crash.
+        if numItems < 21:  # This determines which of the two grid layouts are used.
             flowSpace = locs
         else:
             flowSpace = overflow
         for i in range(0, len(tOrd)):
-            #Now, actually build the list of objects to render.
-            if j < len(locs)-1 or (j == len(locs)-1 and numItems == len(locs)):
+            # Now, actually build the list of objects to render.
+            if j < len(flowSpace)-1 or (j == len(flowSpace)-1 and numItems == len(flowSpace)):
                 try:
                     c = tTypes.index(tOrd[i])  # find the trial type, get color index
                 except:
                     c=0
-                if tOrd[i] == 'Hab': # The special category
+                if tOrd[i] == 'Hab':  # The special category
                     if j % 10 == 9:
                         j += 1 # Just in case we're at the point where it would loop around to the second row. We don't want that.
                         if numItems == 20 or numItems == 39:  # Special case of breaking flowLocs limits.
@@ -1819,7 +1819,7 @@ class PyHabBuilder:
                     lx1 = flowSpace[j][0]
                     j += 1
                     lx2 = flowSpace[j][0]
-                    lx = (lx2+lx1)/2 # Ideally putting it square in between the two places.
+                    lx = (lx2+lx1)/2  # Ideally putting it square in between the two places.
                     loc = [lx,flowSpace[j][1]]
                     tempObj = visual.Rect(self.win,width=self.flowWidthObj*2, height=self.flowHeightObj, fillColor=self.colorsArray[c], pos=loc)
                     if tOrd[i] == 'Hab' and len(self.settings['habTrialList']) > 1:  # If there are hab sub-trials, add pips to the hab block object
