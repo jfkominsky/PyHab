@@ -341,8 +341,10 @@ class PyHab:
             self.verbBadList['verboseOff2'].extend(offArray2)
         # Total duration calculation is complicated by the fact that we need to omit the last gaze-off but only if it
         # ended the trial.
-        totalduration = sumOn + sumOff
-        totalduration = sumOn + sumOff
+        if len(onArray) > 0:
+            totalduration = sumOn + sumOff - onArray[0]['startTime']
+        else:
+            totalduration = 0 # if no gaze-on events, no duration.
         if len(offArray) > 0 and len(onArray) > 0:
             if offArray[-1]['endTime'] > onArray[-1][
                 'endTime'] and self.durationInclude == 0:  # A kludge because it doesn't attend to whether it ended the trial.
@@ -400,8 +402,11 @@ class PyHab:
         self.verbDatList['verboseOff'].extend(offArray)
         # Total duration calculation is complicated by the fact that we need to omit the last gaze-off but only if it
         # ended the trial.
-        totalduration = sumOn + sumOff
-        totalduration = sumOn + sumOff
+        # MODIFICATION: Total duration now counts from start of first gaze-on.
+        if len(onArray) > 0:
+            totalduration = sumOn + sumOff - onArray[0]['startTime']
+        else:
+            totalduration = 0 # if no gaze-on events, no duration.
         if len(offArray) > 0 and len(onArray) > 0:
             if offArray[-1]['endTime'] > onArray[-1]['endTime'] and self.durationInclude == 0:  # A kludge because it doesn't attend to whether it ended the trial.
                 totalduration = totalduration - offArray[-1]['duration']
@@ -1474,7 +1479,11 @@ class PyHab:
 
         def onDuration(adds=0, subs=0):  # A function for the duration switch, while leaving sumOn intact
             if localType in self.durationCriterion:
-                return core.getTime() - startTrial - subs
+                # Modification: This now only looks at time between gaze-on events, instead of starting from 0.
+                if len(onArray) > 0:
+                    return core.getTime() - startTrial - onArray[0]['startTime'] - subs
+                else:
+                    return 0 # if there has been no gaze-on event, the duration is 0.
             else:
                 return sumOn + adds
 
@@ -1575,20 +1584,11 @@ class PyHab:
                 nowOff = core.getTime() - startTrial
                 # Compartmentalizing conditions to end trial here for new either/or functionality
                 endCondMet = False
-                if localType in self.autoRedo and not deadlineChecked and nowOff >= self.onTimeDeadline[localType]:
-                    # NB: nowOff in this context is just duration of the trial, period.
-                    deadlineChecked = True
-                    if sumOn <= 0:  # this specifically uses sumOn, always. MODIFICATION: now uses 0 instead of minOn
-                        endCondMet = True
-                        endNow = True
-                    if sumOn < self.minOn[localType]: # However, even if the trial does not end immediately, it should restart
-                        abort = True
-                        modifier = self.minOn[localType]  # This is for an edge case so it ends after the next 2-second look-away regardless.
 
                 if self.playThrough[localType] == 0:  # Standard gaze-on then gaze-off
                     if onDuration(subs=nowOff-startOff) + modifier >= self.minOn[localType] and nowOff - startOff >= self.maxOff[localType] and not endFlag:
                         endCondMet = True
-                    elif localType in self.autoRedo and nowOff - startOff >= self.maxOff[localType] and not endFlag:
+                    elif localType in self.autoRedo and deadlineChecked and nowOff - startOff >= self.maxOff[localType] and not endFlag:
                         endCondMet = True
                         endNow = True
                 elif self.playThrough[localType] == 3:  # Either/or
@@ -1600,6 +1600,17 @@ class PyHab:
                     if nowOff - startOff >= self.maxOff[localType] and not endFlag:
                         endCondMet = True
                         endNow = True
+
+                if localType in self.autoRedo and not deadlineChecked and nowOff >= self.onTimeDeadline[localType]:
+                    # NB: nowOff in this context is just duration of the trial, period.
+                    deadlineChecked = True
+                    if sumOn <= 0:  # this specifically uses sumOn, always. MODIFICATION: now uses 0 instead of minOn
+                        endCondMet = True
+                        endNow = True
+                    if sumOn < self.minOn[localType]: # However, even if the trial does not end immediately, it should restart
+                        abort = True
+                        modifier = self.minOn[localType]  # This is for an edge case so it ends after the next 2-second look-away regardless.
+
 
                 if endCondMet:
                     # if they have previously looked for at least minOn and now looked away for maxOff continuous sec
@@ -1762,7 +1773,7 @@ class PyHab:
             for o in range(0, len(onArray)):
                 finalSumOn = finalSumOn + onArray[o]['duration']
         else:
-            finalSumOn = core.getTime() - startTrial # Checks total duration.
+            finalSumOn = onDuration() # Checks total duration.
         if localType in self.autoRedo and finalSumOn < self.minOn[localType] and ttype != 4:
             # Determine if total on-time is less that minOn, if so, flag trial as bad and repeat it
             abort = True

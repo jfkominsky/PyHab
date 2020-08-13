@@ -72,9 +72,31 @@ class PyHabHPP(PyHab):
         self.verbBadList['verboseOnL'].extend(onArrayL)
         self.verbBadList['verboseOnR'].extend(onArrayR)
         self.verbBadList['verboseOff'].extend(offArray)
-        totalduration = sumOn + sumOnL + sumOnR + sumOff
-        if offArray[-1]['endTime'] > onArray[-1]['endTime'] and offArray[-1]['endTime'] > onArrayL[-1]['endTime'] and offArray[-1]['endTime'] > onArrayR[-1]['endTime'] and self.durationInclude == 0:
-            totalduration = totalduration - offArray[-1]['duration']
+        # MODIFICATION: Duration counts from first gaze-on.
+        if len(onArray) > 0:
+            startOn1 = onArray[0]['startTime']
+        else:
+            startOn1 = 99999  # arbitrary big number
+        if len(onArrayL) > 0:
+            startOn2 = onArrayR[0]['startTime']
+        else:
+            startOn2 = 99999
+        if len(onArrayR) > 0:
+            startOn3 = onArrayR[0]['startTime']
+        else:
+            startOn3 = 99999
+        if len(onArray) > 0 or len(onArrayL) > 0 or len(onArrayR) > 0:
+            totalduration = sumOn + sumOnL + sumOnR + sumOff - min(startOn1, startOn2, startOn3)
+        else:
+            totalduration = 0  # if no gaze-on events, no duration.
+        lastOn = 0
+        for i in [onArray, onArrayL, onArrayR]:
+            if len(i) > 0:
+                if i[-1]['endTime'] > lastOn:
+                    lastOn = i[-1]['endTime']
+        if len(offArray) > 0 and totalduration > 0 and self.durationInclude == 0:
+            if offArray[-1]['endTime'] > lastOn:
+                totalduration = totalduration - offArray[-1]['duration']
         tempData = {'sNum': self.sNum, 'sID': self.sID, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex, 'cond': self.cond,
                     'condLabel': self.condLabel,
                     'trial': trial, 'GNG': 0, 'trialType': ttype, 'stimName': stimName, 'habCrit': self.habCrit, 'habTrialNo': habTrialNo,
@@ -125,9 +147,31 @@ class PyHabHPP(PyHab):
         self.verbDatList['verboseOnL'].extend(onArrayL)
         self.verbDatList['verboseOnR'].extend(onArrayR)
         self.verbDatList['verboseOff'].extend(offArray)
-        totalduration = sumOn + sumOnL + sumOnR + sumOff
-        if offArray[-1]['endTime'] > onArray[-1]['endTime'] and offArray[-1]['endTime'] > onArrayL[-1]['endTime'] and offArray[-1]['endTime'] > onArrayR[-1]['endTime']:
-            totalduration = totalduration - offArray[-1]['duration']
+        # MODIFICATION: Duration counts from first gaze-on.
+        if len(onArray) > 0:
+            startOn1 = onArray[0]['startTime']
+        else:
+            startOn1 = 99999  # arbitrary big number
+        if len(onArrayL) > 0:
+            startOn2 = onArrayR[0]['startTime']
+        else:
+            startOn2 = 99999
+        if len(onArrayR) > 0:
+            startOn3 = onArrayR[0]['startTime']
+        else:
+            startOn3 = 99999
+        if len(onArray) > 0 or len(onArrayL) > 0 or len(onArrayR) > 0:
+            totalduration = sumOn + sumOnL + sumOnR + sumOff - min(startOn1, startOn2, startOn3)
+        else:
+            totalduration = 0  # if no gaze-on events, no duration.
+        lastOn = 0
+        for i in [onArray, onArrayL, onArrayR]:
+            if len(i) > 0:
+                if i[-1]['endTime'] > lastOn:
+                    lastOn = i[-1]['endTime']
+        if len(offArray) > 0 and totalduration > 0 and self.durationInclude == 0:
+            if offArray[-1]['endTime'] > lastOn:
+                totalduration = totalduration - offArray[-1]['duration']
         tempData={'sNum':self.sNum, 'sID': self.sID, 'months':self.ageMo, 'days':self.ageDay, 'sex':self.sex, 'cond':self.cond,'condLabel':self.condLabel,
                                 'trial':trial, 'GNG':1, 'trialType':type, 'stimName':stimName, 'habCrit':self.habCrit, 'habTrialNo': habTrialNo,
                                 'sumOnC':sumOn, 'numOnC':len(onArray),
@@ -358,7 +402,24 @@ class PyHabHPP(PyHab):
         modifier = 0 # MODIFICATION
         def onDuration(adds=0, subs=0):  # A function for the duration switch, while leaving sumOn intact
             if localType in self.durationCriterion:
-                return core.getTime() - startTrial - subs
+
+                # MODIFICATION: Duration counts from first gaze-on.
+                if len(onArray) > 0:
+                    startOn1 = onArrayC[0]['startTime']
+                else:
+                    startOn1 = 99999  # arbitrary big number
+                if len(onArrayL) > 0:
+                    startOn2 = onArrayL[0]['startTime']
+                else:
+                    startOn2 = 99999
+                if len(onArrayR) > 0:
+                    startOn3 = onArrayR[0]['startTime']
+                else:
+                    startOn3 = 99999
+                if len(onArrayC) > 0 or len(onArrayL) > 0 or len(onArrayR) > 0:
+                    return core.getTime() - startTrial - min(startOn1, startOn2, startOn3) - subs
+                else:
+                    return 0  # if no gaze-on events, no duration.
             else:
                 return sumOnC + sumOnL + sumOnR + adds
 
