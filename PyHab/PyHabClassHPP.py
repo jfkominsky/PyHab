@@ -593,7 +593,7 @@ class PyHabHPP(PyHab):
                     if sumOnC + sumOnL + sumOnR <= 0:  # this specifically uses sumOn, always. MODIFICATION: Now comparing against 0, specifically
                         endCondMet = True
                         endNow = True
-                    elif sumOnC + sumOnL + sumOnR < self.minOn[localType]:
+                    elif onDuration(subs=nowOff-startOff) < self.minOn[localType]:
                         abort = True  # Regardless of whether it ends immediately, it should still redo the trial afterward
                         modifier = self.minOn[localType]  # This is for an edge case so it ends after the next 2-second look-away regardless.
 
