@@ -1773,7 +1773,11 @@ class PyHab:
             for o in range(0, len(onArray)):
                 finalSumOn = finalSumOn + onArray[o]['duration']
         else:
-            finalSumOn = onDuration() # Checks total duration.
+            subtract=0
+            if self.durationInclude == 0 and len(offArray) > 0 and len(onArray) > 0:
+                if offArray[-1]['endTime'] > onArray[-1]['endTime']:
+                    subtract = offArray[-1]['duration']  # Checks total duration.
+            finalSumOn = onDuration(subs=subtract)
         if localType in self.autoRedo and finalSumOn < self.minOn[localType] and ttype != 4:
             # Determine if total on-time is less that minOn, if so, flag trial as bad and repeat it
             abort = True
