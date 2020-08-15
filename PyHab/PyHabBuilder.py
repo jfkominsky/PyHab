@@ -2294,6 +2294,7 @@ class PyHabBuilder:
             # correspondence to the field definitions and the saving at the end.
         browsers = ['Chrome', 'Firefox', 'Safari', 'Edge']
         browsers = [x for x in browsers if x != lastSet[3]]
+        browsers.insert(0, lastSet[3])
 
         sDlg.addField("Presentation URL from Slides.com (ending in '/live')", lastSet[0])
         sDlg.addField("Email for Slides.com login", lastSet[1])

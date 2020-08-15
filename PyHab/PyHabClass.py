@@ -632,19 +632,19 @@ class PyHab:
         # Read off the relevant properties from the attention-getter settings
         if not midTrial:
             attnGetter = self.attnGetterList[self.playAttnGetter[trialType]['attnGetter']]['slide']  # Reads attention-getter from list of AGs.
-            duration = self.attnGetterList[self.playAttnGetter[trialType]['attnGetter']]['duration']
+            duration = eval(self.attnGetterList[self.playAttnGetter[trialType]['attnGetter']]['duration'])
         else:
             attnGetter = self.attnGetterList[self.midAG[trialType]['attnGetter']]['slide']
-            duration = self.attnGetterList[self.midAG[trialType]['attnGetter']]['duration']
+            duration = eval(self.attnGetterList[self.midAG[trialType]['attnGetter']]['duration'])
 
         self.browser.get(self.presentationURL + '#/' + attnGetter) # Navigates to the attention-getter, now just need to
         # listen for for end of AG or start of trial or w/e.
         startAG = core.getTime()
         endAG = False
         while not endAG:
-            if core.getTime - startAG > duration:
+            if core.getTime() - startAG > duration:
                 endAG = True
-            elif core.getTime - startAG > .5 and self.keyboard[self.key.K]:
+            elif core.getTime() - startAG > .5 and self.keyboard[self.key.K]:
                 endAG = True
             elif cutoff and self.lookKeysPressed():
                 endAG = True
@@ -863,7 +863,7 @@ class PyHab:
         # now for the test trial display
         if self.stimPres:
             # Navigate to the page in question.
-            self.browser.get(self.presentationURL + '#/' + dispMovie['slideNo'])
+            self.browser.get(self.presentationURL + '#/' + dispMovie)
             t = 0 # "End on movie end" is just not going to be an option.
         else:
             t = 0  # Totally irrelevant.
