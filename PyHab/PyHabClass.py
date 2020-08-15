@@ -13,6 +13,12 @@ from datetime import *
 from dateutil.relativedelta import *
 from copy import deepcopy # needed for exactly one usage in redotrial because it's the only reasonable way.
 
+# For web-based studies, to interact with the browser.
+from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
+
+
+
 
 class PyHab:
     """
@@ -34,6 +40,9 @@ class PyHab:
     Off (for gaze-off events)
     On2 and Off2 (for the optional secondary coder)
     Each coder's on and off are recorded in a separate dict with trial, gaze on/off, start, end, and duration.
+
+    ONLINE EDITION: Special modification for running studies online using a slides.com account
+    Requires modified settings, selenium, and generally should not be viewed as in any way like normal PyHab.
 
     """
 
