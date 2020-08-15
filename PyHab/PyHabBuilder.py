@@ -80,18 +80,18 @@ class PyHabBuilder:
                                                         'ISI': {},
                                                         'freezeFrame': '0.0',
                                                         'playAttnGetter': {},
-                                                        'attnGetterList': {'PyHabDefault':{'stimType':'Audio',
-                                                                                          'stimName':'upchime1.wav',
-                                                                                          'stimDur':2,
-                                                                                          'stimLoc':'PyHab' + self.dirMarker + 'upchime1.wav',
-                                                                                          'shape':'Rectangle',
-                                                                                          'color':'yellow'}},
+                                                        'attnGetterList': {},
                                                         'dynamicPause':[],
                                                         'midAG':{},
                                                         'folderPath': '',
                                                         'prefLook': '0',
                                                         'startImage': '',
                                                         'endImage': '',
+                                                        'presentationURL': '',
+                                                        'slidesEmail': '',
+                                                        'slidesPW': '',
+                                                        'browserType': '',
+                                                        'blankSlide': '',
                                                         'nextFlash': '0'}
             self.condDict = {}
             self.baseCondDict = {}
@@ -130,13 +130,6 @@ class PyHabBuilder:
                         'screenIndex','movieWidth','movieHeight', 'durationInclude']  # in 0.9, this becomes necessary.
             for i in evalList:
                 self.settings[i] = eval(self.settings[i])
-                if i in ['stimList','attnGetterList']:
-                    for [q,j] in self.settings[i].items():
-                        try:
-                            j['stimLoc'] = ''.join([self.dirMarker if x == otherOS else x for x in j['stimLoc']])
-                        except KeyError: # For image/audio pairs
-                            j['audioLoc'] = ''.join([self.dirMarker if x == otherOS else x for x in j['audioLoc']])
-                            j['imageLoc'] = ''.join([self.dirMarker if x == otherOS else x for x in j['imageLoc']])
             # Backwards compatibility for ISI
             if type(self.settings['ISI']) is not dict:
                 tempISI = {}
@@ -701,14 +694,8 @@ class PyHabBuilder:
             typeDlg.addField("Auto-advance INTO trial without waiting for expeirmenter?", initial=chz2)  # Index 8
 
             if trialType not in self.settings['playAttnGetter']:
-                ags = list(self.settings['attnGetterList'].keys())
-                chz3 = [x for x in ags if x is not 'PyHabDefault']
-                if makeNew:
-                    chz3.insert(0, 'None')
-                    chz3.insert(0, 'PyHabDefault')  # Defaults to...well, the default
-                else:
-                    chz3.insert(0, 'PyHabDefault')
-                    chz3.insert(0, 'None') # Only default to default if this is a new trial type, not if "none" was selected before.
+                chz3 = list(self.settings['attnGetterList'].keys())
+                chz3.insert(0, 'None')
             elif trialType in self.settings['playAttnGetter']:
                 chz3 = [x for x in list(self.settings['attnGetterList'].keys()) if x != self.settings['playAttnGetter'][trialType]['attnGetter']]
                 chz3.insert(0, 'None')
@@ -948,7 +935,7 @@ class PyHabBuilder:
             chz2 = True
         else:
             chz2 = False
-        adTypeDlg.addField("Pause stimulus presentation when infant is not looking at screen?", initial=chz2)
+        adTypeDlg.addField("setting irrelevant for online studies, left in out of haste", initial=chz2)
 
         # mid-trial AG settings are present regardless of whether there is an AG at the start of the trial or not.
         if trialType in self.settings['midAG']:
@@ -1228,7 +1215,6 @@ class PyHabBuilder:
             ags = list(self.settings['attnGetterList'].keys())
             chz3 = [x for x in ags if x is not 'PyHabDefault']
             chz3.insert(0, 'None')
-            chz3.insert(0, 'PyHabDefault')  # Defaults to...well, the default
         else:
             chz3 = [x for x in list(self.settings['attnGetterList'].keys()) if
                     x is not prevSet[-2]]
@@ -2264,31 +2250,32 @@ class PyHabBuilder:
 
     def stimSettingsDlg(self, lastSet=[], redo=False, screen='all'):
         """
+        TODO: REVAMP FOR ONLINE
+
+        self.presentationURL = settingsDict['presentationURL']
+        self.slidesEmail = settingsDict['slidesEmail']
+        self.slidesPW = settingsDict['slidesPW']
+        self.browserType = settingsDict['browserType']
+        self.blankSlide = settingsDict['blankSlide']
 
         Settings relating to stimulus presentation. Indexes from the dialog (non-HPP version):
 
-        0 = screenWidth: Width of stim window
+        0 = presentation URL
 
-        1 = screenHeight: Height of stim window
+        1 = email for Slides.com login
 
-        2 = Background color of stim window
+        2 = password for Slides.com login
 
-        3 = movieWidth: Width of movieStim3 object inside stim window. Future: Allows for movie default resolution?
+        3 = browser type (Chrome, Firefox, Safari, or Edge)
 
-        4 = movieWidth: Height of movieStim3 object inside stim window
+        4 = slide number for blank slide.
 
-        5 = freezeFrame: If the attention-getter is used (for a given trial type), this is the minimum time the first frame
-        of the movie will be displayed after the attention-getter finishes.
-
-        6 = screenIndex: Which screen to display the stim window on.
-
-        7 = expScreenIndex: Which screen to display the experimenter window on
 
         :param lastSet: Optional. Last entered settings, in case dialog needs to be presented again to fix bad entries.
         :type lastSet: list
         :param redo: Are we doing this again to fix bad entries?
         :type redo: boolean
-        :param screen: Optional. For HPP, lets you set for just the individual screen the settings apply to.
+        :param screen: Optional. For HPP, lets you set for just the individual screen the settings apply to. IGNORED
         :type screen: string
         :return:
         :rtype:
@@ -2301,86 +2288,37 @@ class PyHabBuilder:
 
         sDlg = gui.Dlg(title="Stimulus presentation settings")
         if not redo:
-            lastSet=[]
+            lastSet=['','','','Chrome',0]
             # This order maps on to the order of the dialog box. This allows for carrying over from previous entries
             # if there's a problem (e.g., text where numbers should be). Done as separate lines basically for ease of
             # correspondence to the field definitions and the saving at the end.
-            if screen == 'all':
-                lastSet.append(self.settings['screenWidth']['C'])
-                lastSet.append(self.settings['screenHeight']['C'])
-                lastSet.append(self.settings['screenColor']['C'])
-                lastSet.append(self.settings['movieWidth']['C'])
-                lastSet.append(self.settings['movieHeight']['C'])
-            else:
-                lastSet.append(self.settings['screenWidth'][screen])
-                lastSet.append(self.settings['screenHeight'][screen])
-                lastSet.append(self.settings['screenColor'][screen])
-                lastSet.append(self.settings['movieWidth'][screen])
-                lastSet.append(self.settings['movieHeight'][screen])
-            lastSet.append(self.settings['freezeFrame'])
-            if screen == 'all':
-                lastSet.append(self.settings['screenIndex']['C'])
-            else:
-                lastSet.append(self.settings['screenIndex'][screen])
-            lastSet.append(self.settings['expScreenIndex'])
-        colors = ['black', 'white', 'gray']
-        colorchz = [x for x in colors if x != lastSet[2]]
-        colorchz.insert(0, lastSet[2])
-        sDlg.addField("Stimulus display width in pixels", lastSet[0])
-        sDlg.addField("Stimulus display height in pixels", lastSet[1])
-        sDlg.addField("Stimulus display background color", choices=colorchz)
-        sDlg.addField("Width of movie stimuli in pixels", lastSet[3])
-        sDlg.addField("Height of movie stimuli in pixels", lastSet[4])
-        sDlg.addField("Freeze first frame for how many seconds after attention-getter?", lastSet[5])
-        # Get a list of all screens. Requires us to import pyglet, assuming we are using pyglet displays (until glfw works)
-        defDisp = pyglet.window.get_platform().get_default_display()
-        allScrs = defDisp.get_screens()
-        if len(allScrs) > 1:
-            screenList = list(range(0, len(allScrs)))
-        elif self.settings['prefLook'] in [2, '2']:
-            screenList = [0, 1, 2, 3]  # Because even if you don't have a second screen now, you presumably will later.
-        else:
-            screenList = [0, 1]  # Because even if you don't have a second screen now, you presumably will later.
-        if isinstance(lastSet[6],str):
-            lastSet[6] = eval(lastSet[6])
-        scrchz = [x for x in screenList if x != lastSet[6]]
-        scrchz.insert(0, lastSet[6])
-        sDlg.addField("Screen index of presentation window (0 = primary display, 1-N = secondary screens)", choices=scrchz)
-        escrchz = [x for x in screenList if x != lastSet[7]]
-        escrchz.insert(0, lastSet[7])
-        sDlg.addField("Screen index of experimenter window", choices=escrchz)
+        browsers = ['Chrome', 'Firefox', 'Safari', 'Edge']
+        browsers = [x for x in browsers if x != lastSet[3]]
+
+        sDlg.addField("Presentation URL from Slides.com (ending in '/live')", lastSet[0])
+        sDlg.addField("Email for Slides.com login", lastSet[1])
+        sDlg.addField("Password for slides.com login", lastSet[2])
+        sDlg.addField("What web browser will you be using?", choices=browsers)
+        sDlg.addField("Slide number of a blank slide", lastSet[4])
 
         stimfo = sDlg.show()
         if sDlg.OK:
             problem = False
-            for i in [0, 1, 3, 4, 5, 6, 7]:
-                if not isinstance(stimfo[i], float) and not isinstance(stimfo[i], int):
-                    try:
-                        stimfo[i] = eval(stimfo[i])
-                    except:
-                        problem = True
+            if not isinstance(stimfo[4], int):
+                try:
+                    stimfo[4] = eval(stimfo[4])
+                except:
+                    problem = True
             if not problem:
-                if screen == 'all':
-                    # Settings that are screen-specific, setting for all screens at once.
-                    allScreenSets = ['screenWidth','screenHeight','screenColor','movieWidth','movieHeight','screenIndex']
-                    indList = [0, 1, 2, 3, 4, 6]  # indexes that are screen-spec settings
-                    for q in range(0, len(allScreenSets)):
-                        # Iterates through the dicts of screen-specific settings
-                        for i,j in self.settings[allScreenSets[q]].items():
-                            self.settings[allScreenSets[q]][i] = stimfo[indList[q]]
-                else:
-                    self.settings['screenWidth'][screen] = stimfo[0]
-                    self.settings['screenHeight'][screen] = stimfo[1]
-                    self.settings['screenColor'][screen] = stimfo[2]
-                    self.settings['movieWidth'][screen] = stimfo[3]
-                    self.settings['movieHeight'][screen] = stimfo[4]
-                    self.settings['screenIndex'][screen] = stimfo[6]
-                self.settings['freezeFrame'] = stimfo[5]
-                self.settings['expScreenIndex'] = stimfo[7]
+                self.settings['presentationURL'] = stimfo[0]
+                self.settings['slidesEmail'] = stimfo[1]
+                self.settings['slidesPW'] = stimfo[2]
+                self.settings['browserType'] = stimfo[3]
+                self.settings['blankSlide'] = stimfo[4]
             else:
                 warnDlg = gui.Dlg(title="Warning!")
                 warnDlg.addText(
-                    "Number expected, got text instead. \nPlease make sure window height/width, movie height/width, and freeze-frame duration are all numbers!")
+                    "Expected number for blank slide, got something else instead. Please re-enter")
                 warnDlg.show()
                 self.stimSettingsDlg(stimfo, redo=True)
 
@@ -2416,6 +2354,8 @@ class PyHabBuilder:
         Works a bit like the attention-getter construction dialogs, but different in that it allows audio or images alone.
         The image/audio pairs are complicated, but not worth splitting into their own function at this time.
 
+        For online version, this is going to ask for a stimulus name and a slide number, and nothing else.
+
         :return:
         :rtype:
         """
@@ -2431,71 +2371,32 @@ class PyHabBuilder:
             else:
                 add = 0
         if add == 1:
-            cz = ['Movie', 'Image', 'Audio', 'Image with audio']
-            sDlg1 = gui.Dlg(title="Add stimuli to library, step 1")
-            sDlg1.addField("What kind of stimuli would you like to add? (Please add each type separately)", choices=cz)
-            sDlg1.addField("How many? (For image with audio, how many pairs?) You will select them one at a time.", 1)
+            # There are only two things we need here: A stimulus name so it can be assigned to a trial type, and a slide number.
+            sDlg1 = gui.Dlg(title="Add new stimulus")
+            sDlg1.addField("Stimulus name (will appear in data, used to add stimuli to trials, must be unique)")
+            sDlg1.addField("Stimulus slide number")
             sd1 = sDlg1.show()
-            allowedStrings = {'Audio': "Audio (*.aac, *.aiff, *.flac, *.m4a, *.mp3, *.ogg, *.raw, *.wav, *.m4b, *.m4p)",
-                              'Movie': "Movies (*.mov, *.avi, *.ogv, *.mkv, *.mp4, *.mpeg, *.mpe, *.mpg, *.dv, *.wmv, *.3gp)",
-                              'Image': "Images (*.jpg, *.jpeg, *.png, *.gif, *.bmp, *.tif, *.tiff)"}
-            if sDlg1.OK and isinstance(sd1[1],int):
-                stType = sd1[0]  # Type of stimuli (from drop-down).
-                stNum = sd1[1]  # Number to add.
-                NoneType = type(None)
-                if stType != 'Image with audio':  # Image w/ audio is complicated, so we will take care of that separately.
-                    for i in range(0, stNum):
-                        stimDlg = gui.fileOpenDlg(prompt="Select stimulus file (only one!)")
-                        if type(stimDlg) is not NoneType:
-                            fileName = os.path.split(stimDlg[0])[1] # Gets the file name in isolation.
-                            self.stimSource[fileName] = stimDlg[0]  # Creates a "Find this file" path for the save function.
-                            self.settings['stimList'][fileName] = {'stimType': stType, 'stimLoc': stimDlg[0]}
-                else:  # Creating image/audio pairs is more complicated.
-                    for i in range(0, stNum):
-                        stimDlg1 = gui.Dlg(title="Pair number " + str(i+1))
-                        stimDlg1.addField("Unique name for this stimulus pair (you will use this to add it to trials later)", 'pairName')
-                        stimDlg1.addText("Click OK to select the AUDIO file for this pair")
-                        sd2 = stimDlg1.show()
-                        if stimDlg1.OK:
-                            a = True
-                            if sd2[0] in list(self.settings['stimList'].keys()):  # If the pair name exists already
-                                a = False
-                                errDlg = gui.Dlg("Change existing pair?")
-                                errDlg.addText("Warning: Pair name already in use! Press OK to overwrite existing pair, or cancel to skip to next pair.")
-                                ea = errDlg.show()
-                                if errDlg.OK:
-                                    a = True
-                            if a:
-                                stimDlg = gui.fileOpenDlg(prompt="Select AUDIO file (only one!)")
-                                if type(stimDlg) is not NoneType:
-                                    fileName = os.path.split(stimDlg[0])[1] # Gets the file name in isolation.
-                                    self.stimSource[fileName] = stimDlg[0]  # Creates a "Find this file" path for the save function.
-                                    self.settings['stimList'][sd2[0]] = {'stimType': stType, 'audioLoc': stimDlg[0]}
-                                    tempDlg = gui.Dlg(title="Now select image")
-                                    tempDlg.addText("Now, select the IMAGE file for this pair (cancel to erase audio and skip pair)")
-                                    t = tempDlg.show()
-                                    if tempDlg.OK:
-                                        stimDlg2 = gui.fileOpenDlg(prompt="Select IMAGE file (only one!)")
-                                        if type(stimDlg2) is not NoneType:
-                                            fileName2 = os.path.split(stimDlg2[0])[1] # Gets the file name in isolation.
-                                            self.stimSource[fileName2] = stimDlg2[0]
-                                            self.settings['stimList'][sd2[0]].update({'imageLoc': stimDlg2[0]})
-                                    else:
-                                        del self.settings['stimList'][sd2[0]]
 
-            elif sDlg1.OK:
-                errDlg = gui.Dlg(title="Warning, invalid value!")
-                errDlg.addText("Number of files to add was not a whole number! Please try again.")
-                e = errDlg.show()
-            # When we are done with this dialog, if we have actually added anything, create the "add to types" dlg.
-            if len(list(self.settings['stimList'].keys())) > 0 and self.addStimToTypesDlg not in self.buttonList['functions']:
-                addMovButton = visual.Rect(self.win, width=.3, height=.5 * (.2 / self.aspect), pos=[.4, -.65],
-                                           fillColor="white")
-                addMovText = visual.TextStim(self.win, text="Add stimulus files \nto trial types", color="black",
-                                             height=addMovButton.height * .3, alignHoriz='center', pos=addMovButton.pos)
-                self.buttonList['shapes'].append(addMovButton)
-                self.buttonList['text'].append(addMovText)
-                self.buttonList['functions'].append(self.addStimToTypesDlg)
+            if sDlg1.OK:
+                # First, check if the stimulus name is unique.
+                if sd1[0] in self.settings['stimList'].keys():
+                    errDlg = gui.Dlg(title="Name in use!")
+                    errDlg.addText("This stimulus name is already in use, please use a different name.")
+                    errDlg.show()
+                    if errDlg.OK:
+                        self.addStimToLibraryDlg()
+                else:
+                    self.settings['stimList'][sd1[0]] = sd1[1] # Keep it simple.
+
+                    # When we are done with this dialog, if we have actually added anything, create the "add to types" dlg.
+                    if len(list(self.settings['stimList'].keys())) > 0 and self.addStimToTypesDlg not in self.buttonList['functions']:
+                        addMovButton = visual.Rect(self.win, width=.3, height=.5 * (.2 / self.aspect), pos=[.4, -.65],
+                                                   fillColor="white")
+                        addMovText = visual.TextStim(self.win, text="Add stimulus files \nto trial types", color="black",
+                                                     height=addMovButton.height * .3, alignHoriz='center', pos=addMovButton.pos)
+                        self.buttonList['shapes'].append(addMovButton)
+                        self.buttonList['text'].append(addMovText)
+                        self.buttonList['functions'].append(self.addStimToTypesDlg)
 
         elif add == -1: # Remove stimuli from library
             self.removeStimFromLibrary()
@@ -2504,7 +2405,6 @@ class PyHabBuilder:
         """
         Presents a dialog listing every item of stimuli in the study library. Allows you to remove any number at once,
         removes from all trial types at same time. Deletes from stimuli folder on save if extant.
-
 
         :return:
         :rtype:
@@ -2525,36 +2425,20 @@ class PyHabBuilder:
             for j in range(0,len(remList)):
                 if not remList[j]:
                     toRemove = orderList[j]
-                    #Things to remove it from: stimlist, stimsource, stimNames(if assigned to trial types). Doesn't apply to attngetter, has its own system.
-                    if self.settings['stimList'][toRemove]['stimType'] != 'Image with audio':
-                        self.delList.append(toRemove)
-                        if toRemove in self.stimSource.keys():
-                            try:
-                                del self.stimSource[toRemove]
-                            except:
-                                print("Could not remove from stimSource!")
-                    else:
-                        #If it's an image/audio pair, need to append both files.
-                        tempAname = os.path.split(self.settings['stimList'][toRemove]['audioLoc'])[1]
-                        tempIname = os.path.split(self.settings['stimList'][toRemove]['imageLoc'])[1]
-                        self.delList.append(tempAname)
-                        self.delList.append(tempIname)
-                        if tempAname in self.stimSource.keys():
-                            try:
-                                del self.stimSource[tempAname]
-                                del self.stimSource[tempIname]
-                            except:
-                                print("Could not remove from stimSource!")
-
                     try:
                         del self.settings['stimList'][toRemove]
+
+                        for q in self.settings['stimNames'].keys():  # Remove from trial types it has been assigned to.
+                            if self.settings['prefLook'] in [2, '2']:
+                                self.settings['stimNames'][q] = [x for x in self.settings['stimNames'][q] if
+                                                                 x['C'] != toRemove]
+                            else:
+                                self.settings['stimNames'][q] = [x for x in self.settings['stimNames'][q] if
+                                                                 x != toRemove]
                     except:
                         print("Could not remove from stimList!")
-                    for q in self.settings['stimNames'].keys(): # Remove from trial types it has been assigned to.
-                        if self.settings['prefLook'] in [2, '2']:
-                            self.settings['stimNames'][q] = [x for x in self.settings['stimNames'][q] if x['C'] != toRemove]
-                        else:
-                            self.settings['stimNames'][q] = [x for x in self.settings['stimNames'][q] if x != toRemove]
+
+
 
 
 
@@ -2736,6 +2620,8 @@ class PyHabBuilder:
         Two-stage: Modify existing attngetter or make new, then what do you do with ether of those.
         Allows audio with PsychoPy-produced looming shape or just a video file.
 
+        TODO: Revamp for online
+
         :return:
         :rtype:
         """
@@ -2744,8 +2630,6 @@ class PyHabBuilder:
         self.workingText.draw()
         self.win.flip()
         achz = list(self.settings['attnGetterList'].keys())
-        # Remove default (which cannot be messed with).
-        achz = [a for a in achz if a is not 'PyHabDefault']
         achz.insert(0, 'Make New')  # Top item will always be "make new"
         aDlg1 = gui.Dlg(title="Select attention-getter or make new")
         aDlg1.addField("Select attention-getter or 'Make New'", choices=achz)
@@ -2754,90 +2638,78 @@ class PyHabBuilder:
         if aDlg1.OK:
             if ans1[0] is 'Make New':
                 # New window to design an attention getter! Choose your own adventure a bit.
+                # TODO: New attention-getter will consist of a name, slide number, and duration.
                 aDlg2 = gui.Dlg(title="Make new attention-getter: step 1")
                 aDlg2.addField("Attention-getter name: ", 'NewAttnGetter')
-                aDlg2.addField("Audio (with built-in shape) or movie, or silent movie with sep. audio track?", choices=['Audio','Movie','Movie + Audio'])
-                aDlg2.addField("Attention-getter background color (default = same as stimuli)", choices=['default','white','black','gray'])
+                aDlg2.addField("Attention-getter slide number: ")
+                aDlg2.addField("Attention-getter duration (in seconds): ")
                 ans2 = aDlg2.show()
                 if aDlg2.OK:
-                    tempGetter={'stimType': ans2[1], 'bgColor': ans2[2]}
-                    if tempGetter['stimType'] is 'Movie':
-                        newTempGet = self.attnGetterVideoDlg()
-                    elif tempGetter['stimType'] is 'Audio':
-                        newTempGet = self.attnGetterAudioDlg()
+                    problems = False
+                    if not isinstance(ans2[1], int):
+                        try:
+                            eval(ans2[1])
+                        except:
+                            problems = True
+                    if not isinstance(ans2[2], int) and not isinstance(ans2[2], float):
+                        try:
+                            eval(ans2[2])
+                        except:
+                            problems = True
+                    if ans2[0] in self.settings['attnGetterList'].keys():
+                        errDlg = gui.Dlg(title="Name in use")
+                        errDlg.addText("There is already an attention-getter with that name, please choose another name.")
+                        errDlg.show()
+                        if errDlg.OK:
+                            self.attnGetterDlg()
+                    elif not problems:
+                        self.settings['attnGetterList'][ans2[0]] = {'slide': ans2[1], 'duration': ans2[2]}
                     else:
-                        newTempGet = self.attnGetterMovieAudioDlg()
-                    if len(newTempGet) > 0:
-                        tempGetter.update(newTempGet)
-                        self.settings['attnGetterList'][ans2[0]] = tempGetter
+                        errDlg = gui.Dlg(title="Expected a number")
+                        errDlg.addText("Expected numbers for slide and duration, got something else. Please re-enter.")
+                        errDlg.show()
+                        if errDlg.OK:
+                            self.attnGetterDlg()
+
 
             else: # Modifying an existing AG. Little complex.
-                aDlg2b = gui.Dlg(title="Change attention-getter properties")
+                aDlg2 = gui.Dlg(title="Change attention-getter properties")
                 currAG = self.settings['attnGetterList'][ans1[0]] #The current attention-getter.
-                aDlg2b.addField("Attention-getter name: ", ans1[0])
-                if currAG['stimType'] is 'Audio':
-                    chz = ['Audio', 'Movie', 'Movie + Audio']
-                elif currAG['stimType'] is 'Movie':
-                    chz = ['Movie', 'Audio', 'Movie + Audio']
-                else:
-                    chz = ['Movie + Audio', 'Movie', 'Audio']
-                aDlg2b.addField("Attention-getter type: ", choices=chz)
-                ch2 = ['default','white','black','gray']
-                if 'bgColor' in currAG.keys():
-                    ch2 = [x for x in ch2 if x != currAG['bgColor']]
-                    ch2.insert(0, currAG['bgColor'])
-                aDlg2b.addField("Attention-getter background color: ", choices=ch2) # Index 2
-                aDlg2b.addField("Change current file (%s)?" % currAG['stimName'], choices=["No","Yes"])
-                if currAG['stimType'] is 'Movie + Audio':
-                    aDlg2b.addField("Change audio file (%s)?" % currAG['audioName'], choices=["No","Yes"])
-                elif currAG['stimType'] is 'Audio':
-                    allShapes = ['Rectangle','Cross','Star']
-                    shapeChz = [x for x in allShapes if x is not currAG['shape']]
-                    shapeChz.insert(0, currAG['shape'])
-                    aDlg2b.addField("Looming shape type", choices=shapeChz)
-                    allColors = ['yellow', 'green', 'red', 'blue', 'white', 'black']
-                    colorChz = [x for x in allColors if x is not currAG['color']]
-                    colorChz.insert(0, currAG['color']) # A more elegant shuffle because the words match
-                    aDlg2b.addField("Looming shape color", choices=colorChz)
+                aDlg2.addField("Attention-getter name: ", ans1[0])
+                aDlg2.addField("Attention-getter slide number: ", currAG['slide'])
+                aDlg2.addField("Attention-getter duration (in seconds): ", currAG['duration'])
+
+
                 ans2b = aDlg2b.show()
                 if aDlg2b.OK:
+                    problems = False
+                    if not isinstance(ans2b[1], int):
+                        try:
+                            eval(ans2b[1])
+                        except:
+                            problems = True
+                    if not isinstance(ans2b[2], int) and not isinstance(ans2b[2], float):
+                        try:
+                            eval(ans2b[2])
+                        except:
+                            problems = True
                     if ans2b[0] is not ans1[0]:  # Did they change the name?
                         self.settings['attnGetterList'][ans2b[0]] = self.settings['attnGetterList'].pop(ans1[0])
                         currAG = self.settings['attnGetterList'][ans2b[0]]
                         for i, j in self.settings['playAttnGetter'].items():
                             if j == ans1[0]:
                                 self.settings['playAttnGetter'][i] = ans2b[0]
-                    if ans2b[1] is not currAG['stimType']:  # if they change it from audio to video or the reverse...
-                        tempGetter = {'stimType': ans2b[1]}
-                        # 1. If going to audio, select shape then new file.
-                        if currAG['stimType'] is 'Movie':
-                            newTempGet = self.attnGetterAudioDlg()
-                        elif currAG['stimType'] is 'Audio':
-                            newTempGet = self.attnGetterVideoDlg()
-                        else:
-                            newTempGet = self.attnGetterMovieAudioDlg()
-                        if len(newTempGet) > 0:
-                            tempGetter.update(newTempGet)
-                            self.settings['attnGetterList'][ans2b[0]] = tempGetter # Overwrite existing.
+
+                    if not problems:
+                        self.settings['attnGetterList'][ans2b[0]] = {'slide': ans2b[1], 'duration': ans2b[2]}
                     else:
-                        if ans2b[3] is "Yes":  # Same stim type, change file. Ignore shape settings for now
-                            fileSelectDlg = gui.fileOpenDlg(prompt="Select attention-getter file")
-                            if type(fileSelectDlg) is not NoneType:
-                                path, namething = os.path.split(fileSelectDlg[0])
-                                if ans2b[1] is 'Audio':
-                                    tempStim = sound.Sound(fileSelectDlg[0])
-                                else:
-                                    tempStim = visual.MovieStim3(self.win, fileSelectDlg[0])
-                                self.settings['attnGetterList'][ans2b[0]].update({'stimLoc': fileSelectDlg[0],
-                                                                                  'stimName': namething,
-                                                                                  'stimDur': tempStim.duration})
-                                del tempStim
-                        if currAG['stimType'] is 'Movie + Audio' and ans2b[3] is "Yes":
-                            self.settings['attnGetterList'][ans2b[0]].update({'audioLoc': fileSelectDlg[0],
-                                                                              'audioName': namething})
-                    if len(ans2b) > 5:  # If we had shape/color settings
-                        self.settings['attnGetterList'][ans2b[0]].update({'shape': ans2b[4], 'color': ans2b[5]})
-                    self.settings['attnGetterList'][ans2b[0]].update({'bgColor': ans2b[2]}) # update BGcolor
+                        errDlg = gui.Dlg(title="Expected a number")
+                        errDlg.addText("Expected numbers for slide and duration, got something else. Please re-enter.")
+                        errDlg.show()
+                        if errDlg.OK:
+                            self.attnGetterDlg()
+
+
 
     def condSettingsDlg(self): #Settings relating to conditions and randomization
         """
@@ -3932,15 +3804,7 @@ class PyHabBuilder:
                 go = False
         if go:
             NoneType = type(None)
-            if len(self.folderPath) > 0:
-                for i,j in self.settings['stimList'].items():
-                    if self.settings['stimList'][i]['stimType'] != 'Image with audio':
-                       self.stimSource[i] = j['stimLoc'] # Re-initializes the stimSource dict to incorporate both existing and new stim.
-                    else:
-                        tempAname = os.path.split(j['audioLoc'])[1]
-                        tempIname = os.path.split(j['imageLoc'])[1]
-                        self.stimSource[tempAname] = j['audioLoc']
-                        self.stimSource[tempIname] = j['imageLoc']
+
             sDlg = gui.fileSaveDlg(initFilePath=os.getcwd(), initFileName=self.settings['prefix'], prompt="Name a folder to save study into", allowed="")
             if type(sDlg) is not NoneType:
                 self.settings['folderPath'] = sDlg + self.dirMarker #Makes a folder of w/e they entered
@@ -3960,6 +3824,8 @@ class PyHabBuilder:
     def saveEverything(self):
         """
         Saves a PyHab project to a set of folders dictated by self.folderPath
+
+        TODO: This too will need a revamp for online.
 
         :return:
         :rtype:
@@ -3997,7 +3863,7 @@ class PyHabBuilder:
                     baseWriter = csv.writer(bc, lineterminator='\n')
                     for m in range(0, len(tempArray2)):
                         baseWriter.writerow(tempArray2[m])
-        # copy stimuli if there are stimuli.
+        # copy stimuli if there are stimuli. TODO: Can we just remove this entire thing? Actually we may not have to, it will be ignored!
         if len(self.stimSource) > 0:
             for i, j in self.stimSource.items():  # Find each file, copy it over
                 try:
@@ -4017,22 +3883,6 @@ class PyHabBuilder:
                             elif os.path.split(r['imageLoc'])[1] == i:
                                 r['imageLoc'] = 'stimuli' + self.dirMarker + os.path.split(j)[1]
 
-        if len(list(self.settings['attnGetterList'].keys())) > 0:  # This should virtually always be true b/c default attngetter.
-            for i, j in self.settings['attnGetterList'].items():
-                try:
-                    targPath = stimPath + 'attnGetters' + self.dirMarker
-                    if not os.path.exists(targPath):
-                        os.makedirs(targPath)
-                    if not os.path.exists(targPath + j['stimName']):
-                        shutil.copyfile(j['stimLoc'], targPath + j['stimName'])
-                        j['stimLoc'] = 'stimuli' + self.dirMarker + 'attnGetters' + self.dirMarker + j['stimName']
-                    if 'audioName' in j.keys():
-                        if not os.path.exists(targPath + j['audioName']):
-                            shutil.copyfile(j['audioLoc'], targPath + j['audioName'])
-                            j['audioLoc'] = 'stimuli' + self.dirMarker + 'attnGetters' + self.dirMarker + j['audioName']
-                except:
-                    success = False
-                    print('Could not copy attention-getter file ' + j['stimLoc'] + ' to location ' +  targPath + '. Make sure both exist!')
         if not success:
             errDlg = gui.Dlg(title="Could not copy stimuli!")
             errDlg.addText("Some stimuli could not be copied successfully. See the output of the coder window for details.")

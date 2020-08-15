@@ -18,10 +18,10 @@ def run():
     launcherDlg.addText('Current settings file: ' + setName)
     launcherDlg.addField('Run study or open builder?', choices=['Run','Builder'])
     tempOrd = eval(setDict['trialOrder'])
-    stPres = checkIfStim(setDict, tempOrd)
+    stPres = True
     if stPres:
         ch = ['On','Off']
-        launcherDlg.addField('Stimulus presentation mode (Run only): ', choices=ch)
+        launcherDlg.addField('Online stimulus presentation mode (Run only): ', choices=ch)
     launcherDlg.show()
     if launcherDlg.OK:
         launcher = launcherDlg.data
