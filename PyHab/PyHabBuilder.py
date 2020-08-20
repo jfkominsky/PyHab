@@ -518,7 +518,7 @@ class PyHabBuilder:
                     elif self.trialTypesArray['labels'][j] == 'Hab' and len(self.settings['habTrialList']) > 0:
                         self.addHabBlock(makeNew=False)
                     elif self.trialTypesArray['labels'][j] == 'Hab':
-                        self.makeHabTypeDlg(makeNew=False)
+                        self.trialTypeDlg(trialType=self.trialTypesArray['labels'][j], makeNew=False)
                     else:
                         self.trialTypeDlg(trialType=self.trialTypesArray['labels'][j], makeNew=False)
                     if os.name is not 'posix':
@@ -1160,7 +1160,7 @@ class PyHabBuilder:
         if habInitDlg.OK:
             habInitInfo[0] = str(habInitInfo[0])  # Safety for PyQt malarky
             if habInitInfo[0] == 'Single trial type':
-                self.makeHabTypeDlg(makeNew)
+                self.trialTypeDlg(trialType="Hab", makeNew=True)
             elif habInitInfo[0] == 'Multi-trial block':
                 if os.name is not 'posix':
                     self.win.winHandle.set_visible(visible=True)
