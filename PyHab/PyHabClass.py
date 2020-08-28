@@ -35,6 +35,8 @@ class PyHab:
     On2 and Off2 (for the optional secondary coder)
     Each coder's on and off are recorded in a separate dict with trial, gaze on/off, start, end, and duration.
 
+    Modification: Extra stimulus type, auto-redo separate from minimum on-time
+
     """
 
     def __init__(self, settingsDict):
@@ -105,6 +107,10 @@ class PyHab:
             self.onTimeDeadline = {}
             self.durationInclude = 1
             self.habByDuration = 0
+        try: # Special modification to separate auto-redo time from regular on-time.
+            self.redoTime = eval(settingsDict['redoTime'])
+        except:
+            self.redoTime = {}
 
 
         # ORDER OF PRESENTATION
@@ -481,8 +487,6 @@ class PyHab:
 
         Uses a sort of parallel data structure that just tracks hab-relevant gaze totals. As a bonus, this means it now
         works for both single-target and preferential looking designs (and HPP designs) with no modification.
-
-        TODO: Habituation using trial duration instead of on-time
 
         :return: True if hab criteria have been met, False otherwise
         :rtype:
@@ -1476,6 +1480,11 @@ class PyHab:
         endFlag = False
         endNow = False  # A special case for auto-redo that overrides end on movie end
         modifier = 0  # MODIFICATION: Deals with a special edge case
+        #A special check of whether there is a separate auto-redo time for this trial.
+        if localType in self.autoRedo and localType in self.redoTime.keys():
+            redoOnTime = self.redoTime[localType]
+        else:
+            redoOnTime = self.minOn[localType]
 
         def onDuration(adds=0, subs=0):  # A function for the duration switch, while leaving sumOn intact
             if localType in self.durationCriterion:
@@ -1594,9 +1603,9 @@ class PyHab:
                 elif self.playThrough[localType] == 3:  # Either/or
                     if nowOff - startOff >= self.maxOff[localType] and not endFlag:
                         endCondMet = True
-                        if localType in self.autoRedo and sumOn < self.minOn[localType]:
+                        if localType in self.autoRedo and sumOn < redoOnTime:
                             endNow = True
-                elif localType in self.autoRedo and sumOn < self.minOn[localType]:
+                elif localType in self.autoRedo and sumOn < redoOnTime:
                     if nowOff - startOff >= self.maxOff[localType] and not endFlag:
                         endCondMet = True
                         endNow = True
@@ -1607,7 +1616,7 @@ class PyHab:
                     if sumOn <= 0:  # this specifically uses sumOn, always. MODIFICATION: now uses 0 instead of minOn
                         endCondMet = True
                         endNow = True
-                    if onDuration(subs=nowOff-startOff) < self.minOn[localType]: # However, even if the trial does not end immediately, it should restart
+                    if onDuration(subs=nowOff-startOff) < redoOnTime: # However, even if the trial does not end immediately, it should restart
                         abort = True
                         modifier = self.minOn[localType]  # This is for an edge case so it ends after the next 2-second look-away regardless.
 
@@ -1778,7 +1787,7 @@ class PyHab:
                 if offArray[-1]['endTime'] > onArray[-1]['endTime']:
                     subtract = offArray[-1]['duration']  # Checks total duration.
             finalSumOn = onDuration(subs=subtract)
-        if localType in self.autoRedo and finalSumOn < self.minOn[localType] and ttype != 4:
+        if localType in self.autoRedo and finalSumOn < redoOnTime and ttype != 4:
             # Determine if total on-time is less that minOn, if so, flag trial as bad and repeat it
             abort = True
         if abort:  # if the abort button was pressed

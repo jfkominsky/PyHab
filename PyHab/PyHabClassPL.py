@@ -236,6 +236,11 @@ class PyHabPL(PyHab):
         endFlag = False
         endNow = False  # special case for autoredo
         modifier = 0  # MODIFICAITON: deals with an edge case
+        if localType in self.autoRedo and localType in self.redoTime.keys():
+            redoOnTime = self.redoTime[localType]
+        else:
+            redoOnTime = self.minOn[localType]
+
 
         def onDuration(adds=0, subs=0):  # A function for the duration switch, while leaving sumOn intact
             if localType in self.durationCriterion:
@@ -395,7 +400,7 @@ class PyHabPL(PyHab):
                     if sumOn + sumOn2 <= 0:  # this specifically uses sumOn, always. MODIFICATION: 0 instead of minon
                         endCondMet = True
                         endNow = True
-                    if onDuration(subs=nowOff-startOff) < self.minOn[localType]:  # However, even if the trial does not end immediately, it should restart
+                    if onDuration(subs=nowOff-startOff) < redoOnTime:  # However, even if the trial does not end immediately, it should restart
                         abort = True
                         modifier = self.minOn[localType]
 
@@ -408,9 +413,9 @@ class PyHabPL(PyHab):
                 elif self.playThrough[localType] == 3:  # Either/or
                     if nowOff - startOff >= self.maxOff[localType] and not endFlag:
                         endCondMet = True
-                        if localType in self.autoRedo and sumOn + sumOn2 < self.minOn[localType]:
+                        if localType in self.autoRedo and sumOn + sumOn2 < redoOnTime:
                             endNow = True
-                elif localType in self.autoRedo and sumOn + sumOn2 < self.minOn[localType]:
+                elif localType in self.autoRedo and sumOn + sumOn2 < redoOnTime:
                     if nowOff - startOff >= self.maxOff[localType] and not endFlag:
                         endCondMet = True
                         endNow = True
@@ -612,7 +617,7 @@ class PyHabPL(PyHab):
                     if offArray[-1]['endTime'] > lastOn:
                         subtract = offArray[-1]['duration']
             finalSumOn = onDuration(subs=subtract)  # Checks total duration, ignores last-look issue.
-        if localType in self.autoRedo and finalSumOn < self.minOn[localType] and ttype != 4:
+        if localType in self.autoRedo and finalSumOn < redoOnTime and ttype != 4:
             # Determine if total on-time is less that minOn, if so, flag trial as bad and repeat it
             abort = True
         if abort: #if the abort button was pressed

@@ -400,6 +400,11 @@ class PyHabHPP(PyHab):
         gazeOnR = False
         endNow = False
         modifier = 0 # MODIFICATION
+        if localType in self.autoRedo and localType in self.redoTime.keys():
+            redoOnTime = self.redoTime[localType]
+        else:
+            redoOnTime = self.minOn[localType]
+            
         def onDuration(adds=0, subs=0):  # A function for the duration switch, while leaving sumOn intact
             if localType in self.durationCriterion:
 
@@ -593,7 +598,7 @@ class PyHabHPP(PyHab):
                     if sumOnC + sumOnL + sumOnR <= 0:  # this specifically uses sumOn, always. MODIFICATION: Now comparing against 0, specifically
                         endCondMet = True
                         endNow = True
-                    elif onDuration(subs=nowOff-startOff) < self.minOn[localType]:
+                    elif onDuration(subs=nowOff-startOff) < redoOnTime:
                         abort = True  # Regardless of whether it ends immediately, it should still redo the trial afterward
                         modifier = self.minOn[localType]  # This is for an edge case so it ends after the next 2-second look-away regardless.
 
@@ -606,9 +611,9 @@ class PyHabHPP(PyHab):
                 elif self.playThrough[localType] == 3:  # Either/or
                     if nowOff - startOff >= self.maxOff[localType] and not endFlag:
                         endCondMet = True
-                        if localType in self.autoRedo and sumOnC + sumOnL + sumOnR < self.minOn[localType]:
+                        if localType in self.autoRedo and sumOnC + sumOnL + sumOnR < redoOnTime:
                             endNow = True
-                elif localType in self.autoRedo and sumOnC + sumOnL + sumOnR < self.minOn[localType]:
+                elif localType in self.autoRedo and sumOnC + sumOnL + sumOnR < redoOnTime:
                     if nowOff - startOff >= self.maxOff[localType] and not endFlag:
                         endCondMet = True
                         endNow = True
@@ -901,7 +906,7 @@ class PyHabHPP(PyHab):
                     if offArray[-1]['endTime'] > lastOn:
                        subtract = offArray[-1]['duration']
             finalSumOn = onDuration(subs=subtract)  # Checks total duration, ignores last-look issue.
-        if localType in self.autoRedo and finalSumOn < self.minOn[localType] and ttype != 4:
+        if localType in self.autoRedo and finalSumOn < redoOnTime and ttype != 4:
             # Determine if total on-time is less that minOn, if so, flag trial as bad and repeat it
             abort = True
         if abort:  # if the abort button was pressed
