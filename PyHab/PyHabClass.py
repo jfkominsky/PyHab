@@ -1491,8 +1491,10 @@ class PyHab:
                 # Modification: This now only looks at time between gaze-on events, instead of starting from 0.
                 if len(onArray) > 0:
                     return core.getTime() - startTrial - onArray[0]['startTime'] - subs
-                else:
-                    return 0 # if there has been no gaze-on event, the duration is 0.
+                elif gazeOn:  # Edge case when there is one continuous gaze-on event.
+                    return core.getTime() - startTrial - startOn
+                else:  # if there has been no gaze-on event, the duration is 0.
+                    return 0
             else:
                 return sumOn + adds
 
@@ -1605,7 +1607,7 @@ class PyHab:
                         endCondMet = True
                         if localType in self.autoRedo and sumOn < redoOnTime:
                             endNow = True
-                elif localType in self.autoRedo and sumOn < redoOnTime:
+                elif localType in self.autoRedo and sumOn < redoOnTime and localType not in self.onTimeDeadline.keys():  # Should apply to on-only or no criteria.
                     if nowOff - startOff >= self.maxOff[localType] and not endFlag:
                         endCondMet = True
                         endNow = True

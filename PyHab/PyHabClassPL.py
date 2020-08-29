@@ -255,8 +255,13 @@ class PyHabPL(PyHab):
                     startOn2 = 99999
                 if len(onArray) > 0 or len(onArray2) > 0:
                     return core.getTime() - startTrial - min(startOn, startOn2) - subs
+                elif gazeOn: # Edge case: Continuous on-time
+                    return core.getTime() - startTrial - startOn
+                elif gazeOn2:
+                    return core.getTime() - startTrial - startOn2
                 else:
                     return 0  # if there has been no gaze-on event, the duration is 0.
+
             else:
                 return sumOn + sumOn2 + adds
 

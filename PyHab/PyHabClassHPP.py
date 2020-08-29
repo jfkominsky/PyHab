@@ -404,7 +404,7 @@ class PyHabHPP(PyHab):
             redoOnTime = self.redoTime[localType]
         else:
             redoOnTime = self.minOn[localType]
-            
+
         def onDuration(adds=0, subs=0):  # A function for the duration switch, while leaving sumOn intact
             if localType in self.durationCriterion:
 
