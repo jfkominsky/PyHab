@@ -2245,6 +2245,7 @@ class PyHab:
                 self.ageMo = ageDif.years * 12 + ageDif.months
                 self.ageDay = ageDif.days  # Impossibly simple, but it works.
                 # build stimulus order
+
                 if self.randPres and len(self.condList) > 0:  # Extra check: We WANT conditions and we HAVE them too.
                     self.condLabel = thisInfo[6]
                     testReader = csv.reader(open(self.condPath + self.condFile, 'rU'))
@@ -2360,8 +2361,7 @@ class PyHab:
     def loadStim(self, stim, screen='C'):
         """
         A general function for loading stimuli that can be called repeatedly.
-
-        TODO: Windows audio bug when loading an audio file before a movie file means that we should change load order for everything to movie first.
+        UNUSED ONLINE
 
         :param stim: stimulus name, key for stimList dict
         :type stim: str

@@ -2288,7 +2288,8 @@ class PyHabBuilder:
 
         sDlg = gui.Dlg(title="Stimulus presentation settings")
         if not redo:
-            lastSet=['','','','Chrome',0]
+            lastSet=[self.settings['presentationURL'],self.settings['slidesEmail'],self.settings['slidesPW'],
+                     self.settings['browserType'],self.settings['blankSlide']]
             # This order maps on to the order of the dialog box. This allows for carrying over from previous entries
             # if there's a problem (e.g., text where numbers should be). Done as separate lines basically for ease of
             # correspondence to the field definitions and the saving at the end.
