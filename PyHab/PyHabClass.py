@@ -862,8 +862,9 @@ class PyHab:
         self.dispCoderWindow(trialType)
         # now for the test trial display
         if self.stimPres:
-            # Navigate to the page in question.
-            self.browser.get(self.presentationURL + '#/' + dispMovie)
+            # Navigate to the page in question. Check so you do not chain-reload.
+            if self.browser.current_url != self.presentationURL + '#/' + dispMovie:
+                self.browser.get(self.presentationURL + '#/' + dispMovie)
             t = 0 # "End on movie end" is just not going to be an option.
         else:
             t = 0  # Totally irrelevant.
