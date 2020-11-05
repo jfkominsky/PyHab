@@ -604,7 +604,7 @@ class PyHabBuilder:
         self.win.flip()
         #For when a trial is right-clicked, or a new one created, open a dialog with info about it.
         skip = False
-        if len(self.settings['trialTypes']) == len(self.colorsArray):
+        if len(self.settings['trialTypes']) == len(self.colorsArray) and makeNew:
             errDlg = gui.Dlg(title="Max trial types reached!")
             errDlg.addText("PyHab's builder currently supports a maximum of " + str(len(self.colorsArray)) + " trial or block types.")
             errDlg.show()
