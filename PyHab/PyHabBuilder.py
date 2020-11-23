@@ -990,7 +990,7 @@ class PyHabBuilder:
                 self.settings['dynamicPause'].append(trialType)
             elif adTypeInfo[len(adTypeInfo)-5] in [False, 0, 'False', '0'] and trialType in self.settings['dynamicPause']:
                 # Remove if this behavior has been turned off.
-                self.settings['dynamicPause'].pop(self.setting['dynamicPause'].index(trialType))
+                self.settings['dynamicPause'].pop(self.settings['dynamicPause'].index(trialType))
             # Mid-trial AG
             if adTypeInfo[len(adTypeInfo)-4] in self.settings['attnGetterList']:
                 # We have the luxury of only caring about certain inputs if there is a mid-trial AG
@@ -1302,7 +1302,7 @@ class PyHabBuilder:
         :return:
         :rtype:
         """
-        if len(self.settings['trialTypes']) > 0:
+        if len(self.settings['trialTypes']) > 0 and not (len(self.settings['trialTypes']) == 20 and new):
             self.showMainUI(self.UI, self.studyFlowArray, self.trialTypesArray)
             self.workingRect.draw()
             self.workingText.draw()
@@ -1363,9 +1363,13 @@ class PyHabBuilder:
                     # For Windows, because now we snap back to the regular window.
                     self.win.winHandle.set_visible(visible=True)
                 self.blockMaker(newBlock[0], new)
-        else:
+        elif len(self.settings['trialTypes']) == 0:
             errDlg = gui.Dlg(title="No trials to make blocks with!")
             errDlg.addText("Make some trial types before trying to add them to a block.")
+            irrel = errDlg.show()
+        else:
+            errDlg = gui.Dlg(title="Maximum trial/block types reached!")
+            errDlg.addText("The maximum number of trial/block types (20) has been reached. No more can be added.")
             irrel = errDlg.show()
 
 
@@ -2729,7 +2733,7 @@ class PyHabBuilder:
         chkBox = False
         if self.settings['randPres'] in [1,'1',True,'True']:
             chkBox = True
-        cDlg.addField("Use random presentation? If yes, a new interface will open",initial=chkBox)
+        cDlg.addField("Use condition-based presentation? If yes, a new interface will open",initial=chkBox)
         cDlg.addField("Pre-existing condition file (optional, leave blank to make new file called conditions.csv)", self.settings['condFile'])
         if not chkBox:
             cDlg.addText("NOTE: This will overwrite any existing file named conditions.csv! If you have an existing conditions file, rename it first.")
