@@ -2859,7 +2859,7 @@ class PyHabBuilder:
         chkBox = False
         if self.settings['randPres'] in [1,'1',True,'True']:
             chkBox = True
-        cDlg.addField("Use random presentation? If yes, a new interface will open",initial=chkBox)
+        cDlg.addField("Use condition-based presentation? If yes, a new interface will open",initial=chkBox)
         cDlg.addField("Pre-existing condition file (optional, leave blank to make new file called conditions.csv)", self.settings['condFile'])
         if not chkBox:
             cDlg.addText("NOTE: This will overwrite any existing file named conditions.csv! If you have an existing conditions file, rename it first.")
