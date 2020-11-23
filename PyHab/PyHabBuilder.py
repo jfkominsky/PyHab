@@ -1003,7 +1003,7 @@ class PyHabBuilder:
                 self.settings['dynamicPause'].append(trialType)
             elif adTypeInfo[len(adTypeInfo)-5] in [False, 0, 'False', '0'] and trialType in self.settings['dynamicPause']:
                 # Remove if this behavior has been turned off.
-                self.settings['dynamicPause'].pop(self.setting['dynamicPause'].index(trialType))
+                self.settings['dynamicPause'].pop(self.settings['dynamicPause'].index(trialType))
             # Mid-trial AG
             if adTypeInfo[len(adTypeInfo)-4] in self.settings['attnGetterList']:
                 # We have the luxury of only caring about certain inputs if there is a mid-trial AG
@@ -1316,7 +1316,7 @@ class PyHabBuilder:
         :return:
         :rtype:
         """
-        if len(self.settings['trialTypes']) > 0:
+        if len(self.settings['trialTypes']) > 0 and not (len(self.settings['trialTypes']) == 20 and new):
             self.showMainUI(self.UI, self.studyFlowArray, self.trialTypesArray)
             self.workingRect.draw()
             self.workingText.draw()
@@ -1377,9 +1377,13 @@ class PyHabBuilder:
                     # For Windows, because now we snap back to the regular window.
                     self.win.winHandle.set_visible(visible=True)
                 self.blockMaker(newBlock[0], new)
-        else:
+        elif len(self.settings['trialTypes']) == 0:
             errDlg = gui.Dlg(title="No trials to make blocks with!")
             errDlg.addText("Make some trial types before trying to add them to a block.")
+            irrel = errDlg.show()
+        else:
+            errDlg = gui.Dlg(title="Max trial/block types reached!")
+            errDlg.addText("Maximum number of trial/block types has been reached (20), no more can be made.")
             irrel = errDlg.show()
 
 
