@@ -1,7 +1,7 @@
 import os, sys
 from psychopy import gui, visual, event, core, data, monitors, tools, prefs, logging
 from psychopy.constants import (STARTED, PLAYING)  # Added for new stimulus types
-prefs.hardware['audioLib'] = ['sounddevice']
+prefs.hardware['audioLib'] = ['PTB']
 if os.name is 'posix':
     prefs.general['audioDevice'] = ['Built-in Output']
 from psychopy import sound
@@ -907,6 +907,7 @@ class PyHab:
             elif dispMovie['stimType'] == 'Image':
                 t = self.dispImageStim(dispMovie['stim'])
             elif dispMovie['stimType'] == 'Audio' and trialType != 0:  # No still-frame equivalent
+                win.flip() # This is because otherwise the last frame of the attn-getter will remain onscreen
                 t = self.dispAudioStim(trialType, dispMovie['stim'])
             elif dispMovie['stimType'] == 'Image with audio': # Audio and image together
                 if trialType != 0:  # No still-frame equivalent

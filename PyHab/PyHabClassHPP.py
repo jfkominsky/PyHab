@@ -1,7 +1,7 @@
 import os, sys
 from psychopy import visual, event, core, data, gui, monitors, tools, prefs, logging
 from psychopy.constants import (STARTED, PLAYING)  # Added for new stimulus types
-prefs.hardware['audioLib'] = ['sounddevice']
+prefs.hardware['audioLib'] = ['PTB']
 if os.name is 'posix':
     prefs.general['audioDevice'] = ['Built-in Output']
 from psychopy import sound
