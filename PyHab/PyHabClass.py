@@ -1152,7 +1152,7 @@ class PyHab:
                         startAG = core.getTime()
                         onCheck = 0
                         while simAG:
-                            if core.getTime() - startAG >= self.attnGetterList[self.playAttnGetter[trialType]['attnGetter']]['stimDur']:
+                            if core.getTime() - startAG >= eval(self.attnGetterList[self.playAttnGetter[trialType]['attnGetter']]['duration']):
                                 simAG = False
                             elif self.playAttnGetter[trialType]['cutoff'] and self.lookKeysPressed():
                                 if onCheck == 0 and self.playAttnGetter[trialType]['onmin'] > 0:
@@ -1185,7 +1185,7 @@ class PyHab:
                                 startAG = core.getTime()
                                 onCheck = 0
                                 while simAG:
-                                    if core.getTime() - startAG >= self.attnGetterList[self.playAttnGetter[trialType]['attnGetter']]['stimDur']:
+                                    if core.getTime() - startAG >= eval(self.attnGetterList[self.playAttnGetter[trialType]['attnGetter']]['duration']):
                                         simAG = False
                                     elif self.playAttnGetter[trialType]['cutoff'] and self.lookKeysPressed():
                                         if onCheck == 0 and self.playAttnGetter[trialType]['onmin'] > 0:
