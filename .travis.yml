@@ -46,7 +46,7 @@ before_install:
   - flac -version
 
   # Changing to be closer to how PsychoPy does its testing environment
-  - travis_retry sudo pip install --upgrade -qq pip==9.0.3
+  - travis_retry sudo python -m pip install -U pip #pip install --upgrade -qq pip==9.0.3
   - travis_retry sudo apt-get install -qq flac
   - travis_retry sudo apt-get install -qq libav-tools  # this installs ffmpeg
   - travis_retry sudo apt-get install -qq python-xlib python-pygame python-opengl
