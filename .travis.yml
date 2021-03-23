@@ -46,9 +46,11 @@ before_install:
   - flac -version
 
   # Changing to be closer to how PsychoPy does its testing environment
-  - travis_retry sudo python -m pip install -U pip
+  - travis_retry sudo pip install -U pip
   - travis_retry sudo pip install -U setuptools
-  - travis_retry pip install setuptools-rust # the source of a crash bug with new versions of psychopy.
+  - travis_retry sudo pip install setuptools-rust # the source of a crash bug with new versions of psychopy.
+  - travis_retry sudo pip install requests[security]
+  - travis_retry sudo pip install cryptography # This is the package that breaks. Let's see if we can break faster.
   - travis_retry sudo apt-get install -qq flac
   - travis_retry sudo apt-get install -qq libav-tools  # this installs ffmpeg
   - travis_retry sudo apt-get install -qq python-xlib python-pygame python-opengl
