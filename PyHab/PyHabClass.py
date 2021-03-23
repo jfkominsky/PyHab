@@ -1564,7 +1564,8 @@ class PyHab:
             # Determine if total on-time is less that minOn, if so, flag trial as bad and repeat it
             abort = True
         if abort:  # if the abort button was pressed
-            self.browser.get(self.presentationURL + '#/' + self.blankSlide) # go to blank slide
+            if self.stimPres:
+                self.browser.get(self.presentationURL + '#/' + self.blankSlide) # go to blank slide
             self.abortTrial(onArray, offArray, number, dataType, onArray2, offArray2, self.stimName, habDataRec)
             return 3
         else:
