@@ -50,7 +50,6 @@ before_install:
   - travis_retry sudo pip install -U setuptools
   - travis_retry sudo pip install setuptools-rust # the source of a crash bug with new versions of psychopy.
   - travis_retry sudo pip install requests[security]
-  - travis_retry sudo pip install cryptography # This is the package that breaks. Let's see if we can break faster.
   - travis_retry sudo apt-get install -qq flac
   - travis_retry sudo apt-get install -qq libav-tools  # this installs ffmpeg
   - travis_retry sudo apt-get install -qq python-xlib python-pygame python-opengl
@@ -78,7 +77,7 @@ before_install:
 
 install:
   - pip install -U -f https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-16.04 wxPython
-  - pip3 install -r requirements.txt
+  - pip install -r requirements.txt
 
 # Creates a fake monitor
 before_script:
