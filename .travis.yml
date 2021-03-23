@@ -48,7 +48,6 @@ before_install:
   # Changing to be closer to how PsychoPy does its testing environment
   - travis_retry sudo python -m pip install -U pip
   - travis_retry sudo pip install -U setuptools
-  - travis_retry sudo pip --version # Just what the heck version of pip are we really using here
   - travis_retry sudo apt-get install -qq flac
   - travis_retry sudo apt-get install -qq libav-tools  # this installs ffmpeg
   - travis_retry sudo apt-get install -qq python-xlib python-pygame python-opengl
@@ -60,6 +59,7 @@ before_install:
   - travis_retry sudo apt-get install -qq python-mock
   # Addressing an issue with wx imports.
   - travis_retry sudo apt-get install git curl libsdl2-mixer-2.0-0 libsdl2-image-2.0-0 libsdl2-2.0-0
+  - sudo pip install requests[security] # maybe this will help?
 
 
   # Locales
