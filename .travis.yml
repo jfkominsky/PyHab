@@ -8,20 +8,20 @@ matrix:
 
     - os: linux
       dist: trusty
-      env: ANACONDA=false WXPYTHON=3 OPENPYXL=2.4 DISPLAY=:99.0 AUDIODEV=null
+      env: ANACONDA=false WXPYTHON=3 OPENPYXL=2.4 DISPLAY=:99.0 AUDIODEV=null CRYPTOGRAPHY_DONT_BUILD_RUST=1
 
     - os: linux
       dist: trusty
-      env: ANACONDA=false WXPYTHON=4 OPENPYXL=2.4 DISPLAY=:99.0 AUDIODEV=null
+      env: ANACONDA=false WXPYTHON=4 OPENPYXL=2.4 DISPLAY=:99.0 AUDIODEV=null CRYPTOGRAPHY_DONT_BUILD_RUST=1
 
     - os: linux
       dist: trusty
-      env: ANACONDA=false WXPYTHON=3 OPENPYXL=2.5 DISPLAY=:99.0 AUDIODEV=null
+      env: ANACONDA=false WXPYTHON=3 OPENPYXL=2.5 DISPLAY=:99.0 AUDIODEV=null CRYPTOGRAPHY_DONT_BUILD_RUST=1
 
     - os: linux
       dist: trusty
       python: 3.6
-      env: ANACONDA=false DISPLAY=:99.0 AUDIODEV=null
+      env: ANACONDA=false DISPLAY=:99.0 AUDIODEV=null CRYPTOGRAPHY_DONT_BUILD_RUST=1
 
 
 before_install:
