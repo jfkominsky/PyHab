@@ -46,8 +46,9 @@ before_install:
   - flac -version
 
   # Changing to be closer to how PsychoPy does its testing environment
-  - travis_retry sudo python -m pip install -U pip
-  - travis_retry sudo pip install -U setuptools
+  - travis_retry sudo python -m pip3 install -U pip3
+  - travis_retry sudo pip3 install -U setuptools
+  - travis_retry sudo pip3 --version # Just what the heck version of pip are we really using here
   - travis_retry sudo apt-get install -qq flac
   - travis_retry sudo apt-get install -qq libav-tools  # this installs ffmpeg
   - travis_retry sudo apt-get install -qq python-xlib python-pygame python-opengl
@@ -74,7 +75,7 @@ before_install:
 
 install:
   - pip install -U -f https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-16.04 wxPython
-  - pip install -r requirements.txt
+  - pip3 install -r requirements.txt
 
 # Creates a fake monitor
 before_script:

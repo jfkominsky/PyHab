@@ -308,15 +308,6 @@ class PyHab:
         self.verbDatList = {'verboseOn':[], 'verboseOff':[], 'verboseOn2':[], 'verboseOff2':[]} # a dict of the verbose data arrays
         self.verbBadList = {'verboseOn':[], 'verboseOff':[], 'verboseOn2':[], 'verboseOff2':[]} # Corresponding for bad data
 
-        if self.browserType == "Chrome":
-            self.browser = webdriver.Chrome()
-        elif self.browserType == "Firefox":
-            self.browser = webdriver.Firefox()
-        elif self.browserType == "Safari":
-            self.browser = webdriver.Safari()
-        elif self.browserType == "Edge":
-            self.browser = webdriver.Edge()
-
 
 
     '''
@@ -2196,14 +2187,25 @@ class PyHab:
                 startDlg.addField('DOT(year): ')
             startDlg.show()
         if startDlg.OK:
-            # Log in to slides
-            self.browser.get("https://slides.com/users/sign_in")
-            email_field = self.browser.find_element_by_id("user_email")
-            pw_field = self.browser.find_element_by_id("user_password")
+            # Log in to slides (if needed)
+            if self.stimPres:
+                # Creates the browser window
+                if self.browserType == "Chrome":
+                    self.browser = webdriver.Chrome()
+                elif self.browserType == "Firefox":
+                    self.browser = webdriver.Firefox()
+                elif self.browserType == "Safari":
+                    self.browser = webdriver.Safari()
+                elif self.browserType == "Edge":
+                    self.browser = webdriver.Edge()
 
-            email_field.send_keys(self.slidesEmail)
-            pw_field.send_keys(self.slidesPW)
-            pw_field.submit()
+                self.browser.get("https://slides.com/users/sign_in")
+                email_field = self.browser.find_element_by_id("user_email")
+                pw_field = self.browser.find_element_by_id("user_password")
+
+                email_field.send_keys(self.slidesEmail)
+                pw_field.send_keys(self.slidesPW)
+                pw_field.submit()
 
             fail = False # A bool for detecting if we have to start over at any point.
             thisInfo = startDlg.data
