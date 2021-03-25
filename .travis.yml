@@ -31,7 +31,7 @@ before_install:
 
   # the next four lines are a last-ditch attempt to get wxpython to play nice.
   - sudo apt-get install software-properties-common
-  - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
+  - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y --allow-unauthenticated
   - sudo apt-get update
   - sudo apt-get install gcc-4.9
   - sudo apt-get upgrade libstdc++6
