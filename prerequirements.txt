@@ -1,3 +1,5 @@
+pyqt5==5.14
+opencv-python == 4.2.0.34
 numpy
 scipy
 matplotlib
@@ -24,7 +26,6 @@ tables
 pyzmq
 ujson
 moviepy
-opencv-python
 python-gitlab
 gitpython
 astunparse
@@ -44,7 +45,6 @@ imageio-ffmpeg; python_version >= "3"
 pyparallel; platform_system == "Linux"
 pyWinhook; platform_system == "Windows"
 pyqmix >= 2018.12.13; platform_system == "Windows"
-pyqt5; python_version >= "3"
 wxPython != 4.0.2, != 4.0.3; platform_system != "Linux"
 pypiwin32; platform_system == "Windows"
 pyobjc-core; platform_system == "Darwin"
@@ -52,5 +52,3 @@ pyobjc-framework-Quartz; platform_system == "Darwin"
 pyobjc; platform_system == "Darwin"
 python-xlib; platform_system == "Linux"
 distro; platform_system == "Linux"
-websocket_client
-tobii-research; python_version <= "3.6"
