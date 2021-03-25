@@ -34,11 +34,13 @@ before_install:
   - wget -q -O- http://neuro.debian.net/_static/neuro.debian.net.asc | sudo apt-key add -
   - travis_retry sudo apt-get update -qq
   - sudo apt-cache policy  # What is actually available?
+  - sudo apt-get install gcc-4.9 # A last-ditch attempt to fix issues with wxpython on travis
+  - sudo apt-get upgrade libstdc++6
 
   # This might come in handy once we switch to Trusty, as its Xvfb
   # doesn't properly support the RANDR extension
   # - travis_retry sudo apt-get install -qq xpra xserver-xorg-video-dummy
-  - travis_retry sudo apt-get install -qq xvfb xauth libgl1-mesa-dri libavbin0 # Fails. Xenial problem.
+  - travis_retry sudo apt-get install -qq xvfb xauth libgl1-mesa-dri libavbin0
   - travis_retry sudo apt-get install -qq libportaudio2
   - travis_retry sudo apt-get install -qq flac
   #- travis_retry sudo apt-get install -qq libav-tools  # this install ffmpeg
@@ -72,7 +74,7 @@ before_install:
 
 
 install:
-  #- pip install -U -f https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-16.04 wxPython
+  - pip install -U -f https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-16.04 wxPython
   # Problem: psychopy's requirements include something which breaks travis. Solution: Identify everything needed for
   # the psychopy libraries we DO use, put those in prerequirements, then use nodep and a second requirements file.
   - pip install -r prerequirements.txt
