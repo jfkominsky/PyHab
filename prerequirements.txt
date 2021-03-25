@@ -32,6 +32,7 @@ astunparse
 esprima
 freetype-py
 python-vlc
+packaging
 jedi >= 0.16
 psychtoolbox == 3.0.16; platform_system == "Windows"
 javascripthon; python_version >= "3.5"
