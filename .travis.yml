@@ -1,3 +1,4 @@
+dist: trusty
 language: python
 
 # This is largely copied from PsychoPy's own travis config. The problem is that, because I am testing something that is
@@ -7,19 +8,12 @@ matrix:
   include:
 
     - os: linux
-      dist: trusty
-      env: ANACONDA=false WXPYTHON=3 OPENPYXL=2.4 DISPLAY=:99.0 AUDIODEV=null
+      env: ANACONDA=false OPENPYXL=2.4 DISPLAY=:99.0 AUDIODEV=null
 
     - os: linux
-      dist: trusty
-      env: ANACONDA=false WXPYTHON=4 OPENPYXL=2.4 DISPLAY=:99.0 AUDIODEV=null
+      env: ANACONDA=false OPENPYXL=2.5 DISPLAY=:99.0 AUDIODEV=null
 
     - os: linux
-      dist: trusty
-      env: ANACONDA=false WXPYTHON=3 OPENPYXL=2.5 DISPLAY=:99.0 AUDIODEV=null
-
-    - os: linux
-      dist: trusty
       python: 3.6
       env: ANACONDA=false DISPLAY=:99.0 AUDIODEV=null
 
@@ -34,12 +28,14 @@ before_install:
   - wget -q -O- http://neuro.debian.net/_static/neuro.debian.net.asc | sudo apt-key add -
   - travis_retry sudo apt-get update -qq
   - sudo apt-cache policy  # What is actually available?
-  - sudo apt-get install gcc-4.9 # A last-ditch attempt to fix issues with wxpython on travis
+
+  # the next five lines are a last-ditch attempt to get wxpython to play nice.
+  - sudo apt-get install software-properties-common
+  - sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+  - sudo apt-get update
+  - sudo apt-get install gcc-4.9
   - sudo apt-get upgrade libstdc++6
 
-  # This might come in handy once we switch to Trusty, as its Xvfb
-  # doesn't properly support the RANDR extension
-  # - travis_retry sudo apt-get install -qq xpra xserver-xorg-video-dummy
   - travis_retry sudo apt-get install -qq xvfb xauth libgl1-mesa-dri libavbin0
   - travis_retry sudo apt-get install -qq libportaudio2
   - travis_retry sudo apt-get install -qq flac
