@@ -53,10 +53,10 @@ before_install:
   - travis_retry sudo apt-get install -qq python-numpy python-scipy python-matplotlib python-pandas
   - travis_retry sudo apt-get install -qq python-yaml python-lxml python-configobj
   - travis_retry sudo apt-get install -qq python-imaging python-mock
-  - travis_retry sudo apt-get install -qq python-qt4 #python-wxgtk3.0 does not exist in trusty
+  - travis_retry sudo apt-get install -qq python-qt4 python-wxgtk3.0
   - travis_retry sudo apt-get install -qq python-pyo python-opencv
   - travis_retry sudo apt-get install -qq python-mock
-  # Addressing an issue with wx imports.
+  # Addressing an issue with wx imports. May no longer be needed
   - travis_retry sudo apt-get install git curl libsdl2-mixer-2.0-0 libsdl2-image-2.0-0 libsdl2-2.0-0
 
 
@@ -67,14 +67,14 @@ before_install:
   # - locale -a  # list available locales
 
   - travis_retry sudo apt-get install -qq libasound2-dev alsa-utils alsa-oss
-  - sudo modprobe snd-dummy # Broken
+  - sudo modprobe snd-dummy
   - sudo lsmod
 
 
 install:
   - pip install -U -f https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-16.04 wxPython
   # Problem: psychopy's requirements include something which breaks travis. Solution: Identify everything needed for
-  # the psychopy libraries we DO use, put those in requirements, then use nodep and a second requirements file.
+  # the psychopy libraries we DO use, put those in prerequirements, then use nodep and a second requirements file.
   - pip install -r prerequirements.txt
   - pip install --no-deps -r requirements.txt
 

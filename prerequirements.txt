@@ -46,7 +46,7 @@ imageio-ffmpeg; python_version >= "3"
 pyparallel; platform_system == "Linux"
 pyWinhook; platform_system == "Windows"
 pyqmix >= 2018.12.13; platform_system == "Windows"
-wxPython != 4.0.2, != 4.0.3; platform_system != "Linux"
+wxPython
 pypiwin32; platform_system == "Windows"
 pyobjc-core; platform_system == "Darwin"
 pyobjc-framework-Quartz; platform_system == "Darwin"
