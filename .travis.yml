@@ -76,7 +76,7 @@ install:
   # Problem: psychopy's requirements include something which breaks travis. Solution: Identify everything needed for
   # the psychopy libraries we DO use, put those in requirements, then use nodep and a second requirements file.
   - pip install -r prerequirements.txt
-  - pip install -r --no-deps requirements.txt`
+  - pip install -r --no-deps requirements.txt
 
 # Creates a fake monitor
 before_script:
