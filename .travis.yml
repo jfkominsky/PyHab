@@ -72,7 +72,7 @@ before_install:
 
 
 install:
-  - pip install -U -f https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-16.04 wxPython
+  #- pip install -U -f https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-16.04 wxPython
   # Problem: psychopy's requirements include something which breaks travis. Solution: Identify everything needed for
   # the psychopy libraries we DO use, put those in prerequirements, then use nodep and a second requirements file.
   - pip install -r prerequirements.txt
