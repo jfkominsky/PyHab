@@ -193,11 +193,9 @@ class PyHabPL(PyHab):
             habTrial = True
         else:
             dataType = ttype
-        self.frameCount = {k: 0 for k, v in self.frameCount.items()}
+        self.frameCount['C'] = 0  # reset display
         self.pauseCount['C'] = 0 #needed for ISI
-        if self.stimPres and disMovie['stimType'] == 'Movie':
-            disMovie['stim'].seek(0)
-            disMovie['stim'].pause()
+
         startTrial = core.getTime()
         startTrial2=core.getTime()
         onArray = []
@@ -212,7 +210,7 @@ class PyHabPL(PyHab):
         abort = False
         runTrial = True
         endFlag = False
-        endNow = False  # special case for autoredo
+        endNow = True  # special case for autoredo, but also handy for online
 
         def onDuration(adds=0, subs=0):  # A function for the duration switch, while leaving sumOn intact
             if localType in self.durationCriterion:
@@ -401,11 +399,7 @@ class PyHabPL(PyHab):
                     tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOff, 'endTime': endOff,
                                      'duration': offDur}
                     offArray.append(tempGazeArray)
-                    if localType in self.dynamicPause and self.stimPres:
-                        if disMovie['stimType'] in ['Movie', 'Audio'] and disMovie['stim'].status != PLAYING:
-                            disMovie['stim'].play()
-                        elif disMovie['stimType'] == ['Image with audio'] and disMovie['stim']['Audio'].status != PLAYING:
-                            disMovie['stim']['Audio'].play()
+
                 elif self.keyboard[self.key.M]: #if they have started looking since the last refresh and not met criterion
                     gazeOn2 = True
                     numOn2 = numOn2 + 1
@@ -416,34 +410,24 @@ class PyHabPL(PyHab):
                     tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOff, 'endTime': endOff,
                                      'duration': offDur}
                     offArray.append(tempGazeArray)
-                    if localType in self.dynamicPause and self.stimPres:
-                        if disMovie['stimType'] in ['Movie', 'Audio'] and disMovie['stim'].status != PLAYING:
-                            disMovie['stim'].play()
-                        elif disMovie['stimType'] == ['Image with audio'] and disMovie['stim']['Audio'].status != PLAYING:
-                            disMovie['stim']['Audio'].play()
+
                 else:
-                    if localType in self.dynamicPause and self.stimPres:
-                        if disMovie['stimType'] in ['Movie','Audio'] and disMovie['stim'].status == PLAYING:
-                            disMovie['stim'].pause()
-                        elif disMovie['stimType'] == ['Image with audio'] and disMovie['stim']['Audio'].status == PLAYING:
-                            disMovie['stim']['Audio'].pause()
                     if localType in self.midAG and self.stimPres:
+                        try:
+                            startAG
+                        except NameError:
+                            startAG = startOff
+                        else:
+                            if startAG - startOff < 0:  # was this startAG from a previous gaze-off? If so set to current gaze-off.
+                                startAG = startOff
+
                         if nowOff - startOff >= self.midAG[localType]['trigger']:
                             # TODO: Do something here to deal with recording data about mid-trial AG behavior?
-                            if localType not in self.dynamicPause: # Need to pause it anyways to play the AG so they don't overlap
-                                if disMovie['stimType'] in ['Movie', 'Audio'] and disMovie['stim'].status == PLAYING:
-                                    disMovie['stim'].pause()
-                                elif disMovie['stimType'] == ['Image with audio'] and disMovie['stim']['Audio'].status == PLAYING:
-                                    disMovie['stim']['Audio'].pause()
-                            startAG = core.getTime()
-                            self.attnGetter(localType, self.midAG[localType]['cutoff'], self.midAG[localType]['onmin'])
-                            durAG = core.getTime() - startAG
+                            startAG = core.getTime() - startTrial
+                            self.attnGetter(localType, cutoff=self.midAG[localType]['cutoff'], onmin=self.midAG[localType]['onmin'], midTrial=True)
+                            endAG = core.getTime() - startTrial  # Keeping everything relative to start of trial
+                            durAG = endAG - startAG
                             maxDurAdd = maxDurAdd + durAG  # Increase max length of trial by duration that AG played.
-                            if localType not in self.dynamicPause:
-                                if disMovie['stimType'] in ['Movie', 'Audio'] and disMovie['stim'].status != PLAYING:
-                                    disMovie['stim'].play()
-                                elif disMovie['stimType'] == ['Image with audio'] and disMovie['stim']['Audio'].status != PLAYING:
-                                    disMovie['stim']['Audio'].play()
             elif gazeOn or gazeOn2:
                 nowOn = core.getTime() - startTrial
                 if gazeOn:
@@ -527,15 +511,6 @@ class PyHabPL(PyHab):
             habDataRec = self.habCount + 1
         else:
             habDataRec = 0
-        if self.stimPres:
-            # Reset everything, stop playing sounds and movies.
-            if disMovie['stimType'] == 'Movie':
-                disMovie['stim'].seek(0)  # this is the reset, we hope.
-                disMovie['stim'].pause()
-            elif disMovie['stimType'] == 'Audio':
-                disMovie['stim'].stop()
-            elif disMovie['stimType'] == 'Image with audio':
-                disMovie['stim']['Audio'].stop()
         self.statusSquareA.fillColor='black'
         self.statusSquareB.fillColor='black'
         self.statusTextA.text=""
@@ -552,8 +527,8 @@ class PyHabPL(PyHab):
             while '.' in tmpNxt:
                 tmpNxt = tmpNxt[tmpNxt.index('.') + 1:]
             if tmpNxt not in self.autoAdvance:
-                self.dummyThing.draw()
-                self.win.flip()  # blanks the screen outright between trials if NOT auto-advancing into the next trial
+                self.browser.get(self.presentationURL + '#/' + self.blankSlide)  # go to blank slide
+
         finalSumOn = 0
         # Check if this is an auto-redo situation
         if localType not in self.durationCriterion:
@@ -567,9 +542,8 @@ class PyHabPL(PyHab):
             # Determine if total on-time is less that minOn, if so, flag trial as bad and repeat it
             abort = True
         if abort: #if the abort button was pressed
-            if self.stimPres and disMovie['stimType'] == 'Movie':
-                disMovie['stim'].seek(0.0)
-                disMovie['stim'].pause()
+            if self.stimPres:
+                self.browser.get(self.presentationURL + '#/' + self.blankSlide) # go to blank slide
             self.abortTrial(onArray, offArray, number, dataType, onArray2, self.stimName, habDataRec)
             return 3
         else:
@@ -641,10 +615,7 @@ class PyHabPL(PyHab):
         tempText.draw()
         self.win2.flip()
         if self.stimPres:
-            self.dummyThing.draw()
-            if self.endImageObject is not None:
-                self.endImageObject.draw()
-            self.win.flip()
+            self.browser.get(self.presentationURL + '#/' + self.blankSlide)  # go to blank slide
 
         # Block-level summary data. Omits bad trials.
         if len(self.blockDataList) > 0 and self.blockSum:
@@ -823,13 +794,7 @@ class PyHabPL(PyHab):
         tempText.height = 18
         tempText.draw()
         self.win2.flip()
-        if self.stimPres:
-            self.dummyThing.draw() # A safety to stop a weird graphical issue in PsychoPy3.
-            if self.endImageObject is not None:
-                self.endImageObject.draw()
-            self.win.flip()
+
         event.waitKeys(keyList='return')
 
         self.win2.close()
-        if self.stimPres:
-            self.win.close()

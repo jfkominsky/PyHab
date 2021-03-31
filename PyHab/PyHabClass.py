@@ -1408,7 +1408,7 @@ class PyHab:
                 else:
                     runTrial = False
                     endTrial = core.getTime() - startTrial
-                    if not self.stimPres:
+                    if not self.stimPres: # TODO: Really need a toggle for this.
                         self.endTrialSound.play()
                         self.endTrialSound = sound.Sound('A', octave=4, sampleRate=44100, secs=0.2)
                     # determine if they were looking or not at end of trial and update appropriate array
