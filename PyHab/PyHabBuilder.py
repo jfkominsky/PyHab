@@ -2337,7 +2337,7 @@ class PyHabBuilder:
         sDlg.addField("Height of movie stimuli in pixels", lastSet[4])
         sDlg.addField("Freeze first frame for how many seconds after attention-getter?", lastSet[5])
         # Get a list of all screens. Requires us to import pyglet, assuming we are using pyglet displays (until glfw works)
-        defDisp = pyglet.window.get_platform().get_default_display()
+        defDisp = pyglet.canvas.Display()
         allScrs = defDisp.get_screens()
         if len(allScrs) > 1:
             screenList = list(range(0, len(allScrs)))
