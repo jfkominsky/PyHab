@@ -1,4 +1,4 @@
-from psychopy import visual, event, core, gui, monitors, tools, sound,__version__
+from psychopy import visual, event, core, gui, colors, monitors, tools, sound,__version__
 from psychopy.app import coder
 import wx, random, csv, shutil, os, sys, threading, itertools
 from math import *
@@ -224,7 +224,10 @@ class PyHabBuilder:
         # A bunch of useful stuff for drawing the interface
         self.colorsArray = ['red', 'blue', 'green', 'purple', 'brown', 'LightSeaGreen', 'darkgoldenrod',
                             'Magenta','orange','cornflowerblue','aquamarine','plum','tomato','deepskyblue','lime',
-                            'orchid','hotpink','mediumslateblue','lawngreen','fuchsia']  # colors for dif trial types. Will eventually need an arbitrary number...
+                            'orchid','hotpink','mediumslateblue','lawngreen','fuchsia']  # colors for dif trial types.
+        # New: Going to add the rest of the 140 names colors, for extreme cases.
+        tempColors = [x for x in colors.colorNames.keys() if x not in self.colorsArray and x != 'none']
+        self.colorsArray.extend(tempColors)
         self.flowWidMult = .07
         self.flowWidthObj = self.flowWidMult * float(abs(self.flowArea[1] - self.flowArea[0]))  # Width of one item in the flow, though this will possibly have to change...
         self.flowHeightObj = (self.flowWidthObj / self.aspect) * .8
@@ -237,6 +240,8 @@ class PyHabBuilder:
         self.mouse = event.Mouse()
         self.trialPalettePage = 1  # A page tracker for the trial type palette. Much like one that exists for conditions.
         self.totalPalettePages = 1  # The maximum number of pages.
+        self.stimPalettePage = 1 # A new pagination system for the condition interface
+        self.totalStimPalettePages = 1
         for x in [.25, .75]:  # Two columns of trial types, on one page.
             for z in range(1, 5):  # Trying to leave space for buttons...
                 self.typeLocs.append([self.paletteArea[0] + x * (self.paletteArea[1] - self.paletteArea[0]),
@@ -710,7 +715,7 @@ class PyHabBuilder:
             if not makeNew:
                 if len(prevInfo) == 0:
                     if len(self.settings['stimNames'][trialType]) > 0:
-                        typeDlg.addText("Current movie files in trial type (uncheck to remove)")
+                        typeDlg.addText("Current movie files in trial type (uncheck to remove)") #TODO: Problem, if too many stim this swamps everything
                         for i in range(0, len(self.settings['stimNames'][trialType])):
                             if self.settings['prefLook'] in [2,'2']:
                                 typeDlg.addField(self.settings['stimNames'][trialType][i]['C'], initial=True) # HPP defaults to C on everything
@@ -1910,6 +1915,25 @@ class PyHabBuilder:
             self.trialPalettePage -= 1
         self.trialTypesArray = self.loadTypes(self.typeLocs, self.settings['trialTypes'], page=self.trialPalettePage)
 
+    def nextStimPalettePage(self):
+        """
+        As above but for the condition settings screen
+        :return:
+        :rtype:
+        """
+        if self.stimPalettePage < self.totalStimPalettePages:
+            self.stimPalettePage += 1
+
+    def lastStimPalettePage(self):
+        """
+        As above but for the condition settings screen
+        :return:
+        :rtype:
+        """
+        if self.stimPalettePage > 1:
+            self.stimPalettePage -= 1
+
+
     def loadTypes(self, typeLocations, typeList, page=1):
         """
         This function creates the trial types palette.
@@ -1954,7 +1978,7 @@ class PyHabBuilder:
             outputDict['shapes'].append(tempObj)
             outputDict['text'].append(tempTxt)
             outputDict['labels'].append(tTypes[i])
-        x = self.buttonList['functions'].index(self.nextPalettePage)  # TODO: This is inelegant. Find a better fix later.
+        x = self.buttonList['functions'].index(self.nextPalettePage)
         self.buttonList['text'][x].text = str(self.trialPalettePage) + '/' + str(self.totalPalettePages)
         return(outputDict)
     
@@ -2254,7 +2278,6 @@ class PyHabBuilder:
 
     def stimSettingsDlg(self, lastSet=[], redo=False, screen='all'):
         """
-        TODO: REVAMP FOR ONLINE
 
         self.presentationURL = settingsDict['presentationURL']
         self.slidesEmail = settingsDict['slidesEmail']
@@ -2626,8 +2649,6 @@ class PyHabBuilder:
         Two-stage: Modify existing attngetter or make new, then what do you do with ether of those.
         Allows audio with PsychoPy-produced looming shape or just a video file.
 
-        TODO: Revamp for online
-
         :return:
         :rtype:
         """
@@ -2644,7 +2665,6 @@ class PyHabBuilder:
         if aDlg1.OK:
             if ans1[0] is 'Make New':
                 # New window to design an attention getter! Choose your own adventure a bit.
-                # TODO: New attention-getter will consist of a name, slide number, and duration.
                 aDlg2 = gui.Dlg(title="Make new attention-getter: step 1")
                 aDlg2.addField("Attention-getter name: ", 'NewAttnGetter')
                 aDlg2.addField("Attention-getter slide number: ")
@@ -2686,8 +2706,8 @@ class PyHabBuilder:
                 aDlg2.addField("Attention-getter duration (in seconds): ", currAG['duration'])
 
 
-                ans2b = aDlg2b.show()
-                if aDlg2b.OK:
+                ans2b = aDlg2.show()
+                if aDlg2.OK:
                     problems = False
                     if not isinstance(ans2b[1], int):
                         try:
@@ -3134,15 +3154,30 @@ class PyHabBuilder:
             cancelText = visual.TextStim(self.win, text="Cancel", height=.45 * doneButton.height, pos=cancelButton.pos,
                                          color='white')
 
-
-
-
             bigPaletteArea = [.7, 1, 1, -1]  # temporary, bigger palette, without trial type maker buttons!
             bigPaletteRect = visual.Rect(self.win, width=bigPaletteArea[1] - bigPaletteArea[0],
                                          height=bigPaletteArea[3] - bigPaletteArea[2], fillColor='white',
                                          lineColor='black',
                                          pos=[bigPaletteArea[0] + float(abs(bigPaletteArea[1] - bigPaletteArea[0])) / 2,
                                               bigPaletteArea[2] - float(abs(bigPaletteArea[3] - bigPaletteArea[2])) / 2])
+
+            rightArrowVerts = [(-.25, 0.05), (-.15, 0.05), (-0.15, 0.15), (0, 0), (-0.15, -0.15), (-0.15, -0.05),
+                               (-0.25, -0.05)]
+            leftArrowVerts = [(.25, 0.05), (.15, 0.05), (0.15, 0.15), (0, 0), (0.15, -0.15), (0.15, -0.05),
+                              (0.25, -0.05)]
+
+            nextStimPageArrow = visual.ShapeStim(self.win, vertices=rightArrowVerts, size=.25, lineColor='black',
+                                                 fillColor='black', pos=[
+                    bigPaletteArea[0] + float(abs(bigPaletteArea[1] - bigPaletteArea[0])) * .92,
+                    bigPaletteArea[3] + self.standardPaletteHeight * .1])
+            lastStimPageArrow = visual.ShapeStim(self.win, vertices=leftArrowVerts, size=.25, lineColor='black',
+                                                 fillColor='black', pos=[
+                    bigPaletteArea[0] + float(abs(bigPaletteArea[1] - bigPaletteArea[0])) * .05,
+                    bigPaletteArea[3] + self.standardPaletteHeight * .1])
+
+            stimPageText = visual.TextStim(self.win, text=str(self.stimPalettePage)+'/'+str(self.totalStimPalettePages), color='black',
+                                               pos=[bigPaletteArea[0]+float(abs(bigPaletteArea[1]-bigPaletteArea[0]))*.5,
+                                                    bigPaletteArea[3]+self.standardPaletteHeight*.1])
 
             instrText = visual.TextStim(self.win, text="Set stimulus order for trial type", pos=[.1, -.9], color='black', height=.1)
 
@@ -3151,12 +3186,19 @@ class PyHabBuilder:
             condUI['bg'].append(instrText)
             condUI['buttons']['shapes'].append(doneButton)
             condUI['buttons']['text'].append(doneText)
+            condUI['buttons']['functions'].append("Done")
             condUI['buttons']['shapes'].append(cancelButton)
             condUI['buttons']['text'].append(cancelText)
+            condUI['buttons']['functions'].append("Cancel")
+            condUI['buttons']['shapes'].append(nextStimPageArrow)
+            condUI['buttons']['text'].append(stimPageText)
+            condUI['buttons']['functions'].append("Next")
+            condUI['buttons']['shapes'].append(lastStimPageArrow)
+            condUI['buttons']['text'].append(self.lastPaletteText)
+            condUI['buttons']['functions'].append("Last")
 
             bigPaletteLocs = []
             newFlowLocs = []
-
 
             for x in [.27, .73]:  # Two columns of trial types
                 for z in range(0, 10):
@@ -3181,12 +3223,12 @@ class PyHabBuilder:
 
             labelList = list(shuffleList.keys())
             i = 0
-            while i < len(labelList):
+            while i < len(labelList):  # Master loop controlling cycling through all trial types
                 tempType = labelList[i]
                 instrText.text="Set stimulus order for trial type " + tempType
                 # Rebuilding this every time allows us to make boxes for each instance and update the instr text
                 condUI['bg'] = [newFlowRect, bigPaletteRect, instrText]
-                tempStims = deepcopy(shuffleList[tempType])
+                tempStims = deepcopy(shuffleList[tempType]) # This is the list of stimuli associated with the trial type.
                 if HPP and not blockmode:
                     tempStims = [x['C'] for x in tempStims]
                     for l in range(0, len(newFlowLocs)):
@@ -3218,14 +3260,17 @@ class PyHabBuilder:
                             condOrder.append(tempOrder[p]['R'])
                     else:
                         condOrder = []
-                    stims = self.loadTypes(bigPaletteLocs, tempStims)  # Populates the palette with stimuli. No need to bother with invisibles here.
+                    self.totalStimPalettePages = floor((len(tempStims) - 1) / 20) + 1
+                    condUI['buttons']['text'][condUI['buttons']['functions'].index("Next")].text = str(
+                         self.stimPalettePage) + '/' + str(self.totalStimPalettePages) # update text
+                    stims = self.loadTypes(bigPaletteLocs, tempStims, self.stimPalettePage)  # Populates the palette with stimuli. No need to bother with invisibles here.
                 else:
                     if not blockmode:
                         for l in range(0, len(tempStims)):
                             tempBox = visual.Rect(self.win, width=(newFlowLocs[1][0]-newFlowLocs[0][0]),
                                                   height=self.flowHeightObj+.1, pos=newFlowLocs[l],
                                                   lineColor='black', fillColor='white')
-                            tempBoxText = visual.TextStim(self.win, text=str(l+1), pos=[tempBox.pos[0], tempBox.pos[1]+self.flowHeightObj+.1], color='white')
+                            tempBoxText = visual.TextStim(self.win, text=str(l+1), pos=[tempBox.pos[0], tempBox.pos[1]+self.flowHeightObj+.05], color='white')
                             condUI['bg'].append(tempBox)
                             condUI['bg'].append(tempBoxText)
                     invisStims = []
@@ -3236,12 +3281,16 @@ class PyHabBuilder:
                                 invisStims.append(tempStims[q])
                     else:
                         condOrder = []
-                    stims = self.loadTypes(bigPaletteLocs, tempStims)  # Populates the palette with stimuli.
+                    self.totalStimPalettePages = floor((len(tempStims)-1)/20) + 1
+                    condUI['buttons']['text'][condUI['buttons']['functions'].index("Next")].text = str(
+                        self.stimPalettePage) + '/' + str(self.totalStimPalettePages)  # update text
+                    stims = self.loadTypes(bigPaletteLocs, tempStims, self.stimPalettePage)  # Populates the palette with stimuli.
                     for n in range(0, len(invisStims)):
-                        invisdex = stims['labels'].index(invisStims[n])
-                        # Can't delete it outright, but can make it not render...
-                        stims['shapes'][invisdex].fillColor='white'
-                        stims['shapes'][invisdex].lineColor='white'
+                        if invisStims[n] in stims['labels']:
+                            invisdex = stims['labels'].index(invisStims[n])
+                            # Can't delete it outright, but can make it not render...
+                            stims['shapes'][invisdex].fillColor='white'
+                            stims['shapes'][invisdex].lineColor='white'
 
 
                 condFlow = self.loadFlow(tOrd=condOrder, space=newFlowArea, locs=newFlowLocs, overflow=newFlowLocs,
@@ -3255,7 +3304,7 @@ class PyHabBuilder:
                     # Now for all the interactability!
                     for z in range(0, len(condUI['buttons']['shapes'])):
                         if self.mouse.isPressedIn(condUI['buttons']['shapes'][z]):
-                            if condUI['buttons']['text'][z].text == 'Done':
+                            if condUI['buttons']['functions'][z] == 'Done':
                                 done = True
                                 i += 1
                                 if HPP and not blockmode:
@@ -3270,9 +3319,17 @@ class PyHabBuilder:
                                     outputDict[tempType] = tempOut
                                 else:
                                     outputDict[tempType] = condOrder  # should be simple as that.
-                            else:
+                            elif condUI['buttons']['functions'][z] == 'Cancel':
                                 done = True
                                 i = len(labelList)
+                            elif condUI['buttons']['functions'][z] == 'Next':  # For "Next page" arrow.
+                                self.nextStimPalettePage()
+                                condUI['buttons']['text'][z].text = str(self.stimPalettePage) + '/' + str(
+                                    self.totalStimPalettePages)
+                            elif condUI['buttons']['functions'][z] == 'Last':  # for "Last page" arrow
+                                self.lastStimPalettePage()
+                                condUI['buttons']['text'][z-1].text = str(self.stimPalettePage) + '/' + str(
+                                    self.totalStimPalettePages)
                             while self.mouse.isPressedIn(condUI['buttons']['shapes'][z], buttons=[0]):  # waits until the mouse is released before continuing.
                                 pass
 
@@ -3334,7 +3391,7 @@ class PyHabBuilder:
                                     drag = self.mouse.getPressed()
                                 finPos = self.mouse.getPos()
                                 # Reset the position of the thing while adding it to the flow
-                                stims = self.loadTypes(bigPaletteLocs, tempStims)
+                                stims = self.loadTypes(bigPaletteLocs, tempStims, self.stimPalettePage)
                                 # Now we have to translate this position back into a place in the flow!
                                 minDist = 2 # Maximum possible distance
                                 closest = 0 # index of closest location
@@ -3382,12 +3439,13 @@ class PyHabBuilder:
                                                          overflow=newFlowLocs, types=tempStims, trials=False,
                                                          conlines=blockmode)
                                 break
-                        stims = self.loadTypes(bigPaletteLocs, tempStims)  # update the palette.
+                        stims = self.loadTypes(bigPaletteLocs, tempStims, self.stimPalettePage)  # update the palette.
                         for n in range(0, len(invisStims)):
-                            invisdex = stims['labels'].index(invisStims[n])
-                            # Can't delete it outright, but can make it not render and non-interactible elsewhere.
-                            stims['shapes'][invisdex].fillColor = 'white'
-                            stims['shapes'][invisdex].lineColor = 'white'
+                            if invisStims[n] in stims['labels']:
+                                invisdex = stims['labels'].index(invisStims[n])
+                                # Can't delete it outright, but can make it not render and non-interactible elsewhere.
+                                stims['shapes'][invisdex].fillColor = 'white'
+                                stims['shapes'][invisdex].lineColor = 'white'
 
 
             # Finally, rewrite everything that needs rewriting.
@@ -3831,8 +3889,6 @@ class PyHabBuilder:
         """
         Saves a PyHab project to a set of folders dictated by self.folderPath
 
-        TODO: This too will need a revamp for online.
-
         :return:
         :rtype:
         """
@@ -3869,7 +3925,7 @@ class PyHabBuilder:
                     baseWriter = csv.writer(bc, lineterminator='\n')
                     for m in range(0, len(tempArray2)):
                         baseWriter.writerow(tempArray2[m])
-        # copy stimuli if there are stimuli. TODO: Can we just remove this entire thing? Actually we may not have to, it will be ignored!
+        # copy stimuli if there are stimuli. 
         if len(self.stimSource) > 0:
             for i, j in self.stimSource.items():  # Find each file, copy it over
                 try:
