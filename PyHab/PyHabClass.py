@@ -2557,7 +2557,7 @@ class PyHab:
         self.win2.winHandle.push_handlers(self.keyboard)
         if self.stimPres:
             self.win.winHandle.push_handlers(self.keyboard)
-            self.baseSize = 40 # Base size of all attention-getters, in pixels
+            self.baseSize = round(40*self.screenWidth/1280) # Base size of all attention-getters, in pixels. Scales w/screen width, assuming base size 1280
             self.attnGetterSquare = visual.Rect(self.win, height=self.baseSize, width=self.baseSize, pos=[self.testOffset + 0, 0], fillColor='black')
             self.attnGetterCross = visual.ShapeStim(self.win, vertices='cross', size=self.baseSize, pos=[self.testOffset + 0, 0], fillColor='black')
 
