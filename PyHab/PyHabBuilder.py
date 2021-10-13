@@ -3925,7 +3925,7 @@ class PyHabBuilder:
                     baseWriter = csv.writer(bc, lineterminator='\n')
                     for m in range(0, len(tempArray2)):
                         baseWriter.writerow(tempArray2[m])
-        # copy stimuli if there are stimuli. 
+        # copy stimuli if there are stimuli.
         if len(self.stimSource) > 0:
             for i, j in self.stimSource.items():  # Find each file, copy it over
                 try:
