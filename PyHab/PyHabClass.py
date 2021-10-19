@@ -632,13 +632,24 @@ class PyHab:
         # listen for for end of AG or start of trial or w/e.
         startAG = core.getTime()
         endAG = False
+        startOn = 0
+        gazeOn = False
         while not endAG:
-            if core.getTime() - startAG > duration:
+            if core.getTime() - startAG > duration:  # Duration overrules, won't loop ag.
                 endAG = True
             elif core.getTime() - startAG > .5 and self.keyboard[self.key.K]:
                 endAG = True
-            elif cutoff and self.lookKeysPressed():
-                endAG = True
+            elif cutoff:
+                if self.lookKeysPressed() and not gazeOn:
+                    gazeOn = True
+                    startOn = core.getTime()
+                if gazeOn and self.lookKeysPressed() and (core.getTime() - startOn) > 1.5:
+                    endAG = True
+                if gazeOn and not self.lookKeysPressed():
+                    gazeOn = False
+
+
+
             self.dispCoderWindow(0)
 
         self.dispCoderWindow(0)
