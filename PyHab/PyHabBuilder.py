@@ -3921,7 +3921,8 @@ class PyHabBuilder:
                 tempArray2 = []
                 for l in range(0, len(self.settings['baseCondList'])):
                     tempArray2.append([self.settings['baseCondList'][l], self.baseCondDict[self.settings['baseCondList'][l]]])
-                with open(self.folderPath+'base_'+self.settings['condFile'],'w') as bc:
+                self.settings['baseCondFile'] = 'base_'+self.settings['condFile']
+                with open(self.folderPath+self.settings['baseCondFile'],'w') as bc:
                     baseWriter = csv.writer(bc, lineterminator='\n')
                     for m in range(0, len(tempArray2)):
                         baseWriter.writerow(tempArray2[m])
