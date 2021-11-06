@@ -1451,12 +1451,16 @@ class PyHab:
                         endCondMet = True
                         endNow = True
 
-                if localType in self.autoRedo and nowOff >= self.onTimeDeadline[localType] and not deadlineChecked:
-                    # NB: nowOff in this context is just duration of the trial, period.
-                    deadlineChecked = True
-                    if sumOn < self.minOn[localType]: # this specifically uses sumOn, always.
-                        endCondMet = True
-                        endNow = True
+                if localType in self.autoRedo and localType in self.onTimeDeadline.keys() and not deadlineChecked:
+                    # If the minimum-on autoRedo is set to check mid-trial, check it now. Otherwise it is checked at
+                    # the end of the trial. Notably, in principle the key-check and boolean are semi-redundant, but this
+                    # provides a hard check against a crash.
+                    if nowOff >= self.onTimeDeadline[localType]:
+                        # NB: nowOff in this context is just duration of the trial, period.
+                        deadlineChecked = True
+                        if sumOn < self.minOn[localType]: # this specifically uses sumOn, always.
+                            endCondMet = True
+                            endNow = True
 
                 if endCondMet:
                     # if they have previously looked for at least minOn and now looked away for maxOff continuous sec
