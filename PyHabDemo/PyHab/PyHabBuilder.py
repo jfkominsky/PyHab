@@ -92,7 +92,8 @@ class PyHabBuilder:
                                                         'prefLook': '0',
                                                         'startImage': '',
                                                         'endImage': '',
-                                                        'nextFlash': '0'}
+                                                        'nextFlash': '0',
+                                                        'loadSep': '0'}
             self.condDict = {}
             self.baseCondDict = {}
         else:
@@ -122,12 +123,14 @@ class PyHabBuilder:
                 self.settings['autoRedo'] = '[]'
                 self.settings['onTimeDeadline'] = '{}'
                 self.settings['durationInclude'] = '1'
+            if 'loadSep' not in self.settings:
+                self.settings['loadSep'] = '0'
             # Settings requiring evaluation to get sensible values. Mostly dicts.
             evalList = ['dataColumns','blockSum','trialSum','maxDur','condList','baseCondList','movieEnd','playThrough',
                         'trialOrder','stimNames', 'stimList', 'ISI', 'maxOff','minOn','durationCriterion','autoRedo',
                         'onTimeDeadline','autoAdvance','playAttnGetter','attnGetterList','trialTypes','habTrialList',
                         'calcHabOver', 'nextFlash', 'blockList', 'dynamicPause','midAG','screenWidth','screenHeight',
-                        'screenIndex','movieWidth','movieHeight', 'durationInclude']  # in 0.9, this becomes necessary.
+                        'screenIndex','movieWidth','movieHeight', 'durationInclude', 'loadSep']  # in 0.9, this becomes necessary.
             for i in evalList:
                 self.settings[i] = eval(self.settings[i])
                 if i in ['stimList','attnGetterList']:
@@ -611,7 +614,7 @@ class PyHabBuilder:
         self.win.flip()
         #For when a trial is right-clicked, or a new one created, open a dialog with info about it.
         skip = False
-        if len(self.settings['trialTypes']) == len(self.colorsArray):
+        if len(self.settings['trialTypes']) == len(self.colorsArray) and makeNew:
             errDlg = gui.Dlg(title="Max trial types reached!")
             errDlg.addText("PyHab's builder currently supports a maximum of " + str(len(self.colorsArray)) + " trial or block types.")
             errDlg.show()
@@ -1003,7 +1006,7 @@ class PyHabBuilder:
                 self.settings['dynamicPause'].append(trialType)
             elif adTypeInfo[len(adTypeInfo)-5] in [False, 0, 'False', '0'] and trialType in self.settings['dynamicPause']:
                 # Remove if this behavior has been turned off.
-                self.settings['dynamicPause'].pop(self.setting['dynamicPause'].index(trialType))
+                self.settings['dynamicPause'].pop(self.settings['dynamicPause'].index(trialType))
             # Mid-trial AG
             if adTypeInfo[len(adTypeInfo)-4] in self.settings['attnGetterList']:
                 # We have the luxury of only caring about certain inputs if there is a mid-trial AG
@@ -1316,7 +1319,7 @@ class PyHabBuilder:
         :return:
         :rtype:
         """
-        if len(self.settings['trialTypes']) > 0:
+        if len(self.settings['trialTypes']) > 0 and not (len(self.settings['trialTypes']) == 20 and new):
             self.showMainUI(self.UI, self.studyFlowArray, self.trialTypesArray)
             self.workingRect.draw()
             self.workingText.draw()
@@ -1377,9 +1380,13 @@ class PyHabBuilder:
                     # For Windows, because now we snap back to the regular window.
                     self.win.winHandle.set_visible(visible=True)
                 self.blockMaker(newBlock[0], new)
-        else:
+        elif len(self.settings['trialTypes']) == 0:
             errDlg = gui.Dlg(title="No trials to make blocks with!")
             errDlg.addText("Make some trial types before trying to add them to a block.")
+            irrel = errDlg.show()
+        else:
+            errDlg = gui.Dlg(title="Max trial/block types reached!")
+            errDlg.addText("Maximum number of trial/block types has been reached (20), no more can be made.")
             irrel = errDlg.show()
 
 
@@ -2005,6 +2012,11 @@ class PyHabBuilder:
 
         3 = durationInclude: Trial duration calculations include last gaze-off or not
 
+        4 = loadSeparate: New setting in 0.9.4, movie playback issues have created a situation where some (but not all)
+            experiments might benefit from going back to the old ways of loading one movie file for *each* individual
+            instance of a trial, rather than trying to load one movie file and load it once. This setting controls
+            whether that happens.
+
         :return:
         :rtype:
         """
@@ -2034,6 +2046,12 @@ class PyHabBuilder:
             ch4 = ["No","Yes"]
         uDlg.addField("Trial duration calculations include last gaze-off event?", choices=ch4)
 
+        if self.settings['loadSep'] in ['1',1,'True',True]:
+            ch5 = ["Yes","No"]
+        else:
+            ch5 = ["No", "Yes"]
+        uDlg.addField("Load each stimulus file multiple times to prevent rewind glitches? SEE 'Troubleshooting' IN MANUAL", choices=ch5)
+
         uInfo = uDlg.show()
         if uDlg.OK:
             tryAgain = False
@@ -2052,6 +2070,10 @@ class PyHabBuilder:
                 self.settings['durationInclude'] = 1
             else:
                 self.settings['durationInclude'] = 0
+            if uInfo[4] == "Yes":
+                self.settings['loadSep'] = 1
+            else:
+                self.settings['loadSep'] = 0
             if tryAgain:
                 self.univSettingsDlg()
         
@@ -2333,7 +2355,7 @@ class PyHabBuilder:
         sDlg.addField("Height of movie stimuli in pixels", lastSet[4])
         sDlg.addField("Freeze first frame for how many seconds after attention-getter?", lastSet[5])
         # Get a list of all screens. Requires us to import pyglet, assuming we are using pyglet displays (until glfw works)
-        defDisp = pyglet.window.get_platform().get_default_display()
+        defDisp = pyglet.canvas.Display()
         allScrs = defDisp.get_screens()
         if len(allScrs) > 1:
             screenList = list(range(0, len(allScrs)))
@@ -2855,7 +2877,7 @@ class PyHabBuilder:
         chkBox = False
         if self.settings['randPres'] in [1,'1',True,'True']:
             chkBox = True
-        cDlg.addField("Use random presentation? If yes, a new interface will open",initial=chkBox)
+        cDlg.addField("Use condition-based presentation? If yes, a new interface will open",initial=chkBox)
         cDlg.addField("Pre-existing condition file (optional, leave blank to make new file called conditions.csv)", self.settings['condFile'])
         if not chkBox:
             cDlg.addText("NOTE: This will overwrite any existing file named conditions.csv! If you have an existing conditions file, rename it first.")
@@ -3993,7 +4015,8 @@ class PyHabBuilder:
                 tempArray2 = []
                 for l in range(0, len(self.settings['baseCondList'])):
                     tempArray2.append([self.settings['baseCondList'][l], self.baseCondDict[self.settings['baseCondList'][l]]])
-                with open(self.folderPath+'base_'+self.settings['condFile'],'w') as bc:
+                self.settings['baseCondFile'] = 'base_'+self.settings['condFile']
+                with open(self.folderPath+self.settings['baseCondFile'],'w') as bc:
                     baseWriter = csv.writer(bc, lineterminator='\n')
                     for m in range(0, len(tempArray2)):
                         baseWriter.writerow(tempArray2[m])

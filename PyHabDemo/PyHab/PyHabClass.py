@@ -105,6 +105,11 @@ class PyHab:
             self.onTimeDeadline = {}
             self.durationInclude = 1
             self.habByDuration = 0
+        # new setting for 0.9.4
+        try:
+            self.loadSep = eval(settingsDict['loadSep'])
+        except:
+            self.loadSep = 0
 
 
         # ORDER OF PRESENTATION
@@ -156,7 +161,7 @@ class PyHab:
 
 
         # 0.9: Screen-specific settings: ['screenWidth','screenHeight','screenColor','movieWidth','movieHeight','screenIndex']
-        self.screenWidth = eval(settingsDict['screenWidth'])  # Display window width, in pixels
+        self.screenWidth = eval(settingsDict['screenWidth'])  # Display window width, in pixels, a dict for each screen.
         self.screenHeight = eval(settingsDict['screenHeight'])  # Display window height, in pixels
         self.movieWidth = eval(settingsDict['movieWidth'])  # movie width
         self.movieHeight = eval(settingsDict['movieHeight'])  # movie height
@@ -639,6 +644,9 @@ class PyHab:
                         self.readyText.draw()
                 self.win2.flip()  # If you don't refresh the expeirmenter window it doesn't read the keyboard!
                 if cutoff and self.lookKeysPressed():
+                    # Update the relevant box so it actually shows the key is down.
+                    self.statusSquareA.fillColor = 'green'
+                    self.statusTextA.text = "ON"
                     if onCheck == 0 and onmin > 0:
                         onCheck = core.getTime()
                     elif core.getTime() - onCheck > onmin:
@@ -647,6 +655,8 @@ class PyHab:
                         break
                 elif cutoff and onCheck > 0: # A clever little way to say "if they aren't looking but were earlier"
                     onCheck = 0
+                    self.statusSquareA.fillColor = 'blue'
+                    self.statusTextA.text = "RDY"
                 elif i > 30 and self.keyboard[self.key.K]:
                     # If more than half a second (30 frames) has passed and "S" is pressed.
                     attnGetter['file'].stop(reset=True)
@@ -669,6 +679,8 @@ class PyHab:
                         self.readyText.draw()
                 self.win2.flip() # If you don't refresh the expeirmenter window, it doesn't read the keyboard!
                 if cutoff and self.lookKeysPressed():
+                    self.statusSquareA.fillColor='green'
+                    self.statusTextA.text='ON'
                     if onCheck == 0 and onmin > 0:
                         onCheck = core.getTime()
                     elif core.getTime() - onCheck > onmin:
@@ -677,6 +689,8 @@ class PyHab:
                         dMovie.pause()
                         break
                 elif cutoff and onCheck > 0:  # A clever little way to say "if they aren't looking but were earlier"
+                    self.statusSquareA.fillColor='blue'
+                    self.statusTextA.text='RDY'
                     onCheck = 0
                 elif self.frameCount['C'] > 30 and self.keyboard[self.key.K]:
                     # If more than half a second (30 frames) has passed and "K" is pressed.
@@ -800,12 +814,11 @@ class PyHab:
         if self.frameCount[screen] == 0:  # initial setup
             self.dummyThing.draw()
             self.frameCount[screen] += 1
-            dispMovie.draw()
+            dispMovie.seek(0.0)  # Moved up here from below so that it CAN loop at all
             if trialType == 0:
                 self.frameCount[screen] = 0  # for post-attn-getter pause
                 dispMovie.pause()
-            else:
-                dispMovie.seek(0.0)  # Moved up here from below so that it CAN loop at all
+            dispMovie.draw()
             w.flip()
             return 0
         elif self.frameCount[screen] == 1:
@@ -872,6 +885,7 @@ class PyHab:
             or the audio is looping (2)
         :rtype: int
         """
+
         if self.frameCount['C'] == 0:  # We're going to use this as a mask for the status of the audio file
             dispAudio.play()
             self.frameCount['C'] = 1
@@ -907,6 +921,7 @@ class PyHab:
             elif dispMovie['stimType'] == 'Image':
                 t = self.dispImageStim(dispMovie['stim'])
             elif dispMovie['stimType'] == 'Audio' and trialType != 0:  # No still-frame equivalent
+                self.win.flip() # This is because otherwise the last frame of the attn-getter will remain onscreen
                 t = self.dispAudioStim(trialType, dispMovie['stim'])
             elif dispMovie['stimType'] == 'Image with audio': # Audio and image together
                 if trialType != 0:  # No still-frame equivalent
@@ -1136,9 +1151,12 @@ class PyHab:
                 trialType = trialType[trialType.index('.')+1:]
             # select movie for trial
             if self.stimPres:
-                if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
+                if self.counters[trialType] >= len(self.stimNames[trialType]) and not self.loadSep:  # Comes up with multiple repetitions of few movies
                     self.stimName = self.stimNames[trialType][self.counters[trialType] % len(self.stimNames[trialType])]
                     disMovie = self.stimDict[trialType][self.counters[trialType] % len(self.stimNames[trialType])]
+                elif self.loadSep:
+                    self.stimName = self.stimNames[trialType][self.counters[trialType] % len(self.stimNames[trialType])]
+                    disMovie = self.stimDict[trialType][self.counters[trialType]]
                 else:
                     self.stimName = self.stimNames[trialType][self.counters[trialType]]
                     disMovie = self.stimDict[trialType][self.counters[trialType]]
@@ -1504,12 +1522,15 @@ class PyHab:
                         endCondMet = True
                         endNow = True
 
-                if localType in self.autoRedo and nowOff >= self.onTimeDeadline[localType] and not deadlineChecked:
-                    # NB: nowOff in this context is just duration of the trial, period.
-                    deadlineChecked = True
-                    if sumOn < self.minOn[localType]: # this specifically uses sumOn, always.
-                        endCondMet = True
-                        endNow = True
+                if localType in self.autoRedo and localType in self.onTimeDeadline.keys() and not deadlineChecked:
+                    # Belt-and-suspenders check that mid-trial auto-redu is enabled, because if auto-redo only checks
+                    # at end of trial, then the type isn't int ontimedeadline and it throws an error.
+                    if nowOff >= self.onTimeDeadline[localType]:
+                        # NB: nowOff in this context is just duration of the trial, period.
+                        deadlineChecked = True
+                        if sumOn < self.minOn[localType]: # this specifically uses sumOn, always.
+                            endCondMet = True
+                            endNow = True
 
                 if endCondMet:
                     # if they have previously looked for at least minOn and now looked away for maxOff continuous sec
@@ -1692,7 +1713,7 @@ class PyHab:
                     for c in range(0, len(onArray)):
                         tempSum += onArray[c]['duration']
                 self.habDataCompiled[self.habCount] += tempSum
-            if ttype == 4:
+            if number >= len(self.actualTrialOrder) or ttype == 4:
                 return 2
             elif '^' in ttype:
                 self.habCount += 1  # Note: Occurs after data recording, making recording hab trial number hard.
@@ -2522,6 +2543,9 @@ class PyHab:
                 tempStimObj = visual.ImageStim(self.win, tempStim['stimLoc'], size=[self.movieWidth['C'], self.movieHeight['C']])
                 tempStimObj.draw()
                 self.win.flip() # This should now be on the screen until the first attngetter
+
+            # 0.9.4: Because of issues with rewinding and the addition of the 'loadSep' option, this can now either load
+            # once per trial type, or once per trial.
             self.stimDict = {x: [] for x in self.stimNames.keys()}  # This holds all the loaded movies.
             self.counters = {x: 0 for x in self.stimNames.keys()}  # list of counters, one per index of the dict, so it knows which movie to play
             tempCtr = {x: 0 for x in self.stimNames.keys()}
@@ -2535,7 +2559,10 @@ class PyHab:
                 x = tempCtr[i]  # Changed so hab trials get the same treatment as everything else.
                 if x < len(self.stimNames[i]):
                     self.stimDict[i].append(self.loadStim(self.stimNames[i][x]))
+                elif self.loadSep:  # Loads per instance, not per type
+                    self.stimDict[i].append(self.loadStim(self.stimNames[i][x%len(self.stimNames[i])]))
                 tempCtr[i] += 1
+
 
             if len(list(self.playAttnGetter.keys())) > 0:
                 for i in list(self.attnGetterList.keys()):
@@ -2556,7 +2583,7 @@ class PyHab:
         self.win2.winHandle.push_handlers(self.keyboard)
         if self.stimPres:
             self.win.winHandle.push_handlers(self.keyboard)
-            self.baseSize = 40 # Base size of all attention-getters, in pixels
+            self.baseSize = round(40*self.screenWidth['C']/1280) # Base size of all attention-getters, in pixels. Scales w/screen width, assuming base size 1280
             self.attnGetterSquare = visual.Rect(self.win, height=self.baseSize, width=self.baseSize, pos=[self.testOffset + 0, 0], fillColor='black')
             self.attnGetterCross = visual.ShapeStim(self.win, vertices='cross', size=self.baseSize, pos=[self.testOffset + 0, 0], fillColor='black')
 
