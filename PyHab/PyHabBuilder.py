@@ -92,7 +92,8 @@ class PyHabBuilder:
                                                         'prefLook': '0',
                                                         'startImage': '',
                                                         'endImage': '',
-                                                        'nextFlash': '0'}
+                                                        'nextFlash': '0',
+                                                        'loadSep': '0'}
             self.condDict = {}
             self.baseCondDict = {}
         else:
@@ -122,12 +123,14 @@ class PyHabBuilder:
                 self.settings['autoRedo'] = '[]'
                 self.settings['onTimeDeadline'] = '{}'
                 self.settings['durationInclude'] = '1'
+            if 'loadSep' not in self.settings:
+                self.settings['loadSep'] = '0'
             # Settings requiring evaluation to get sensible values. Mostly dicts.
             evalList = ['dataColumns','blockSum','trialSum','maxDur','condList','baseCondList','movieEnd','playThrough',
                         'trialOrder','stimNames', 'stimList', 'ISI', 'maxOff','minOn','durationCriterion','autoRedo',
                         'onTimeDeadline','autoAdvance','playAttnGetter','attnGetterList','trialTypes','habTrialList',
                         'calcHabOver', 'nextFlash', 'blockList', 'dynamicPause','midAG','screenWidth','screenHeight',
-                        'screenIndex','movieWidth','movieHeight', 'durationInclude']  # in 0.9, this becomes necessary.
+                        'screenIndex','movieWidth','movieHeight', 'durationInclude', 'loadSep']  # in 0.9, this becomes necessary.
             for i in evalList:
                 self.settings[i] = eval(self.settings[i])
                 if i in ['stimList','attnGetterList']:
@@ -2009,6 +2012,11 @@ class PyHabBuilder:
 
         3 = durationInclude: Trial duration calculations include last gaze-off or not
 
+        4 = loadSeparate: New setting in 0.9.4, movie playback issues have created a situation where some (but not all)
+            experiments might benefit from going back to the old ways of loading one movie file for *each* individual
+            instance of a trial, rather than trying to load one movie file and load it once. This setting controls
+            whether that happens.
+
         :return:
         :rtype:
         """
@@ -2038,6 +2046,12 @@ class PyHabBuilder:
             ch4 = ["No","Yes"]
         uDlg.addField("Trial duration calculations include last gaze-off event?", choices=ch4)
 
+        if self.settings['loadSep'] in ['1',1,'True',True]:
+            ch5 = ["Yes","No"]
+        else:
+            ch5 = ["No", "Yes"]
+        uDlg.addField("Load each stimulus file multiple times to prevent rewind glitches? SEE 'Troubleshooting' IN MANUAL", choices=ch5)
+
         uInfo = uDlg.show()
         if uDlg.OK:
             tryAgain = False
@@ -2056,6 +2070,10 @@ class PyHabBuilder:
                 self.settings['durationInclude'] = 1
             else:
                 self.settings['durationInclude'] = 0
+            if uInfo[4] == "Yes":
+                self.settings['loadSep'] = 1
+            else:
+                self.settings['loadSep'] = 0
             if tryAgain:
                 self.univSettingsDlg()
         
