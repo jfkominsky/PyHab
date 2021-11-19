@@ -644,6 +644,9 @@ class PyHab:
                         self.readyText.draw()
                 self.win2.flip()  # If you don't refresh the expeirmenter window it doesn't read the keyboard!
                 if cutoff and self.lookKeysPressed():
+                    # Update the relevant box so it actually shows the key is down.
+                    self.statusSquareA.fillColor = 'green'
+                    self.statusTextA.text = "ON"
                     if onCheck == 0 and onmin > 0:
                         onCheck = core.getTime()
                     elif core.getTime() - onCheck > onmin:
@@ -652,6 +655,8 @@ class PyHab:
                         break
                 elif cutoff and onCheck > 0: # A clever little way to say "if they aren't looking but were earlier"
                     onCheck = 0
+                    self.statusSquareA.fillColor = 'blue'
+                    self.statusTextA.text = "RDY"
                 elif i > 30 and self.keyboard[self.key.K]:
                     # If more than half a second (30 frames) has passed and "S" is pressed.
                     attnGetter['file'].stop(reset=True)
@@ -674,6 +679,8 @@ class PyHab:
                         self.readyText.draw()
                 self.win2.flip() # If you don't refresh the expeirmenter window, it doesn't read the keyboard!
                 if cutoff and self.lookKeysPressed():
+                    self.statusSquareA.fillColor='green'
+                    self.statusTextA.text='ON'
                     if onCheck == 0 and onmin > 0:
                         onCheck = core.getTime()
                     elif core.getTime() - onCheck > onmin:
@@ -682,6 +689,8 @@ class PyHab:
                         dMovie.pause()
                         break
                 elif cutoff and onCheck > 0:  # A clever little way to say "if they aren't looking but were earlier"
+                    self.statusSquareA.fillColor='blue'
+                    self.statusTextA.text='RDY'
                     onCheck = 0
                 elif self.frameCount['C'] > 30 and self.keyboard[self.key.K]:
                     # If more than half a second (30 frames) has passed and "K" is pressed.
@@ -805,11 +814,10 @@ class PyHab:
         if self.frameCount[screen] == 0:  # initial setup
             self.dummyThing.draw()
             self.frameCount[screen] += 1
+            dispMovie.seek(0.0)  # Moved up here from below so that it CAN loop at all
             if trialType == 0:
                 self.frameCount[screen] = 0  # for post-attn-getter pause
                 dispMovie.pause()
-            else:
-                dispMovie.seek(0.0)  # Moved up here from below so that it CAN loop at all
             dispMovie.draw()
             w.flip()
             return 0
