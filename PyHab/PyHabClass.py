@@ -1192,6 +1192,7 @@ class PyHab:
                     self.printCurrentData()
                 self.readyText.text = "No trial active" + self.rdyTextAppend
                 self.dispCoderWindow()
+            AA = self.autoAdvance
             if not end: #This if statement checks if we're trying to quit.
                 self.frameCount = {k:0 for k,v in self.frameCount.items()}
                 # framerate = win.getActualFrameRate()
@@ -1210,7 +1211,6 @@ class PyHab:
                         irrel = self.dispTrial(0, disMovie)
                         core.wait(self.freezeFrame)  # this delay ensures that the trial only starts after the images have appeared on the screen, static, for a user-determined length of time
                         waitStart = True
-                        AA = self.autoAdvance # This is specific to attention-getters so that if you skip the AG, it immediately plays the first stimuli.
                     else:
                         self.frameCount = {k: 0 for k, v in self.frameCount.items()}
                         waitStart = True
@@ -1231,7 +1231,6 @@ class PyHab:
                                     onCheck = 0
                         core.wait(self.freezeFrame)  # an attempt to match the delay caused by the attention-getter playing.
                         waitStart = True
-                        AA = self.autoAdvance
                     else:
                         waitStart = True
                 while waitStart and trialType not in AA and not end:  # Wait for first gaze-on
