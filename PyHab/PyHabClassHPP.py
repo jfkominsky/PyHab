@@ -155,6 +155,8 @@ class PyHabHPP(PyHab):
         Basically, allows you to set an arbitrary set of keys to start a trial once the attngetter has played.
         In this case, any of V, B, or N are sufficient.
 
+        Todo: see if this can be modified to be screen-specific during a pre-trial?
+
         :return: True if the V, B, or N key is pressed, False otherwise.
         :rtype:
         """
@@ -821,7 +823,8 @@ class PyHabHPP(PyHab):
             tmpNxt = deepcopy(self.actualTrialOrder[number])
             while '.' in tmpNxt:
                 tmpNxt = tmpNxt[tmpNxt.index('.') + 1:]
-            if tmpNxt not in self.autoAdvance:
+            # Unlike other modes, if there's an attngetter it blanks ALL the screens for that too.
+            if tmpNxt not in self.autoAdvance or tmpNxt in self.playAttnGetter:
                 self.dummyThing.draw()
                 self.win.flip()  # blanks the screen outright between trials if NOT auto-advancing into the next trial
                 self.winL.flip()
