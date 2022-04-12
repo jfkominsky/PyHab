@@ -1263,8 +1263,23 @@ class PyHab:
                                             onCheck = 0
                                 core.wait(self.freezeFrame)
                     elif self.lookKeysPressed():
-                        waitStart = False
-                        self.dispCoderWindow(trialType)
+                        # in HPP mode, the disMovie dict will have 'C', 'L', and 'R' as top-level keys and then the rest
+                        # below it. What we need to do here is check if we're in HPP mode and then if so use
+                        # lookScreenKeysPressed(disMovie.keys())
+                        if self.stimPres:
+                            if 'C' in disMovie.keys(): # if HPP, in other words
+                                # TODO: make this a setting rather than a universal HPP behavior
+                                checkscreens = disMovie.keys()
+                                stimscreens = [x for x in checkscreens if disMovie[x] != 0]
+                                waitStart = self.lookScreenKeyPressed(stimscreens)
+                                if not waitStart:
+                                    self.dispCoderWindow(trialType)
+                            else:
+                                waitStart = False
+                                self.dispCoderWindow(trialType)
+                        else:
+                            waitStart = False
+                            self.dispCoderWindow(trialType)
                     elif self.keyboard[self.key.R] and not didRedo:  # Redo last trial, mark last trial as bad
                         if self.counters[trialType] > 0:
                             self.counters[trialType] -= 1
@@ -1332,12 +1347,26 @@ class PyHab:
         TODO: This function can become the eye-tracker interface, basically. It will listen for the eye-tracker input.
 
         :return: True if the B key is pressed, False otherwise.
-        :rtype:
+        :rtype: bool
         """
         if self.keyboard[self.key.B]:
             return True
         else:
             return False
+
+    def lookScreenKeyPressed(self, screen = ['C']):
+        """
+        A function that primarily exists for HPP, because of the need to distinguish between any key
+        being pressed and the key corresponding to the HPP screen in question being pressed
+
+        :param screen: List of screens for next stim.
+        :type screen: list of strings
+        :return: for non-HPP versions, the value of lookKeysPressed.
+        :rtype: bool
+        """
+
+        return self.lookKeysPressed()
+
 
     def doTrial(self, number, ttype, disMovie):
         """

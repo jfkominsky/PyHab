@@ -155,12 +155,30 @@ class PyHabHPP(PyHab):
         Basically, allows you to set an arbitrary set of keys to start a trial once the attngetter has played.
         In this case, any of V, B, or N are sufficient.
 
-        Todo: see if this can be modified to be screen-specific during a pre-trial?
-
         :return: True if the V, B, or N key is pressed, False otherwise.
         :rtype:
         """
         if self.keyboard[self.key.V] or self.keyboard[self.key.B] or self.keyboard[self.key.N]:
+            return True
+        else:
+            return False
+
+    def lookScreenKeyPressed(self, screen=['C']):
+        """
+        A function that primarily exists for HPP, because of the need to distinguish between any key
+        being pressed and the key corresponding to the HPP screen in question being pressed
+
+        :param screen: List of screens for next stim.
+        :type screen: list of strings
+        :return: for non-HPP versions, the value of lookKeysPressed.
+        :rtype: bool
+        """
+
+        if 'C' in screen and self.keyboard[self.key.B]:
+            return True
+        elif 'L' in screen and self.keyboard[self.key.V]:
+            return True
+        elif 'R' in screen and self.keyboard[self.key.N]:
             return True
         else:
             return False
