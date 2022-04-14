@@ -1271,7 +1271,8 @@ class PyHab:
                                 # TODO: make this a setting rather than a universal HPP behavior
                                 checkscreens = disMovie.keys()
                                 stimscreens = [x for x in checkscreens if disMovie[x] not in [0, '0']]
-                                waitStart = self.lookScreenKeyPressed(screen=stimscreens)
+                                # needs to be inverse.
+                                waitStart = self.lookScreenKeyPressed(screen=stimscreens) == False
                                 if not waitStart:
                                     self.dispCoderWindow(trialType)
                             else:
