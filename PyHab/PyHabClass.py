@@ -1265,13 +1265,13 @@ class PyHab:
                     elif self.lookKeysPressed():
                         # in HPP mode, the disMovie dict will have 'C', 'L', and 'R' as top-level keys and then the rest
                         # below it. What we need to do here is check if we're in HPP mode and then if so use
-                        # lookScreenKeysPressed(disMovie.keys())
+                        # lookScreenKeysPressed()
                         if self.stimPres:
-                            if 'C' in disMovie.keys(): # if HPP, in other words
+                            if 'C' in disMovie.keys():  # if HPP, in other words
                                 # TODO: make this a setting rather than a universal HPP behavior
                                 checkscreens = disMovie.keys()
-                                stimscreens = [x for x in checkscreens if disMovie[x] != 0]
-                                waitStart = self.lookScreenKeyPressed(stimscreens)
+                                stimscreens = [x for x in checkscreens if disMovie[x] not in [0, '0']]
+                                waitStart = self.lookScreenKeyPressed(screen=stimscreens)
                                 if not waitStart:
                                     self.dispCoderWindow(trialType)
                             else:
@@ -1354,7 +1354,7 @@ class PyHab:
         else:
             return False
 
-    def lookScreenKeyPressed(self, screen = ['C']):
+    def lookScreenKeyPressed(self, screen=['C']):
         """
         A function that primarily exists for HPP, because of the need to distinguish between any key
         being pressed and the key corresponding to the HPP screen in question being pressed
