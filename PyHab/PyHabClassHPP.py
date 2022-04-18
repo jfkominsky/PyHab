@@ -321,6 +321,7 @@ class PyHabHPP(PyHab):
         Control function for individual trials, to be called by doExperiment
         Returns a status value (int) that tells doExperiment what to do next
         HPP experiments works very differently from everything else, and this is where the bulk of that is happening.
+        TODO: A mode where al look times are computed based only on which screens have stimuli on them.
 
         :param number: Trial number
         :type number: int
@@ -353,9 +354,13 @@ class PyHabHPP(PyHab):
             dataType = ttype
         self.frameCount = {k: 0 for k, v in self.frameCount.items()}
         self.pauseCount = {k: 0 for k, v in self.pauseCount.items()}
+        stimScreens = []  # Records the screens on which simuli appear.
         # If we're dealing with a movie or movies, seek to 0.
         for i, j in disMovie.items():
-            if j != 0 and self.stimPres:
+            if j not in [0, '0']:
+                # Check which screen have stimuli for this trial
+                stimScreens.append(i)
+            if j not in [0, '0'] and self.stimPres:
                 if j['stimType'] == 'Movie':
                     j['stim'].seek(0.0)
                     j['stim'].pause()
@@ -389,9 +394,20 @@ class PyHabHPP(PyHab):
         gazeOnR = False
         endNow = False
 
+
         def onDuration(adds=0, subs=0):  # A function for the duration switch, while leaving sumOn intact
             if localType in self.durationCriterion:
                 return core.getTime() - startTrial - subs
+            elif localType in self.hppStimScrOnly:
+                # Only report duration for screens w/stimuli.
+                runTotal = 0
+                if 'C' in stimScreens:
+                    runTotal = runTotal + sumOnC
+                if 'L' in stimScreens:
+                    runTotal = runTotal + sumOnL
+                if 'R' in stimScreens:
+                    runTotal = runTotal + sumOnR
+                return runTotal + adds
             else:
                 return sumOnC + sumOnL + sumOnR + adds
 
@@ -556,6 +572,7 @@ class PyHabHPP(PyHab):
                                          'duration': offDur}
                         offArray.append(tempGazeArray)
             elif not gazeOnC and not gazeOnL and not gazeOnR: # This should happen rarely, but if it does...
+                # TODO: Modify for hppStimScrOnly
                 nowOff = core.getTime() - startTrial
                 endCondMet = False
                 if self.playThrough[localType] == 0:  # Standard gaze-on then gaze-off
@@ -680,7 +697,18 @@ class PyHabHPP(PyHab):
                 elif gazeOnR:
                     tempOn = startOnR
 
-                if self.playThrough[localType] in [1,3] and onDuration(adds=nowOn - tempOn) >= self.minOn[localType] and not endFlag:
+                # Modify adds for hppStimScrOnly
+                tmpAdd = nowOn - tempOn
+                if localType in self.hppStimScrOnly:
+                    # Zero tmpAdd out if it's not the right screen.
+                    if gazeOnC and 'C' not in stimScreens:
+                        tmpAdd = 0
+                    if gazeOnL and 'L' not in stimScreens:
+                        tmpAdd = 0
+                    if gazeOnR and 'R' not in stimScreens:
+                        tmpAdd = 0
+
+                if self.playThrough[localType] in [1,3] and onDuration(adds=tmpAdd) >= self.minOn[localType] and not endFlag:
                     # If the "on-only" condition has been met
                     if localType in self.movieEnd and not endNow:
                         endFlag = True

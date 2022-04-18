@@ -110,6 +110,10 @@ class PyHab:
             self.loadSep = eval(settingsDict['loadSep'])
         except:
             self.loadSep = 0
+        try:
+            self.hppStimScrOnly = eval(settingsDict['hppStimScrOnly'])
+        except:
+            self.hppStimScrOnly = []
 
 
         # ORDER OF PRESENTATION
@@ -1263,24 +1267,8 @@ class PyHab:
                                             onCheck = 0
                                 core.wait(self.freezeFrame)
                     elif self.lookKeysPressed():
-                        # in HPP mode, the disMovie dict will have 'C', 'L', and 'R' as top-level keys and then the rest
-                        # below it. What we need to do here is check if we're in HPP mode and then if so use
-                        # lookScreenKeysPressed()
-                        if self.stimPres:
-                            if 'C' in disMovie.keys():  # if HPP, in other words
-                                # TODO: make this a setting rather than a universal HPP behavior
-                                checkscreens = disMovie.keys()
-                                stimscreens = [x for x in checkscreens if disMovie[x] not in [0, '0']]
-                                # needs to be inverse.
-                                waitStart = self.lookScreenKeyPressed(screen=stimscreens) == False
-                                if not waitStart:
-                                    self.dispCoderWindow(trialType)
-                            else:
-                                waitStart = False
-                                self.dispCoderWindow(trialType)
-                        else:
-                            waitStart = False
-                            self.dispCoderWindow(trialType)
+                        waitStart = False
+                        self.dispCoderWindow(trialType)
                     elif self.keyboard[self.key.R] and not didRedo:  # Redo last trial, mark last trial as bad
                         if self.counters[trialType] > 0:
                             self.counters[trialType] -= 1
