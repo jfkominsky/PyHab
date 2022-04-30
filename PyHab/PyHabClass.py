@@ -480,6 +480,8 @@ class PyHab:
 
         TODO: Habituation using trial duration instead of on-time
 
+        Todo: Reconfigure for multiple habituation blocks
+
         :return: True if hab criteria have been met, False otherwise
         :rtype:
         """
@@ -536,7 +538,9 @@ class PyHab:
             return True
         elif self.habCount > self.setCritWindow and self.habSetWhen > -1:  # if we're far enough in that we can plausibly meet the hab criterion
             # Problem: Fixed window, peak, and max as relates to habsetwhen....
-            # Fixed window is probably the only thing that should ignore habsetwhen.
+            # Not problem per se. Essentially, trials that set the criterion are never included when evaluating it.
+            # TODO: Make that an option instead of a general behavior?
+            # Fixed window is the only thing that ignores habsetwhen.
             # Last needs to ignore HabSetWhen, or rather, cannot wait MetCritWindow trials past when it is set.
             if self.habCount < self.habSetWhen + self.metCritWindow and self.metCritStatic == 'Moving' and self.setCritType != 'Last': # Was the hab set "late" and are we too early as a result
                 return False

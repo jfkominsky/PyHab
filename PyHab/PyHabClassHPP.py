@@ -430,6 +430,7 @@ class PyHabHPP(PyHab):
             numOnR = 1
         else:
             startOff = 0
+            dataStartOff = 0  # Separates 'off' for the data file and 'off' for deciding end of trial, for hppStimScrOnly situation
             numOff = 1
         while runTrial:
             if self.keyboard[self.key.R]: #'abort trial' is pressed
@@ -571,8 +572,10 @@ class PyHabHPP(PyHab):
                                          'endTime': endTrial,
                                          'duration': offDur}
                         offArray.append(tempGazeArray)
-            elif not gazeOnC and not gazeOnL and not gazeOnR: # This should happen rarely, but if it does...
-                # TODO: Modify for hppStimScrOnly
+            elif not gazeOnC and not gazeOnL and not gazeOnR:  # This should happen rarely, but if it does...
+                # In hppStimScreenOnly situations, startOff is defined differently, allowing both 'true' off and stim
+                # screen off to work together.
+                # dataStartOff exists to make sure the data file is still fully accurate to what actually happened.
                 nowOff = core.getTime() - startTrial
                 endCondMet = False
                 if self.playThrough[localType] == 0:  # Standard gaze-on then gaze-off
@@ -609,7 +612,7 @@ class PyHabHPP(PyHab):
                             self.endTrialSound.play()
                             self.endTrialSound = sound.Sound('A', octave=4, sampleRate=44100, secs=0.2)
                         endOff = nowOff
-                        offDur = nowOff - startOff
+                        offDur = nowOff - dataStartOff
                         tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOff,
                                          'endTime': endOff,
                                          'duration': offDur}
@@ -620,7 +623,7 @@ class PyHabHPP(PyHab):
                     startOnC = core.getTime() - startTrial
                     endOff = core.getTime() - startTrial
                     # by definition, if this is tripped there will be a preceding 'off' section if this is tripped because gazeOn is set at start
-                    offDur = endOff - startOff
+                    offDur = endOff - dataStartOff
                     tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOff, 'endTime': endOff,
                                      'duration': offDur}
                     offArray.append(tempGazeArray)
@@ -637,7 +640,7 @@ class PyHabHPP(PyHab):
                     startOnL = core.getTime() - startTrial
                     endOff = core.getTime() - startTrial
                     # by definition, if this is tripped there will be a preceding 'off' section if this is tripped because gazeOn is set at start
-                    offDur = endOff - startOff
+                    offDur = endOff - dataStartOff
                     tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOff, 'endTime': endOff,
                                      'duration': offDur}
                     offArray.append(tempGazeArray)
@@ -654,7 +657,7 @@ class PyHabHPP(PyHab):
                     startOnR = core.getTime() - startTrial
                     endOff = core.getTime() - startTrial
                     # by definition, if this is tripped there will be a preceding 'off' section if this is tripped because gazeOn is set at start
-                    offDur = endOff - startOff
+                    offDur = endOff - dataStartOff
                     tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOff, 'endTime': endOff,
                                      'duration': offDur}
                     offArray.append(tempGazeArray)
@@ -697,10 +700,10 @@ class PyHabHPP(PyHab):
                 elif gazeOnR:
                     tempOn = startOnR
 
-                # Modify adds for hppStimScrOnly
+                # Modify addition for hppStimScrOnly
                 tmpAdd = nowOn - tempOn
                 if localType in self.hppStimScrOnly:
-                    # Zero tmpAdd out if it's not the right screen.
+                    # Zero out tmpAdd if it's not the right screen, otherwise use as intended.
                     if gazeOnC and 'C' not in stimScreens:
                         tmpAdd = 0
                     if gazeOnL and 'L' not in stimScreens:
@@ -733,6 +736,63 @@ class PyHabHPP(PyHab):
                             tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOnR,
                                              'endTime': endTrial, 'duration': onDur}
                             onArrayR.append(tempGazeArray)
+
+                if localType in self.hppStimScrOnly and self.playThrough[localType] in [0,3]:
+                    # Specific circumstances around hppStimScreenOnly, allowing it to end trials with 'gaze-off'
+                    stimScreenOff = False
+                    if gazeOnC and 'C' not in stimScreens:
+                        stimScreenOff = True
+                    if gazeOnL and 'L' not in stimScreens:
+                        stimScreenOff = True
+                    if gazeOnR and 'R' not in stimScreens:
+                        stimScreenOff = True
+
+                    if stimScreenOff:
+                        # essentially the 'startOff' comparison from the normal off-time condition
+                        nowOff = core.getTime() - startTrial
+                        endCondMet = False
+                        if self.playThrough[localType] == 0:  # Standard gaze-on then gaze-off
+                            if onDuration(subs=nowOff - startOff) >= self.minOn[localType] and nowOff - startOff >= self.maxOff[localType] and not endFlag:
+                                endCondMet = True
+                            elif localType in self.autoRedo and deadlineChecked and nowOff - startOff >= self.maxOff[localType] and not endFlag:
+                                endCondMet = True
+                                endNow = True
+                        elif self.playThrough[localType] == 3:  # Either/or
+                            if nowOff - startOff >= self.maxOff[localType] and not endFlag:
+                                endCondMet = True
+                                if localType in self.autoRedo and onDuration(subs=nowOff - startOff) < self.minOn[localType]:
+                                    endNow = True
+                        elif localType in self.autoRedo and onDuration(subs=nowOff - startOff) < self.minOn[localType]:
+                            if nowOff - startOff >= self.maxOff[localType] and not endFlag:
+                                endCondMet = True
+                                endNow = True
+
+                        if endCondMet:
+                            # if they have previously looked for at least minOn seconds and now looked away for maxOff continuous sec
+                            if localType in self.movieEnd and not endNow:
+                                endFlag = True
+                            else:
+                                runTrial = False
+                                endTrial = core.getTime() - startTrial
+                                if not self.stimPres:
+                                    self.endTrialSound.play()
+                                    self.endTrialSound = sound.Sound('A', octave=4, sampleRate=44100, secs=0.2)
+                                if gazeOnC:
+                                    onDur = endTrial - startOnC
+                                    tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOnC,
+                                                     'endTime': endTrial, 'duration': onDur}
+                                    onArrayC.append(tempGazeArray)
+                                if gazeOnL:
+                                    onDur = endTrial - startOnL
+                                    tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOnL,
+                                                     'endTime': endTrial, 'duration': onDur}
+                                    onArrayL.append(tempGazeArray)
+                                if gazeOnR:
+                                    onDur = endTrial - startOnR
+                                    tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOnR,
+                                                     'endTime': endTrial, 'duration': onDur}
+                                    onArrayR.append(tempGazeArray)
+
                 if gazeOnC and not self.keyboard[self.centerKey]:
                     gazeOnC = False
                     endOn = core.getTime() - startTrial
@@ -751,13 +811,22 @@ class PyHabHPP(PyHab):
                         gazeOnL = True
                         numOnL = numOnL + 1
                         startOnL = core.getTime() - startTrial
+                        if localType in self.hppStimScrOnly:
+                            # If L is not a stim screen but C, the previous on, was
+                            if 'L' not in stimScreens and 'C' in stimScreens:
+                                startOff = core.getTime() - startTrial
                     elif self.keyboard[self.rightKey]:
                         gazeOnR = True
                         numOnR = numOnR + 1
                         startOnR = core.getTime() - startTrial
+                        if localType in self.hppStimScrOnly:
+                            # If R is not a stim screen but C, the previous on, was
+                            if 'R' not in stimScreens and 'C' in stimScreens:
+                                startOff = core.getTime() - startTrial
                     else:
                         numOff = numOff + 1
                         startOff = core.getTime() - startTrial
+                        dataStartOff = core.getTime() - startTrial
                 if gazeOnL and not self.keyboard[self.leftKey]:
                     gazeOnL = False
                     endOn = core.getTime() - startTrial
@@ -776,13 +845,22 @@ class PyHabHPP(PyHab):
                         gazeOnC = True
                         numOnC = numOnC + 1
                         startOnC = core.getTime() - startTrial
+                        if localType in self.hppStimScrOnly:
+                            # If C is not a stim screen but L, the previous on, was
+                            if 'C' not in stimScreens and 'L' in stimScreens:
+                                startOff = core.getTime() - startTrial
                     elif self.keyboard[self.rightKey]:
                         gazeOnR = True
                         numOnR = numOnR + 1
                         startOnR = core.getTime() - startTrial
+                        if localType in self.hppStimScrOnly:
+                            # If R is not a stim screen but L, the previous on, was
+                            if 'R' not in stimScreens and 'L' in stimScreens:
+                                startOff = core.getTime() - startTrial
                     else:
                         numOff = numOff + 1
                         startOff = core.getTime() - startTrial
+                        dataStartOff = core.getTime() - startTrial
                 if gazeOnR and not self.keyboard[self.rightKey]:
                     gazeOnR = False
                     endOn = core.getTime() - startTrial
@@ -801,13 +879,22 @@ class PyHabHPP(PyHab):
                         gazeOnC = True
                         numOnC = numOnC + 1
                         startOnC = core.getTime() - startTrial
+                        if localType in self.hppStimScrOnly:
+                            # If C is not a stim screen but R, the previous on, was
+                            if 'C' not in stimScreens and 'R' in stimScreens:
+                                startOff = core.getTime() - startTrial
                     elif self.keyboard[self.leftKey]:
                         gazeOnL = True
                         numOnL = numOnL + 1
                         startOnL = core.getTime() - startTrial
+                        if localType in self.hppStimScrOnly:
+                            # If L is not a stim screen but R, the previous on, was
+                            if 'L' not in stimScreens and 'R' in stimScreens:
+                                startOff = core.getTime() - startTrial
                     else:
                         numOff = numOff + 1
                         startOff = core.getTime() - startTrial
+                        dataStartOff = core.getTime() - startTrial
             movieStatus = self.dispTrial(localType, disMovie)
             if localType in self.movieEnd and endFlag and movieStatus >= 1:
                 runTrial = False
@@ -900,28 +987,42 @@ class PyHabHPP(PyHab):
             return 3
         else:
             self.dataRec(onArrayC, offArray, number, dataType, onArrayL, onArrayR, self.stimName, habDataRec)
-        if self.habMetWhen == -1 and len(self.habTrialList) > 0 and not abort:   # if still during habituation
+        if self.habMetWhen == -1 and len(self.habTrialList) > 0 and not abort:   # if still during habituation BLOCK
             if dataType[0:4] == 'hab.' and dataType[4:] in self.calcHabOver:
                 tempSum = 0
+                # This if for habituation by total trial duration, ignores hppStimScrOnly
                 if self.habByDuration == 1:
                     for c in range(0, len(onArrayC)):
                         tempSum += onArrayC[c]['duration']
                     for d in range(0, len(onArrayL)):
                         tempSum += onArrayL[d]['duration']
-                    for e in range(0, len(onArrayR)):
-                        tempSum += onArrayR[e]['duration']
+                    for g in range(0, len(onArrayR)):
+                        tempSum += onArrayR[g]['duration']
                     for f in range(0, len(offArray)):
                         tempSum += offArray[f]['duration']
                     if self.durationInclude == 0 and len(offArray) > 0:
                         if offArray[-1]['endTime'] > onArrayC[-1]['endTime'] and offArray[-1]['endTime'] > onArrayL[-1]['endTime'] and offArray[-1]['endTime'] > onArrayR[-1]['endTime']:
                             tempSum = tempSum - offArray[-1]['duration']
                 else:
-                    for c in range(0, len(onArrayC)):
-                        tempSum += onArrayC[c]['duration']
-                    for d in range(0, len(onArrayL)):
-                        tempSum += onArrayL[d]['duration']
-                    for e in range(0, len(onArrayR)):
-                        tempSum += onArrayR[e]['duration']
+                    # If HPPStimScrOnly, hab only pays attention to the relevant screen.
+                    # Because CheckStop only looks at habDataCompiled, this can be done entirely here.
+                    if localType in self.hppStimScrOnly:
+                        if 'C' in stimScreens:
+                            for c in range(0, len(onArrayC)):
+                                tempSum += onArrayC[c]['duration']
+                        if 'L' in stimScreens:
+                            for d in range(0, len(onArrayL)):
+                                tempSum += onArrayL[d]['duration']
+                        if 'R' in stimScreens:
+                            for f in range(0, len(onArrayR)):
+                                tempSum += onArrayR[f]['duration']
+                    else:
+                        for c in range(0, len(onArrayC)):
+                            tempSum += onArrayC[c]['duration']
+                        for d in range(0, len(onArrayL)):
+                            tempSum += onArrayL[d]['duration']
+                        for f in range(0, len(onArrayR)):
+                            tempSum += onArrayR[f]['duration']
                 self.habDataCompiled[self.habCount] += tempSum
             if ttype == 4:
                 return 2
@@ -940,12 +1041,39 @@ class PyHabHPP(PyHab):
                 return 0
         elif ttype == 'Hab' and self.habMetWhen == -1 and not abort:
             tempSum = 0
-            for c in range(0, len(onArrayC)):
-                tempSum += onArrayC[c]['duration']
-            for d in range(0, len(onArrayL)):
-                tempSum += onArrayL[d]['duration']
-            for e in range(0, len(onArrayR)):
-                tempSum += onArrayR[e]['duration']
+            # This if for habituation by total trial duration, ignores hppStimScrOnly
+            if self.habByDuration == 1:
+                for c in range(0, len(onArrayC)):
+                    tempSum += onArrayC[c]['duration']
+                for d in range(0, len(onArrayL)):
+                    tempSum += onArrayL[d]['duration']
+                for g in range(0, len(onArrayR)):
+                    tempSum += onArrayR[g]['duration']
+                for f in range(0, len(offArray)):
+                    tempSum += offArray[f]['duration']
+                if self.durationInclude == 0 and len(offArray) > 0:
+                    if offArray[-1]['endTime'] > onArrayC[-1]['endTime'] and offArray[-1]['endTime'] > onArrayL[-1]['endTime'] and offArray[-1]['endTime'] > onArrayR[-1]['endTime']:
+                        tempSum = tempSum - offArray[-1]['duration']
+            else:
+                # If HPPStimScrOnly, hab only pays attention to the relevant screen.
+                # Because CheckStop only looks at habDataCompiled, this can be done entirely here.
+                if localType in self.hppStimScrOnly:
+                    if 'C' in stimScreens:
+                        for c in range(0, len(onArrayC)):
+                            tempSum += onArrayC[c]['duration']
+                    if 'L' in stimScreens:
+                        for d in range(0, len(onArrayL)):
+                            tempSum += onArrayL[d]['duration']
+                    if 'R' in stimScreens:
+                        for f in range(0, len(onArrayR)):
+                            tempSum += onArrayR[f]['duration']
+                else:
+                    for c in range(0, len(onArrayC)):
+                        tempSum += onArrayC[c]['duration']
+                    for d in range(0, len(onArrayL)):
+                        tempSum += onArrayL[d]['duration']
+                    for f in range(0, len(onArrayR)):
+                        tempSum += onArrayR[f]['duration']
             self.habDataCompiled[self.habCount] += tempSum
             self.habCount += 1
             if self.checkStop():  # If criteria met

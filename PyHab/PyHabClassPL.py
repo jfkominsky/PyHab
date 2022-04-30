@@ -610,10 +610,21 @@ class PyHabPL(PyHab):
                 return 0
         elif ttype == 'Hab' and self.habMetWhen == -1 and not abort:
             tempSum = 0
-            for c in range(0, len(onArray)):
-                tempSum += onArray[c]['duration']
-            for d in range(0, len(onArray2)):
-                tempSum += onArray2[d]['duration']
+            if self.habByDuration == 1:
+                for c in range(0, len(onArray)):
+                    tempSum += onArray[c]['duration']
+                for d in range(0, len(onArray2)):
+                    tempSum += onArray2[d]['duration']
+                for e in range(0, len(offArray)):
+                    tempSum += offArray[e]['duration']
+                if self.durationInclude == 0 and len(offArray) > 0:
+                    if offArray[-1]['endTime'] > onArray[-1]['endTime'] and offArray[-1]['endTime'] > onArray2[-1]['endTime']:
+                        tempSum = tempSum - offArray[-1]['duration']
+            else:
+                for c in range(0, len(onArray)):
+                    tempSum += onArray[c]['duration']
+                for d in range(0, len(onArray2)):
+                    tempSum += onArray2[d]['duration']
             self.habDataCompiled[self.habCount] += tempSum
             self.habCount += 1
             if self.checkStop():  # If criteria met
