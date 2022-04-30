@@ -737,8 +737,9 @@ class PyHabHPP(PyHab):
                                              'endTime': endTrial, 'duration': onDur}
                             onArrayR.append(tempGazeArray)
 
-                if localType in self.hppStimScrOnly and self.playThrough[localType] in [0,3]:
+                if localType in self.hppStimScrOnly and self.playThrough[localType] in [0,3] and runTrial and not endFlag:
                     # Specific circumstances around hppStimScreenOnly, allowing it to end trials with 'gaze-off'
+                    # todo: Need to integrate mid-trial attention-getter behavior as well
                     stimScreenOff = False
                     if gazeOnC and 'C' not in stimScreens:
                         stimScreenOff = True
@@ -748,7 +749,7 @@ class PyHabHPP(PyHab):
                         stimScreenOff = True
 
                     if stimScreenOff:
-                        # essentially the 'startOff' comparison from the normal off-time condition
+                        # essentially the 'off-time' comparison from the normal off-time condition
                         nowOff = core.getTime() - startTrial
                         endCondMet = False
                         if self.playThrough[localType] == 0:  # Standard gaze-on then gaze-off
