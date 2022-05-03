@@ -650,8 +650,13 @@ class PyHab:
                     self.trialText.draw()
                     if self.blindPres < 1:
                         self.readyText.draw()
-                self.win2.flip()  # If you don't refresh the expeirmenter window it doesn't read the keyboard!
-                if cutoff and self.lookKeysPressed():
+                self.win2.flip()  # If you don't refresh the experimenter window it doesn't read the keyboard!
+                # HPP: Make aware of hppStimScrOnly.
+                if trialType in self.hppStimScrOnly:
+                    lookCheck = self.lookScreenKeyPressed()
+                else:
+                    lookCheck = self.lookKeysPressed()
+                if cutoff and lookCheck:
                     # Update the relevant box so it actually shows the key is down.
                     self.statusSquareA.fillColor = 'green'
                     self.statusTextA.text = "ON"
@@ -661,12 +666,12 @@ class PyHab:
                         # End early, reset audio
                         attnGetter['file'].stop(reset=True)
                         break
-                elif cutoff and onCheck > 0: # A clever little way to say "if they aren't looking but were earlier"
+                elif cutoff and onCheck > 0:  # A clever little way to say "if they aren't looking but were earlier"
                     onCheck = 0
                     self.statusSquareA.fillColor = 'blue'
                     self.statusTextA.text = "RDY"
                 elif i > 30 and self.keyboard[self.key.K]:
-                    # If more than half a second (30 frames) has passed and "S" is pressed.
+                    # If more than half a second (30 frames) has passed and "skip" is pressed.
                     attnGetter['file'].stop(reset=True)
                     break
         else:
@@ -686,7 +691,12 @@ class PyHab:
                     if self.blindPres < 1:
                         self.readyText.draw()
                 self.win2.flip() # If you don't refresh the expeirmenter window, it doesn't read the keyboard!
-                if cutoff and self.lookKeysPressed():
+                # HPP edge case
+                if trialType in self.hppStimScrOnly:
+                    lookCheck = self.lookScreenKeyPressed()
+                else:
+                    lookCheck = self.lookKeysPressed()
+                if cutoff and lookCheck:
                     self.statusSquareA.fillColor='green'
                     self.statusTextA.text='ON'
                     if onCheck == 0 and onmin > 0:
