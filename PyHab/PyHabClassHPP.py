@@ -737,7 +737,7 @@ class PyHabHPP(PyHab):
                                              'endTime': endTrial, 'duration': onDur}
                             onArrayR.append(tempGazeArray)
 
-                if localType in self.hppStimScrOnly and self.playThrough[localType] in [0,3] and runTrial and not endFlag:
+                if localType in self.hppStimScrOnly and runTrial and not endFlag:
                     # Specific circumstances around hppStimScreenOnly, allowing it to end trials with 'gaze-off'
                     # todo: Need to integrate mid-trial attention-getter behavior as well
                     stimScreenOff = False
@@ -793,6 +793,30 @@ class PyHabHPP(PyHab):
                                     tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOnR,
                                                      'endTime': endTrial, 'duration': onDur}
                                     onArrayR.append(tempGazeArray)
+                        elif localType in self.midAG and self.stimPres:
+                            if nowOff - startOff >= self.midAG[localType]['trigger']:
+                                # TODO: Do something here to deal with recording data about mid-trial AG behavior?
+                                if localType not in self.dynamicPause:  # Need to pause it anyways to play the AG so they don't overlap
+                                    for i, j in disMovie.items():
+                                        if j != 0:
+                                            if j['stimType'] in ['Movie', 'Audio'] and j['stim'].status == PLAYING:
+                                                j['stim'].pause()
+                                            elif j['stimType'] == ['Image with audio'] and j['stim']['Audio'].status == PLAYING:
+                                                j['stim']['Audio'].pause()
+                                startAG = core.getTime()
+                                self.attnGetter(localType, self.midAG[localType]['cutoff'],
+                                                self.midAG[localType]['onmin'])
+                                durAG = core.getTime() - startAG
+                                maxDurAdd = maxDurAdd + durAG  # Increase max length of trial by duration that AG played.
+                                if localType not in self.dynamicPause:
+                                    for i, j in disMovie.items():
+                                        if j != 0:
+                                            if j['stimType'] in ['Movie', 'Audio'] and j['stim'].status != PLAYING:
+                                                j['stim'].play()
+                                            elif j['stimType'] == ['Image with audio'] and j['stim'][
+                                                'Audio'].status != PLAYING:
+                                                j['stim']['Audio'].play()
+
 
                 if gazeOnC and not self.keyboard[self.centerKey]:
                     gazeOnC = False
