@@ -126,7 +126,7 @@ class PyHabBuilder:
                 self.settings['durationInclude'] = '1'
             if 'loadSep' not in self.settings:
                 self.settings['loadSep'] = '0'
-            if 'hppStimScronly' not in self.settings.keys():
+            if 'hppStimScrOnly' not in self.settings.keys():
                 self.settings['hppStimScrOnly'] = '[]'
             # Settings requiring evaluation to get sensible values. Mostly dicts.
             evalList = ['dataColumns','blockSum','trialSum','maxDur','condList','baseCondList','movieEnd','playThrough',
