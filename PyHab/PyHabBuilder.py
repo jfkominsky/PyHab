@@ -841,6 +841,8 @@ class PyHabBuilder:
 
                         if typeInfo[6] > 0:
                             self.settings['onTimeDeadline'][trialType] = typeInfo[6]
+                        elif trialType in self.settings['autoRedo']:
+                            self.settings['onTimeDeadline'][trialType] = self.settings['maxDur'][trialType]
                         elif trialType in self.settings['onTimeDeadline'].keys():
                             del self.settings['onTimeDeadline'][trialType]
 
