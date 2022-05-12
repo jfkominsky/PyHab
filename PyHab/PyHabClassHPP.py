@@ -589,7 +589,7 @@ class PyHabHPP(PyHab):
                         endCondMet = True
                         if localType in self.autoRedo and sumOnC + sumOnL + sumOnR < self.minOn[localType]:
                             endNow = True
-                elif localType in self.autoRedo and sumOnC + sumOnL + sumOnR < self.minOn[localType]:
+                elif localType in self.autoRedo and sumOnC + sumOnL + sumOnR < self.minOn[localType]: # Only applies to on-time-only cases with auto-redo
                     if nowOff - startOff >= self.maxOff[localType] and not endFlag:
                         endCondMet = True
                         endNow = True
@@ -990,12 +990,23 @@ class PyHabHPP(PyHab):
         finalSumOn = 0
         # Check if this is an auto-redo situation
         if localType not in self.durationCriterion:
-            for o in range(0, len(onArrayC)):
-                finalSumOn = finalSumOn + onArrayC[o]['duration']
-            for p in range(0, len(onArrayL)):
-                finalSumOn = finalSumOn + onArrayL[p]['duration']
-            for q in range(0, len(onArrayR)):
-                finalSumOn = finalSumOn + onArrayR[q]['duration']
+            if localType not in self.hppStimScrOnly:
+                for o in range(0, len(onArrayC)):
+                    finalSumOn = finalSumOn + onArrayC[o]['duration']
+                for p in range(0, len(onArrayL)):
+                    finalSumOn = finalSumOn + onArrayL[p]['duration']
+                for q in range(0, len(onArrayR)):
+                    finalSumOn = finalSumOn + onArrayR[q]['duration']
+            else:  # If hppStimScreenOnly is used, only pay attention to those screens.
+                if 'C' in stimScreens:
+                    for o in range(0, len(onArrayC)):
+                        finalSumOn = finalSumOn + onArrayC[o]['duration']
+                if 'L' in stimScreens:
+                    for p in range(0, len(onArrayL)):
+                        finalSumOn = finalSumOn + onArrayL[p]['duration']
+                if 'R' in stimScreens:
+                    for q in range(0, len(onArrayR)):
+                        finalSumOn = finalSumOn + onArrayR[q]['duration']
         else:
             finalSumOn = core.getTime() - startTrial  # Checks total duration, ignores last-look issue.
         if localType in self.autoRedo and finalSumOn < self.minOn[localType] and ttype != 4:
