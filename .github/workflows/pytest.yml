@@ -37,7 +37,7 @@ jobs:
         # for pocketsphinx we need this adapted package:
         brew install swig vlc
         brew install openal-soft
-        pip install -r
+        pip install psychopy
     - name: Test with Pytest
       run:
         pytest
