@@ -56,6 +56,7 @@ base_settings = {
     'playAttnGetter': "{'A':'PyHabDefault','B':'PyHabDefault'}",
     'dynamicPause':'[]',
     'midAG':'{}',
+    'hppStimScrOnly': '[]',
     'attnGetterList': "{'PyHabDefault':{'stimType':'Audio','stimName':'upchime1.wav','stimDur':2,'stimLoc':'PyHab/upchime1.wav','shape':'Rectangle','color':'yellow'}}",
     'folderPath': '',
     'trialTypes': "['A','B','C','D']",
