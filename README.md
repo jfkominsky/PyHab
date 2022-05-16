@@ -3,9 +3,7 @@
 <a href='https://pyhab.readthedocs.io/en/latest/?badge=latest'>
     <img src='https://readthedocs.org/projects/pyhab/badge/?version=latest' alt='Documentation Status' />
 </a>
-<a href='https://travis-ci.org/jfkominsky/PyHab'>
-    <img src='https://travis-ci.org/jfkominsky/PyHab.svg?branch=main'>
-</a><br />
+<br />
 Looking time and stimulus presentation system for PsychoPy.
 <h2>What is PyHab?</h2>
 <p>Research with human infants (and some non-human animals) often relies on measuring looking times. Manual looking time coding is still very common. Currently, they are only a handful of programs built for this purpose, especially for live coding of looking times (during the experiment), and those programs are old, opaque, and difficult to integrate with stimulus presentation. Many studies that control stimulus presentation on the basis of infant's looking (starting a trial when they look at the display, ending it when they look away for a given period of time) still require two experimenters, one to control the stimuli and one to code the looking times.</p>
