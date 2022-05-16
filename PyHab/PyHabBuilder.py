@@ -687,6 +687,8 @@ class PyHabBuilder:
                     autoRedo = False
                 if trialType in self.settings['onTimeDeadline'].keys():
                     otdl = self.settings['onTimeDeadline'][trialType]
+                    if otdl == self.settings['maxDur'][trialType]: # Because it has to default to this under certain circumstances
+                        otdl = -1
                 else:
                     otdl = -1
                 if trialType in self.settings['durationCriterion']:
