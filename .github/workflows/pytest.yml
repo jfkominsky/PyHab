@@ -1,0 +1,46 @@
+# Unit testing to replace Travis CI, runs existing pytest script. Based on PsychoPy's own CI test system.
+
+name: pytest
+
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  testsuite_mac:
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [macos-latest]
+        python-version: [3.8]
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Pre-Install
+      run: |
+        python -m pip install --upgrade pip
+        pip install pytest pytest-cov flake8 xmlschema
+        pip install wheel
+        pip install six  # for configobj and wxpython
+        pip install distro  # used by createInitFile
+        python ./building/plat_custom_installs.py
+    - name: Install PsychoPy and dependencies
+      run: |
+        # for pocketsphinx we need this adapted package:
+        brew install swig vlc
+        brew install openal-soft
+        pip install git+https://github.com/Im-Fran/pocketsphinx-python
+        # then use the standard requirements:
+        pip install .
+    - name: Test with Pytest
+      run:
+        pytest
