@@ -38,6 +38,7 @@ jobs:
         brew install swig vlc
         brew install openal-soft
         pip install git+https://github.com/Im-Fran/pocketsphinx-python
+        pip install mock
         pip install psychopy
     - name: Test with Pytest
       run:
