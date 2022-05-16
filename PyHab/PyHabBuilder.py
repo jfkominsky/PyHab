@@ -55,7 +55,7 @@ class PyHabBuilder:
                                                         'trialTypes': [],
                                                         'trialOrder': [],
                                                         'blockList': {},  # 0.8, create blocks of trials (hab remains special)
-                                                        'blockDataList':[],
+                                                        'blockDataList': [],
                                                         'maxHabTrials': '14',
                                                         'setCritWindow': '3', 
                                                         'setCritDivisor': '2.0',
@@ -86,8 +86,9 @@ class PyHabBuilder:
                                                                                           'stimLoc':'PyHab' + self.dirMarker + 'upchime1.wav',
                                                                                           'shape':'Rectangle',
                                                                                           'color':'yellow'}},
-                                                        'dynamicPause':[],
-                                                        'midAG':{},
+                                                        'dynamicPause': [],
+                                                        'midAG': {},
+                                                        'hppStimScrOnly': [], # new in 0.9.5, allows for some sophisticaated HPP behavior. List of trial types.
                                                         'folderPath': '',
                                                         'prefLook': '0',
                                                         'startImage': '',
@@ -125,12 +126,14 @@ class PyHabBuilder:
                 self.settings['durationInclude'] = '1'
             if 'loadSep' not in self.settings:
                 self.settings['loadSep'] = '0'
+            if 'hppStimScrOnly' not in self.settings.keys():
+                self.settings['hppStimScrOnly'] = '[]'
             # Settings requiring evaluation to get sensible values. Mostly dicts.
             evalList = ['dataColumns','blockSum','trialSum','maxDur','condList','baseCondList','movieEnd','playThrough',
                         'trialOrder','stimNames', 'stimList', 'ISI', 'maxOff','minOn','durationCriterion','autoRedo',
                         'onTimeDeadline','autoAdvance','playAttnGetter','attnGetterList','trialTypes','habTrialList',
                         'calcHabOver', 'nextFlash', 'blockList', 'dynamicPause','midAG','screenWidth','screenHeight',
-                        'screenIndex','movieWidth','movieHeight', 'durationInclude', 'loadSep']  # in 0.9, this becomes necessary.
+                        'screenIndex','movieWidth','movieHeight', 'durationInclude', 'loadSep', 'hppStimScrOnly']  # in 0.9, this becomes necessary.
             for i in evalList:
                 self.settings[i] = eval(self.settings[i])
                 if i in ['stimList','attnGetterList']:
@@ -684,6 +687,8 @@ class PyHabBuilder:
                     autoRedo = False
                 if trialType in self.settings['onTimeDeadline'].keys():
                     otdl = self.settings['onTimeDeadline'][trialType]
+                    if otdl == self.settings['maxDur'][trialType]: # Because it has to default to this under certain circumstances
+                        otdl = -1
                 else:
                     otdl = -1
                 if trialType in self.settings['durationCriterion']:
@@ -838,6 +843,8 @@ class PyHabBuilder:
 
                         if typeInfo[6] > 0:
                             self.settings['onTimeDeadline'][trialType] = typeInfo[6]
+                        elif trialType in self.settings['autoRedo']:
+                            self.settings['onTimeDeadline'][trialType] = self.settings['maxDur'][trialType]
                         elif trialType in self.settings['onTimeDeadline'].keys():
                             del self.settings['onTimeDeadline'][trialType]
 
@@ -909,19 +916,21 @@ class PyHabBuilder:
         """
         A dialog for advanced trial settings mostly having to do with attention-getters and stimulus presentation
 
-        0/-7 = cutoff attention-getter on gaze-on? T/F [if trial has an AG - not always present]
+        0/-8 = cutoff attention-getter on gaze-on? T/F [if trial has an AG - not always present]
 
-        1/-6 = cutoff on-time: How long do they have to look to cut off presentation? [if trial has an AG - not always present]
+        1/-7 = cutoff on-time: How long do they have to look to cut off presentation? [if trial has an AG - not always present]
 
-        2/-5 = Pause stimulus presentation when infant is not looking at screen?
+        2/-6 = Pause stimulus presentation when infant is not looking at screen?
 
-        3/-4 = Mid-trial AG: Play an attention-getter if infant looks away mid-trial?
+        3/-5 = Mid-trial AG: Play an attention-getter if infant looks away mid-trial?
 
-        4/-3 = mid-trial AG trigger: Minimum time to trigger mid-trial AG
+        4/-4 = mid-trial AG trigger: Minimum time to trigger mid-trial AG
 
-        5/-2 = mid-trial AG cutoff: Stop mid-trial AG on gaze-on?
+        5/-3 = mid-trial AG cutoff: Stop mid-trial AG on gaze-on?
 
-        6/-1 = mid-trial AG cutoff ontime
+        6/-2 = mid-trial AG cutoff ontime
+
+        7/-1 = HPP ONLY: Only count gaze-on to stimulus-presenting screen? T/F, casts to hppStimScrOnly
 
 
 
@@ -986,57 +995,69 @@ class PyHabBuilder:
         adTypeDlg.addField("Stop mid-trial AG on gaze-on?", initial=midcutoff)
         adTypeDlg.addField("Minimum on-time to stop mid-trial AG", midonmin)
 
+        hppstimonly = False
+        if trialType in self.settings['hppStimScrOnly']:
+            hppstimonly = True
+        adTypeDlg.addField("HPP Only: Only count stim screen as gaze-on for ending trials?", initial=hppstimonly)
+
+
         adTypeInfo = adTypeDlg.show()
         if adTypeDlg.OK:
             fail = [] # amass invalid inputs, save the rest
             if trialType in self.settings['playAttnGetter']:
-                if adTypeInfo[len(adTypeInfo)-7] in [True, 1, 'True', '1']:
+                if adTypeInfo[len(adTypeInfo)-8] in [True, 1, 'True', '1']:
                     self.settings['playAttnGetter'][trialType]['cutoff'] = 1
                 else:
                     self.settings['playAttnGetter'][trialType]['cutoff'] = 0
-                if not isinstance(adTypeInfo[len(adTypeInfo)-6], float) and not isinstance(adTypeInfo[len(adTypeInfo)-6], int):
+                if not isinstance(adTypeInfo[len(adTypeInfo)-7], float) and not isinstance(adTypeInfo[len(adTypeInfo)-6], int):
                     try:
-                        eval(adTypeInfo[len(adTypeInfo)-6])
+                        eval(adTypeInfo[len(adTypeInfo)-7])
                     except:
                         fail.append("Number expected for minimum on-time to end attention-getter, got text instead!")
-                if isinstance(adTypeInfo[len(adTypeInfo)-6], float) and not isinstance(adTypeInfo[len(adTypeInfo)-6], int):
-                    self.settings['playAttnGetter'][trialType]['onmin'] = adTypeInfo[len(adTypeInfo)-6]
+                if isinstance(adTypeInfo[len(adTypeInfo)-7], float) and not isinstance(adTypeInfo[len(adTypeInfo)-7], int):
+                    self.settings['playAttnGetter'][trialType]['onmin'] = adTypeInfo[len(adTypeInfo)-7]
             # Pause behavior
-            if adTypeInfo[len(adTypeInfo)-5] in [True, 1, 'True', '1'] and trialType not in self.settings['dynamicPause']:
+            if adTypeInfo[len(adTypeInfo)-6] in [True, 1, 'True', '1'] and trialType not in self.settings['dynamicPause']:
                 self.settings['dynamicPause'].append(trialType)
-            elif adTypeInfo[len(adTypeInfo)-5] in [False, 0, 'False', '0'] and trialType in self.settings['dynamicPause']:
+            elif adTypeInfo[len(adTypeInfo)-6] in [False, 0, 'False', '0'] and trialType in self.settings['dynamicPause']:
                 # Remove if this behavior has been turned off.
                 self.settings['dynamicPause'].pop(self.settings['dynamicPause'].index(trialType))
             # Mid-trial AG
-            if adTypeInfo[len(adTypeInfo)-4] in self.settings['attnGetterList']:
+            if adTypeInfo[len(adTypeInfo)-5] in self.settings['attnGetterList']:
                 # We have the luxury of only caring about certain inputs if there is a mid-trial AG
-                if not isinstance(adTypeInfo[len(adTypeInfo) - 3], float) and not isinstance(adTypeInfo[len(adTypeInfo) - 3], int):
+                if not isinstance(adTypeInfo[len(adTypeInfo) - 4], float) and not isinstance(adTypeInfo[len(adTypeInfo) - 4], int):
                     try:
-                        trigger = eval(adTypeInfo[len(adTypeInfo) - 3])
+                        trigger = eval(adTypeInfo[len(adTypeInfo) - 4])
                     except:
                         trigger = 0.0
                         fail.append("Number expected for minimum off-time to trigger mid-trail AG, got text instead!")
                 else:
-                    trigger = adTypeInfo[len(adTypeInfo) - 3]
+                    trigger = adTypeInfo[len(adTypeInfo) - 4]
 
-                if adTypeInfo[len(adTypeInfo)-2] in [1, '1', True, 'True']:
+                if adTypeInfo[len(adTypeInfo)-3] in [1, '1', True, 'True']:
                     midcut = 1
-                    if not isinstance(adTypeInfo[len(adTypeInfo) - 1], float) and not isinstance(adTypeInfo[len(adTypeInfo) - 1], int):
+                    if not isinstance(adTypeInfo[len(adTypeInfo) - 2], float) and not isinstance(adTypeInfo[len(adTypeInfo) - 2], int):
                         try:
-                            midmin = eval(adTypeInfo[len(adTypeInfo) - 1])
+                            midmin = eval(adTypeInfo[len(adTypeInfo) - 2])
                         except:
                             midmin = 0.0
                             fail.append("Number expected for minimum on-time to cutoff mid-trail AG, got text instead!")
                     else:
-                        midmin = adTypeInfo[len(adTypeInfo) - 1]
+                        midmin = adTypeInfo[len(adTypeInfo) - 2]
                 else:
                     midcut = 0
                     midmin = 0.0
-                self.settings['midAG'][trialType] = {'attnGetter':adTypeInfo[len(adTypeInfo)-4], 'trigger':trigger,
+                self.settings['midAG'][trialType] = {'attnGetter':adTypeInfo[len(adTypeInfo)-5], 'trigger':trigger,
                                                      'cutoff':midcut, 'onmin':midmin}
             elif trialType in self.settings['midAG'].keys():
                 # If the mid-trial AG has been set to "none" but was previously set to something, remove it.
                 self.settings['midAG'].pop(trialType)
+            if adTypeInfo[len(adTypeInfo) - 1] in [1, '1', True, 'True']:
+                if trialType not in self.settings['hppStimScrOnly']:
+                    self.settings['hppStimScrOnly'].append(trialType)
+            elif trialType in self.settings['hppStimScrOnly']:
+                # remove it.
+                self.settings['hppStimScrOnly'].pop(self.settings['hppStimScrOnly'].index(trialType))
 
             if len(fail) > 0:
                 errDlg = gui.Dlg("Problem!")

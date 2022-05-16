@@ -110,6 +110,10 @@ class PyHab:
             self.loadSep = eval(settingsDict['loadSep'])
         except:
             self.loadSep = 0
+        try:
+            self.hppStimScrOnly = eval(settingsDict['hppStimScrOnly'])
+        except:
+            self.hppStimScrOnly = []
 
 
         # ORDER OF PRESENTATION
@@ -476,6 +480,8 @@ class PyHab:
 
         TODO: Habituation using trial duration instead of on-time
 
+        Todo: Reconfigure for multiple habituation blocks
+
         :return: True if hab criteria have been met, False otherwise
         :rtype:
         """
@@ -532,7 +538,9 @@ class PyHab:
             return True
         elif self.habCount > self.setCritWindow and self.habSetWhen > -1:  # if we're far enough in that we can plausibly meet the hab criterion
             # Problem: Fixed window, peak, and max as relates to habsetwhen....
-            # Fixed window is probably the only thing that should ignore habsetwhen.
+            # Not problem per se. Essentially, trials that set the criterion are never included when evaluating it.
+            # TODO: Make that an option instead of a general behavior?
+            # Fixed window is the only thing that ignores habsetwhen.
             # Last needs to ignore HabSetWhen, or rather, cannot wait MetCritWindow trials past when it is set.
             if self.habCount < self.habSetWhen + self.metCritWindow and self.metCritStatic == 'Moving' and self.setCritType != 'Last': # Was the hab set "late" and are we too early as a result
                 return False
@@ -642,8 +650,13 @@ class PyHab:
                     self.trialText.draw()
                     if self.blindPres < 1:
                         self.readyText.draw()
-                self.win2.flip()  # If you don't refresh the expeirmenter window it doesn't read the keyboard!
-                if cutoff and self.lookKeysPressed():
+                self.win2.flip()  # If you don't refresh the experimenter window it doesn't read the keyboard!
+                # HPP: Make aware of hppStimScrOnly.
+                if trialType in self.hppStimScrOnly:
+                    lookCheck = self.lookScreenKeyPressed()
+                else:
+                    lookCheck = self.lookKeysPressed()
+                if cutoff and lookCheck:
                     # Update the relevant box so it actually shows the key is down.
                     self.statusSquareA.fillColor = 'green'
                     self.statusTextA.text = "ON"
@@ -653,12 +666,12 @@ class PyHab:
                         # End early, reset audio
                         attnGetter['file'].stop(reset=True)
                         break
-                elif cutoff and onCheck > 0: # A clever little way to say "if they aren't looking but were earlier"
+                elif cutoff and onCheck > 0:  # A clever little way to say "if they aren't looking but were earlier"
                     onCheck = 0
                     self.statusSquareA.fillColor = 'blue'
                     self.statusTextA.text = "RDY"
                 elif i > 30 and self.keyboard[self.key.K]:
-                    # If more than half a second (30 frames) has passed and "S" is pressed.
+                    # If more than half a second (30 frames) has passed and "skip" is pressed.
                     attnGetter['file'].stop(reset=True)
                     break
         else:
@@ -678,7 +691,12 @@ class PyHab:
                     if self.blindPres < 1:
                         self.readyText.draw()
                 self.win2.flip() # If you don't refresh the expeirmenter window, it doesn't read the keyboard!
-                if cutoff and self.lookKeysPressed():
+                # HPP edge case
+                if trialType in self.hppStimScrOnly:
+                    lookCheck = self.lookScreenKeyPressed()
+                else:
+                    lookCheck = self.lookKeysPressed()
+                if cutoff and lookCheck:
                     self.statusSquareA.fillColor='green'
                     self.statusTextA.text='ON'
                     if onCheck == 0 and onmin > 0:
@@ -1263,24 +1281,8 @@ class PyHab:
                                             onCheck = 0
                                 core.wait(self.freezeFrame)
                     elif self.lookKeysPressed():
-                        # in HPP mode, the disMovie dict will have 'C', 'L', and 'R' as top-level keys and then the rest
-                        # below it. What we need to do here is check if we're in HPP mode and then if so use
-                        # lookScreenKeysPressed()
-                        if self.stimPres:
-                            if 'C' in disMovie.keys():  # if HPP, in other words
-                                # TODO: make this a setting rather than a universal HPP behavior
-                                checkscreens = disMovie.keys()
-                                stimscreens = [x for x in checkscreens if disMovie[x] not in [0, '0']]
-                                # needs to be inverse.
-                                waitStart = self.lookScreenKeyPressed(screen=stimscreens) == False
-                                if not waitStart:
-                                    self.dispCoderWindow(trialType)
-                            else:
-                                waitStart = False
-                                self.dispCoderWindow(trialType)
-                        else:
-                            waitStart = False
-                            self.dispCoderWindow(trialType)
+                        waitStart = False
+                        self.dispCoderWindow(trialType)
                     elif self.keyboard[self.key.R] and not didRedo:  # Redo last trial, mark last trial as bad
                         if self.counters[trialType] > 0:
                             self.counters[trialType] -= 1
@@ -1722,6 +1724,7 @@ class PyHab:
             if self.stimPres and disMovie['stimType'] == 'Movie':
                 disMovie['stim'].seek(0.0)
                 disMovie['stim'].pause()
+            # Todo: Do a proper redo, including rewinding trials using redoSetup.
             self.abortTrial(onArray, offArray, number, dataType, onArray2, offArray2, self.stimName, habDataRec)
             return 3
         else:
