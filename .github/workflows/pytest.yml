@@ -32,7 +32,6 @@ jobs:
         pip install wheel
         pip install six  # for configobj and wxpython
         pip install distro  # used by createInitFile
-        python ./building/plat_custom_installs.py
     - name: Install PsychoPy and dependencies
       run: |
         # for pocketsphinx we need this adapted package:
