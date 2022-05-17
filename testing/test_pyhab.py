@@ -54,13 +54,14 @@ base_settings = {
     'ISI': "{'A':0.0,'B':0.0,'C':0.0,'D':0.0}",
     'freezeFrame': '0.0',
     'playAttnGetter': "{'A':'PyHabDefault','B':'PyHabDefault'}",
-    'dynamicPause':'[]',
-    'midAG':'{}',
+    'dynamicPause': '[]',
+    'midAG': '{}',
     'hppStimScrOnly': '[]',
     'attnGetterList': "{'PyHabDefault':{'stimType':'Audio','stimName':'upchime1.wav','stimDur':2,'stimLoc':'PyHab/upchime1.wav','shape':'Rectangle','color':'yellow'}}",
     'folderPath': '',
     'trialTypes': "['A','B','C','D']",
-    'prefLook': '0'}
+    'prefLook': '0',
+    'loadSep': '0'}
 
 
 def test_init():
@@ -76,12 +77,12 @@ def test_init():
                 itest.screenWidth, itest.screenHeight, itest.movieWidth, itest.movieHeight, itest.screenIndex,
                 itest.onTimeDeadline]
     TheLists = [itest.dataColumns, itest.movieEnd, itest.autoAdvance, itest.condList, itest.trialOrder,
-                itest.habTrialList, itest.autoRedo, itest.durationCriterion]
+                itest.habTrialList, itest.autoRedo, itest.durationCriterion, itest.hppStimScrOnly]
     TheStrings = [itest.prefix, itest.dataFolder, itest.stimPath, itest.condFile, itest.setCritType,
                   itest.metCritStatic]
     TheFloats = [itest.freezeFrame]
     TheInts = [itest.blindPres, itest.maxHabTrials, itest.setCritWindow, itest.setCritDivisor, itest.metCritDivisor,
-               itest.metCritWindow, itest.durationInclude, itest.habByDuration]
+               itest.metCritWindow, itest.durationInclude, itest.habByDuration, itest.loadSep]
     for i in TheDicts:
         assert type(i) == dict
     for j in TheLists:
