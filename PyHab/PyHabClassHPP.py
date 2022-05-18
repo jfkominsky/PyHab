@@ -321,7 +321,8 @@ class PyHabHPP(PyHab):
         Control function for individual trials, to be called by doExperiment
         Returns a status value (int) that tells doExperiment what to do next
         HPP experiments works very differently from everything else, and this is where the bulk of that is happening.
-        TODO: A mode where al look times are computed based only on which screens have stimuli on them.
+
+        TODO: Hab trial revamp.
 
         :param number: Trial number
         :type number: int

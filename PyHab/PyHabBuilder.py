@@ -43,7 +43,7 @@ class PyHabBuilder:
                                                         'autoRedo': [],
                                                         'onTimeDeadline': {},
                                                         'durationInclude': '1',
-                                                        'habByDuration': '0',
+                                                        'habByDuration': '0', # TODO: Block property
                                                         'blindPres': '0', 
                                                         'autoAdvance': [],
                                                         'randPres': '0',
@@ -54,18 +54,18 @@ class PyHabBuilder:
                                                         'baseCondList': [],  # 0.8 New, for remembering pre-counterbalancing
                                                         'trialTypes': [],
                                                         'trialOrder': [],
-                                                        'blockList': {},  # 0.8, create blocks of trials (hab remains special)
+                                                        'blockList': {},  # 0.8, create blocks of trials (hab remains special) TODO: Block objects, not just names.
                                                         'blockDataList': [],
-                                                        'maxHabTrials': '14',
-                                                        'setCritWindow': '3', 
-                                                        'setCritDivisor': '2.0',
-                                                        'setCritType': 'First',
-                                                        'habThresh': '5.0',
-                                                        'metCritWindow': '3', 
-                                                        'metCritDivisor': '1.0',
-                                                        'metCritStatic': 'Moving',
-                                                        'habTrialList': [],
-                                                        'calcHabOver': [],
+                                                        'maxHabTrials': '14', # TODO: Block property
+                                                        'setCritWindow': '3',  # TODO: block property
+                                                        'setCritDivisor': '2.0', # TODO: Block property
+                                                        'setCritType': 'First', # TODO: Block property
+                                                        'habThresh': '5.0', # TODO: Block property
+                                                        'metCritWindow': '3',  # TODO: Block property
+                                                        'metCritDivisor': '1.0', # TODO: Block property
+                                                        'metCritStatic': 'Moving', # TODO: Block property
+                                                        'habTrialList': [], # TODO: Block property - rather, replaced by block revamp
+                                                        'calcHabOver': [], # TODO: Block property
                                                         'stimPres': 0,  # Will be set on each run anyways.
                                                         'stimPath': 'stimuli'+self.dirMarker,
                                                         'stimNames': {},
@@ -472,7 +472,7 @@ class PyHabBuilder:
                             # If we're opening a dialog box, basically.
                             self.win.winHandle.set_visible(visible=False)
 
-                    if self.buttonList['functions'][i] == self.addHabBlock: #one special case
+                    if self.buttonList['functions'][i] == self.addHabBlock: #one special case TODO: Not anymore!
                         if self.buttonList['text'][i].text == "Mod Habituation":
                             self.addHabBlock(makeNew=False)
                         else:
@@ -487,7 +487,7 @@ class PyHabBuilder:
                 self.buttonList['shapes'].pop(advTrialIndex)
                 self.buttonList['text'].pop(advTrialIndex)
                 self.buttonList['functions'].pop(advTrialIndex)
-            if self.blockDataDlg in self.buttonList['functions'] and len(list(self.settings['blockList'].keys())) == 0:
+            if self.blockDataDlg in self.buttonList['functions'] and len(list(self.settings['blockList'].keys())) == 0: # TODO: This might be able to survive as is
                 blockDataIndex = self.buttonList['functions'].index(self.blockDataDlg)
                 self.buttonList['shapes'].pop(blockDataIndex)
                 self.buttonList['text'].pop(blockDataIndex)
@@ -1144,6 +1144,8 @@ class PyHabBuilder:
         """
         Creates either a hab trial type, or a hab trial block.
 
+        TODO: Change so this is part of the block interface
+
         Trial type dialog:
 
         0 = Maximum duration
@@ -1192,6 +1194,8 @@ class PyHabBuilder:
     def makeHabTypeDlg(self, makeNew, prevSet=[]):
         """
         A function for creating a habituation trial type, rather than multi-trial block.
+
+        TODO: Total redesign.
 
         0: Maximum duration
         1: Maximum off-time
@@ -1333,6 +1337,8 @@ class PyHabBuilder:
         Creates a new 'block' structure, which basically masquerades as a trial type in most regards, but consists of
         several sub-trials, much like how habituation blocks work.
 
+        TODO: This will need a complete revamp.
+
         :param name: Name of existing trial type. '' by default
         :type name: str
         :param new: Making a new block, or modifying an existing one?
@@ -1357,6 +1363,7 @@ class PyHabBuilder:
                     irrel = errDlg.show()
                     self.makeBlockDlg(name, new)
                 elif newBlock[0] == 'Hab' or '.' in newBlock[0] or '^' in newBlock[0]:
+                    # TODO: Remove 'Hab' as forbidden
                     errDlg = gui.Dlg(title="Illegal block name!")
                     errDlg.addText("Name contains illegal character, or is reserved. Please rename!")
                     errDlg.addText("To create habituation blocks, please use the 'Add Habituation' button.")
@@ -1413,17 +1420,20 @@ class PyHabBuilder:
 
     def blockMaker(self, blockName, new=True, hab=False):
         """
-        For making multi-trial blocks. Or multi-block-blocks. You can make blocks of other blocks!
+        For making multi-trial blocks. Or multi-block-blocks. Blocks are necessary for habituation.
+
         Creates a kind of sub-UI that overlays over the main UI. Because it's just for blocks, we can ditch some things.
         We can actually completely overlay the regular UI. Problem is, if the regular UI continues to draw, the mouse
         detection will still work, even if a shape is behind another shape. So, like with conditions, we need a totally
         parallel UI
 
+        TODO: This UI is still more or less fine but we need to add the Hab settings to it.
+
         :param blockName: Name of new block
         :type blockName: str
         :param new: Is this a new block or a modification of an existing one?
         :type new: bool
-        :param hab: Is this for a habituation meta-trial?
+        :param hab: Is this for a habituation meta-trial? # TODO: No longer needs to be an argument?
         :type hab: bool
         :return:
         :rtype:
@@ -1819,7 +1829,7 @@ class PyHabBuilder:
 
         numItems = len(tOrd)
         tTypes = types
-        for i in range(0,len(tOrd)):
+        for i in range(0,len(tOrd)): #TODO: remove 'hab' special treatment
             if tOrd[i] == 'Hab':
                 numItems += 1 #Double-size for blocks
         outputDict = {'lines':[],'shapes':[],'text':[],'labels':[], 'extras':[]}  #Labels allows us to index the others while still keeping order.
@@ -1837,7 +1847,7 @@ class PyHabBuilder:
                     c = tTypes.index(tOrd[i])  # find the trial type, get color index
                 except:
                     c=0
-                if tOrd[i] == 'Hab':  # The special category
+                if tOrd[i] == 'Hab':  # The special category todo: remove
                     if j % 10 == 9:
                         j += 1 # Just in case we're at the point where it would loop around to the second row. We don't want that.
                         if numItems == 20 or numItems == 39:  # Special case of breaking flowLocs limits.
@@ -1851,6 +1861,7 @@ class PyHabBuilder:
                     loc = [lx,flowSpace[j][1]]
                     tempObj = visual.Rect(self.win,width=self.flowWidthObj*2, height=self.flowHeightObj, fillColor=self.colorsArray[c], pos=loc)
                     if tOrd[i] == 'Hab' and len(self.settings['habTrialList']) > 1:  # If there are hab sub-trials, add pips to the hab block object
+                        #TODO: This needs to be changed
                         for q in range(0, len(self.settings['habTrialList'])):
                             tempStr = self.settings['habTrialList'][q]
                             newwidth = self.flowWidthObj/len(self.settings['habTrialList'])
@@ -2624,6 +2635,7 @@ class PyHabBuilder:
                 if self.trialTypesArray['labels'][i] in self.settings['blockList'].keys():
                     pass
                 elif self.trialTypesArray['labels'][i] == 'Hab' and len(self.settings['habTrialList'])>0:
+                    # TODO: change 'hab' treatment. I think this can just be removed b/c it already excludes blocks.
                     pass
                 else:
                     choiceList.append(self.trialTypesArray['labels'][i])
@@ -2921,6 +2933,7 @@ class PyHabBuilder:
                 for i in range(0,len(self.settings['trialTypes'])):
                     if self.settings['trialTypes'][i] not in self.settings['blockList'].keys(): # If a trial type has no movies associated with it
                         if self.settings['trialTypes'][i] == 'Hab' and len(self.settings['habTrialList']) > 0:
+                            # TODO: remove special treatment for 'hab'
                             pass
                         elif self.settings['trialTypes'][i] not in self.settings['stimNames'].keys():
                             allReady = False
@@ -3790,6 +3803,8 @@ class PyHabBuilder:
     def habSettingsDlg(self, lastSet=[],redo=False): #Habituation criteria
         """
         Dialog for settings relating to habituation criteria:
+
+        # TODO: This will become part of the block settings.
 
         0 = maxHabTrials (maximum possible hab trials if criterion not met)
 

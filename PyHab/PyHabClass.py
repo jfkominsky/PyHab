@@ -98,13 +98,13 @@ class PyHab:
             self.autoRedo = eval(settingsDict['autoRedo'])  # List of trials with auto-redo behavior
             self.onTimeDeadline = eval(settingsDict['onTimeDeadline'])  # Dict of trials w/ a deadline to meet on-time, plus deadline.
             self.durationInclude = eval(settingsDict['durationInclude'])  # Duration calculation reports full duration (True) or excludes last gaze-off (False)
-            self.habByDuration = eval(settingsDict['habByDuration'])
+            self.habByDuration = eval(settingsDict['habByDuration']) # TODO: this is now block-level
         except:
             self.durationCriterion = []
             self.autoRedo = []
             self.onTimeDeadline = {}
             self.durationInclude = 1
-            self.habByDuration = 0
+            self.habByDuration = 0 # TODO: this is now block-level
         # new setting for 0.9.4
         try:
             self.loadSep = eval(settingsDict['loadSep'])
@@ -121,7 +121,7 @@ class PyHab:
         # Recommend you make sure repetitions of each trial type is a multiple of the list length, if you want even presentation
         self.trialOrder = eval(settingsDict['trialOrder'])
 
-        # HABITUATION DESIGN SETTINGS
+        # HABITUATION DESIGN SETTINGS TODO: Now block level.
         self.maxHabTrials = eval(settingsDict['maxHabTrials'])  # number of habituation trials in a HAB design
         self.setCritWindow = eval(settingsDict['setCritWindow'])  # Number of trials to use when setting the habituation window, e.g., 3 = first three hab trials
         self.setCritDivisor = eval(settingsDict['setCritDivisor'])  # Divide sum of looking time over first setHabWindow trials by this value. for average, set equal to setHabWindow. For sum, set to 1.
@@ -130,6 +130,7 @@ class PyHab:
         self.metCritDivisor = eval(settingsDict['metCritDivisor'])  # If you want to compare, e.g., average rather than sum of looking times of last metCritWindow trials, change this accordingly.
         self.metCritStatic = settingsDict['metCritStatic']  # Criterion evaluated over moving or static windows
         self.habTrialList = eval(settingsDict['habTrialList'])  # A new "meta-hab" trial type consisting of several sub-trial-types.
+        # TODO: Now block level. Also we can probably ditch a lot of the back-compat stuff, we're abandoning it.
         if 'calcHabOver' in settingsDict.keys():
             self.calcHabOver = eval(settingsDict['calcHabOver'])
         else:
@@ -140,6 +141,7 @@ class PyHab:
                     self.calcHabOver = [self.habTrialList[-1]]
             else:
                 self.calcHabOver = []
+        # TODO: This needs a revamp. Reading each block.
         if 'blockList' in settingsDict.keys():
             self.blockList = eval(settingsDict['blockList'])
             self.blockDataList = eval(settingsDict['blockDataList'])
@@ -450,6 +452,7 @@ class PyHab:
             if '^' in self.actualTrialOrder[trialNum-1]:  # This is kind of a dangerous kludge that hopefully won't come up that often.
                 self.habCount -= 1
         elif newTempData['trialType'] == 'Hab':
+            # TODO: revamp.
             self.habCount -= 1
             self.habDataCompiled[self.habCount] = 0 # Resets the appropriate instance of the hab data structure
         self.badTrials.append(newTempData)
@@ -475,6 +478,8 @@ class PyHab:
         Also responsible for setting the habituation criteria according to settings.
         Prior to any criteria being set, self.HabCrit is 0, and self.habSetWhen is -1.
 
+        Todo: All of the hab-tracking variables are now going to be on the level of a block, need block as argument.
+
         Uses a sort of parallel data structure that just tracks hab-relevant gaze totals. As a bonus, this means it now
         works for both single-target and preferential looking designs (and HPP designs) with no modification.
 
@@ -483,7 +488,7 @@ class PyHab:
         Todo: Reconfigure for multiple habituation blocks
 
         :return: True if hab criteria have been met, False otherwise
-        :rtype:
+        :rtype: bool
         """
 
 
@@ -1081,11 +1086,12 @@ class PyHab:
         if len(self.habTrialList) > 0:
             self.blockExpander(self.habTrialList, 'hab', hab=True, habNum=habNum+1, insert=trialNum-1)
             # reset self.maxHabIndex based on last instance of '^'.
+            # TODO: revamp.
             for n in range(trialNum, len(self.actualTrialOrder)):
                 if '^' in self.actualTrialOrder[n]:
                     self.maxHabIndex = n
         else:
-            self.actualTrialOrder.insert(trialNum - 1, 'Hab')
+            self.actualTrialOrder.insert(trialNum - 1, 'Hab') # TODO: revamp.
             self.maxHabIndex = trialNum - 1
         trialType = self.actualTrialOrder[trialNum - 1]
         while '.' in trialType:
@@ -1199,6 +1205,7 @@ class PyHab:
                     while '.' in trialType:
                         trialType = trialType[trialType.index('.') + 1:]
                     didRedo = True
+                    # TODO: J and I behavior is going to take some reworking. JumpToTest and INsertHab both need re-writing.
                 elif self.keyboard[self.key.J] and self.habMetWhen == -1 and 'Hab' in self.trialOrder:  # jump to test in a hab design
                     [disMovie, trialType] = self.jumpToTest(trialNum)
                 elif self.actualTrialOrder[trialNum-1][0:3] not in ['Hab', 'hab'] and self.keyboard[self.key.I] and 'Hab' in self.trialOrder and self.habMetWhen > 0: # insert additional hab trial
@@ -1292,13 +1299,15 @@ class PyHab:
                         while '.' in trialType:
                             trialType = trialType[trialType.index('.') + 1:]
                         didRedo = True
+                    # TODO: J and I, and the functions they activate, need to be revamped.
                     elif self.keyboard[self.key.J] and 'Hab' in self.trialOrder and self.habMetWhen == -1:  # jump to test in a hab design.
                         [disMovie,trialType] = self.jumpToTest(trialNum)
                     elif self.keyboard[self.key.I] and self.habMetWhen > 0:  # insert additional hab trial
                         [disMovie,trialType] = self.insertHab(trialNum)
                         while '.' in trialType:
                             trialType = trialType[trialType.index('.') + 1:]
-                    elif self.keyboard[self.key.S] and trialType != 'Hab' and '^' not in trialType:  #  Skip trial. Doesn't work on things required for habituation.
+                    # TODO: Skip condition checking hab needs to be fixed, but I think the ^ symbol will still do it.
+                    elif self.keyboard[self.key.S] and trialType != 'Hab' and '^' not in trialType:  # Skip trial. Doesn't work on things required for habituation.
                         skip = True
                     else:
                         self.dispCoderWindow(0)
@@ -1396,7 +1405,7 @@ class PyHab:
         localType = deepcopy(ttype)
         while '.' in localType:
             localType = localType[localType.index('.')+1:]
-        if ttype[0:3] == 'hab' and '.' in ttype:  # Hab sub-trials. Hard to ID definitively, actually.
+        if ttype[0:3] == 'hab' and '.' in ttype:  # Hab sub-trials. Hard to ID definitively, actually. TODO: This will change with the new hab system
             spliceType = ttype[ttype.index('.')+1:]
             if '.' in spliceType:
                 spliceType = spliceType[0:spliceType.index('.')] # Isolate the part between '.'s, which will be what shows up in habtriallist.
@@ -1405,7 +1414,7 @@ class PyHab:
                 habTrial = True
             else:
                 dataType = ttype
-        elif len(self.habTrialList) == 0 and ttype == 'Hab':
+        elif len(self.habTrialList) == 0 and ttype == 'Hab': # TODO: Hab trials are no longer a thing.
             dataType = ttype
             habTrial = True
         else:
@@ -2423,6 +2432,7 @@ class PyHab:
                         finalDict[i] = newTempTrials
                     self.stimNames = finalDict
                     self.blockList = finalBlock
+                    # todo: revamp
                     if 'Hab' in self.blockList.keys():
                         self.habTrialList = self.blockList['Hab']
                 else:
@@ -2463,8 +2473,11 @@ class PyHab:
         """
         A method for constructing actualTrialOrder while dealing with recursive blocks. Can create incredibly long trial
         codes, but ensures that all information is accurately preserved. Works for both hab blocks and other things.
+
         For hab blocks, we can take advantage of the fact that hab cannot appear inside any other block. It will always
-        be the top-level block, and so we can adjust the prefix once and it will carry through.
+        be the top-level block, and so we can adjust the prefix once and it will carry through. TODO not anymore!
+
+        TODO: Revamp for new block objects
 
         :param blockTrials: The list of trials in self.blockList or self.habSubTrials
         :type blockTrials: list
