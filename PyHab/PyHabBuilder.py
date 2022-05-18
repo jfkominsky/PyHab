@@ -382,11 +382,12 @@ class PyHabBuilder:
         self.buttonList['shapes'].append(condSetButton)
         self.buttonList['text'].append(condSetText)
         self.buttonList['functions'].append(self.condSettingsDlg)
-        habSetButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect),pos=[0,-.3], fillColor="white")
-        habSetText = visual.TextStim(self.win, text="Habituation \nsettings",color="black",height=habSetButton.height*.3, alignHoriz='center', pos=habSetButton.pos)
-        self.buttonList['shapes'].append(habSetButton)
-        self.buttonList['text'].append(habSetText)
-        self.buttonList['functions'].append(self.habSettingsDlg)
+        # TODO: This button no longer matters, reshuffle stuff.
+        #habSetButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect),pos=[0,-.3], fillColor="white")
+        #habSetText = visual.TextStim(self.win, text="Habituation \nsettings",color="black",height=habSetButton.height*.3, alignHoriz='center', pos=habSetButton.pos)
+        #self.buttonList['shapes'].append(habSetButton)
+        #self.buttonList['text'].append(habSetText)
+        #self.buttonList['functions'].append(self.habSettingsDlg)
 
         attnGetterButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect), pos=[.4, -.3], fillColor = "white")
         attnGetterText = visual.TextStim(self.win, text="Customize \nattention-getters",color="black",height=attnGetterButton.height*.3,alignHoriz='center', pos=attnGetterButton.pos)
@@ -1428,6 +1429,7 @@ class PyHabBuilder:
         parallel UI
 
         TODO: This UI is still more or less fine but we need to add the Hab settings to it.
+        TODO: Add indicator of what is and isn't a hab block in the pallette?
 
         :param blockName: Name of new block
         :type blockName: str
@@ -1441,7 +1443,20 @@ class PyHabBuilder:
         self.showMainUI(self.UI,self.studyFlowArray, self.trialTypesArray)  # Draw the usual UI under the new one...
         # Define new flow UI. We can reuse a lot of the base UI, happily.
         blockUI = {'bg':[],'buttons':{'shapes':[],'text':[],'functions':[]}}
-        blockOrder = []  # This will be what contains the order for the block!
+        blockOrder = []  # This will be what contains the order of trials for the block!
+        # It's useful to keep this separate for the block UI stuff, just means it needs to be tied together later.
+        habFields = {'habituation': 0, # All of the habituation settings fields, starting with hab on/off. Defaults.
+                    'habByDuration': 0,
+                    'maxHabTrials': 14,
+                    'setCritWindow': 3,
+                    'setCritDivisor': 2.0,
+                    'setCritType': 'First',
+                    'habThresh': 5.0,
+                    'metCritWindow': 3,
+                    'metCritDivisor': 1.0,
+                    'metCritStatic': 'Moving',
+                    'calcHabOver': []
+        }
         end = False
         newFlowArea = [-.97, .75, .97, -.97]  # X,X,Y,Y
         newFlowRect = visual.Rect(self.win, width=newFlowArea[1] - newFlowArea[0],
@@ -1449,13 +1464,16 @@ class PyHabBuilder:
                                     pos=[newFlowArea[0] + float(abs(newFlowArea[1] - newFlowArea[0])) / 2,
                                          newFlowArea[2] - float(abs(newFlowArea[3] - newFlowArea[2])) / 2])
 
-        doneButton = visual.Rect(self.win,width=.15, height=.67*(.15/self.aspect), pos=[-.72,-.8],fillColor="springgreen")
+        doneButton = visual.Rect(self.win,width=.15, height=.67*(.15/self.aspect), pos=[-.82,-.8],fillColor="springgreen")
         doneText = visual.TextStim(self.win, text="Done", height=.5*doneButton.height, pos=doneButton.pos, color='black')
-        cancelButton = visual.Rect(self.win, width=.15, height=.67 * (.15 / self.aspect), pos=[-.52, -.8],
+        cancelButton = visual.Rect(self.win, width=.15, height=.67 * (.15 / self.aspect), pos=[-.62, -.8],
                                  fillColor="red")
         cancelText = visual.TextStim(self.win, text="Cancel", height=.45 * doneButton.height, pos=cancelButton.pos,
                                    color='white')
-        instrText = visual.TextStim(self.win, text="Construct block trial order", pos=[.1, -.9], color='black', height=.1)
+        habSettingsButton = visual.Rect(self.win, width=.4, height=.67*(.15/self.aspect), pos=[-.25,-.8],fillColor = "DarkOrange")
+        habSettingsText = visual.TextStim(self.win, text="Habituation (OFF)", height=.45 * habSettingsButton.height, pos=habSettingsButton.pos,
+                                   color='white')
+        instrText = visual.TextStim(self.win, text="Construct block trial order", pos=[.3, -.9], color='black', height=.1) # TODO: Move to top?
         bigPaletteArea = [.7,.95,.97,-.97]  # temporary, bigger palette, without trial type maker buttons!
         bigPaletteRect = visual.Rect(self.win, width=bigPaletteArea[1] - bigPaletteArea[0],
                                        height=bigPaletteArea[3] - bigPaletteArea[2], fillColor='white', lineColor='black',
@@ -1468,6 +1486,8 @@ class PyHabBuilder:
         blockUI['buttons']['text'].append(doneText)
         blockUI['buttons']['shapes'].append(cancelButton)
         blockUI['buttons']['text'].append(cancelText)
+        blockUI['buttons']['shapes'].append(habSettingsButton)
+        blockUI['buttons']['text'].append(habSettingsText)
 
         bigPaletteLocs = []
         newFlowLocs = []
@@ -1481,13 +1501,13 @@ class PyHabBuilder:
                                     newFlowArea[2] + y * (newFlowArea[3] - newFlowArea[2])])
         trialTypes = self.loadTypes(bigPaletteLocs, self.settings['trialTypes'])
         delIndex = []
-        forbid = ['Hab', blockName]  # If we're using this to make hab blocks, we need to allow (indeed mandate) Hab trials.
-        for q,z in self.settings['blockList'].items(): # Attempt to eliminate infinite loops
-            if blockName in z and blockName != q:
+        forbid = [blockName]  # List of trials and blocks which can't be added to the block's internal trial list
+        for q,z in self.settings['blockList'].items():  # Attempt to eliminate infinite loops
+            if blockName in z['trialList'] and blockName != q:
                 forbid.append(q)
         for i in range(0, len(trialTypes['labels'])):
             if trialTypes['labels'][i] in forbid:
-                delIndex.insert(0,deepcopy(i))  # In reverse order, because it makes the next part way simpler
+                delIndex.insert(0, deepcopy(i))  # In reverse order, because it makes the next part way simpler
         for j in range(0, len(delIndex)):
             del trialTypes['labels'][delIndex[j]]
             del trialTypes['shapes'][delIndex[j]]
@@ -1496,12 +1516,16 @@ class PyHabBuilder:
         for k in range(0, len(trialTypes['labels'])):
             trialTypes['shapes'][k].pos = bigPaletteLocs[k]
             trialTypes['text'][k].pos = bigPaletteLocs[k]
-        if not new and not hab:
-            blockOrder = deepcopy(self.settings['blockList'][blockName])
+        if not new:
+            blockOrder = deepcopy(self.settings['blockList'][blockName]['trialList'])
             blockFlow = self.loadFlow(tOrd=blockOrder, space=newFlowArea, locs=newFlowLocs, overflow=newFlowLocs, types=self.settings['trialTypes'])
-        elif not new:  # Modifying existing hab meta-trials
-            blockOrder = deepcopy(self.settings['habTrialList'])
-            blockFlow = self.loadFlow(tOrd=blockOrder, space=newFlowArea, locs=newFlowLocs, overflow=newFlowLocs, types=self.settings['trialTypes'])
+            if self.setting['blockList'][blockName]['habituation'] in [1, '1', True, 'True']:
+                habSettingsText.text = 'Habituation (ON)'
+                habSettingsButton.fillColor = "DarkGreen"
+                # Copy over existing habituation settings.
+                for i,j in ['blockList'][blockName].items():
+                    if i in habFields.keys():
+                        habFields[i] = j
         else:
             blockFlow = {'lines': [], 'shapes': [], 'text': [], 'labels': [], 'extras': []}
 
@@ -1517,7 +1541,7 @@ class PyHabBuilder:
                             errDlg = gui.Dlg(title="Empty block!")
                             errDlg.addText("Block must contain at least one trial! Use cancel to stop block construction")
                             errDlg.show()
-                        elif hab:  # Create or modify hab block. Special rules apply.
+                            """elif hab:  # Create or modify hab block. Special rules apply. TODO: CHange this.
                             for z in range(0, len(blockOrder)):
                                 if blockOrder[z] != 'Hab':
                                     blockOrder[z] = blockOrder[z]
@@ -1533,9 +1557,13 @@ class PyHabBuilder:
                                 self.trialPalettePage = deepcopy(self.totalPalettePages)
                                 self.trialTypesArray = self.loadTypes(self.typeLocs, self.settings['trialTypes'], page=self.trialPalettePage)
                             done = True
-                            self.habSettingsDlg()  # For setting which things to hab over.
+                            self.habSettingsDlg()  # For setting which things to hab over."""
                         else:  # Create our new block or modify existing
-                            self.settings['blockList'][blockName] = blockOrder
+                            # Since most of the fields are going to come from the hab fields, we start with that
+                            # and add the trial list entry, and done!
+                            tempBlockObject = habFields
+                            tempBlockObject['trialList'] = blockOrder
+                            self.settings['blockList'][blockName] = tempBlockObject
                             if new:
                                 self.settings['trialTypes'].append(blockName)
                                 # Update palette pages if needed.
@@ -1567,6 +1595,12 @@ class PyHabBuilder:
                         done = True  # Just break the loop and that's that.
                         while self.mouse.isPressedIn(blockUI['buttons']['shapes'][i], buttons=[0]):  # waits until the mouse is released before continuing.
                             pass
+                    elif blockUI['buttons']['text'][i].text[0] == 'H': # Since hab can have two text values.
+                        if len(blockFlow['labels']) > 0:
+                            habFields = self.habSettingsDlg(trialList=blockOrder, lastSet=deepcopy(habFields)) # TODO: This now needs to return something to this function to save.
+                            if habFields['habituation'] in [1, '1', True, 'True']:
+                                habSettingsText.text = 'Habituation (ON)'
+                                habSettingsButton.fillColor = "DarkGreen"
             for j in range(0, len(trialTypes['shapes'])):  # Only need to worry about adding trials, no modding them from here!
                 if self.mouse.isPressedIn(trialTypes['shapes'][j], buttons=[0]):
                     blockOrder.append(trialTypes['labels'][j])
@@ -3800,88 +3834,79 @@ class PyHabBuilder:
             errDlg.show()
    
    
-    def habSettingsDlg(self, lastSet=[],redo=False): #Habituation criteria
+    def habSettingsDlg(self, trialList, lastSet, redo=False): #Habituation criteria
         """
         Dialog for settings relating to habituation criteria:
 
-        # TODO: This will become part of the block settings.
+        0 = habituation (Active/not active)
 
-        0 = maxHabTrials (maximum possible hab trials if criterion not met)
+        1 = maxHabTrials (maximum possible hab trials if criterion not met)
 
-        1 = setCritWindow (# trials summed over when creating criterion)
+        2 = setCritWindow (# trials summed over when creating criterion)
 
-        2 = setCritDivisor (denominator of criterion calculation . e.g., sum of first 3 trials
+        3 = setCritDivisor (denominator of criterion calculation . e.g., sum of first 3 trials
             divided by 2 would have 3 for setCritWindow and 2 for this.)
 
-        3 = setCritType (peak window, max trials, first N, last N, or first N above threshold)
+        4 = setCritType (peak window, max trials, first N, last N, or first N above threshold)
 
-        4 = habThresh (threshold for N above threshold)
+        5 = habThresh (threshold for N above threshold)
 
-        5 = metCritWindow (# trials summed over when evaluating whether criterion has been met)
+        6 = metCritWindow (# trials summed over when evaluating whether criterion has been met)
 
-        6 = metCritDivisor (denominator of sum calculated when determining if criterion has been met)
+        7 = metCritDivisor (denominator of sum calculated when determining if criterion has been met)
 
-        7 = metCritStatic (static or moving window?)
+        8 = metCritStatic (static or moving window?)
 
-        8 = habByDuration (habituation by duration or by on-time)
+        9 = habByDuration (habituation by duration or by on-time)
 
-        9-N = Which trials to calculate hab over for multi-trial blocks. Hab selected by default, populated only if the
-        block structure is used
+        10-N = Which trials to calculate hab over for multi-trial blocks.
 
-        :param lastSet: If information entered is invalid and the dialog needs to be shown again, this allows it to remember what was previously entered.
-        :type lastSet: list
+        :param trialList: List of available trials in the block, since this follows from block settings.
+        :type trialList: list
+        :param lastSet: If information entered is invalid and the dialog needs to be shown again, this allows it to remember what was previously entered. Also pulls from existing block settings.
+        :type lastSet: dict
         :param redo: Checking if redoing last setting
         :type redo: boolean
-        :return:
-        :rtype:
+        :return: A dictionary of settings fed back into the block-maker UI.
+        :rtype: dict
         """
-        if not redo:
-            lastSet = []
-            lastSet.append(self.settings['maxHabTrials'])
-            lastSet.append(self.settings['setCritWindow'])
-            lastSet.append(self.settings['setCritDivisor'])
-            lastSet.append(self.settings['setCritType'])
-            lastSet.append(self.settings['habThresh'])
-            lastSet.append(self.settings['metCritWindow'])
-            lastSet.append(self.settings['metCritDivisor'])
-            lastSet.append(self.settings['metCritStatic'])
-            lastSet.append(self.settings['habByDuration'])
 
         hDlg = gui.Dlg(title="Habituation block settings")
         windowtypes = ['First', 'Peak', 'Max', 'Last', 'Threshold']
-        winchz = [x for x in windowtypes if x != lastSet[3]]
-        winchz.insert(0, lastSet[3])
-        if lastSet[7] == 'Fixed':
-            evalChz = ['Fixed','Moving']
+        winchz = [x for x in windowtypes if x != lastSet['setCritType']]
+        winchz.insert(0, lastSet['setCritType'])
+        if lastSet['metCritStatic'] == 'Fixed':
+            evalChz = ['Fixed', 'Moving']
         else:
             evalChz = ['Moving', 'Fixed']
 
-        if lastSet[8] in ['1',1,'True',True]:
+        if lastSet['habByDuration'] in ['1',1,'True',True]:
             byDur = True
         else:
             byDur = False
 
-        hDlg.addField("Max number of habituation trials (if criterion not met)", self.settings['maxHabTrials'])
-        hDlg.addField("Number of trials to sum looking time over when making hab criterion", self.settings['setCritWindow'])
-        hDlg.addField("Number to divide sum of looking time by when computing criterion", self.settings['setCritDivisor'])
+        hDlg.addField("Habituation on/off (uncheck to turn off)", True) # Always defaults to true if you open this menu.
+        hDlg.addField("Max number of habituation trials (if criterion not met)", lastSet['maxHabTrials'])
+        hDlg.addField("Number of trials to sum looking time over when making hab criterion", lastSet['setCritWindow'])
+        hDlg.addField("Number to divide sum of looking time by when computing criterion", lastSet['setCritDivisor'])
         hDlg.addField("Criterion window First trials, first trials above Threshold, dynamic Peak contiguous window, or the set of hab trials with Max looking time?", choices=winchz)
-        hDlg.addField("Threshold value to use if 'Threshold' selected above (ignored otherwise)", self.settings['habThresh'])
-        hDlg.addField("Number of trials to sum looking time over when determining whether criterion has been met", self.settings['metCritWindow'])
-        hDlg.addField("Number to divide sum of looking time by when determining whether criterion has been met", self.settings['metCritDivisor'])
+        hDlg.addField("Threshold value to use if 'Threshold' selected above (ignored otherwise)", lastSet['habThresh'])
+        hDlg.addField("Number of trials to sum looking time over when determining whether criterion has been met", lastSet['metCritWindow'])
+        hDlg.addField("Number to divide sum of looking time by when determining whether criterion has been met", lastSet['metCritDivisor'])
         hDlg.addField("Evaluate criterion over moving window or fixed windows?", choices=evalChz)
         hDlg.addField("Compute habituation over total trial duration instead of on-time?", byDur)
-        if len(self.settings['habTrialList']) > 0:
+        if len(trialList) > 1: # If there's only one trial, then it's automatically that trial!
             hDlg.addText("Check which trial types criteria should be computed over (both setting and checking)")
             expandedHabList = []
-            for q in range(0, len(self.settings['habTrialList'])):
-                if self.settings['habTrialList'][q] in self.settings['blockList'].keys():
+            for q in range(0, len(trialList)):
+                if trialList[q] in self.settings['blockList'].keys():
                     doneBlock = False
                     listThings = []
                     listBlocks = [] # A list of all blocks that need to go into the thing.
-                    blockType = self.settings['habTrialList'][q]
+                    blockType = trialList[q]
                     prfx = blockType + '.'
                     while not doneBlock:
-                        for i in self.settings['blockList'][blockType]:
+                        for i in self.settings['blockList'][blockType]['trialList']:
                             if i in self.settings['blockList'].keys():
                                 listBlocks.append(i)
                             else:
@@ -3892,16 +3917,14 @@ class PyHabBuilder:
                             blockType = listBlocks.pop(0) # Pull out the next block and repeat until empty.
                             prfx = prfx + blockType+'.'
                     for z in range(0,len(listThings)):
-                        if listThings[z] in self.settings['calcHabOver']:
-                            chk=True
+                        if listThings[z] in lastSet['calcHabOver']:
+                            chk = True
                         else:
                             chk = False
                         hDlg.addField(listThings[z], initial=chk)
                         expandedHabList.append(listThings[z])
                 else:
-                    if self.settings['habTrialList'][q] == 'Hab' and len(self.settings['calcHabOver']) == 0:
-                        chk = True
-                    elif self.settings['habTrialList'][q] in self.settings['calcHabOver']:
+                    if trialList[q] in lastSet['calcHabOver']:
                         chk = True
                     else:
                         chk = False
@@ -3910,8 +3933,8 @@ class PyHabBuilder:
         habDat=hDlg.show()
         if hDlg.OK:
             skip = False
-            intevals = [0,1,5]
-            fevals = [2,4,6] # These can be floats
+            intevals = [1,2,6]
+            fevals = [3,5,7] # These can be floats
             for i in intevals:
                 if not isinstance(habDat[i], int):
                     if isinstance(habDat[i], str):
@@ -3929,39 +3952,67 @@ class PyHabBuilder:
                         habDat[i]=float(habDat[i])
                     except:
                         skip = True
-            lastSet = habDat
-            if not skip:
-                self.settings['maxHabTrials'] = habDat[0]
-                self.settings['setCritWindow'] = habDat[1]
-                self.settings['setCritDivisor'] = habDat[2]
-                self.settings['setCritType'] = habDat[3]
-                self.settings['habThresh'] = habDat[4]
-                self.settings['metCritWindow'] = habDat[5]
-                self.settings['metCritDivisor'] = habDat[6]
-                self.settings['metCritStatic'] = habDat[7]
-                if habDat[8] in [1, '1', True, 'True']:
-                    self.settings['habByDuration'] = 1
-                else:
-                    self.settings['habByDuration'] = 0
 
-                if len(self.settings['habTrialList']) > 0:
+            if not skip:
+                newHabSettings = {}
+                newHabSettings['habituation'] = habDat[0]
+                newHabSettings['maxHabTrials'] = habDat[1]
+                newHabSettings['setCritWindow'] = habDat[2]
+                newHabSettings['setCritDivisor'] = habDat[3]
+                newHabSettings['setCritType'] = habDat[4]
+                newHabSettings['habThresh'] = habDat[5]
+                newHabSettings['metCritWindow'] = habDat[6]
+                newHabSettings['metCritDivisor'] = habDat[7]
+                newHabSettings['metCritStatic'] = habDat[8]
+                if habDat[9] in [1, '1', True, 'True']:
+                    newHabSettings['habByDuration'] = 1
+                else:
+                    newHabSettings['habByDuration'] = 0
+
+                if len(trialList) > 1:
                     tempArr = []
                     for i in range(0, len(expandedHabList)):
-                        if habDat[i+9]:
+                        if habDat[i+10]:
                            tempArr.append(expandedHabList[i])
                     if len(tempArr) > 0:
-                        self.settings['calcHabOver'] = tempArr
+                        newHabSettings['calcHabOver'] = tempArr
                     else:
                         errDlg = gui.Dlg(title="Warning, no trial types selected!")
                         errDlg.addText("You must select at least one trial to calculate habituation over!")
                         errDlg.show()
-                        self.habSettingsDlg(habDat, redo=True)
+                        return self.habSettingsDlg(trialList, newHabSettings, redo=True)
+                else: # If there's only one trial in the block then that's the hab trial!
+                    newHabSettings['calcHabOver'] = trialList[0]
+                return newHabSettings
             else:
                 errDlg = gui.Dlg(title="Warning, invalid number!")
                 errDlg.addText(
                     "Please make sure all values are valid numbers. Remember that any 'number of trials' field must be a whole number (no decimal).")
                 errDlg.show()
-                self.habSettingsDlg(habDat,redo=True)
+                lastSetDat = {}
+                lastSetDat['habituation'] = habDat[0]
+                lastSetDat['maxHabTrials'] = habDat[1]
+                lastSetDat['setCritWindow'] = habDat[2]
+                lastSetDat['setCritDivisor'] = habDat[3]
+                lastSetDat['setCritType'] = habDat[4]
+                lastSetDat['habThresh'] = habDat[5]
+                lastSetDat['metCritWindow'] = habDat[6]
+                lastSetDat['metCritDivisor'] = habDat[7]
+                lastSetDat['metCritStatic'] = habDat[8]
+                if habDat[9] in [1, '1', True, 'True']:
+                    lastSetDat['habByDuration'] = 1
+                else:
+                    lastSetDat['habByDuration'] = 0
+
+                if len(trialList) > 1:
+                    tempArr = []
+                    for i in range(0, len(expandedHabList)):
+                        if habDat[i+10]:
+                           tempArr.append(expandedHabList[i])
+                    if len(tempArr) > 0:
+                        lastSetDat['calcHabOver'] = tempArr
+
+                return self.habSettingsDlg(trialList, lastSetDat, redo=True)
 
 
 
