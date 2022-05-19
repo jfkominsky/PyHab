@@ -32,14 +32,7 @@ base_settings = {
     'condFile': '',
     'condList': "[]",
     'trialOrder': "[]",
-    'maxHabTrials': '14',
-    'setCritWindow': '3',
-    'setCritDivisor': '2',
-    'setCritType': 'First',
-    'metCritWindow': '3',
-    'metCritDivisor': '1',
-    'metCritStatic': 'Moving',
-    'habTrialList': "[]",
+    'blockList': "{}",
     'stimPres': '0',  # Will be set on each run anyways.
     'stimPath': 'stimuli/',
     'stimNames': "{}",
@@ -75,14 +68,12 @@ def test_init():
     TheDicts = [itest.maxDur, itest.playThrough, itest.maxOff, itest.minOn, itest.stimNames,
                 itest.stimList, itest.playAttnGetter, itest.attnGetterList, itest.ISI, itest.screenColor,
                 itest.screenWidth, itest.screenHeight, itest.movieWidth, itest.movieHeight, itest.screenIndex,
-                itest.onTimeDeadline]
+                itest.onTimeDeadline, itest.blockList]
     TheLists = [itest.dataColumns, itest.movieEnd, itest.autoAdvance, itest.condList, itest.trialOrder,
                 itest.habTrialList, itest.autoRedo, itest.durationCriterion, itest.hppStimScrOnly]
-    TheStrings = [itest.prefix, itest.dataFolder, itest.stimPath, itest.condFile, itest.setCritType,
-                  itest.metCritStatic]
+    TheStrings = [itest.prefix, itest.dataFolder, itest.stimPath, itest.condFile]
     TheFloats = [itest.freezeFrame]
-    TheInts = [itest.blindPres, itest.maxHabTrials, itest.setCritWindow, itest.setCritDivisor, itest.metCritDivisor,
-               itest.metCritWindow, itest.durationInclude, itest.habByDuration, itest.loadSep]
+    TheInts = [itest.blindPres, itest.durationInclude, itest.loadSep]
     for i in TheDicts:
         assert type(i) == dict
     for j in TheLists:
@@ -445,7 +436,19 @@ class TestDataFunc(object):
         self.dataInst.dataMatrix = copy.deepcopy(self.testMatrix)
         self.dataInst.verbDatList = copy.deepcopy(self.testDatList)
         self.dataInst.badTrials = []
-        self.dataInst.blockList = {'C':['A','B']}
+        self.dataInst.blockList = {'C': {'trialList': ['A','B'],
+                                        'habituation': 0,
+                                        'habByDuration': 0,
+                                        'maxHabTrials': 14,
+                                        'setCritWindow': 3,
+                                        'setCritDivisor': 2.0,
+                                        'setCritType': 'First',
+                                        'habThresh': 5.0,
+                                        'metCritWindow': 3,
+                                        'metCritDivisor': 1.0,
+                                        'metCritStatic': 'Moving',
+                                        'calcHabOver': []}
+                                   }
         self.dataInst.actualTrialOrder = ['A','B','C.A','C.B','C.A','C.B']
         self.dataInst.blockDataList=['C']
         self.dataInst.blockDataTags={'C':[[3,4],[5,6]]}
@@ -491,7 +494,19 @@ class TestDataFunc(object):
         self.dataInst.dataMatrix = copy.deepcopy(self.testMatrix)
         self.dataInst.verbDatList = copy.deepcopy(self.testDatList)
         self.dataInst.badTrials = []
-        self.dataInst.blockList = {'C': ['A', 'B']}
+        self.dataInst.blockList = {'C': {'trialList': ['A','B'],
+                                        'habituation': 0,
+                                        'habByDuration': 0,
+                                        'maxHabTrials': 14,
+                                        'setCritWindow': 3,
+                                        'setCritDivisor': 2.0,
+                                        'setCritType': 'First',
+                                        'habThresh': 5.0,
+                                        'metCritWindow': 3,
+                                        'metCritDivisor': 1.0,
+                                        'metCritStatic': 'Moving',
+                                        'calcHabOver': []}
+                                   }
         self.dataInst.actualTrialOrder = ['A', 'B', 'C.A', 'C.B', 'C.A', 'C.B']
         self.dataInst.blockDataList = ['C']
         self.dataInst.blockDataTags = {'C': [[3, 4], [5, 6]]}
@@ -531,7 +546,30 @@ class TestDataFunc(object):
         self.dataInst.dataMatrix = copy.deepcopy(self.testMatrix)
         self.dataInst.verbDatList = copy.deepcopy(self.testDatList)
         self.dataInst.badTrials = []
-        self.dataInst.blockList = {'C': ['A', 'B'], 'D':['B','C']}
+        self.dataInst.blockList = {'C': {'trialList': ['A','B'],
+                                        'habituation': 0,
+                                        'habByDuration': 0,
+                                        'maxHabTrials': 14,
+                                        'setCritWindow': 3,
+                                        'setCritDivisor': 2.0,
+                                        'setCritType': 'First',
+                                        'habThresh': 5.0,
+                                        'metCritWindow': 3,
+                                        'metCritDivisor': 1.0,
+                                        'metCritStatic': 'Moving',
+                                        'calcHabOver': []},
+                                   'D': {'trialList': ['B','C'],
+                                        'habituation': 0,
+                                        'habByDuration': 0,
+                                        'maxHabTrials': 14,
+                                        'setCritWindow': 3,
+                                        'setCritDivisor': 2.0,
+                                        'setCritType': 'First',
+                                        'habThresh': 5.0,
+                                        'metCritWindow': 3,
+                                        'metCritDivisor': 1.0,
+                                        'metCritStatic': 'Moving',
+                                        'calcHabOver': []}}
         self.dataInst.actualTrialOrder = ['A', 'B', 'C.A', 'C.B', 'C.A', 'C.B','D.B','D.C.A','D.C.B']
         self.dataInst.blockDataList = ['C']
         self.dataInst.blockDataTags = {'C': [[3, 4], [5, 6], [8,9]]}
@@ -598,6 +636,8 @@ class TestDataFunc(object):
     def test_habSave(self):
         """
         For testing saving hab files
+
+        TODO: revise for new hab system
         :return:
         :rtype:
         """
@@ -658,6 +698,8 @@ class TestDataFunc(object):
         This one's a little trickier than the others because it requires creating fake hab data and testing all of the
         different modes!
         Default settings: Set first 3, divisor 2. Test moving window, 3, divisor 1. Maxhab 14
+
+        Todo: REVISE for new hab system.
         :return:
         :rtype:
         """
@@ -669,9 +711,7 @@ class TestDataFunc(object):
                           'numOffB': 2})
         self.dataInst.dataMatrix = habMatrix  # We can actually use python's pointer thing to our advantage here: dataMatrix will update with habMatrix
         self.dataInst.badTrials = []
-        self.dataInst.habTrialList = []  # Resetting from the tests above
-        self.dataInst.calcHabOver = []
-        self.dataInst.habDataCompiled = [0]*self.dataInst.maxHabTrials
+        self.dataInst.habDataCompiled = [0]*14 # TODO: fix.
         self.dataInst.stimPres = True  # Temporary, so it doesn't try to play the end-hab sound.
         self.dataInst.habDataCompiled[self.dataInst.habCount] += habMatrix[-1]['sumOnA']  # 0, 10
         self.dataInst.habCount = 1
@@ -892,7 +932,30 @@ class TestRunSetup(object):
     def test_block_expansion(self):
         testOne = [99, 'Test', 'NB', '7', '2', '18', 'testcond', '8', '2', '18']
         self.trialInst.trialOrder = ['A', 'A', 'B', 'B', 'C', 'D']
-        self.trialInst.blockList = {'C':['X','E','B'], 'E':['Z','Y','X']}
+        self.trialInst.blockList = {'C': {'trialList': ['X', 'E', 'B'],
+                                        'habituation': 0,
+                                        'habByDuration': 0,
+                                        'maxHabTrials': 14,
+                                        'setCritWindow': 3,
+                                        'setCritDivisor': 2.0,
+                                        'setCritType': 'First',
+                                        'habThresh': 5.0,
+                                        'metCritWindow': 3,
+                                        'metCritDivisor': 1.0,
+                                        'metCritStatic': 'Moving',
+                                        'calcHabOver': []},
+                                    'E': {'trialList': ['Z', 'Y', 'X'],
+                                        'habituation': 0,
+                                        'habByDuration': 0,
+                                        'maxHabTrials': 14,
+                                        'setCritWindow': 3,
+                                        'setCritDivisor': 2.0,
+                                        'setCritType': 'First',
+                                        'habThresh': 5.0,
+                                        'metCritWindow': 3,
+                                        'metCritDivisor': 1.0,
+                                        'metCritStatic': 'Moving',
+                                        'calcHabOver': []}}
         self.trialInst.run(testMode=testOne)
         assert len(self.trialInst.actualTrialOrder) == 10
         assert self.trialInst.actualTrialOrder == ['A', 'A', 'B', 'B', 'C.X', 'C.E.Z','C.E.Y','C.E.X','C.B', 'D']
@@ -907,7 +970,30 @@ class TestRunSetup(object):
     def test_block_data_setup(self):
         testOne = [99, 'Test', 'NB', '7', '2', '18', 'testcond', '8', '2', '18']
         self.trialInst.trialOrder = ['A', 'A', 'B', 'B', 'C', 'D']
-        self.trialInst.blockList = {'C': ['X', 'E', 'B'], 'E': ['Z', 'Y', 'X']}
+        self.trialInst.blockList = {'C': {'trialList': ['X','E','B'],
+                                        'habituation': 0,
+                                        'habByDuration': 0,
+                                        'maxHabTrials': 14,
+                                        'setCritWindow': 3,
+                                        'setCritDivisor': 2.0,
+                                        'setCritType': 'First',
+                                        'habThresh': 5.0,
+                                        'metCritWindow': 3,
+                                        'metCritDivisor': 1.0,
+                                        'metCritStatic': 'Moving',
+                                        'calcHabOver': []},
+                                    'E': {'trialList': ['Z','Y','X'],
+                                        'habituation': 0,
+                                        'habByDuration': 0,
+                                        'maxHabTrials': 14,
+                                        'setCritWindow': 3,
+                                        'setCritDivisor': 2.0,
+                                        'setCritType': 'First',
+                                        'habThresh': 5.0,
+                                        'metCritWindow': 3,
+                                        'metCritDivisor': 1.0,
+                                        'metCritStatic': 'Moving',
+                                        'calcHabOver': []}}
         self.trialInst.actualTrialOrder = []
         self.trialInst.blockDataList = ['E']
         self.trialInst.blockDataTags['E'] = []
@@ -1415,7 +1501,18 @@ class TestPrefLook(object):
         self.dataInstPL.dataMatrix = copy.deepcopy(self.testMatrixPL)
         self.dataInstPL.verbDatList = copy.deepcopy(self.testDatList)
         self.dataInstPL.badTrials = []
-        self.dataInstPL.blockList = {'C': ['A', 'B']}
+        self.dataInstPL.blockList = {'C': {'trialList': ['A','B'],
+                                        'habituation': 0,
+                                        'habByDuration': 0,
+                                        'maxHabTrials': 14,
+                                        'setCritWindow': 3,
+                                        'setCritDivisor': 2.0,
+                                        'setCritType': 'First',
+                                        'habThresh': 5.0,
+                                        'metCritWindow': 3,
+                                        'metCritDivisor': 1.0,
+                                        'metCritStatic': 'Moving',
+                                        'calcHabOver': []}}
         self.dataInstPL.actualTrialOrder = ['A', 'B', 'C.A', 'C.B', 'C.A', 'C.B']
         self.dataInstPL.blockDataList = ['C']
         self.dataInstPL.blockDataTags = {'C': [[3, 4], [5, 6]]}
@@ -1589,7 +1686,18 @@ class TestHPP(object):
         self.dataInstHPP.dataMatrix = copy.deepcopy(self.testMatrixHPP)
         self.dataInstHPP.verbDatList = copy.deepcopy(self.testDatList)
         self.dataInstHPP.badTrials = []
-        self.dataInstHPP.blockList = {'C': ['A', 'B']}
+        self.dataInstHPP.blockList = {'C': {'trialList': ['A','B'],
+                                        'habituation': 0,
+                                        'habByDuration': 0,
+                                        'maxHabTrials': 14,
+                                        'setCritWindow': 3,
+                                        'setCritDivisor': 2.0,
+                                        'setCritType': 'First',
+                                        'habThresh': 5.0,
+                                        'metCritWindow': 3,
+                                        'metCritDivisor': 1.0,
+                                        'metCritStatic': 'Moving',
+                                        'calcHabOver': []}}
         self.dataInstHPP.actualTrialOrder = ['A', 'B', 'C.A', 'C.B', 'C.A', 'C.B']
         self.dataInstHPP.blockDataList = ['C']
         self.dataInstHPP.blockDataTags = {'C': [[3, 4], [5, 6]]}

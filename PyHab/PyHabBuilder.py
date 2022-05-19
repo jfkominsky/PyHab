@@ -1473,7 +1473,7 @@ class PyHabBuilder:
         habSettingsButton = visual.Rect(self.win, width=.4, height=.67*(.15/self.aspect), pos=[-.25,-.8],fillColor = "DarkOrange")
         habSettingsText = visual.TextStim(self.win, text="Habituation (OFF)", height=.45 * habSettingsButton.height, pos=habSettingsButton.pos,
                                    color='white')
-        instrText = visual.TextStim(self.win, text="Construct block trial order", pos=[.3, -.9], color='black', height=.1) # TODO: Move to top?
+        instrText = visual.TextStim(self.win, text="Construct block trial order", pos=[.3, -.9], color='black', height=.1)
         bigPaletteArea = [.7,.95,.97,-.97]  # temporary, bigger palette, without trial type maker buttons!
         bigPaletteRect = visual.Rect(self.win, width=bigPaletteArea[1] - bigPaletteArea[0],
                                        height=bigPaletteArea[3] - bigPaletteArea[2], fillColor='white', lineColor='black',
