@@ -33,6 +33,7 @@ base_settings = {
     'condList': "[]",
     'trialOrder': "[]",
     'blockList': "{}",
+    'blockDataList': '[]',
     'stimPres': '0',  # Will be set on each run anyways.
     'stimPath': 'stimuli/',
     'stimNames': "{}",
