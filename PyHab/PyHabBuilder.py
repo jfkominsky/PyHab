@@ -501,7 +501,13 @@ class PyHabBuilder:
             #Check all the trial type elements.
             for j in range(0,len(self.trialTypesArray['shapes'])):
                 if self.mouse.isPressedIn(self.trialTypesArray['shapes'][j],buttons=[0]): #Left-click, add to study flow, at end.
-                    self.settings['trialOrder'].append(self.trialTypesArray['labels'][j])
+                    if self.trialTypesArray['labels'][j] not in self.settings['blockList'].keys():
+                        self.settings['trialOrder'].append(self.trialTypesArray['labels'][j])
+                    elif self.trialTypesArray['labels'][j] in self.settings['trialOrder'] and self.settings['blockList'][self.trialTypesArray['labels'][j]]['habituation'] in [1, '1', True, 'True']:
+                        # If a given habituation block is already in the study flow, prevent adding it twice
+                        pass
+                    else:
+                        self.settings['trialOrder'].append(self.trialTypesArray['labels'][j])
                     self.studyFlowArray=self.loadFlow(self.settings['trialOrder'], self.flowArea, self.flowLocs, self.overFlowLocs, self.settings['trialTypes']) #Reloads the study flow with the new thing added.
                     while self.mouse.isPressedIn(self.trialTypesArray['shapes'][j],buttons=[0]): #waits until the mouse is released before continuing.
                         pass
@@ -519,7 +525,7 @@ class PyHabBuilder:
                         self.makeBlockDlg(self.trialTypesArray['labels'][j], new=False)
                     elif self.trialTypesArray['labels'][j] == 'Hab' and len(self.settings['habTrialList']) > 0:
                         self.addHabBlock(makeNew=False)
-                    elif self.trialTypesArray['labels'][j] == 'Hab':
+                    elif self.trialTypesArray['labels'][j] == 'Hab': # TODO: remove all this.
                         self.makeHabTypeDlg(makeNew=False)
                     else:
                         self.trialTypeDlg(trialType=self.trialTypesArray['labels'][j], makeNew=False)
@@ -1430,8 +1436,8 @@ class PyHabBuilder:
 
         TODO: This UI is still more or less fine but we need to add the Hab settings to it.
         TODO: Add indicator of what is and isn't a hab block in the pallette?
-        TODO: Do not allow hab blocks to be embedded in other blocks.
-        TODO: Each hab block can only be used once.
+        Hab blocks cannot be embedded in other blocks.
+
 
         :param blockName: Name of new block
         :type blockName: str
@@ -1644,6 +1650,11 @@ class PyHabBuilder:
                 if self.settings['blockList'][blockName][q] in self.settings['blockList'].keys():
                     # Identifies any nested blocks
                     forbid.append(self.settings['blockList'][blockName][q])
+
+            for r,l in self.settings['blockList'].items(): # hab blocks cannot be added to other blocks.
+                if l['habituation'] in [1, '1', True, 'True']:
+                    forbid.append(r)
+
             if len(forbid) > 0:
                 # This ultimately becomes the list that will appear in the dialog
                 forbid.insert(0, blockName)

@@ -309,7 +309,7 @@ class PyHab:
     FUNCTIONS
     '''
 
-    def abortTrial(self, onArray, offArray, trial, ttype, onArray2, offArray2, stimName = '', habTrialNo = 0):  # the 2nd arrays are if there are two coders.
+    def abortTrial(self, onArray, offArray, trial, ttype, onArray2, offArray2, stimName = '', habTrialNo = 0, habCrit = 0.0):  # the 2nd arrays are if there are two coders.
         """
         Only happens when the 'abort' button is pressed during a trial. Creates a "bad trial" entry
         out of any data recorded for the trial so far, to be saved later.
@@ -328,6 +328,10 @@ class PyHab:
         :type offArray2: list of dicts
         :param stimName: If presenting stimuli, name of the stim file
         :type stimName: string
+        :param habTrialNo: Tracking if this is a habituation trial and if so what number
+        :type habTrialNo: int
+        :param habCrit: Habituation criterion, if it's been set
+        :type habCrit: float
         :return:
         :rtype:
         """
@@ -360,7 +364,7 @@ class PyHab:
                 totalduration = totalduration - offArray[-1]['duration']
         tempData = {'sNum': self.sNum, 'sID':self.sID, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex, 'cond': self.cond,
                     'condLabel': self.condLabel,'trial': trial, 'GNG': 0, 'trialType': ttype, 'stimName': stimName,
-                    'habCrit': self.habCrit, 'habTrialNo': habTrialNo, 'sumOnA': sumOn, 'numOnA': len(onArray), 'sumOffA': sumOff,
+                    'habCrit': habCrit, 'habTrialNo': habTrialNo, 'sumOnA': sumOn, 'numOnA': len(onArray), 'sumOffA': sumOff,
                     'numOffA': len(offArray), 'sumOnB': sumOn2, 'numOnB': len(onArray2), 'sumOffB': sumOff2,
                     'numOffB': len(offArray2), 'trialDuration': totalduration}
         self.badTrials.append(tempData)
@@ -2477,7 +2481,7 @@ class PyHab:
         be the top-level block, and so we can adjust the prefix once and it will carry through. TODO: This is still essentially true, but now we can have multiple hab blocks.
 
         TODO: Revamp for new block objects.
-        TODO:
+        TODO: Hab block identification and tagging needs to be reworked from the ground up.
 
         :param blockInfo: The data of the block object, including trialList and hab info.
         :type blockInfo: dict
