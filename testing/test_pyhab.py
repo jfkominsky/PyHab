@@ -71,7 +71,7 @@ def test_init():
                 itest.screenWidth, itest.screenHeight, itest.movieWidth, itest.movieHeight, itest.screenIndex,
                 itest.onTimeDeadline, itest.blockList]
     TheLists = [itest.dataColumns, itest.movieEnd, itest.autoAdvance, itest.condList, itest.trialOrder,
-                itest.habTrialList, itest.autoRedo, itest.durationCriterion, itest.hppStimScrOnly]
+                itest.autoRedo, itest.durationCriterion, itest.hppStimScrOnly]
     TheStrings = [itest.prefix, itest.dataFolder, itest.stimPath, itest.condFile]
     TheFloats = [itest.freezeFrame]
     TheInts = [itest.blindPres, itest.durationInclude, itest.loadSep]

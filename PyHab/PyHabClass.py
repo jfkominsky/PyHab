@@ -365,7 +365,7 @@ class PyHab:
                     'numOffB': len(offArray2), 'trialDuration': totalduration}
         self.badTrials.append(tempData)
 
-    def dataRec(self, onArray, offArray, trial, type, onArray2, offArray2, stimName = '', habTrialNo = 0):
+    def dataRec(self, onArray, offArray, trial, type, onArray2, offArray2, stimName = '', habTrialNo = 0, habCrit = 0.0):
         """
         Records the data for a trial that ended normally.
 
@@ -385,6 +385,8 @@ class PyHab:
         :type stimName: string
         :param habTrialNo: If part of a hab block, what hab trial it was part of.
         :type habTrialNo: int
+        :param habCrit: If part of a hab block, the current habituation criterion.
+        :type habCrit: double
         :return:
         :rtype:
         """
@@ -417,7 +419,7 @@ class PyHab:
                 totalduration = totalduration - offArray[-1]['duration']
         tempData = {'sNum': self.sNum, 'sID': self.sID, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex, 'cond': self.cond,
                     'condLabel': self.condLabel, 'trial': trial, 'GNG': 1, 'trialType': type, 'stimName': stimName,
-                    'habCrit': self.habCrit, 'habTrialNo': habTrialNo, 'sumOnA': sumOn, 'numOnA': len(onArray), 'sumOffA': sumOff,
+                    'habCrit': habCrit, 'habTrialNo': habTrialNo, 'sumOnA': sumOn, 'numOnA': len(onArray), 'sumOffA': sumOff,
                     'numOffA': len(offArray), 'sumOnB': sumOn2, 'numOnB': len(onArray2), 'sumOffB': sumOff2,
                     'numOffB': len(offArray2), 'trialDuration': totalduration}
         self.dataMatrix.append(tempData)
@@ -446,7 +448,7 @@ class PyHab:
                 i += 1
         # add the new 'bad' trial to badTrials
         newTempData['GNG'] = 0
-        if self.dataMatrix[trialIndex]['trialType'][0:4] == 'hab.':  # Redoing a habituation trial
+        if self.dataMatrix[trialIndex]['trialType'][0:4] == 'hab.':  # Redoing a habituation trial TODO: this needs a revamp.
             tempName = deepcopy(self.dataMatrix[trialIndex]['trialType'])
             tempName = tempName[4:] # Just removing 'hab.'
             # Subtract data from self.habDataCompiled before checking whether we reduce the hab count, do make indexing
@@ -2445,14 +2447,7 @@ class PyHab:
                 # Set actual order of trials
                 self.actualTrialOrder = []  # in this version, mostly a key for the hab trials and blocks.
                 for i in range(0, len(self.trialOrder)):
-                    if self.trialOrder[i] == 'Hab':
-                        for j in range(0, self.maxHabTrials):
-                            if len(self.habTrialList) > 0:
-                                self.blockExpander(self.habTrialList, 'hab', hab=True, habNum=j + 1)
-                            else:
-                                self.actualTrialOrder.append('Hab')
-                        self.maxHabIndex = len(self.actualTrialOrder) - 1  # Tracks the very last hab trial.
-                    elif self.trialOrder[i] in self.blockList.keys():
+                    if self.trialOrder[i] in self.blockList.keys():
                         if self.trialOrder[i] in self.blockDataList:
                             start = len(self.actualTrialOrder)
                         self.blockExpander(self.blockList[self.trialOrder[i]], self.trialOrder[i])
@@ -2479,9 +2474,10 @@ class PyHab:
         codes, but ensures that all information is accurately preserved. Works for both hab blocks and other things.
 
         For hab blocks, we can take advantage of the fact that hab cannot appear inside any other block. It will always
-        be the top-level block, and so we can adjust the prefix once and it will carry through. TODO not anymore!
+        be the top-level block, and so we can adjust the prefix once and it will carry through. TODO: This is still essentially true, but now we can have multiple hab blocks.
 
-        TODO: Revamp for new block objects
+        TODO: Revamp for new block objects.
+        TODO:
 
         :param blockInfo: The data of the block object, including trialList and hab info.
         :type blockInfo: dict
@@ -2500,6 +2496,7 @@ class PyHab:
         blockTrials = blockInfo['trialList']
         if blockInfo['habituation'] in [1, '1', True, 'True']:
             prefixes = prefixes + str(habNum)
+            hab = True
         for q in range(0, len(blockTrials)):
             tempName = blockTrials[q]
             if tempName in self.blockList.keys():
@@ -2507,19 +2504,19 @@ class PyHab:
                 # the top-level one. Notably, hab can only be a top-level block.
                 if tempName in self.blockDataList:
                     start = len(self.actualTrialOrder)
-                self.blockExpander(self.blockList[tempName], prefixes+'.'+tempName, hab=False, insert=insert)
+                self.blockExpander(self.blockList[tempName], prefixes+'.'+tempName, hab=hab, insert=insert)
                 if tempName in self.blockDataList:
                     end = len(self.actualTrialOrder)
                     tempList = list(range(start + 1, end + 1))
                     self.blockDataTags[tempName].append(tempList)
-                if hab and q == len(self.habTrialList) - 1: # Go back and pin on the ^ if needed. A little cheaty
+                if hab and q == len(self.habTrialList) - 1: # Go back and pin on the ^ if needed. A little cheaty. TODO: No longer workable.
                     revise = deepcopy(self.actualTrialOrder[-1])
                     revise = revise[:revise.index('.')] + '^' + revise[revise.index('.'):]
                     self.actualTrialOrder[-1] = revise
             else:
                 # For everything else.
-                if hab and q == len(self.habTrialList) - 1:
-                    prefixes = prefixes + '^'  # End-of-hab-cycle marker
+                if hab and q == len(self.habTrialList) - 1: # TODO: No longer workable
+                    prefixes = prefixes + '^'  # End-of-hab-cycle marker TODO: Used to trip checkStop but needs more.
                 tempName = prefixes + '.' + tempName
                 if insert == -1:
                     self.actualTrialOrder.append(tempName)

@@ -1430,6 +1430,8 @@ class PyHabBuilder:
 
         TODO: This UI is still more or less fine but we need to add the Hab settings to it.
         TODO: Add indicator of what is and isn't a hab block in the pallette?
+        TODO: Do not allow hab blocks to be embedded in other blocks.
+        TODO: Each hab block can only be used once.
 
         :param blockName: Name of new block
         :type blockName: str
