@@ -435,6 +435,8 @@ class PyHab:
         Decrementing of trial numbers is handled in doExperiment when the relevant key is
         pressed.
 
+        TODO: Block-level redo.
+
         :param trialNum: Trial number to redo
         :type trialNum: int
         :return:
@@ -972,6 +974,8 @@ class PyHab:
         """
         Lays the groundwork for redoTrial, including correcting the trial order, selecting the right stim, etc.
 
+        TODO: Block and hab redos.
+
         :param tn: Trial number (trialNum)
         :type tn: int
         :param autoAdv: The current auto-advance trial type list (different on first trial for Reasons)
@@ -1032,7 +1036,7 @@ class PyHab:
                     self.habMetWhen = -1  # Reset
                     tempTN = trialNum + max(len(self.habTrialList), 1)  # Starting with the next trial.
                     ctr = 0
-                    for h in range(self.habCount+1, self.maxHabTrials):
+                    for h in range(self.habCount+1, self.maxHabTrials): # TODO: maxhabtrials only tracks the last possible hab trial, not the last one in the BLOCK. hmm.
                         [irrel, irrel2] = self.insertHab(tn=tempTN+ctr*max(len(self.habTrialList), 1), hn=h)
                         ctr += 1
         return [disMovie, trialNum]
@@ -1040,6 +1044,8 @@ class PyHab:
     def jumpToTest(self, tn):
         """
         Jumps out of a hab block into whatever the first trial is that is not a hab trial or in a hab meta-trial-type
+        TODO: Block level implementation.
+
         :param tn: trial number
         :type tn: int
         :return: [disMovie, trialType] as insertHab, the former being the movie file to play if relevant, and the latter being the new trial type
@@ -1080,6 +1086,8 @@ class PyHab:
     def insertHab(self, tn, hn=-1):
         """
         Literally insert a new hab trial or meta-trial into actualTrialOrder, get the right movie, etc.
+
+        TODO: New multi-hab-trial stuff.
 
         :param tn: trial number to insert the trial
         :type tn: int
@@ -1316,8 +1324,7 @@ class PyHab:
                         [disMovie,trialType] = self.insertHab(trialNum)
                         while '.' in trialType:
                             trialType = trialType[trialType.index('.') + 1:]
-                    # TODO: Skip condition checking hab needs to be fixed, but I think the ^ symbol will still do it.
-                    elif self.keyboard[self.key.S] and trialType != 'Hab' and '^' not in trialType:  # Skip trial. Doesn't work on things required for habituation.
+                    elif self.keyboard[self.key.S] and trialType != 'Hab' and '*' not in trialType:  # Skip trial. Doesn't work on things required for habituation.
                         skip = True
                     else:
                         self.dispCoderWindow(0)
@@ -1342,7 +1349,8 @@ class PyHab:
                     if self.counters[trialType] < 0:
                         self.counters[trialType] = 0
             elif x == 1:  # end hab block!
-                tempNum = self.maxHabIndex
+                # TODO: rework  to only end this hab block not every hab block
+                tempNum = self.maxHabIndex # TODO nope.
                 # trialNum is in fact the index after the current trial at this point
                 # so we can just erase everything between that and the first non-hab trial.
                 del self.actualTrialOrder[trialNum:tempNum + 1]  # oddly, the del function does not erase the final index.
@@ -1403,7 +1411,7 @@ class PyHab:
 
         :param number: Trial number
         :type number: int
-        :param ttype: Trial type
+        :param ttype: Trial type - the full expanded one with block hierarchy and hab trial info included.
         :type ttype: string
         :param  disMovie: A dictionary as follows {'stim':[psychopy object for stimulus presentation], 'stimType':[movie,image,audio, pair]}
         :type disMovie: dictionary
@@ -1415,12 +1423,15 @@ class PyHab:
         localType = deepcopy(ttype)
         while '.' in localType:
             localType = localType[localType.index('.')+1:]
-        if ttype[0:3] == 'hab' and '.' in ttype:  # Hab sub-trials. Hard to ID definitively, actually. TODO: This will change with the new hab system
+        if '*' in ttype:  # Hab block trial
+            # Hab trials have this * marker, but also the hab block will always be the top-level block, i.e., before the first .
+            # Even if it's a one-trial block this will be true.
             spliceType = ttype[ttype.index('.')+1:]
             if '.' in spliceType:
                 spliceType = spliceType[0:spliceType.index('.')] # Isolate the part between '.'s, which will be what shows up in habtriallist.
             if spliceType in self.habTrialList:
-                dataType = 'hab' + ttype[ttype.index('.'):]  # Collapses down the number and ^ markings for the data file todo: change
+                # TODO: Hab type is an issue.
+                dataType = 'hab' + ttype[ttype.index('.'):]  # Collapses down the number and ^ markings for the data file
                 habTrial = True
             else:
                 dataType = ttype
@@ -1495,7 +1506,7 @@ class PyHab:
                     offDur = endTrial - startOff
                     tempGazeArray = {'trial':number, 'trialType':dataType, 'startTime':startOff, 'endTime':endTrial, 'duration':offDur}
                     offArray.append(tempGazeArray)
-            elif core.getTime() - startTrial >= .5 and self.keyboard[self.key.S] and '^' not in ttype:
+            elif core.getTime() - startTrial >= .5 and self.keyboard[self.key.S] and '*' not in ttype:
                 # New feature: End trial and go forward manually. Disabled for hab trials and meta-trials.
                 # Disabled for the first half-second to stop you from skipping through multiple auto-advancing trials
                 if localType in self.movieEnd:
@@ -1766,11 +1777,12 @@ class PyHab:
                 self.habDataCompiled[self.habCount] += tempSum
             if number >= len(self.actualTrialOrder) or ttype == 4:
                 return 2
-            elif '^' in ttype: # TODO: This is the key marker for a hab trial now.
+            elif '^' in ttype:  # Final trial of a hab block repetition.
                 self.habCount += 1  # Note: Occurs after data recording, making recording hab trial number hard.
                 # Check if criteria need to be set or have been met
                 if self.checkStop():  # If criteria met
                     # Check if there are any trials FOLLOWING the hab trials.
+                    # Todo: maxHabIndex is only used here, so it only needs to look at the last instance of a hab block. This might still work.
                     if self.maxHabIndex < len(self.actualTrialOrder)-1:
                         return 1
                     else:
@@ -2472,16 +2484,19 @@ class PyHab:
             else:
                 self.run()
 
-    def blockExpander(self, blockInfo, prefixes, hab=False, habNum=0, insert=-1):
+    def blockExpander(self, blockInfo, prefixes, hab=False, habNum=0, insert=-1, baseStart=-1):
         """
         A method for constructing actualTrialOrder while dealing with recursive blocks. Can create incredibly long trial
         codes, but ensures that all information is accurately preserved. Works for both hab blocks and other things.
 
         For hab blocks, we can take advantage of the fact that hab cannot appear inside any other block. It will always
-        be the top-level block, and so we can adjust the prefix once and it will carry through. TODO: This is still essentially true, but now we can have multiple hab blocks.
+        be the top-level block, and so we can adjust the prefix once and it will carry through.
 
-        TODO: Revamp for new block objects.
-        TODO: Hab block identification and tagging needs to be reworked from the ground up.
+        The trial naming preserves hierarchy in a block.trial or block.subblock.trial form.
+        Hab blocks are designated by a '*' at the start, and the last trial in a hab block is marked with '^',
+        which is needed to trip checkStop.
+
+        Because hab blocks cannot be embedded in other blocks, the top-level block is always the one with the hab settings.
 
         :param blockInfo: The data of the block object, including trialList and hab info.
         :type blockInfo: dict
@@ -2489,10 +2504,12 @@ class PyHab:
         :type prefixes: str
         :param hab: Are we dealing with a habituation trial expansion?
         :type hab: bool
-        :param habNum: If we are dealing with a habituation trial expansion, what number of it are we on?
+        :param habNum: If we are dealing with a habituation trial expansion, what hab iteration of it are we on?
         :type habNum: int
         :param insert: An int specifying where in actualTrialOrder to put a trial. Needed to generalize this function for insertHab
         :type insert: int
+        :param baseStart: Marks the index where the top-level block started in actualTrialOrder.
+        :type baseStart: int
         :return:
         :rtype:
         """
@@ -2506,22 +2523,36 @@ class PyHab:
             if tempName in self.blockList.keys():
                 # If a block contains a different block. So, a recursive call that expands the lower-level block within
                 # the top-level one. Notably, hab can only be a top-level block.
+                if baseStart == -1:
+                    baseStart = len(self.actualTrialOrder)
                 if tempName in self.blockDataList:
                     start = len(self.actualTrialOrder)
-                self.blockExpander(self.blockList[tempName], prefixes+'.'+tempName, hab=hab, insert=insert)
+                self.blockExpander(self.blockList[tempName], prefixes+'.'+tempName, hab=hab, insert=insert, baseStart=baseStart)
                 if tempName in self.blockDataList:
                     end = len(self.actualTrialOrder)
                     tempList = list(range(start + 1, end + 1))
                     self.blockDataTags[tempName].append(tempList)
-                if hab and q == len(self.habTrialList) - 1: # Go back and pin on the ^ if needed. A little cheaty. TODO: No longer workable.
+                # If this is a hab block, make sure the last trial is marked for checkStop.
+                if hab:
+                    # Remove all previous instances of '^' and then add it again.
+                    # Because recursion, this will end up appending it to the last trial of the top-level block.
+                    # uses baseStart to find the starting point of the current iteration.
+                    for n in range(baseStart, len(self.actualTrialOrder)):
+                        if '^' in self.actualTrialOrder[n]:
+                            tmpString = deepcopy(self.actualTrialOrder[n])
+                            # The unicode num for '^' is 94. Using string.translate, we can remove all instances of it.
+                            self.actualTrialOrder[n] = tmpString.translate({94: None})
                     revise = deepcopy(self.actualTrialOrder[-1])
                     revise = revise[:revise.index('.')] + '^' + revise[revise.index('.'):]
                     self.actualTrialOrder[-1] = revise
             else:
                 # For everything else.
-                if hab and q == len(self.habTrialList) - 1: # TODO: No longer workable
-                    prefixes = prefixes + '^'  # End-of-hab-cycle marker TODO: Used to trip checkStop but needs more.
-                tempName = prefixes + '.' + tempName
+                if hab:
+                    prefixes = prefixes + '*' # A universal hab marker. Applies to every trial in a hab block.
+                    # Identify end of hab cycle.
+                    if q == len(blockTrials) - 1:
+                        prefixes = prefixes + '^'  # End-of-hab-cycle marker
+                tempName = prefixes + '.' + tempName # e.g., A*^.B if A is the block and B is the trial, and it's a hab
                 if insert == -1:
                     self.actualTrialOrder.append(tempName)
                 else:

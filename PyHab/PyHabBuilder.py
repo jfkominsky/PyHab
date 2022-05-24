@@ -816,9 +816,9 @@ class PyHabBuilder:
                             warnDlg.show()
                             skip = True
                             self.trialTypeDlg(typeInfo[0], makeNew, typeInfo)
-                        elif '.' in typeInfo[0] or '^' in typeInfo[0]:
+                        elif '.' in typeInfo[0] or '^' in typeInfo[0] or '*' in typeInfo[0]:
                             warnDlg = gui.Dlg(title="llegal character!")
-                            warnDlg.addText("The '.' and '^' characters cannot be used as part of a trial type name. Please rename your trial type")
+                            warnDlg.addText("The '.', '^', and '*' characters cannot be used as part of a trial type name. Please rename your trial type")
                             warnDlg.show()
                             skip = True
                             self.trialTypeDlg(typeInfo[0], makeNew, typeInfo)
@@ -1369,11 +1369,10 @@ class PyHabBuilder:
                     errDlg.addText("Name cannot be blank!")
                     irrel = errDlg.show()
                     self.makeBlockDlg(name, new)
-                elif newBlock[0] == 'Hab' or '.' in newBlock[0] or '^' in newBlock[0]:
+                elif '.' in newBlock[0] or '^' in newBlock[0] or '*' in newBlock[0]:
                     # TODO: Remove 'Hab' as forbidden
                     errDlg = gui.Dlg(title="Illegal block name!")
                     errDlg.addText("Name contains illegal character, or is reserved. Please rename!")
-                    errDlg.addText("To create habituation blocks, please use the 'Add Habituation' button.")
                     irrel = errDlg.show()
                     self.makeBlockDlg(name, new)
                 elif new and newBlock[0] in self.settings['trialTypes']:
@@ -1434,9 +1433,8 @@ class PyHabBuilder:
         detection will still work, even if a shape is behind another shape. So, like with conditions, we need a totally
         parallel UI
 
-        TODO: This UI is still more or less fine but we need to add the Hab settings to it.
-        TODO: Add indicator of what is and isn't a hab block in the pallette?
         Hab blocks cannot be embedded in other blocks.
+        TODO: How does adding stuff to calcHabOver work if it's in an embedded block?
 
 
         :param blockName: Name of new block

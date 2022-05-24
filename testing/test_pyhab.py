@@ -918,17 +918,57 @@ class TestRunSetup(object):
         assert self.trialInst.ageMo == 1
         assert self.trialInst.ageDay == 0
 
-    def test_hab_expansion(self):
+    def test_hab_one_trial_expansion(self):
         testOne = [99, 'Test', 'NB', '7', '2', '18', 'testcond', '8', '2', '18']
-        self.trialInst.trialOrder = ['A', 'A', 'B', 'B', 'Hab', 'D']
+        self.trialInst.trialOrder = ['A', 'A', 'B', 'B', 'C', 'D']
+        # C is a hab block
+        self.trialInst.blockList = {'C': {'trialList': ['F'],
+                                        'habituation': 1,
+                                        'habByDuration': 0,
+                                        'maxHabTrials': 14,
+                                        'setCritWindow': 3,
+                                        'setCritDivisor': 2.0,
+                                        'setCritType': 'First',
+                                        'habThresh': 5.0,
+                                        'metCritWindow': 3,
+                                        'metCritDivisor': 1.0,
+                                        'metCritStatic': 'Moving',
+                                        'calcHabOver': ['B']}}
         self.trialInst.run(testMode=testOne)
         assert len(self.trialInst.actualTrialOrder) == 19
-        assert len([x for x in self.trialInst.actualTrialOrder if x == 'Hab']) == 14
-        self.trialInst.habTrialList = ['C','B']
+        assert len([x for x in self.trialInst.actualTrialOrder if x == 'C*^.F']) == 14
+
+    def test_hab_block_expansion(self):
+        testOne = [99, 'Test', 'NB', '7', '2', '18', 'testcond', '8', '2', '18']
+        self.trialInst.trialOrder = ['A', 'A', 'B', 'B', 'C', 'D']
+        self.trialInst.blockList = {'C': {'trialList': ['X', 'E', 'B'],
+                                          'habituation': 1,
+                                          'habByDuration': 0,
+                                          'maxHabTrials': 10, # for easier math.
+                                          'setCritWindow': 3,
+                                          'setCritDivisor': 2.0,
+                                          'setCritType': 'First',
+                                          'habThresh': 5.0,
+                                          'metCritWindow': 3,
+                                          'metCritDivisor': 1.0,
+                                          'metCritStatic': 'Moving',
+                                          'calcHabOver': ['X','B']},
+                                    'E': {'trialList': ['Z', 'Y', 'X'],
+                                          'habituation': 0,
+                                          'habByDuration': 0,
+                                          'maxHabTrials': 14,
+                                          'setCritWindow': 3,
+                                          'setCritDivisor': 2.0,
+                                          'setCritType': 'First',
+                                          'habThresh': 5.0,
+                                          'metCritWindow': 3,
+                                          'metCritDivisor': 1.0,
+                                          'metCritStatic': 'Moving',
+                                          'calcHabOver': []}}
         self.trialInst.run(testMode=testOne)
-        assert len(self.trialInst.actualTrialOrder) == 33
-        assert len([x for x in self.trialInst.actualTrialOrder if '^.B' in x]) == 14
-        assert len([x for x in self.trialInst.actualTrialOrder if '.C' in x]) == 14
+        assert len(self.trialInst.actualTrialOrder) == 55
+        assert len([x for x in self.trialInst.actualTrialOrder if '^' in x]) == 10
+        print(self.actualTrialOrder)
 
     def test_block_expansion(self):
         testOne = [99, 'Test', 'NB', '7', '2', '18', 'testcond', '8', '2', '18']
