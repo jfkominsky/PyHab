@@ -2454,9 +2454,6 @@ class PyHab:
                         finalDict[i] = newTempTrials
                     self.stimNames = finalDict
                     self.blockList = finalBlock
-                    # todo: revamp
-                    if 'Hab' in self.blockList.keys():
-                        self.habTrialList = self.blockList['Hab']
                 else:
                     self.cond = thisInfo[6]
                     self.condLabel = self.cond
@@ -2466,7 +2463,12 @@ class PyHab:
                     if self.trialOrder[i] in self.blockList.keys():
                         if self.trialOrder[i] in self.blockDataList:
                             start = len(self.actualTrialOrder)
-                        self.blockExpander(self.blockList[self.trialOrder[i]], self.trialOrder[i])
+                        if self.blockList[self.trialOrder[i]]['habituation'] in [1, '1', True, 'True']:
+                            # hab block!
+                            for k in range(0, self.blockList[self.trialOrder[i]]['maxHabTrials']):
+                                self.blockExpander(self.blockList[self.trialOrder[i]], self.trialOrder[i], habNum=k+1)
+                        else:
+                            self.blockExpander(self.blockList[self.trialOrder[i]], self.trialOrder[i])
                         if self.trialOrder[i] in self.blockDataList:
                             end = len(self.actualTrialOrder)
                             tempList = list(range(start+1,end+1))
