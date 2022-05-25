@@ -751,6 +751,8 @@ class TestDataFunc(object):
                                         'metCritStatic': 'Moving',
                                         'calcHabOver': ['C']}}
 
+        self.dataInst.habCount['D'] = 0 # This would normally happen during init.
+
         habMatrix = copy.deepcopy(self.testMatrix)
         habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
                           'condLabel': 'dataTest', 'trial': 3, 'GNG': 1, 'trialType': 'D.C', 'stimName': 'movie1.mov',
