@@ -1041,19 +1041,26 @@ class PyHab:
                         ctr += 1
         return [disMovie, trialNum]
 
-    def jumpToTest(self, tn):
+    def jumpToTest(self, tn, block):
         """
         Jumps out of a hab block into whatever the first trial is that is not a hab trial or in a hab meta-trial-type
         TODO: Block level implementation.
 
-        :param tn: trial number
+        :param tn: current trial number when the function is called
         :type tn: int
+        :param block: Block the habituation belongs to. Find end of block, done, because hab blocks can't be embedded and each one can only occur in the flow once.
+        :type block: str
         :return: [disMovie, trialType] as insertHab, the former being the movie file to play if relevant, and the latter being the new trial type
         :rtype: list
         """
-        self.habMetWhen = 0  # Necessary to make sure that once you have jumped to test you cannot jump trials again.
+        self.habMetWhen[block] = 0  # Necessary to make sure that once you have jumped to test you cannot jump trials again.
         trialNum = tn
-        tempNum = self.maxHabIndex
+        maxHab = -1
+        # Look for the last instance of block and '^', which will definitionally be the last trial of type.
+        for x in range(trialNum, len(self.actualTrialOrder)):
+            if block in self.actualTrialOrder[x] and '^' in self.actualTrialOrder[x]:
+                maxHab = x+1
+        tempNum = maxHab
         # It's actually necessary to decrement the counter for the current trial type to deal with jump/insert!
         currType = self.actualTrialOrder[trialNum - 1]
         while '.' in currType:  # Dealing with blocks and recursions
@@ -1065,7 +1072,7 @@ class PyHab:
         # so we can just erase everything between that and the first non-hab trial.
         del self.actualTrialOrder[(trialNum - 1):(tempNum + 1)]
         try:
-            trialType = self.actualTrialOrder[trialNum - 1]  # Doesn't look for hab trial because...should never happen!
+            trialType = self.actualTrialOrder[trialNum - 1]
             if self.stimPres:
                 if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
                     self.stimName = self.stimNames[trialType][self.counters[trialType] % len(self.stimNames[trialType])]
@@ -1083,7 +1090,7 @@ class PyHab:
             self.endExperiment()
             return[0,'4']
 
-    def insertHab(self, tn, hn=-1):
+    def insertHab(self, tn, block, hn=-1):
         """
         Literally insert a new hab trial or meta-trial into actualTrialOrder, get the right movie, etc.
 
@@ -1094,27 +1101,21 @@ class PyHab:
         :param hn: HabCount number to insert the hab trial. By default, whatever the current habcount is. However, there
         are edge cases when recovering from "redo" trials when we want to throw in a hab trial further down the line.
         :type hn: int
+        :param block: The habituation block the trial is being added to
+        :type block: str
         :return: [disMovie, trialType], the former being the movie file to play if relevant, and the latter being the new trial type
         :rtype: list
         """
         trialNum = tn
         if hn == -1:
-            hn = self.habCount
+            hn = self.habCount[block]
         habNum = hn
-        if len(self.habTrialList) > 0:
-            self.blockExpander(self.habTrialList, 'hab', hab=True, habNum=habNum+1, insert=trialNum-1)
-            # reset self.maxHabIndex based on last instance of '^'.
-            # TODO: revamp now that we can have multiple hab blocks, otherwise this will hit all of them.
-            for n in range(trialNum, len(self.actualTrialOrder)):
-                if '^' in self.actualTrialOrder[n]:
-                    self.maxHabIndex = n
-        else:
-            self.actualTrialOrder.insert(trialNum - 1, 'Hab') # TODO: revamp.
-            self.maxHabIndex = trialNum - 1
+        if len(self.blockList[block]['trialList']) > 0:
+            self.blockExpander(self.blockList[block]['trialList'], block, hab=True, habNum=habNum+1, insert=trialNum-1)
         trialType = self.actualTrialOrder[trialNum - 1]
         while '.' in trialType:
             trialType = trialType[trialType.index('.') + 1:]
-        if self.stimPres and habNum == self.habCount:  # If we're inserting something way down the line, don't mess with it yet.
+        if self.stimPres and habNum == self.habCount[block]:  # If we're inserting something way down the line, don't mess with it yet.
             if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
                 self.stimName = self.stimNames[trialType][self.counters[trialType] % len(self.stimNames[trialType])]
             else:

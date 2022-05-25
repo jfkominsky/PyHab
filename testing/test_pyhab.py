@@ -936,7 +936,7 @@ class TestDataFunc(object):
         assert self.dataInst.checkStop('D') == False
         assert self.dataInst.habCrit['D'] == 55.0  # should not have changed.
 
-        self.dataInst.blockList['D']['metCritWindow'] # Should now trip because setcritwindow is 3 + 5 = 8
+        self.dataInst.blockList['D']['metCritWindow'] = 5 # Should now trip because setcritwindow is 3 + 5 = 8
         assert self.dataInst.checkStop('D') == True
         assert self.dataInst.habCrit['D'] == 55.0  # should not have changed.
 
