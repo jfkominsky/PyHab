@@ -802,7 +802,7 @@ class TestDataFunc(object):
         assert self.dataInst.habCrit['D'] == 15.0  # Check criteria set properly
         assert self.dataInst.habSetWhen['D'] == 3
 
-        self.dataInst.habCount = 14
+        self.dataInst.habCount['D'] = 14
         assert self.dataInst.checkStop('D') == True
 
         self.dataInst.habCount['D'] = 3
