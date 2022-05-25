@@ -751,8 +751,14 @@ class TestDataFunc(object):
                                         'metCritStatic': 'Moving',
                                         'calcHabOver': ['C']}}
 
-        self.dataInst.habCount['D'] = 0 # This would normally happen during init.
-        self.dataInst.habCrit['D'] = 0
+        i='D'
+        # These are settings which would normally happen during init, but we are doing here b/c hab is added late.
+        self.dataInst.habCount[i] = 0
+        self.dataInst.habCrit[i] = 0
+        self.dataInst.habSetWhen[i] = -1
+        self.dataInst.habMetWhen[i] = -1
+        self.dataInst.maxHabIndex[i] = 0
+        self.dataInst.habDataCompiled[i] = [0] * self.dataInst.blockList['D']['maxHabTrials']
 
         habMatrix = copy.deepcopy(self.testMatrix)
         habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
