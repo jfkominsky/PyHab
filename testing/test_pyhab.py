@@ -203,6 +203,7 @@ class TestDataFunc(object):
             assert len(k) == 2
 
     def test_redo_hab(self):
+
         self.dataInst.dataMatrix = copy.deepcopy(self.testMatrix)
         self.dataInst.verbDatList = copy.deepcopy(self.testDatList)
         self.dataInst.badTrials = []  # It doesn't teardown until ALL of the functions have been run so we have to reset it
@@ -220,9 +221,17 @@ class TestDataFunc(object):
                                         'metCritDivisor': 1.0,
                                         'metCritStatic': 'Moving',
                                         'calcHabOver': []}}
+        i = 'D'
+        # These are settings which would normally happen during init, but we are doing here b/c hab is added late.
+        self.dataInst.habCount[i] = 0
+        self.dataInst.habCrit[i] = 0
+        self.dataInst.habSetWhen[i] = -1
+        self.dataInst.habMetWhen[i] = -1
+        self.dataInst.maxHabIndex[i] = 0
+        self.dataInst.habDataCompiled[i] = [0] * self.dataInst.blockList['D']['maxHabTrials']
 
         self.dataInst.dataMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-                'condLabel': 'dataTest', 'trial': 3, 'GNG': 1, 'trialType': 'D', 'stimName': 'movie1.mov',
+                'condLabel': 'dataTest', 'trial': 3, 'GNG': 1, 'trialType': 'D.C', 'stimName': 'movie1.mov',
                 'habCrit': 0, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
                 'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
                 'numOffB': 2})
@@ -381,13 +390,23 @@ class TestDataFunc(object):
         self.dataInst.verbDatList = copy.deepcopy(self.testDatList)
         self.dataInst.badTrials = []
         self.dataInst.verbBadList = {'verboseOn': [], 'verboseOff': [], 'verboseOn2': [], 'verboseOff2': []}
-        self.dataInst.habTrialList = ['C', 'B', 'C']
-        self.dataInst.calcHabOver = ['B', 'C']
-        self.dataInst.actualTrialOrder = ['A', 'B', 'hab1.C', 'hab1.B', 'hab1^.C','hab2.c', 'hab2.B', 'hab2^.C','hab3.C', 'hab3.B', 'hab3^.C']
+        self.dataInst.blockList = {'D': {'trialList': ['B', 'C', 'B'],
+                                         'habituation': 1,
+                                         'habByDuration': 0,
+                                         'maxHabTrials': 14,
+                                         'setCritWindow': 3,
+                                         'setCritDivisor': 2.0,
+                                         'setCritType': 'First',
+                                         'habThresh': 5.0,
+                                         'metCritWindow': 3,
+                                         'metCritDivisor': 1.0,
+                                         'metCritStatic': 'Moving',
+                                         'calcHabOver': ['B','C']}}
+        self.dataInst.actualTrialOrder = ['A', 'B', 'D1*.C', 'D1*.B', 'D1*^.C','D2*.C', 'D2*.B', 'D2*^.C','D3*.C', 'D3*.B', 'D3*^.C']
 
         self.dataInst.dataMatrix.append(
             {'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-             'condLabel': 'dataTest', 'trial': 3, 'GNG': 1, 'trialType': 'hab.C', 'stimName': 'movie1.mov',
+             'condLabel': 'dataTest', 'trial': 3, 'GNG': 1, 'trialType': 'D.C', 'stimName': 'movie1.mov',
              'habCrit': 0, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
              'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
              'numOffB': 2})
@@ -404,7 +423,7 @@ class TestDataFunc(object):
 
         self.dataInst.dataMatrix.append(
             {'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-             'condLabel': 'dataTest', 'trial': 4, 'GNG': 1, 'trialType': 'hab.B', 'stimName': 'movie1.mov',
+             'condLabel': 'dataTest', 'trial': 4, 'GNG': 1, 'trialType': 'D.B', 'stimName': 'movie1.mov',
              'habCrit': 0, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
              'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
              'numOffB': 2})
@@ -421,7 +440,7 @@ class TestDataFunc(object):
 
         self.dataInst.dataMatrix.append(
             {'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-             'condLabel': 'dataTest', 'trial': 5, 'GNG': 1, 'trialType': 'hab.C', 'stimName': 'movie1.mov',
+             'condLabel': 'dataTest', 'trial': 5, 'GNG': 1, 'trialType': 'D.C', 'stimName': 'movie1.mov',
              'habCrit': 0, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
              'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
              'numOffB': 2})
@@ -439,20 +458,20 @@ class TestDataFunc(object):
         # Now redo 3, then 4, then 5.
 
         self.dataInst.redoTrial(3)
-        assert self.dataInst.habCount == 1
-        assert self.dataInst.habDataCompiled[0] == 20
+        assert self.dataInst.habCount['D'] == 1
+        assert self.dataInst.habDataCompiled['D'][0] == 20
         assert len(self.dataInst.dataMatrix) == 4
         assert len(self.dataInst.badTrials) == 1
 
         self.dataInst.redoTrial(4)
-        assert self.dataInst.habCount == 1
-        assert self.dataInst.habDataCompiled[0] == 10
+        assert self.dataInst.habCount['D'] == 1
+        assert self.dataInst.habDataCompiled['D'][0] == 10
         assert len(self.dataInst.dataMatrix) == 3
         assert len(self.dataInst.badTrials) == 2
 
         self.dataInst.redoTrial(5)
-        assert self.dataInst.habCount == 0
-        assert self.dataInst.habDataCompiled[0] == 0
+        assert self.dataInst.habCount['D'] == 0
+        assert self.dataInst.habDataCompiled['D'][0] == 0
         assert len(self.dataInst.dataMatrix) == 2
         assert len(self.dataInst.badTrials) == 3
 
@@ -677,39 +696,39 @@ class TestDataFunc(object):
         """
         habMatrix = copy.deepcopy(self.testMatrix)
         habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-                          'condLabel': 'dataTest', 'trial': 3, 'GNG': 1, 'trialType': 'hab.A', 'stimName': 'movie1.mov',
+                          'condLabel': 'dataTest', 'trial': 3, 'GNG': 1, 'trialType': 'D.A', 'stimName': 'movie1.mov',
                           'habCrit': 0,'habTrialNo':1, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
                           'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
                           'numOffB': 2})
         habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-                          'condLabel': 'dataTest', 'trial': 4, 'GNG': 1, 'trialType': 'hab.B', 'stimName': 'movie1.mov',
+                          'condLabel': 'dataTest', 'trial': 4, 'GNG': 1, 'trialType': 'D.B', 'stimName': 'movie1.mov',
                           'habCrit': 0, 'habTrialNo':1, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
                           'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
                           'numOffB': 2})
         habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-                          'condLabel': 'dataTest', 'trial': 5, 'GNG': 1, 'trialType': 'hab.A', 'stimName': 'movie1.mov',
+                          'condLabel': 'dataTest', 'trial': 5, 'GNG': 1, 'trialType': 'D.A', 'stimName': 'movie1.mov',
                           'habCrit': 0, 'habTrialNo': 2, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
                           'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
                           'numOffB': 2})
         habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-                          'condLabel': 'dataTest', 'trial': 6, 'GNG': 1, 'trialType': 'hab.B', 'stimName': 'movie1.mov',
+                          'condLabel': 'dataTest', 'trial': 6, 'GNG': 1, 'trialType': 'D.B', 'stimName': 'movie1.mov',
                           'habCrit': 0, 'habTrialNo': 2, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
                           'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
                           'numOffB': 2})
         habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-                          'condLabel': 'dataTest', 'trial': 7, 'GNG': 1, 'trialType': 'hab.A', 'stimName': 'movie1.mov',
+                          'condLabel': 'dataTest', 'trial': 7, 'GNG': 1, 'trialType': 'D.A', 'stimName': 'movie1.mov',
                           'habCrit': 0, 'habTrialNo': 3, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
                           'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
                           'numOffB': 2})
         habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-                          'condLabel': 'dataTest', 'trial': 8, 'GNG': 1, 'trialType': 'hab.B', 'stimName': 'movie1.mov',
+                          'condLabel': 'dataTest', 'trial': 8, 'GNG': 1, 'trialType': 'D.B', 'stimName': 'movie1.mov',
                           'habCrit': 0, 'habTrialNo': 3, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
                           'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
                           'numOffB': 2})
 
         self.dataInst.dataMatrix = habMatrix  # We can actually use python's pointer thing to our advantage here: dataMatrix will update with habMatrix
         self.dataInst.badTrials = []
-        self.dataInst.habTrialList = ['A','B']  # Resetting from the 'redo' tests above.
+        self.dataInst.blockList['D']['tr'] = ['A','B']  # Resetting from the 'redo' tests above.
         self.dataInst.calcHabOver = ['A']
 
         habSaveData = self.dataInst.saveHabFile()
@@ -1696,19 +1715,30 @@ class TestPrefLook(object):
                           'sumOnR': 3.0, 'numOnR': 2, 'sumOff': 3.5,'numOff': 2})
 
         self.dataInstPL.badTrials = []
-        self.dataInstPL.habTrialList = ['A', 'B']  # Resetting from the 'redo' tests above.
-        self.dataInstPL.calcHabOver = ['A']
+        self.dataInstPL.blockList={'D': {'trialList': ['B', 'C'],
+               'habituation': 1,
+               'habByDuration': 0,
+               'maxHabTrials': 14,
+               'setCritWindow': 3,
+               'setCritDivisor': 2.0,
+               'setCritType': 'First',
+               'habThresh': 5.0,
+               'metCritWindow': 3,
+               'metCritDivisor': 1.0,
+               'metCritStatic': 'Moving',
+               'calcHabOver': ['B', 'C']}} # Resetting from the 'redo' tests above.
+        self.dataInstPL.calcHabOver = ['B']
 
         habSaveData = self.dataInstPL.saveHabFile()
         assert len(habSaveData) == 5
-        assert habSaveData[3]['trialType'] == 'Hab'
+        assert habSaveData[3]['trialType'] == 'D.B'
         assert habSaveData[3]['sumOnL'] == 3.5
         assert habSaveData[3]['sumOnR'] == 3.0
 
-        self.dataInstPL.calcHabOver = ['A', 'B']
+        self.dataInstPL.blockList['D']['calcHabOver'] = ['B','C']
         habSaveData = self.dataInstPL.saveHabFile()
         assert len(habSaveData) == 5
-        assert habSaveData[3]['trialType'] == 'Hab'
+        assert habSaveData[3]['trialType'] == 'D.C'
         assert habSaveData[3]['sumOnL'] == 7.0
         assert habSaveData[3]['sumOnR'] == 6.0
         assert habSaveData[3]['stimName'] == 'movie1.mov+movie1.mov'
