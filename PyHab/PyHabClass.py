@@ -1349,7 +1349,7 @@ class PyHab:
                     if self.counters[trialType] < 0:
                         self.counters[trialType] = 0
             elif x == 1:  # end hab block!
-                # TODO: rework  to only end this hab block not every hab block
+                # TODO: Find the end of this hab block and skip to there.
                 tempNum = self.maxHabIndex # TODO nope.
                 # trialNum is in fact the index after the current trial at this point
                 # so we can just erase everything between that and the first non-hab trial.
@@ -1782,7 +1782,7 @@ class PyHab:
                 # Check if criteria need to be set or have been met
                 if self.checkStop():  # If criteria met
                     # Check if there are any trials FOLLOWING the hab trials.
-                    # Todo: maxHabIndex is only used here, so it only needs to look at the last instance of a hab block. This might still work.
+                    # Todo: This use of maxHabIndex looks at the last possible of all hab blocks, other places use it differently.
                     if self.maxHabIndex < len(self.actualTrialOrder)-1:
                         return 1
                     else:
