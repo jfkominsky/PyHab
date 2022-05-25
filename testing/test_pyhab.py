@@ -738,7 +738,7 @@ class TestDataFunc(object):
         :rtype:
         """
         # Create an appropriate hab setting.
-        self.dataInst.blockList = self.trialInst.blockList = {'D': {'trialList': ['C'],
+        self.dataInst.blockList = {'D': {'trialList': ['C'],
                                         'habituation': 1,
                                         'habByDuration': 0,
                                         'maxHabTrials': 14,
