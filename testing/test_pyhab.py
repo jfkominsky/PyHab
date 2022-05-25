@@ -752,6 +752,7 @@ class TestDataFunc(object):
                                         'calcHabOver': ['C']}}
 
         self.dataInst.habCount['D'] = 0 # This would normally happen during init.
+        self.dataInst.habCrit['D'] = 0
 
         habMatrix = copy.deepcopy(self.testMatrix)
         habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
