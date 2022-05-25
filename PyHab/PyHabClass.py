@@ -2550,9 +2550,18 @@ class PyHab:
             else:
                 # For everything else.
                 if hab:
-                    prefixes = prefixes + '*' # A universal hab marker. Applies to every trial in a hab block.
+                    if '*' not in prefixes:
+                        prefixes = prefixes + '*' # A universal hab marker. Applies to every trial in a hab block.
                     # Identify end of hab cycle.
                     if q == len(blockTrials) - 1:
+                        # Edge case: there is a sub-block, but the final item in the top-level hab block is a trial.
+                        # This ensures that the end of the hab cycle is marked correctly.
+                        if baseStart > -1:
+                            for n in range(baseStart, len(self.actualTrialOrder)):
+                                if '^' in self.actualTrialOrder[n]:
+                                    tmpString = deepcopy(self.actualTrialOrder[n])
+                                    # The unicode num for '^' is 94. Using string.translate, we can remove all instances of it.
+                                    self.actualTrialOrder[n] = tmpString.translate({94: None})
                         prefixes = prefixes + '^'  # End-of-hab-cycle marker
                 tempName = prefixes + '.' + tempName # e.g., A*^.B if A is the block and B is the trial, and it's a hab
                 if insert == -1:

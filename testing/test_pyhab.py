@@ -968,6 +968,7 @@ class TestRunSetup(object):
         self.trialInst.run(testMode=testOne)
         assert len(self.trialInst.actualTrialOrder) == 55
         assert len([x for x in self.trialInst.actualTrialOrder if '^' in x]) == 10
+        assert len([x for x in self.trialInst.actualTrialOrder if '*' in x]) == 50
         print(self.actualTrialOrder)
 
     def test_block_expansion(self):
