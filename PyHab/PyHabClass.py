@@ -564,7 +564,7 @@ class PyHab:
             else:
                 sumOnTimes = 0
                 index = self.habCount[blockName] - self.blockList[blockName]['metCritWindow']
-                if (self.self.blockList[blockName]['metCritStatic'] == 'Moving') or (self.habCount[blockName]-self.blockList[blockName]['setCritWindow']) % self.blockList[blockName]['metCritWindow'] == 0:
+                if (self.blockList[blockName]['metCritStatic'] == 'Moving') or (self.habCount[blockName]-self.blockList[blockName]['setCritWindow']) % self.blockList[blockName]['metCritWindow'] == 0:
                     for n in range(index, self.habCount[blockName]):  # now, starting with that trial, go through and add up the good trial looking times
                         sumOnTimes = sumOnTimes + self.habDataCompiled[blockName][n]
                     sumOnTimes = sumOnTimes / self.blockList[blockName]['metCritDivisor']
