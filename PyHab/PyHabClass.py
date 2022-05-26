@@ -1041,19 +1041,22 @@ class PyHab:
                         ctr += 1
         return [disMovie, trialNum]
 
-    def jumpToTest(self, tn, block):
+    def jumpToTest(self, tn, block, met=False):
         """
-        Jumps out of a hab block into whatever the first trial is that is not a hab trial or in a hab meta-trial-type
-        TODO: Block level implementation.
+        Jumps out of a hab block into whatever the first trial after the current hab block.
 
         :param tn: current trial number when the function is called
         :type tn: int
         :param block: Block the habituation belongs to. Find end of block, done, because hab blocks can't be embedded and each one can only occur in the flow once.
         :type block: str
+        :param met: A boolean for whether this is because of J (False) or whether this is a genuine hab-criterion-met
+        :type met: bool
         :return: [disMovie, trialType] as insertHab, the former being the movie file to play if relevant, and the latter being the new trial type
         :rtype: list
         """
-        self.habMetWhen[block] = 0  # Necessary to make sure that once you have jumped to test you cannot jump trials again.
+
+        if not met:
+            self.habMetWhen[block] = 0  # Necessary to make sure that once you have jumped to test you cannot jump trials again.
         trialNum = tn
         maxHab = -1
         # Look for the last instance of block and '^', which will definitionally be the last trial of type.
@@ -1192,6 +1195,20 @@ class PyHab:
             trialType = self.actualTrialOrder[trialNum - 1]
             while '.' in trialType:
                 trialType = trialType[trialType.index('.')+1:]
+            topBlockName = self.actualTrialOrder[trialNum - 1]
+            if '*' in topBlockName: # if it's a hab block, it will always be the top-level block.
+                topBlockName = topBlockName[0:topBlockName.index('*')]  # problem: also includes hab number!
+                # Let's assume less than 100 for max hab.
+                for b, c in self.habCount.items():
+                    if c < 9:
+                        if eval(topBlockName[-1]) == c+1: # need to od it this way because otherwise risks an eval error
+                            topBlockName = topBlockName[0:-1]
+                    elif c > 8:
+                        if eval(topBlockName[-2:]) == c+1:
+                            topBlockName = topBlockName[0:-2]
+            elif '.' in topBlockName:
+                topBlockName = topBlockName[0:topBlockName.index('.')]
+
             # select movie for trial
             if self.stimPres:
                 if self.counters[trialType] >= len(self.stimNames[trialType]) and not self.loadSep:  # Comes up with multiple repetitions of few movies
@@ -1224,10 +1241,13 @@ class PyHab:
                     while '.' in trialType:
                         trialType = trialType[trialType.index('.') + 1:]
                     didRedo = True
-                    # TODO: J and I behavior is going to take some reworking. JumpToTest and INsertHab both need re-writing.
-                elif self.keyboard[self.key.J] and self.habMetWhen == -1 and 'Hab' in self.trialOrder:  # jump to test in a hab design
-                    [disMovie, trialType] = self.jumpToTest(trialNum)
-                elif self.actualTrialOrder[trialNum-1][0:3] not in ['Hab', 'hab'] and self.keyboard[self.key.I] and 'Hab' in self.trialOrder and self.habMetWhen > 0: # insert additional hab trial
+                elif self.keyboard[self.key.J] and topBlockName in self.habMetWhen.keys():
+                        if self.habMetWhen[topBlockName] == -1:  # jump to test in a hab design
+                            [disMovie, trialType] = self.jumpToTest(trialNum)
+                # Insert add'l hab trial. Problem: this can only be invoked outside of a hab block, but needs to refer back to the hab block!
+                elif self.keyboard[self.key.I] and len(self.habMetWhen.keys()) > 0: # insert additional hab trial
+                    # Find the most recent hab block
+
                     [disMovie, trialType] = self.insertHab(trialNum)
                     while '.' in trialType:
                         trialType = trialType[trialType.index('.') + 1:]
@@ -1350,11 +1370,9 @@ class PyHab:
                     if self.counters[trialType] < 0:
                         self.counters[trialType] = 0
             elif x == 1:  # end hab block!
-                # TODO: Find the end of this hab block and skip to there.
-                tempNum = self.maxHabIndex # TODO nope.
-                # trialNum is in fact the index after the current trial at this point
-                # so we can just erase everything between that and the first non-hab trial.
-                del self.actualTrialOrder[trialNum:tempNum + 1]  # oddly, the del function does not erase the final index.
+                # Find the end of this hab block and skip to there. JumpToTest does this!
+                # First, need top-level block id, which we get at the start of the loop as topBlockName.
+                self.jumpToTest(trialNum, topBlockName)
                 trialNum += 1
                 trialType = self.actualTrialOrder[trialNum - 1]  # No need to check for hab sub-trials.
                 if self.blindPres == 0:
@@ -1420,25 +1438,27 @@ class PyHab:
         :rtype:
         """
         self.trialText.text = "Trial no. " + str(number)
-        habTrial = False  # Just for tracking if this is part of a habituation
+        habTrial = False  # Just for tracking if this is part of a habituation, whether or not it is included in the hab calc
+        habBlock = ''
         localType = deepcopy(ttype)
         while '.' in localType:
             localType = localType[localType.index('.')+1:]
         if '*' in ttype:  # Hab block trial
             # Hab trials have this * marker, but also the hab block will always be the top-level block, i.e., before the first .
             # Even if it's a one-trial block this will be true.
-            spliceType = ttype[ttype.index('.')+1:]
-            if '.' in spliceType:
-                spliceType = spliceType[0:spliceType.index('.')] # Isolate the part between '.'s, which will be what shows up in habtriallist.
-            if spliceType in self.habTrialList:
-                # TODO: Hab type is an issue.
-                dataType = 'hab' + ttype[ttype.index('.'):]  # Collapses down the number and ^ markings for the data file
-                habTrial = True
-            else:
-                dataType = ttype
-        elif len(self.habTrialList) == 0 and ttype == 'Hab': # TODO: Hab trials are no longer a thing.
-            dataType = ttype
+            # TODO: Isolate top-level block for various hab indexes.
+            # datatype should be the full block-trial name minus *^ todo:[I think]?
+            dataType = ttype.translate({94:None, 42:None})
+            habBlock = ttype[:ttype.index('*')]
             habTrial = True
+            # Now we need to trim out the hab number. Assume maxHab < 100
+            for b, c in self.habCount.items():
+                if c < 9:
+                    if eval(habBlock[-1]) == c+1:  # need to do it this way because otherwise risks an eval error
+                        habBlock = habBlock[0:-1]
+                elif c > 8:
+                    if eval(habBlock[-2:]) == c+1:
+                        habBlock = habBlock[0:-2]
         else:
             dataType = ttype
         self.frameCount['C'] = 0  # reset display

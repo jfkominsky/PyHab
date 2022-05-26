@@ -752,7 +752,6 @@ class TestDataFunc(object):
         different modes!
         Default settings: Set first 3, divisor 2. Test moving window, 3, divisor 1. Maxhab 14
 
-        Todo: REVISE for new hab system.
         :return:
         :rtype:
         """
@@ -1200,6 +1199,125 @@ class TestRunSetup(object):
         assert self.trialInst.stimNames['Fam'] == ['3x2_1_3_1_1-converted.mp4', '3x2_2_1_1_1-converted.mp4']
         assert self.trialInst.stimNames['Test'] == ['3x2_2_2_1_1-converted.mp4']
 
+class TestMultiHabBlock(object):
+    """
+    Tests various things that might come up with multiple habituation blocks.
+    """
+
+    def setup_class(self):
+        mhab_settings = copy.deepcopy(base_settings)
+        mhab_settings['blockList'] = "{'E':{'trialList': ['X'],'habituation': 1,'habByDuration': 0,'maxHabTrials': 14,'setCritWindow': 3,'setCritDivisor': 2.0,'setCritType': 'First','habThresh': 5.0,'metCritWindow': 3,'metCritDivisor': 1.0,'metCritStatic': 'Moving','calcHabOver': ['X']},'F':{'trialList': ['Z', 'Y', 'X'],'habituation': 1,'habByDuration': 0,'maxHabTrials': 14,'setCritWindow': 3,'setCritDivisor': 2.0,'setCritType': 'First','habThresh': 5.0,'metCritWindow': 3,'metCritDivisor': 1.0,'metCritStatic': 'Moving','calcHabOver': ['Y','X']}}"
+        mhab_settings['trialOrder'] = "['A','A','E','B','F','C']"
+        self.habInst = PH.PyHab(mhab_settings)
+
+        self.testMatrix = [{'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                            'condLabel': 'dataTest', 'trial': 1, 'GNG': 1, 'trialType': 'A', 'stimName': 'movie1.mov',
+                            'habCrit': 0, 'sumOnA': 3.0, 'numOnA': 2, 'sumOffA': 3.5,
+                            'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2},
+                           {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                            'condLabel': 'dataTest', 'trial': 2, 'GNG': 1, 'trialType': 'A',
+                            'stimName': 'movie2.mov', 'habCrit': 0, 'sumOnA': 3.0, 'numOnA': 2, 'sumOffA': 3.5,
+                            'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}]
+
+        # Data that can be added iteratively to simulate hab trials for the first hab block
+        self.firstHabTrialsMatrix = [{'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                            'condLabel': 'dataTest', 'trial': 3, 'GNG': 1, 'trialType': 'E.X', 'stimName': 'movie1.mov',
+                            'habCrit': 0, 'sumOnA': 8.0, 'numOnA': 2, 'sumOffA': 3.5,
+                            'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2},
+                             {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                              'condLabel': 'dataTest', 'trial': 4, 'GNG': 1, 'trialType': 'E.X',
+                              'stimName': 'movie2.mov', 'habCrit': 0, 'sumOnA': 8.0, 'numOnA': 2, 'sumOffA': 3.5,
+                              'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2},
+                             {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                              'condLabel': 'dataTest', 'trial': 5, 'GNG': 1, 'trialType': 'E.X',
+                              'stimName': 'movie2.mov', 'habCrit': 0, 'sumOnA': 8.0, 'numOnA': 2,'sumOffA': 3.5,
+                              'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2},
+                             {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                              'condLabel': 'dataTest', 'trial': 6, 'GNG': 1, 'trialType': 'E.X',
+                              'stimName': 'movie2.mov', 'habCrit': 12.0, 'sumOnA': 3.0, 'numOnA': 2,'sumOffA': 3.5,
+                              'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2},
+                             {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                              'condLabel': 'dataTest', 'trial': 7, 'GNG': 1, 'trialType': 'E.X',
+                              'stimName': 'movie2.mov', 'habCrit': 12.0, 'sumOnA': 3.0, 'numOnA': 2,'sumOffA': 3.5,
+                              'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2},
+                             {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                              'condLabel': 'dataTest', 'trial': 8, 'GNG': 1, 'trialType': 'E.X',
+                              'stimName': 'movie2.mov', 'habCrit': 12.0, 'sumOnA': 3.0, 'numOnA': 2,'sumOffA': 3.5,
+                              'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}]
+
+    def teardown_class(self):
+        del self.habInst
+
+    def test_initial_setup(self):
+        testOne = [99, 'Test', 'NB', '7', '2', '18', 'testcond', '8', '2', '18']
+        self.habInst.run(testMode=testOne)
+
+        assert 'E' in self.habInst.habCount.keys()
+        assert 'E' in self.habInst.habCrit.keys()
+        assert 'E' in self.habInst.habSetWhen.keys()
+        assert 'E' in self.habInst.habMetWhen.keys()
+        assert 'E' in self.habInst.maxHabIndex.keys()
+        assert 'E' in self.habInst.habDataCompiled.keys()
+        assert 'F' in self.habInst.habCount.keys()
+        assert 'F' in self.habInst.habCrit.keys()
+        assert 'F' in self.habInst.habSetWhen.keys()
+        assert 'F' in self.habInst.habMetWhen.keys()
+        assert 'F' in self.habInst.maxHabIndex.keys()
+        assert 'F' in self.habInst.habDataCompiled.keys()
+
+        assert len(self.habInst.actualTrialOrder) == 60 # 14+14*3+4 = 14*4+4 = 60
+
+    def test_first_checkstop(self):
+        # Simulate up to a set of circumstances that would result in checkstop being true.
+        habMatrix = copy.deepcopy(self.testMatrix)
+        habMatrix.append(self.firstHabTrialsMatrix[0])
+        self.habInst.dataMatrix = habMatrix
+        self.habInst.stimPres = True  # Temporary, so it doesn't try to play the end-hab sound.
+        self.habInst.habDataCompiled['E'][self.dataInst.habCount['E']] += self.habInst.dataMatrix[-1]['sumOnA']
+        assert self.habInst.checkStop('E') == False
+
+        self.habInst.dataMatrix.append(self.firstHabTrialsMatrix[1])
+        self.habInst.habCount['E'] += 1
+        self.habInst.habDataCompiled['E'][self.dataInst.habCount['E']] += self.habInst.dataMatrix[-1]['sumOnA']
+        self.habInst.dataMatrix.append(self.firstHabTrialsMatrix[2])
+        self.habInst.habCount['E'] += 1
+        self.habInst.habDataCompiled['E'][self.dataInst.habCount['E']] += self.habInst.dataMatrix[-1]['sumOnA']
+        assert self.habInst.checkStop('E') == False
+        assert self.habInst.habCrit['E'] == 12.0 #24/2=12
+        assert self.habInst.habSetWhen['E'] == 5
+
+        self.habInst.dataMatrix.append(self.firstHabTrialsMatrix[3])
+        self.habInst.habCount['E'] += 1
+        self.habInst.habDataCompiled['E'][self.dataInst.habCount['E']] += self.habInst.dataMatrix[-1]['sumOnA']
+        self.habInst.dataMatrix.append(self.firstHabTrialsMatrix[4])
+        self.habInst.habCount['E'] += 1
+        self.habInst.habDataCompiled['E'][self.dataInst.habCount['E']] += self.habInst.dataMatrix[-1]['sumOnA']
+        self.habInst.dataMatrix.append(self.firstHabTrialsMatrix[5])
+        self.habInst.habCount['E'] += 1
+        self.habInst.habDataCompiled['E'][self.dataInst.habCount['E']] += self.habInst.dataMatrix[-1]['sumOnA']
+        assert self.habInst.checkStop('E') == True
+        assert self.habInst.habMetWhen['E'] == 8
+
+    def test_first_jump(self):
+        self.commandInst.stimNames = {'A': ['Movie1', 'Movie2', 'Movie3', 'Movie4'],
+                                      'B': ['Movie5', 'Movie6', 'Movie7', 'Movie8'],
+                                      'C': ['Movie1', 'Movie2', 'Movie3', 'Movie4'],
+                                      'D': ['Movie9', 'Movie10'],
+                                      'X': ['Movie12']}
+        self.commandInst.stimDict = {'A': ['Movie1', 'Movie2'],
+                                     'B': ['Movie5', 'Movie6'],
+                                     'C': ['Movie1', 'Movie2'],
+                                     'D': ['Movie9', 'Movie10'],
+                                     'X': ['Movie12']}
+
+        [x, y] = self.habInst.jumpToTest(8, 'E', met=True)
+
+        assert self.habInst.habMetWhen['E'] == 8
+        assert x == 'Movie5'
+        assert y == 'B'
+        assert len(self.habInst.actualTrialOrder) == 52 # 60-8 = 52
+
+
 class TestCommands(object):
     """
     Tests the setup and operation of redo, jump, insert hab, etc.
@@ -1317,7 +1435,7 @@ class TestCommands(object):
         self.commandInst.counters = {'A': 2, 'B': 2, 'C': 0, 'D': 0,'Hab':2}
         self.commandInst.run(testMode=testOne)
 
-        [x, y] = self.commandInst.jumpToTest(7)
+        [x, y] = self.commandInst.jumpToTest(7,'Hab')
         assert x == 'Movie9'
         assert y == 'D'
         assert self.commandInst.actualTrialOrder ==['A', 'A', 'B', 'B', 'Hab', 'Hab','D']
