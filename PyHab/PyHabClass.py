@@ -1058,7 +1058,7 @@ class PyHab:
         if not met:
             self.habMetWhen[block] = 0  # Necessary to make sure that once you have jumped to test you cannot jump trials again.
         trialNum = tn
-        maxHab = -1
+        maxHab = deepcopy(tn)
         # Look for the last instance of block and '^', which will definitionally be the last trial of type.
         for x in range(trialNum, len(self.actualTrialOrder)):
             if block in self.actualTrialOrder[x] and '^' in self.actualTrialOrder[x]:
@@ -1374,8 +1374,14 @@ class PyHab:
                         self.counters[trialType] = 0
             elif x == 1:  # end hab block!
                 # Find the end of this hab block and skip to there. JumpToTest does this!
-                # First, need top-level block id, which we get at the start of the loop as topBlockName.
-                self.jumpToTest(trialNum, topBlockName)
+                # But JumpToTest can't be used except between two trials for complex reasons
+                # So instead, we partially replicate its code.
+                maxHab = deepcopy(trialNum)
+                for x in range(trialNum, len(self.actualTrialOrder)):
+                    if topBlockName in self.actualTrialOrder[x] and '^' in self.actualTrialOrder[x]:
+                        maxHab = x + 1
+                tempNum = maxHab
+                del self.actualTrialOrder[(trialNum):(tempNum + 1)]
                 trialNum += 1
                 trialType = self.actualTrialOrder[trialNum - 1]  # No need to check for hab sub-trials.
                 if self.blindPres == 0:

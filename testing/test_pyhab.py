@@ -1097,7 +1097,7 @@ class TestRunSetup(object):
         # Length is going to be...big...5+14+14*5 = 19+70=89. Recursion gets out of hand pretty quickly!
         assert len(self.trialInst.actualTrialOrder) == 89
         assert len([x for x in self.trialInst.actualTrialOrder if '^.C.B' in x]) == 14
-        assert self.trialInst.actualTrialOrder[-2] == self.trialInst.maxHabIndex['Hab']
+        assert len(self.trialInst.actualTrialOrder)-2 == self.trialInst.maxHabIndex['Hab']
 
     def test_block_data_setup(self):
         testOne = [99, 'Test', 'NB', '7', '2', '18', 'testcond', '8', '2', '18']
@@ -1286,7 +1286,7 @@ class TestMultiHabBlock(object):
         self.habInst.habCount['E'] += 1
         assert self.habInst.checkStop('E') == False
         assert self.habInst.habCrit['E'] == 12.0 #24/2=12
-        assert self.habInst.habSetWhen['E'] == 5
+        assert self.habInst.habSetWhen['E'] == 3
 
         self.habInst.dataMatrix.append(self.firstHabTrialsMatrix[3])
         self.habInst.habDataCompiled['E'][self.habInst.habCount['E']] += self.habInst.dataMatrix[-1]['sumOnA']
@@ -1298,7 +1298,7 @@ class TestMultiHabBlock(object):
         self.habInst.habDataCompiled['E'][self.habInst.habCount['E']] += self.habInst.dataMatrix[-1]['sumOnA']
         self.habInst.habCount['E'] += 1
         assert self.habInst.checkStop('E') == True
-        assert self.habInst.habMetWhen['E'] == 8
+        assert self.habInst.habMetWhen['E'] == 6
 
     def test_first_jump(self):
         self.habInst.stimNames = {'A': ['Movie1', 'Movie2', 'Movie3', 'Movie4'],
