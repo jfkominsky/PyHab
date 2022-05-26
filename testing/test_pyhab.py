@@ -1274,6 +1274,7 @@ class TestMultiHabBlock(object):
         self.habInst.dataMatrix = habMatrix
         self.habInst.stimPres = True  # Temporary, so it doesn't try to play the end-hab sound.
         self.habInst.habDataCompiled['E'][self.habInst.habCount['E']] += self.habInst.dataMatrix[-1]['sumOnA']
+        self.habInst.habCount['E'] += 1
         assert self.habInst.checkStop('E') == False
 
         self.habInst.dataMatrix.append(self.firstHabTrialsMatrix[1])
@@ -1309,6 +1310,8 @@ class TestMultiHabBlock(object):
                                      'C': ['Movie1', 'Movie2'],
                                      'D': ['Movie9', 'Movie10'],
                                      'X': ['Movie12']}
+
+        self.habInst.counters = {'A':2, 'B':0,'C':0,'D':0, 'X':6}
 
         [x, y] = self.habInst.jumpToTest(8, 'E', met=True)
 
@@ -1432,7 +1435,7 @@ class TestCommands(object):
                                      'D': ['Movie9', 'Movie10'],
                                      'Hab': ['Movie12']}
         self.commandInst.blockList = {'Z': {'trialList': ['Hab'],
-                                        'habituation': 0,
+                                        'habituation': 1,
                                         'habByDuration': 0,
                                         'maxHabTrials': 14,
                                         'setCritWindow': 3,
