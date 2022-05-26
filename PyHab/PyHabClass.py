@@ -1065,17 +1065,20 @@ class PyHab:
                 maxHab = x+1
         tempNum = maxHab
         # It's actually necessary to decrement the counter for the current trial type to deal with jump/insert!
-        currType = self.actualTrialOrder[trialNum - 1]
-        while '.' in currType:  # Dealing with blocks and recursions
-            currType = currType[currType.index('.') + 1:]
-        self.counters[currType] -= 1
-        if self.counters[currType] < 0:
-            self.counters[currType] = 0
+        if not met:
+            currType = self.actualTrialOrder[trialNum - 1]
+            while '.' in currType:  # Dealing with blocks and recursions
+                currType = currType[currType.index('.') + 1:]
+            self.counters[currType] -= 1
+            if self.counters[currType] < 0:
+                self.counters[currType] = 0
         # trialNum is in fact the index after the current trial at this point
         # so we can just erase everything between that and the first non-hab trial.
         del self.actualTrialOrder[(trialNum - 1):(tempNum + 1)]
         try:
-            trialType = self.actualTrialOrder[trialNum - 1]
+            trialType = self.actualTrialOrder[trialNum - 1] # note: need to clean this.
+            while '.' in trialType:
+                trialType = trialType[trialType.index('.')+1:]
             if self.stimPres:
                 if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
                     self.stimName = self.stimNames[trialType][self.counters[trialType] % len(self.stimNames[trialType])]
@@ -1742,7 +1745,7 @@ class PyHab:
         # print onArray2
         # print offArray2
         if habTrial:
-            habDataRec = self.habCount + 1
+            habDataRec = self.habCount[habBlock] + 1
         else:
             habDataRec = 0
         if self.stimPres:
@@ -1780,61 +1783,39 @@ class PyHab:
             return 3
         else:
             self.dataRec(onArray, offArray, number, dataType, onArray2, offArray2, self.stimName, habDataRec)
-        if self.habMetWhen == -1 and len(self.habTrialList) > 0 and not abort:   # if still during habituation
-            if dataType[0:4] == 'hab.' and dataType[4:] in self.calcHabOver:
-                tempSum = 0
-                # Check if computing habituation by duration or on-time
-                if self.habByDuration == 1:
-                    for c in range(0, len(onArray)):
-                        tempSum += onArray[c]['duration']
-                    for d in range(0, len(offArray)):
-                        tempSum += offArray[d]['duration']
-                    if self.durationInclude == 0 and len(offArray) > 0:
-                        if offArray[-1]['endTime'] > onArray[-1]['endTime']:
-                            tempSum = tempSum - offArray[-1]['duration']
-                else:
-                    for c in range(0, len(onArray)):
-                        tempSum += onArray[c]['duration']
-                self.habDataCompiled[self.habCount] += tempSum
-            if number >= len(self.actualTrialOrder) or ttype == 4:
-                return 2
-            elif '^' in ttype:  # Final trial of a hab block repetition.
-                self.habCount += 1  # Note: Occurs after data recording, making recording hab trial number hard.
-                # Check if criteria need to be set or have been met
-                if self.checkStop():  # If criteria met
-                    # Check if there are any trials FOLLOWING the hab trials.
-                    # Todo: This use of maxHabIndex looks at the last possible of all hab blocks, other places use it differently.
-                    if self.maxHabIndex < len(self.actualTrialOrder)-1:
-                        return 1
+        # If this is a habituation block
+        if habTrial:
+            if self.habMetWhen[habBlock] == -1 and not abort:   # if still during habituation
+                if localType in self.blockList[habBlock]['calcHabOver']:
+                    tempSum = 0
+                    # Check if computing habituation by duration or on-time
+                    if self.blockList[habBlock]['habByDuration'] == 1:
+                        for c in range(0, len(onArray)):
+                            tempSum += onArray[c]['duration']
+                        for d in range(0, len(offArray)):
+                            tempSum += offArray[d]['duration']
+                        if self.durationInclude == 0 and len(offArray) > 0:
+                            if offArray[-1]['endTime'] > onArray[-1]['endTime']:
+                                tempSum = tempSum - offArray[-1]['duration']
                     else:
-                        return 2  # End experiment.
+                        for c in range(0, len(onArray)):
+                            tempSum += onArray[c]['duration']
+                    self.habDataCompiled[habBlock][self.habCount[habBlock]] += tempSum
+                if number >= len(self.actualTrialOrder) or ttype == 4:
+                    return 2
+                elif '^' in ttype:  # Final trial of a hab block repetition.
+                    self.habCount[habBlock] += 1  # Note: Occurs after data recording, making recording hab trial number hard.
+                    # Check if criteria need to be set or have been met
+                    if self.checkStop(habBlock):  # If criteria met
+                        # Check if there are any trials FOLLOWING the hab trials.
+                        if self.maxHabIndex[habBlock] < len(self.actualTrialOrder)-1:
+                            return 1
+                        else:
+                            return 2  # End experiment.
+                    else:
+                        return 0
                 else:
                     return 0
-            else:
-                return 0
-        elif ttype == 'Hab' and self.habMetWhen == -1 and not abort:
-            tempSum = 0
-            if self.habByDuration == 1:
-                for c in range(0, len(onArray)):
-                    tempSum += onArray[c]['duration']
-                for d in range(0, len(offArray)):
-                    tempSum += offArray[d]['duration']
-                if self.durationInclude == 0 and len(offArray) > 0:
-                    if offArray[-1]['endTime'] > onArray[-1]['endTime']:
-                        tempSum = tempSum - offArray[-1]['duration']
-            else:
-                for c in range(0, len(onArray)):
-                    tempSum += onArray[c]['duration']
-            self.habDataCompiled[self.habCount] += tempSum
-            self.habCount += 1
-            if self.checkStop():  # If criteria met
-                # Check if there are any trials FOLLOWING the hab trials.
-                if self.actualTrialOrder[-1] != 'Hab':
-                    return 1
-                else:
-                    return 2  # End experiment.
-            else:
-                return 0
         elif number >= len(self.actualTrialOrder) or ttype == 4:
             # End experiment
             return 2
@@ -2488,6 +2469,7 @@ class PyHab:
                             # hab block!
                             for k in range(0, self.blockList[self.trialOrder[i]]['maxHabTrials']):
                                 self.blockExpander(self.blockList[self.trialOrder[i]], self.trialOrder[i], habNum=k+1)
+                            self.maxHabIndex[self.trialOrder[i]] = len(self.actualTrialOrder)-1 # The last trial of this hab block.
                         else:
                             self.blockExpander(self.blockList[self.trialOrder[i]], self.trialOrder[i])
                         if self.trialOrder[i] in self.blockDataList:

@@ -1014,6 +1014,7 @@ class TestRunSetup(object):
         assert len([x for x in self.trialInst.actualTrialOrder if '^' in x]) == 14
         assert len([x for x in self.trialInst.actualTrialOrder if '*^.F' in x]) == 14
         assert 'C14*^.F' in self.trialInst.actualTrialOrder
+        assert self.trialInst.actualTrialOrder.index('C14*^.F') == self.trialInst.maxHabIndex['C']
 
     def test_hab_block_expansion(self):
         testOne = [99, 'Test', 'NB', '7', '2', '18', 'testcond', '8', '2', '18']
@@ -1046,7 +1047,7 @@ class TestRunSetup(object):
         assert len(self.trialInst.actualTrialOrder) == 55
         assert len([x for x in self.trialInst.actualTrialOrder if '^' in x]) == 10
         assert len([x for x in self.trialInst.actualTrialOrder if '*' in x]) == 50
-        print(self.trialInst.actualTrialOrder)
+        assert self.trialInst.actualTrialOrder.index('C10*^.B') == self.trialInst.maxHabIndex['C']
 
     def test_block_expansion(self):
         testOne = [99, 'Test', 'NB', '7', '2', '18', 'testcond', '8', '2', '18']
@@ -1092,11 +1093,11 @@ class TestRunSetup(object):
                                         'metCritStatic': 'Moving',
                                         'calcHabOver': ['B']}
         self.trialInst.trialOrder = ['A', 'A', 'B', 'B', 'Hab', 'D']
-        self.trialInst.habTrialList = ['B', 'C']
         self.trialInst.run(testMode=testOne)
         # Length is going to be...big...5+14+14*5 = 19+70=89. Recursion gets out of hand pretty quickly!
         assert len(self.trialInst.actualTrialOrder) == 89
         assert len([x for x in self.trialInst.actualTrialOrder if '^.C.B' in x]) == 14
+        assert self.trialInst.actualTrialOrder[-2] == self.trialInst.maxHabIndex['Hab']
 
     def test_block_data_setup(self):
         testOne = [99, 'Test', 'NB', '7', '2', '18', 'testcond', '8', '2', '18']
@@ -1278,24 +1279,24 @@ class TestMultiHabBlock(object):
         assert self.habInst.checkStop('E') == False
 
         self.habInst.dataMatrix.append(self.firstHabTrialsMatrix[1])
-        self.habInst.habCount['E'] += 1
         self.habInst.habDataCompiled['E'][self.habInst.habCount['E']] += self.habInst.dataMatrix[-1]['sumOnA']
+        self.habInst.habCount['E'] += 1
         self.habInst.dataMatrix.append(self.firstHabTrialsMatrix[2])
-        self.habInst.habCount['E'] += 1
         self.habInst.habDataCompiled['E'][self.habInst.habCount['E']] += self.habInst.dataMatrix[-1]['sumOnA']
+        self.habInst.habCount['E'] += 1
         assert self.habInst.checkStop('E') == False
         assert self.habInst.habCrit['E'] == 12.0 #24/2=12
         assert self.habInst.habSetWhen['E'] == 5
 
         self.habInst.dataMatrix.append(self.firstHabTrialsMatrix[3])
-        self.habInst.habCount['E'] += 1
         self.habInst.habDataCompiled['E'][self.habInst.habCount['E']] += self.habInst.dataMatrix[-1]['sumOnA']
+        self.habInst.habCount['E'] += 1
         self.habInst.dataMatrix.append(self.firstHabTrialsMatrix[4])
-        self.habInst.habCount['E'] += 1
         self.habInst.habDataCompiled['E'][self.habInst.habCount['E']] += self.habInst.dataMatrix[-1]['sumOnA']
+        self.habInst.habCount['E'] += 1
         self.habInst.dataMatrix.append(self.firstHabTrialsMatrix[5])
-        self.habInst.habCount['E'] += 1
         self.habInst.habDataCompiled['E'][self.habInst.habCount['E']] += self.habInst.dataMatrix[-1]['sumOnA']
+        self.habInst.habCount['E'] += 1
         assert self.habInst.checkStop('E') == True
         assert self.habInst.habMetWhen['E'] == 8
 
@@ -1408,7 +1409,7 @@ class TestCommands(object):
         self.commandInst.dataMatrix.append(temp1)
         [x, y] = self.commandInst.redoSetup(3,['B'])
         assert y == 2
-        assert x =="Movie2"
+        assert x == "Movie2"
 
         self.commandInst.verbDatList = copy.deepcopy(self.testDatList)
         self.commandInst.dataMatrix = copy.deepcopy(self.testMatrix)
