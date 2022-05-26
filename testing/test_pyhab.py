@@ -1273,38 +1273,38 @@ class TestMultiHabBlock(object):
         habMatrix.append(self.firstHabTrialsMatrix[0])
         self.habInst.dataMatrix = habMatrix
         self.habInst.stimPres = True  # Temporary, so it doesn't try to play the end-hab sound.
-        self.habInst.habDataCompiled['E'][self.dataInst.habCount['E']] += self.habInst.dataMatrix[-1]['sumOnA']
+        self.habInst.habDataCompiled['E'][self.habInst.habCount['E']] += self.habInst.dataMatrix[-1]['sumOnA']
         assert self.habInst.checkStop('E') == False
 
         self.habInst.dataMatrix.append(self.firstHabTrialsMatrix[1])
         self.habInst.habCount['E'] += 1
-        self.habInst.habDataCompiled['E'][self.dataInst.habCount['E']] += self.habInst.dataMatrix[-1]['sumOnA']
+        self.habInst.habDataCompiled['E'][self.habInst.habCount['E']] += self.habInst.dataMatrix[-1]['sumOnA']
         self.habInst.dataMatrix.append(self.firstHabTrialsMatrix[2])
         self.habInst.habCount['E'] += 1
-        self.habInst.habDataCompiled['E'][self.dataInst.habCount['E']] += self.habInst.dataMatrix[-1]['sumOnA']
+        self.habInst.habDataCompiled['E'][self.habInst.habCount['E']] += self.habInst.dataMatrix[-1]['sumOnA']
         assert self.habInst.checkStop('E') == False
         assert self.habInst.habCrit['E'] == 12.0 #24/2=12
         assert self.habInst.habSetWhen['E'] == 5
 
         self.habInst.dataMatrix.append(self.firstHabTrialsMatrix[3])
         self.habInst.habCount['E'] += 1
-        self.habInst.habDataCompiled['E'][self.dataInst.habCount['E']] += self.habInst.dataMatrix[-1]['sumOnA']
+        self.habInst.habDataCompiled['E'][self.habInst.habCount['E']] += self.habInst.dataMatrix[-1]['sumOnA']
         self.habInst.dataMatrix.append(self.firstHabTrialsMatrix[4])
         self.habInst.habCount['E'] += 1
-        self.habInst.habDataCompiled['E'][self.dataInst.habCount['E']] += self.habInst.dataMatrix[-1]['sumOnA']
+        self.habInst.habDataCompiled['E'][self.habInst.habCount['E']] += self.habInst.dataMatrix[-1]['sumOnA']
         self.habInst.dataMatrix.append(self.firstHabTrialsMatrix[5])
         self.habInst.habCount['E'] += 1
-        self.habInst.habDataCompiled['E'][self.dataInst.habCount['E']] += self.habInst.dataMatrix[-1]['sumOnA']
+        self.habInst.habDataCompiled['E'][self.habInst.habCount['E']] += self.habInst.dataMatrix[-1]['sumOnA']
         assert self.habInst.checkStop('E') == True
         assert self.habInst.habMetWhen['E'] == 8
 
     def test_first_jump(self):
-        self.commandInst.stimNames = {'A': ['Movie1', 'Movie2', 'Movie3', 'Movie4'],
+        self.habInst.stimNames = {'A': ['Movie1', 'Movie2', 'Movie3', 'Movie4'],
                                       'B': ['Movie5', 'Movie6', 'Movie7', 'Movie8'],
                                       'C': ['Movie1', 'Movie2', 'Movie3', 'Movie4'],
                                       'D': ['Movie9', 'Movie10'],
                                       'X': ['Movie12']}
-        self.commandInst.stimDict = {'A': ['Movie1', 'Movie2'],
+        self.habInst.stimDict = {'A': ['Movie1', 'Movie2'],
                                      'B': ['Movie5', 'Movie6'],
                                      'C': ['Movie1', 'Movie2'],
                                      'D': ['Movie9', 'Movie10'],
@@ -1431,44 +1431,66 @@ class TestCommands(object):
                                      'C': ['Movie1', 'Movie2'],
                                      'D': ['Movie9', 'Movie10'],
                                      'Hab': ['Movie12']}
-        self.commandInst.trialOrder = ['A', 'A', 'B', 'B', 'Hab', 'D']
+        self.commandInst.blockList = {'Z': {'trialList': ['Hab'],
+                                        'habituation': 0,
+                                        'habByDuration': 0,
+                                        'maxHabTrials': 14,
+                                        'setCritWindow': 3,
+                                        'setCritDivisor': 2.0,
+                                        'setCritType': 'First',
+                                        'habThresh': 5.0,
+                                        'metCritWindow': 3,
+                                        'metCritDivisor': 1.0,
+                                        'metCritStatic': 'Moving',
+                                        'calcHabOver': ['Hab']}}
+        self.commandInst.trialOrder = ['A', 'A', 'B', 'B', 'Z', 'D']
         self.commandInst.counters = {'A': 2, 'B': 2, 'C': 0, 'D': 0,'Hab':2}
         self.commandInst.run(testMode=testOne)
 
-        [x, y] = self.commandInst.jumpToTest(7,'Hab')
+        [x, y] = self.commandInst.jumpToTest(7,'Z')
         assert x == 'Movie9'
         assert y == 'D'
         assert self.commandInst.actualTrialOrder ==['A', 'A', 'B', 'B', 'Hab', 'Hab','D']
 
         self.commandInst.stimPres = False # Insert would require loading movies otherwise. Requires manual testing.
-        [x,y] = self.commandInst.insertHab(7)
+        [x,y] = self.commandInst.insertHab(7,'Z')
         assert x == 0
         assert y == 'Hab'
 
         self.commandInst.stimPres = True
-        self.commandInst.habTrialList = ['B','C']
+        self.commandInst.blockList={'Hab': {'trialList': ['B','C'],
+               'habituation': 0,
+               'habByDuration': 0,
+               'maxHabTrials': 14,
+               'setCritWindow': 3,
+               'setCritDivisor': 2.0,
+               'setCritType': 'First',
+               'habThresh': 5.0,
+               'metCritWindow': 3,
+               'metCritDivisor': 1.0,
+               'metCritStatic': 'Moving',
+               'calcHabOver': ['B']}}
         self.commandInst.trialOrder = ['A', 'A', 'B', 'B', 'Hab', 'D']
         self.commandInst.counters = {'A': 2, 'B': 2, 'C': 1, 'D': 0,'Hab':1}
-        self.commandInst.calcHabOver=['B']
         self.commandInst.run(testMode=testOne)
-        [x, y] = self.commandInst.jumpToTest(7)
+        [x, y] = self.commandInst.jumpToTest(7,'Hab')
         assert x == 'Movie9'
         assert y == 'D'
-        assert self.commandInst.actualTrialOrder == ['A', 'A', 'B', 'B', 'hab1.B', 'hab1^.C', 'D']
+        assert self.commandInst.actualTrialOrder == ['A', 'A', 'B', 'B', 'Hab1*.B', 'Hab1*^.C', 'D']
 
         self.commandInst.stimPres = False
         self.commandInst.habCount = 1
-        [x, y] = self.commandInst.insertHab(7)
+        [x, y] = self.commandInst.insertHab(7,'Hab')
         assert x == 0
         assert y == 'B'
-        assert self.commandInst.actualTrialOrder == ['A', 'A', 'B', 'B', 'hab1.B', 'hab1^.C','hab2.B','hab2^.C','D']
+        assert self.commandInst.actualTrialOrder == ['A', 'A', 'B', 'B', 'Hab1*.B', 'Hab1*^.C','Hab2*.B','Hab2*^.C','D']
 
         # Test something down the line!
         self.commandInst.stimPres = True
-        [x, y] = self.commandInst.insertHab(9, 2)
+        [x, y] = self.commandInst.insertHab(9,'Hab', 2)
         assert x == 0
         assert y == 'B'
-        assert self.commandInst.actualTrialOrder == ['A', 'A', 'B', 'B', 'hab1.B', 'hab1^.C','hab2.B','hab2^.C','hab3.B','hab3^.C','D']
+        assert self.commandInst.actualTrialOrder == ['A', 'A', 'B', 'B', 'Hab1*.B', 'Hab1*^.C','Hab2*.B','Hab2*^.C','Hab3*.B','Hab3*^.C','D']
 
 
     def test_setupredo_hab(self):
