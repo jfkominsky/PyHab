@@ -1916,7 +1916,6 @@ class PyHab:
         for q, r in self.blockList.items():
             if r['habituation'] in [1,'1',True,'True']:
                 wasHab == True
-
         if wasHab:  # If there's a 'Hab' trial type, the main summary file does the trick just fine.
             habMatrix = self.saveHabFile()
             # Now, actually write the file
@@ -2200,7 +2199,7 @@ class PyHab:
                 tempType = deepcopy(self.dataMatrix[i]['trialType'])
                 blockType = tempType[0:tempType.index('.')]
                 while '.' in tempType:
-                    tempType = tempType[tempType.index('.'):]
+                    tempType = tempType[tempType.index('.')+1:]
 
                 # todo: Blocks, multiple hab blocks per experiment. One file per hab block?
                 if tempType in self.blockList[blockType]['calcHabOver']:  # If not, this should specifically be ignored.
