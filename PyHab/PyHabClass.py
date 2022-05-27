@@ -1912,7 +1912,12 @@ class PyHab:
 
         # If there is habituation data, create hab summary file. Similar to the block one, but a little easier thanks to
         # the tagging of habituation trial numbers.
-        if self.habSetWhen > 0 and len(self.habTrialList) > 0:  # If there's a 'Hab' trial type, the main summary file does the trick just fine.
+        wasHab = False
+        for q, r in self.blockList.items():
+            if r['habituation'] in [1,'1',True,'True']:
+                wasHab == True
+
+        if wasHab:  # If there's a 'Hab' trial type, the main summary file does the trick just fine.
             habMatrix = self.saveHabFile()
             # Now, actually write the file
             nDupe = ''  # This infrastructure eliminates the risk of overwriting existing data
@@ -2193,8 +2198,12 @@ class PyHab:
         for i in range(0, len(self.dataMatrix)):
             if isinstance(self.dataMatrix[i]['habTrialNo'], int):
                 tempType = deepcopy(self.dataMatrix[i]['trialType'])
-                tempType = tempType[4:] # to remove 'hab.'
-                if tempType in self.calcHabOver:  # If not, this should specifically be ignored.
+                blockType = tempType[0:tempType.index('.')]
+                while '.' in tempType:
+                    tempType = tempType[tempType.index('.'):]
+
+                # todo: Blocks, multiple hab blocks per experiment. One file per hab block?
+                if tempType in self.blockList[blockType]['calcHabOver']:  # If not, this should specifically be ignored.
                     tempNo = self.dataMatrix[i]['habTrialNo']
                     addTo = False
                     addIndex = -1

@@ -231,7 +231,7 @@ class TestDataFunc(object):
         self.dataInst.maxHabIndex[i] = 0
         self.dataInst.habDataCompiled[i] = [0] * self.dataInst.blockList['D']['maxHabTrials']
 
-        self.dataInst.actualTrialOrder = ['A','A','A','D1*^.C','D2*^.C','D3*^.C','D4*^.C']
+        self.dataInst.actualTrialOrder = ['A','D1*^.C','D2*^.C','D3*^.C','D4*^.C']
 
         self.dataInst.dataMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
                 'condLabel': 'dataTest', 'trial': 3, 'GNG': 1, 'trialType': 'D.C', 'stimName': 'movie1.mov',
@@ -249,7 +249,7 @@ class TestDataFunc(object):
 
         self.dataInst.redoTrial(3)
         # All that setup, but there are only two things not tested in the above test. Still, some redundancies just to be sure
-        assert self.dataInst.habCount['D'] == 0
+        assert self.dataInst.habCount['D'] == 0 # Fails.
         assert self.dataInst.habDataCompiled['D'][0] == 0
         assert len(self.dataInst.dataMatrix) == 2
         assert len(self.dataInst.badTrials) == 1
@@ -731,7 +731,7 @@ class TestDataFunc(object):
 
         self.dataInst.dataMatrix = habMatrix  # We can actually use python's pointer thing to our advantage here: dataMatrix will update with habMatrix
         self.dataInst.badTrials = []
-        self.dataInst.blockList['D']['tr'] = ['A','B']  # Resetting from the 'redo' tests above.
+        self.dataInst.blockList['D']['trialList'] = ['A','B']  # Resetting from the 'redo' tests above.
         self.dataInst.calcHabOver = ['A']
 
         habSaveData = self.dataInst.saveHabFile()
@@ -1550,12 +1550,22 @@ class TestCommands(object):
                                      'D': ['Movie9', 'Movie10'],
                                      'H': ['Movie11']}
         self.commandInst.trialOrder = ['A', 'A', 'B', 'B', 'Hab', 'D']
-        self.commandInst.habTrialList = ['H','C']
         self.commandInst.autoAdvance = ['B','C']
-        self.commandInst.calcHabOver = ['H','C']
+        self.commandInst.blockList = {'Hab': {'trialList': ['H','C'],
+               'habituation': 1,
+               'habByDuration': 0,
+               'maxHabTrials': 14,
+               'setCritWindow': 3,
+               'setCritDivisor': 2.0,
+               'setCritType': 'First',
+               'habThresh': 5.0,
+               'metCritWindow': 3,
+               'metCritDivisor': 1.0,
+               'metCritStatic': 'Moving',
+               'calcHabOver': ['H','C']}}
         self.commandInst.counters = {'A': 2, 'B': 2, 'C': 0, 'D': 0, 'H': 0}
         self.commandInst.run(testMode=testOne)
-        self.commandInst.habMetWhen = -1 # Resetting after the jump tests above on principle.
+        self.commandInst.habMetWhen['Hab'] = -1 # Resetting after the jump tests above on principle.
         self.commandInst.verbDatList = copy.deepcopy(self.testDatList)
         self.commandInst.dataMatrix = copy.deepcopy(self.testMatrix)
 
@@ -1574,57 +1584,57 @@ class TestCommands(object):
         self.commandInst.dataMatrix.append(tempA)
 
         temp1 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-                 'condLabel': 'dataTest', 'trial': 5, 'GNG': 1, 'trialType': 'hab.H', 'stimName': 'Movie12.mov',
+                 'condLabel': 'dataTest', 'trial': 5, 'GNG': 1, 'trialType': 'Hab.H', 'stimName': 'Movie12.mov',
                  'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
                  'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
         temp2 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-                 'condLabel': 'dataTest', 'trial': 6, 'GNG': 1, 'trialType': 'hab.C',
+                 'condLabel': 'dataTest', 'trial': 6, 'GNG': 1, 'trialType': 'Hab.C',
                  'stimName': 'Movie1.mov', 'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
                  'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
         self.commandInst.dataMatrix.append(temp1)
         self.commandInst.dataMatrix.append(temp2)
         temp3 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-                 'condLabel': 'dataTest', 'trial': 7, 'GNG': 1, 'trialType': 'hab.H', 'stimName': 'movie5.mov',
+                 'condLabel': 'dataTest', 'trial': 7, 'GNG': 1, 'trialType': 'Hab.H', 'stimName': 'movie5.mov',
                  'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
                  'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
         temp4 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-                 'condLabel': 'dataTest', 'trial': 8, 'GNG': 1, 'trialType': 'hab.C',
+                 'condLabel': 'dataTest', 'trial': 8, 'GNG': 1, 'trialType': 'Hab.C',
                  'stimName': 'movie2.mov', 'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
                  'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
         temp5 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-                 'condLabel': 'dataTest', 'trial': 9, 'GNG': 1, 'trialType': 'hab.H', 'stimName': 'movie5.mov',
+                 'condLabel': 'dataTest', 'trial': 9, 'GNG': 1, 'trialType': 'Hab.H', 'stimName': 'movie5.mov',
                  'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
                  'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
         temp6 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-                 'condLabel': 'dataTest', 'trial': 10, 'GNG': 1, 'trialType': 'hab.C',
+                 'condLabel': 'dataTest', 'trial': 10, 'GNG': 1, 'trialType': 'Hab.C',
                  'stimName': 'movie2.mov', 'habCrit': 15.0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
                  'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
         self.commandInst.dataMatrix.append(temp3)
         self.commandInst.dataMatrix.append(temp4)
         self.commandInst.dataMatrix.append(temp5)
         self.commandInst.dataMatrix.append(temp6)
-        self.commandInst.habDataCompiled = [0]*self.commandInst.maxHabTrials
-        self.commandInst.habDataCompiled[0:2] = [10,10,10]  # Need to set this manually too because it's all handled by doTrial.
-        self.commandInst.habCount = 3
+        self.commandInst.habDataCompiled = [0]*self.commandInst.blockList['Hab']['maxHabTrials']
+        self.commandInst.habDataCompiled['Hab'][0:2] = [10,10,10]  # Need to set this manually too because it's all handled by doTrial.
+        self.commandInst.habCount['Hab'] = 3
 
-        assert self.commandInst.checkStop() == False
-        assert self.commandInst.habSetWhen == 3
-        assert self.commandInst.habCrit == 15
+        assert self.commandInst.checkStop('Hab') == False
+        assert self.commandInst.habSetWhen['Hab'] == 3
+        assert self.commandInst.habCrit['Hab'] == 15
         # OK, assuming all that got set up properly, lets get messy.
         self.commandInst.redoSetup(11,['B','C'])
-        assert self.commandInst.habDataCompiled[2] == 0
-        assert self.commandInst.habSetWhen == -1
-        assert self.commandInst.habMetWhen == -1
-        assert self.commandInst.habCrit == 0
-        assert self.commandInst.habCount == 2
+        assert self.commandInst.habDataCompiled['Hab'][2] == 0
+        assert self.commandInst.habSetWhen['Hab'] == -1
+        assert self.commandInst.habMetWhen['Hab'] == -1
+        assert self.commandInst.habCrit['Hab'] == 0
+        assert self.commandInst.habCount['Hab'] == 2
 
         self.commandInst.dataMatrix.append(temp5)
         self.commandInst.dataMatrix.append(temp6)
-        self.commandInst.habDataCompiled[2] = 10
-        self.commandInst.habCount = 3
-        assert self.commandInst.checkStop() == False # Reset
-        assert self.commandInst.habSetWhen == 3
-        assert self.commandInst.habMetWhen == -1
+        self.commandInst.habDataCompiled['Hab'][2] = 10
+        self.commandInst.habCount['Hab'] = 3
+        assert self.commandInst.checkStop('Hab') == False # Reset
+        assert self.commandInst.habSetWhen['Hab'] == 3
+        assert self.commandInst.habMetWhen['Hab'] == -1
 
         # Now things get a little wild.
         temp7 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
@@ -1637,96 +1647,96 @@ class TestCommands(object):
                  'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
         self.commandInst.dataMatrix.append(temp7)
         self.commandInst.dataMatrix.append(temp8)
-        self.commandInst.habDataCompiled[3] = 2
-        self.commandInst.habCount = 4
+        self.commandInst.habDataCompiled['Hab'][3] = 2
+        self.commandInst.habCount['Hab'] = 4
         temp9 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-                 'condLabel': 'dataTest', 'trial': 13, 'GNG': 1, 'trialType': 'hab.H', 'stimName': 'movie5.mov',
+                 'condLabel': 'dataTest', 'trial': 13, 'GNG': 1, 'trialType': 'Hab.H', 'stimName': 'movie5.mov',
                  'habCrit': 15.0, 'sumOnA': 1.0, 'numOnA': 2, 'sumOffA': 3.5,
                  'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
         temp10 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-                 'condLabel': 'dataTest', 'trial': 14, 'GNG': 1, 'trialType': 'hab.C',
+                 'condLabel': 'dataTest', 'trial': 14, 'GNG': 1, 'trialType': 'Hab.C',
                  'stimName': 'movie2.mov', 'habCrit': 15.0, 'sumOnA': 1.0, 'numOnA': 2, 'sumOffA': 3.5,
                  'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
         self.commandInst.dataMatrix.append(temp9)
         self.commandInst.dataMatrix.append(temp10)
-        self.commandInst.habDataCompiled[4] = 2
-        self.commandInst.habCount = 5
+        self.commandInst.habDataCompiled['Hab'][4] = 2
+        self.commandInst.habCount['Hab'] = 5
         temp11 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-                 'condLabel': 'dataTest', 'trial': 15, 'GNG': 1, 'trialType': 'hab.H', 'stimName': 'movie5.mov',
+                 'condLabel': 'dataTest', 'trial': 15, 'GNG': 1, 'trialType': 'Hab.H', 'stimName': 'movie5.mov',
                  'habCrit': 15.0, 'sumOnA': 1.0, 'numOnA': 2, 'sumOffA': 3.5,
                  'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
         temp12 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-                  'condLabel': 'dataTest', 'trial': 16, 'GNG': 1, 'trialType': 'hab.C',
+                  'condLabel': 'dataTest', 'trial': 16, 'GNG': 1, 'trialType': 'Hab.C',
                   'stimName': 'movie2.mov', 'habCrit': 15.0, 'sumOnA': 1.0, 'numOnA': 2, 'sumOffA': 3.5,
                   'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
         self.commandInst.dataMatrix.append(temp11)
         self.commandInst.dataMatrix.append(temp12)
-        self.commandInst.habDataCompiled[5] = 2
-        self.commandInst.habCount = 6
+        self.commandInst.habDataCompiled['Hab'][5] = 2
+        self.commandInst.habCount['Hab'] = 6
 
         assert len(self.commandInst.actualTrialOrder) == 33  # check initial
-        assert self.commandInst.checkStop() == True
-        assert self.commandInst.habMetWhen == 6
-        self.commandInst.jumpToTest(17)
+        assert self.commandInst.checkStop('Hab') == True
+        assert self.commandInst.habMetWhen['Hab'] == 6
+        self.commandInst.jumpToTest(17,'Hab')
         assert len(self.commandInst.actualTrialOrder) == 17
-        self.commandInst.redoSetup(17,['B','C'])
-        assert self.commandInst.checkStop() == False
-        assert self.commandInst.habMetWhen == -1
+        self.commandInst.redoSetup(17,['B','C'],'Hab')
+        assert self.commandInst.checkStop('Hab') == False
+        assert self.commandInst.habMetWhen['Hab'] == -1
         assert len(self.commandInst.actualTrialOrder) == 33
-        assert self.commandInst.habCount == 5
+        assert self.commandInst.habCount['Hab'] == 5
         assert len(self.commandInst.dataMatrix) == 14
 
-        self.commandInst.setCritType = 'Max'
-        self.commandInst.redoSetup(15,['B','C']) # This is actually something that would never come up - you can't redo twice in a row
-        assert self.commandInst.habCount == 4
+        self.commandInst.blockList['Hab']['setCritType'] = 'Max'
+        self.commandInst.redoSetup(15,['B','C'],'Hab') # This is actually something that would never come up - you can't redo twice in a row
+        assert self.commandInst.habCount['Hab'] == 4
         assert len(self.commandInst.actualTrialOrder) == 33
-        assert self.commandInst.habCrit == 15 # Should as yet be unchanged
+        assert self.commandInst.habCrit['Hab'] == 15 # Should as yet be unchanged
 
         temp10['sumOnA'] = 12
         self.commandInst.dataMatrix.append({'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-                 'condLabel': 'dataTest', 'trial': 13, 'GNG': 1, 'trialType': 'hab.H', 'stimName': 'movie5.mov',
+                 'condLabel': 'dataTest', 'trial': 13, 'GNG': 1, 'trialType': 'Hab.H', 'stimName': 'movie5.mov',
                  'habCrit': 15.0, 'sumOnA': 1.0, 'numOnA': 2, 'sumOffA': 3.5,
                  'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2})
         self.commandInst.dataMatrix.append({'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-                 'condLabel': 'dataTest', 'trial': 14, 'GNG': 1, 'trialType': 'hab.C',
+                 'condLabel': 'dataTest', 'trial': 14, 'GNG': 1, 'trialType': 'Hab.C',
                  'stimName': 'movie2.mov', 'habCrit': 15.0, 'sumOnA': 12, 'numOnA': 2, 'sumOffA': 3.5,
                  'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2})
-        self.commandInst.habDataCompiled[4] = 12
-        self.commandInst.habCount = 5
-        assert self.commandInst.checkStop() == False
-        assert self.commandInst.habCrit == 16
-        assert self.commandInst.habSetWhen == 5
-        self.commandInst.redoSetup(15,['B','C'])
-        assert self.commandInst.checkStop() == False
-        assert self.commandInst.habCrit == 15
-        assert self.commandInst.habSetWhen == 3  # Because of new habSetWhen calculation.
+        self.commandInst.habDataCompiled['Hab'][4] = 12
+        self.commandInst.habCount['Hab'] = 5
+        assert self.commandInst.checkStop('Hab') == False
+        assert self.commandInst.habCrit['Hab'] == 16
+        assert self.commandInst.habSetWhen['Hab'] == 5
+        self.commandInst.redoSetup(15,['B','C'],'Hab')
+        assert self.commandInst.checkStop('Hab') == False
+        assert self.commandInst.habCrit['Hab'] == 15
+        assert self.commandInst.habSetWhen['Hab'] == 3  # Because of new habSetWhen calculation.
 
 
-        self.commandInst.setCritType = 'Peak' # Really need to go back and set this initially!
-        self.commandInst.habDataCompiled[3] = 12  # peak window hab 2/3/4
+        self.commandInst.blockList['Hab']['setCritType'] = 'Peak' # Really need to go back and set this initially!
+        self.commandInst.habDataCompiled['Hab'][3] = 12  # peak window hab 2/3/4
         self.commandInst.dataMatrix[3]['sumOnA'] = 12
-        assert self.commandInst.checkStop() == False
-        assert self.commandInst.habCrit == 16
-        assert self.commandInst.habSetWhen == 4
+        assert self.commandInst.checkStop('Hab') == False
+        assert self.commandInst.habCrit['Hab'] == 16
+        assert self.commandInst.habSetWhen['Hab'] == 4
 
         temp10['sumOnA'] = 2
         self.commandInst.dataMatrix.append({'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-                 'condLabel': 'dataTest', 'trial': 13, 'GNG': 1, 'trialType': 'hab.H', 'stimName': 'movie5.mov',
+                 'condLabel': 'dataTest', 'trial': 13, 'GNG': 1, 'trialType': 'Hab.H', 'stimName': 'movie5.mov',
                  'habCrit': 15.0, 'sumOnA': 1.0, 'numOnA': 2, 'sumOffA': 3.5,
                  'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2})
         self.commandInst.dataMatrix.append({'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-                 'condLabel': 'dataTest', 'trial': 14, 'GNG': 1, 'trialType': 'hab.C',
+                 'condLabel': 'dataTest', 'trial': 14, 'GNG': 1, 'trialType': 'Hab.C',
                  'stimName': 'movie2.mov', 'habCrit': 15.0, 'sumOnA': 2, 'numOnA': 2, 'sumOffA': 3.5,
                  'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2})
-        self.commandInst.habDataCompiled[4] = 2
-        self.commandInst.habCount = 5
-        assert self.commandInst.checkStop() == False
-        assert self.commandInst.habCrit == 16
-        assert self.commandInst.habSetWhen == 4
-        self.commandInst.redoSetup(15, ['B', 'C'])
-        assert self.commandInst.checkStop() == False
-        assert self.commandInst.habCrit == 16
-        assert self.commandInst.habSetWhen == 4  # Verifying unchanged.
+        self.commandInst.habDataCompiled['Hab'][4] = 2
+        self.commandInst.habCount['Hab'] = 5
+        assert self.commandInst.checkStop('Hab') == False
+        assert self.commandInst.habCrit['Hab'] == 16
+        assert self.commandInst.habSetWhen['Hab'] == 4
+        self.commandInst.redoSetup(15, ['B', 'C'],'Hab')
+        assert self.commandInst.checkStop('Hab') == False
+        assert self.commandInst.habCrit['Hab'] == 16
+        assert self.commandInst.habSetWhen['Hab'] == 4  # Verifying unchanged.
 
 
 class TestPrefLook(object):
