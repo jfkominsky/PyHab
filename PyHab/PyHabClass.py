@@ -446,7 +446,7 @@ class PyHab:
                 trialName = trialName[trialName.index('.'):]
             # Subtract data from self.habDataCompiled before checking whether we reduce the hab count, do make indexing
             # the correct part of habDataCompiled easier. Notably, reduces but does not inherently zero out.
-            if trialName in self.calcHabOver[habBlock]:  # Make sure it's part of the hab calc
+            if trialName in self.blockList[habBlock]['calcHabOver']:  # Make sure it's part of the hab calc
                 self.habDataCompiled[habBlock][self.habCount[habBlock]-1] = self.habDataCompiled[habBlock][self.habCount[habBlock]-1] - self.dataMatrix[trialIndex]['sumOnA']
                 if self.habDataCompiled[self.habCount[habBlock]-1] < 0:  # For rounding errors
                     self.habDataCompiled[self.habCount[habBlock]-1] = 0

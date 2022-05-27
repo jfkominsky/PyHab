@@ -1613,7 +1613,7 @@ class TestCommands(object):
         self.commandInst.dataMatrix.append(temp4)
         self.commandInst.dataMatrix.append(temp5)
         self.commandInst.dataMatrix.append(temp6)
-        self.commandInst.habDataCompiled = [0]*self.commandInst.blockList['Hab']['maxHabTrials']
+        self.commandInst.habDataCompiled['Hab'] = [0]*self.commandInst.blockList['Hab']['maxHabTrials']
         self.commandInst.habDataCompiled['Hab'][0:2] = [10,10,10]  # Need to set this manually too because it's all handled by doTrial.
         self.commandInst.habCount['Hab'] = 3
 
