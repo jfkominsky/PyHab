@@ -1316,7 +1316,7 @@ class TestMultiHabBlock(object):
 
         [x, y] = self.habInst.jumpToTest(8, 'E', met=True)
 
-        assert self.habInst.habMetWhen['E'] == 8
+        assert self.habInst.habMetWhen['E'] == 6 # counts hab trials, not total trial number.
         assert x == 'Movie5'
         assert y == 'B'
         assert len(self.habInst.actualTrialOrder) == 52 # 60-8 = 52
@@ -1451,12 +1451,15 @@ class TestCommands(object):
         self.commandInst.counters = {'A': 2, 'B': 2, 'C': 0, 'D': 0,'Hab':2}
         self.commandInst.run(testMode=testOne)
 
+        assert self.commandInst.habCount['Z'] == 0 # Double checking that run did what it's supposed to do on init
+
         [x, y] = self.commandInst.jumpToTest(7,'Z')
         assert x == 'Movie9'
         assert y == 'D'
         assert self.commandInst.actualTrialOrder ==['A', 'A', 'B', 'B', 'Z1*^.Hab', 'Z2*^.Hab','D']
 
         self.commandInst.stimPres = False # Insert would require loading movies otherwise. Requires manual testing.
+        self.commandInst.habCount['Z'] = 1
         [x,y] = self.commandInst.insertHab(7,'Z')
         assert x == 0
         assert y == 'Hab'
@@ -1483,7 +1486,7 @@ class TestCommands(object):
         assert self.commandInst.actualTrialOrder == ['A', 'A', 'B', 'B', 'Hab1*.B', 'Hab1*^.C', 'D']
 
         self.commandInst.stimPres = False
-        self.commandInst.habCount = 1
+        self.commandInst.habCount['Hab'] = 1
         [x, y] = self.commandInst.insertHab(7,'Hab')
         assert x == 0
         assert y == 'B'

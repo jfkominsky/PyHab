@@ -1248,14 +1248,16 @@ class PyHab:
                     didRedo = True
                 elif self.keyboard[self.key.J] and topBlockName in self.habMetWhen.keys():
                         if self.habMetWhen[topBlockName] == -1:  # jump to test in a hab design
-                            [disMovie, trialType] = self.jumpToTest(trialNum)
+                            [disMovie, trialType] = self.jumpToTest(trialNum, topBlockName)
                 # Insert add'l hab trial. Problem: this can only be invoked outside of a hab block, but needs to refer back to the hab block!
                 elif self.keyboard[self.key.I] and len(self.habMetWhen.keys()) > 0: # insert additional hab trial
-                    # Find the most recent hab block
-
-                    [disMovie, trialType] = self.insertHab(trialNum)
-                    while '.' in trialType:
-                        trialType = trialType[trialType.index('.') + 1:]
+                    # Find the most recent hab block. It should be the most recent trial, in fact.
+                    if '*' in self.actualTrialOrder[trialNum-2]:
+                        for k, t in self.habMetWhen.items():
+                            if self.actualTrialOrder[trialNum-2][0:len(k)] == k and t > 0:
+                                [disMovie, trialType] = self.insertHab(trialNum, k)
+                                while '.' in trialType:
+                                    trialType = trialType[trialType.index('.') + 1:] # todo: Is this still needed?
                 elif trialNum > 1 and not self.stimPres and self.keyboard[self.key.P] and not reviewed:  # Print data so far, as xHab. Non-stimulus version only. Only between trials.
                     reviewed = True
                     self.printCurrentData()
@@ -1343,14 +1345,18 @@ class PyHab:
                         while '.' in trialType:
                             trialType = trialType[trialType.index('.') + 1:]
                         didRedo = True
-                    # TODO: J and I, and the functions they activate, need to be revamped.
-                    elif self.keyboard[self.key.J] and 'Hab' in self.trialOrder and self.habMetWhen == -1:  # jump to test in a hab design.
-                        [disMovie,trialType] = self.jumpToTest(trialNum)
-                    elif self.keyboard[self.key.I] and self.habMetWhen > 0:  # insert additional hab trial
-                        [disMovie,trialType] = self.insertHab(trialNum)
-                        while '.' in trialType:
-                            trialType = trialType[trialType.index('.') + 1:]
-                    elif self.keyboard[self.key.S] and trialType != 'Hab' and '*' not in trialType:  # Skip trial. Doesn't work on things required for habituation.
+                    elif self.keyboard[self.key.J] and topBlockName in self.habMetWhen.keys():
+                        if self.habMetWhen[topBlockName] == -1:  # jump to test in a hab design
+                            [disMovie, trialType] = self.jumpToTest(trialNum)
+                    elif self.keyboard[self.key.I] and len(self.habMetWhen.keys()) > 0:  # insert additional hab trial
+                        # Only works if trial before this one was a hab block trial.
+                        if '*' in self.actualTrialOrder[trialNum - 2]:
+                            for k, t in self.habMetWhen.items():
+                                if self.actualTrialOrder[trialNum - 2][0:len(k)] == k and t > 0:
+                                    [disMovie, trialType] = self.insertHab(trialNum, k)
+                                    while '.' in trialType:
+                                        trialType = trialType[trialType.index('.') + 1:]  # todo: Is this still needed?
+                    elif self.keyboard[self.key.S] and '*' not in trialType:  # Skip trial. Doesn't work on things required for habituation.
                         skip = True
                     else:
                         self.dispCoderWindow(0)
