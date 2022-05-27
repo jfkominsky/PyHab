@@ -1505,7 +1505,10 @@ class TestCommands(object):
         self.commandInst.habMetWhen[i] = -1
         self.commandInst.maxHabIndex[i] = 0
         self.commandInst.habDataCompiled[i] = [0] * self.commandInst.blockList[i]['maxHabTrials']
-        self.commandInst.run(testMode=testOne) 
+        self.commandInst.run(testMode=testOne)
+
+        assert len(self.commandInst.actualTrialOrder) == 33
+        assert self.commandInst.actualTrialOrder[32] == 'D'
 
         [x, y] = self.commandInst.jumpToTest(7,'Hab') # yields index out of range?
         assert x == 'Movie9'
