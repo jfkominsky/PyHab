@@ -388,7 +388,7 @@ class TestDataFunc(object):
         assert len(self.dataInst.badTrials) == 2
 
         # Reset one more to test an edge case: When there are multiple instances of the same trial type in a single hab
-        # block iteration. TODO: revise.
+        # block iteration.
         self.dataInst.dataMatrix = copy.deepcopy(self.testMatrix)
         self.dataInst.verbDatList = copy.deepcopy(self.testDatList)
         self.dataInst.badTrials = []
@@ -421,8 +421,8 @@ class TestDataFunc(object):
             {'trial': 3, 'trialType': 'hab.C', 'startTime': 5.0, 'endTime': 11.5, 'duration': 6.5})
         self.dataInst.verbDatList['verboseOff'].append(
             {'trial': 3, 'trialType': 'hab.C', 'startTime': 11.5, 'endTime': 13.5, 'duration': 2.0})
-        self.dataInst.habDataCompiled[self.dataInst.habCount] = self.dataInst.dataMatrix[-1]['sumOnA']  # 10
-        self.dataInst.habCount = 0  # Has not yet proceeded to end of hab trial!
+        self.dataInst.habDataCompiled['D'][self.dataInst.habCount['D']] = self.dataInst.dataMatrix[-1]['sumOnA']  # 10
+        self.dataInst.habCount['D'] = 0  # Has not yet proceeded to end of hab trial!
 
         self.dataInst.dataMatrix.append(
             {'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
@@ -438,8 +438,8 @@ class TestDataFunc(object):
             {'trial': 4, 'trialType': 'hab.B', 'startTime': 5.0, 'endTime': 11.5, 'duration': 6.5})
         self.dataInst.verbDatList['verboseOff'].append(
             {'trial': 4, 'trialType': 'hab.B', 'startTime': 11.5, 'endTime': 13.5, 'duration': 2.0})
-        self.dataInst.habDataCompiled[self.dataInst.habCount] += self.dataInst.dataMatrix[-1]['sumOnA']  # 20
-        self.dataInst.habCount = 0  # Has not yet proceeded to end of hab trial!
+        self.dataInst.habDataCompiled['D'][self.dataInst.habCount['D']] += self.dataInst.dataMatrix[-1]['sumOnA']  # 20
+        self.dataInst.habCount['D'] = 0  # Has not yet proceeded to end of hab trial!
 
         self.dataInst.dataMatrix.append(
             {'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
@@ -455,8 +455,8 @@ class TestDataFunc(object):
             {'trial': 5, 'trialType': 'hab.C', 'startTime': 5.0, 'endTime': 11.5, 'duration': 6.5})
         self.dataInst.verbDatList['verboseOff'].append(
             {'trial': 5, 'trialType': 'hab.C', 'startTime': 11.5, 'endTime': 13.5, 'duration': 2.0})
-        self.dataInst.habDataCompiled[self.dataInst.habCount] += self.dataInst.dataMatrix[-1]['sumOnA']  # 30
-        self.dataInst.habCount = 1
+        self.dataInst.habDataCompiled['D'][self.dataInst.habCount['D']] += self.dataInst.dataMatrix[-1]['sumOnA']  # 30
+        self.dataInst.habCount['D'] = 1
 
         # Now redo 3, then 4, then 5.
 
@@ -1689,7 +1689,6 @@ class TestCommands(object):
         assert self.commandInst.habMetWhen['Hab'] == 6
         self.commandInst.jumpToTest(17,'Hab')
         assert len(self.commandInst.actualTrialOrder) == 17
-        assert '^' in self.commandInst.actualTrialOrder[-1]
         self.commandInst.redoSetup(17,['B','C'],'Hab')
         assert self.commandInst.checkStop('Hab') == False
         assert self.commandInst.habMetWhen['Hab'] == -1 # Failing for reasons unclear.
