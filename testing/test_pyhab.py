@@ -1314,12 +1314,19 @@ class TestMultiHabBlock(object):
 
         self.habInst.counters = {'A':2, 'B':0,'C':0,'D':0, 'X':6}
 
-        [x, y] = self.habInst.jumpToTest(8, 'E', met=True)
+        [x, y] = self.habInst.jumpToTest(8, 'E')
 
-        assert self.habInst.habMetWhen['E'] == 6 # counts hab trials, not total trial number.
         assert x == 'Movie5'
         assert y == 'B'
-        assert len(self.habInst.actualTrialOrder) == 52 # 60-8 = 52
+        assert len(self.habInst.actualTrialOrder) == 52  # 60-8 = 52
+
+    def test_insert_first(self):
+        [x, y] = self.habInst.insertHab(8,'E')
+
+        assert x == 0
+        assert y == 'X'
+        assert len(self.habInst.actualTrialOrder) == 53 # Up one from before.
+
 
 
 class TestCommands(object):
@@ -1451,7 +1458,14 @@ class TestCommands(object):
         self.commandInst.counters = {'A': 2, 'B': 2, 'C': 0, 'D': 0,'Hab':2}
         self.commandInst.run(testMode=testOne)
 
-        assert self.commandInst.habCount['Z'] == 0 # Double checking that run did what it's supposed to do on init
+        # Because hab counters and stuff are made on init rather than run, they need to be done manually here
+        i='Z'
+        self.commandInst.habCount[i] = 0
+        self.commandInst.habCrit[i] = 0
+        self.commandInst.habSetWhen[i] = -1
+        self.commandInst.habMetWhen[i] = -1
+        self.commandInst.maxHabIndex[i] = 0
+        self.commandInst.habDataCompiled[i] = [0] * self.dataInst.blockList[i]['maxHabTrials']
 
         [x, y] = self.commandInst.jumpToTest(7,'Z')
         assert x == 'Movie9'
@@ -1480,6 +1494,15 @@ class TestCommands(object):
         self.commandInst.trialOrder = ['A', 'A', 'B', 'B', 'Hab', 'D']
         self.commandInst.counters = {'A': 2, 'B': 2, 'C': 1, 'D': 0,'Hab':1}
         self.commandInst.run(testMode=testOne)
+
+        i = 'Hab'
+        self.commandInst.habCount[i] = 0
+        self.commandInst.habCrit[i] = 0
+        self.commandInst.habSetWhen[i] = -1
+        self.commandInst.habMetWhen[i] = -1
+        self.commandInst.maxHabIndex[i] = 0
+        self.commandInst.habDataCompiled[i] = [0] * self.dataInst.blockList[i]['maxHabTrials']
+
         [x, y] = self.commandInst.jumpToTest(7,'Hab')
         assert x == 'Movie9'
         assert y == 'D'
