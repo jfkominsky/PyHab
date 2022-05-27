@@ -993,6 +993,21 @@ class PyHab:
                     self.counters[trialType] -= 1
                     if self.counters[trialType] < 0:  # b/c counters operates over something that is like actualTrialOrder, it should never go beneath 0
                         self.counters[trialType] = 0
+            # Update blockName accordingly.
+            if numTrialsRedo > 1:
+                blockName = self.actualTrialOrder[trialNum - 1]
+                if '.' in blockName:
+                    blockName = blockName[0:blockName.index('.')]
+                    if '*' in blockName: # hab block.
+                        blockName = blockName[0:blockName.index('*')]  # problem: also includes hab number!
+                        # Let's assume less than 100 for max hab.
+                        for b, c in self.habCount.items():
+                            if c < 9:
+                                if eval(blockName[-1]) == c + 1:  # need to od it this way because otherwise risks an eval error
+                                    blockName = blockName[0:-1]
+                            elif c > 8:
+                                if eval(blockName[-2:]) == c + 1:
+                                    blockName = blockName[0:-2]
             if self.stimPres:
                 if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
                     self.stimName = self.stimNames[trialType][self.counters[trialType] % len(self.stimNames[trialType])]
@@ -1016,7 +1031,7 @@ class PyHab:
                 if self.habSetWhen[blockName] >= self.habCount[blockName]:
                     self.habSetWhen[blockName] = -1
                     self.habCrit[blockName] = 0
-                    if self.setCritType[blockName] != 'First':  # If it's 'first', it'll just solve itself.
+                    if self.blockList[blockName]['setCritType'] != 'First':  # If it's 'first', it'll just solve itself.
                         dummy = self.checkStop(blockName)
                 # If habituation has been reached, we have to basically undo what happens when a hab crit is met.
                 if self.habMetWhen[blockName] > -1 and self.habCount[blockName] != self.blockList[blockName]['maxHabTrials'] - 1:  # If it was the last hab trial possible, it'll just solve itself with no further action
@@ -1025,7 +1040,7 @@ class PyHab:
                         tempTN = trialNum + max(len(self.blockList[blockName]['trialList']), 1)  # Starting with the next trial.
                         ctr = 0
                         for h in range(self.habCount[blockName]+1, self.blockList[blockName]['maxHabTrials']):
-                            [irrel, irrel2] = self.insertHab(tn=tempTN+ctr*max(len(self.habTrialList), 1), block=blockName, hn=h)
+                            [irrel, irrel2] = self.insertHab(tn=tempTN+ctr*max(len(self.blockList[blockName]['trialList']), 1), block=blockName, hn=h)
                             ctr += 1
         return [disMovie, trialNum]
 
@@ -1107,7 +1122,7 @@ class PyHab:
             hn = self.habCount[block]
         habNum = hn
         if len(self.blockList[block]['trialList']) > 0:
-            self.blockExpander(self.blockList[block]['trialList'], block, hab=True, habNum=habNum+1, insert=trialNum-1)
+            self.blockExpander(self.blockList[block], block, hab=True, habNum=habNum+1, insert=trialNum-1)
         trialType = self.actualTrialOrder[trialNum - 1]
         while '.' in trialType:
             trialType = trialType[trialType.index('.') + 1:]

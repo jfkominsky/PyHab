@@ -1318,7 +1318,8 @@ class TestMultiHabBlock(object):
 
         assert x == 'Movie5'
         assert y == 'B'
-        assert len(self.habInst.actualTrialOrder) == 52  # 60-8 = 52
+        assert self.habInst.actualTrialOrder[7] == 'E6*^.X' # Did it erase the last hab trial from the order somehow?
+        assert len(self.habInst.actualTrialOrder) == 52  # 60-8 = 52 - but it's turning up 51?
 
     def test_insert_first(self):
         [x, y] = self.habInst.insertHab(8,'E')
@@ -1396,7 +1397,7 @@ class TestCommands(object):
         self.commandInst.autoAdvance = ['B']
 
 
-        [x, y] = self.commandInst.redoSetup(2,self.commandInst.autoAdvance)
+        [x, y] = self.commandInst.redoSetup(2,self.commandInst.autoAdvance,'A')
         assert y == 1
         assert x == "Movie1"
         assert len(self.commandInst.badTrials) == 1 # we won't test redo here, just make sure it ran.
@@ -1414,7 +1415,7 @@ class TestCommands(object):
                             'stimName': 'movie2.mov', 'habCrit': 0, 'sumOnA': 3.0, 'numOnA': 2, 'sumOffA': 3.5,
                             'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
         self.commandInst.dataMatrix.append(temp1)
-        [x, y] = self.commandInst.redoSetup(3,['B'])
+        [x, y] = self.commandInst.redoSetup(3,['B'],'B')
         assert y == 2
         assert x == "Movie2"
 
@@ -1424,7 +1425,7 @@ class TestCommands(object):
         self.commandInst.counters = {'A': 2, 'B': 2, 'C': 0, 'D': 0}
         self.commandInst.dataMatrix.append(temp1)
         self.commandInst.dataMatrix.append(temp2)
-        [x, y] = self.commandInst.redoSetup(4,['B'])
+        [x, y] = self.commandInst.redoSetup(4,['B'],'B')
         assert y == 2
         assert x == "Movie2"
 
