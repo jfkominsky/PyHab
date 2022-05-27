@@ -289,7 +289,7 @@ class TestDataFunc(object):
             {'trial': 3, 'trialType': 'D.B', 'startTime': 5.0, 'endTime': 11.5, 'duration': 6.5})
         self.dataInst.verbDatList['verboseOff'].append(
             {'trial': 3, 'trialType': 'D.B', 'startTime': 11.5, 'endTime': 13.5, 'duration': 2.0})
-        self.dataInst.habDataCompiled['D'][self.dataInst.habCount] = self.dataInst.dataMatrix[-1]['sumOnA']
+        self.dataInst.habDataCompiled['D'][self.dataInst.habCount['D']] = self.dataInst.dataMatrix[-1]['sumOnA']
         self.dataInst.habCount = 0  # Has not yet proceeded to end of hab trial!
 
         self.dataInst.dataMatrix.append(
@@ -1633,7 +1633,7 @@ class TestCommands(object):
         # OK, assuming all that got set up properly, lets get messy.
         self.commandInst.redoSetup(11, ['B','C'], 'Hab')
         assert self.commandInst.habDataCompiled['Hab'][2] == 0
-        assert self.commandInst.habSetWhen['Hab'] == -1 # fails, either an issue with redo failing to decrement or setup failing to idetnify
+        assert self.commandInst.habSetWhen['Hab'] == -1
         assert self.commandInst.habMetWhen['Hab'] == -1
         assert self.commandInst.habCrit['Hab'] == 0
         assert self.commandInst.habCount['Hab'] == 2
@@ -1689,9 +1689,10 @@ class TestCommands(object):
         assert self.commandInst.habMetWhen['Hab'] == 6
         self.commandInst.jumpToTest(17,'Hab')
         assert len(self.commandInst.actualTrialOrder) == 17
+        assert '^' in self.commandInst.actualTrialOrder[-1] # Checking sources of failure
         self.commandInst.redoSetup(17,['B','C'],'Hab')
         assert self.commandInst.checkStop('Hab') == False
-        assert self.commandInst.habMetWhen['Hab'] == -1
+        assert self.commandInst.habMetWhen['Hab'] == -1 # Failing for reasons unclear.
         assert len(self.commandInst.actualTrialOrder) == 33
         assert self.commandInst.habCount['Hab'] == 5
         assert len(self.commandInst.dataMatrix) == 14

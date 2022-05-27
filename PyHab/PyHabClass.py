@@ -450,7 +450,7 @@ class PyHab:
                     self.habDataCompiled[habBlock][self.habCount[habBlock]-1] = 0
             # If it's from the end of the hab iteration, then reduce the hab count.
             if '^' in self.actualTrialOrder[trialNum-1]:  # This is kind of a dangerous kludge that hopefully won't come up that often.
-                self.habCount[habBlock] -= 1
+                self.habCount[habBlock] -= 1 # TODO: Option 1 is that this isn't tripping.
         self.badTrials.append(newTempData)
         # remove it from dataMatrix
         self.dataMatrix.remove(self.dataMatrix[trialIndex])
@@ -1019,7 +1019,7 @@ class PyHab:
         for i in range(trialNum, trialNum + numTrialsRedo):  # Should now rewind all the way to the last non-AA trial.
             self.redoTrial(i)
         if blockName in self.habCount.keys():
-            if self.habCount[blockName] != tempHabCount:  # Did we change a trial that can change checkStop?
+            if self.habCount[blockName] != tempHabCount:  # Did we change a trial that can change checkStop? Trips if redoTrial decrements it.
                 # If hab type is threshold, max, or peak, we might need to recalculate dynamically
                 if self.habSetWhen[blockName] >= self.habCount[blockName]:
                     self.habSetWhen[blockName] = -1
