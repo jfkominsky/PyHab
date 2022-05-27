@@ -31,7 +31,7 @@ class PyHabHPP(PyHab):
         self.verbDatList = {'verboseOnC': [], 'verboseOnL': [], 'verboseOnR': [], 'verboseOff': []}  # a dict of the verbose data arrays
         self.verbBadList = {'verboseOnC': [], 'verboseOnL': [], 'verboseOnR': [], 'verboseOff': []}  # Corresponding for bad data
 
-    def abortTrial(self, onArray, offArray, trial, ttype, onArrayL, onArrayR, stimName = '', habTrialNo = 0):
+    def abortTrial(self, onArray, offArray, trial, ttype, onArrayL, onArrayR, stimName = '', habTrialNo = 0, habCrit = 0.0):
         """
         Aborts a trial in progress, saves any data recorded thus far to the bad-data structures
 
@@ -49,6 +49,10 @@ class PyHabHPP(PyHab):
         :type onArrayR: list of dicts {trial, trialType, startTime, endTime, duration}
         :param stimName: If presenting stimuli, name of the stim file
         :type stimName: string
+        :param habTrialNo: Tracking if this is a habituation trial and if so what number
+        :type habTrialNo: int
+        :param habCrit: Habituation criterion, if it's been set
+        :type habCrit: float
         :return:
         :rtype:
         """
@@ -83,14 +87,14 @@ class PyHabHPP(PyHab):
                 totalduration = totalduration - offArray[-1]['duration']
         tempData = {'sNum': self.sNum, 'sID': self.sID, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex, 'cond': self.cond,
                     'condLabel': self.condLabel,
-                    'trial': trial, 'GNG': 0, 'trialType': ttype, 'stimName': stimName, 'habCrit': self.habCrit, 'habTrialNo': habTrialNo,
+                    'trial': trial, 'GNG': 0, 'trialType': ttype, 'stimName': stimName, 'habCrit': habCrit, 'habTrialNo': habTrialNo,
                     'sumOnC': sumOn, 'numOnC': len(onArray),
                     'sumOnL': sumOnL, 'numOnL': len(onArrayL),
                     'sumOnR': sumOnR, 'numOnR': len(onArrayR), 'sumOff': sumOff, 'numOff': len(offArray),
                     'trialDuration': totalduration}
         self.badTrials.append(tempData)
 
-    def dataRec(self, onArray, offArray, trial, type, onArrayL, onArrayR, stimName = '', habTrialNo = 0):
+    def dataRec(self, onArray, offArray, trial, type, onArrayL, onArrayR, stimName = '', habTrialNo = 0, habCrit = 0.0):
         """
         Records the data for a trial that ended normally.
 
@@ -108,6 +112,10 @@ class PyHabHPP(PyHab):
         :type onArrayR: list of dicts {trial, trialType, startTime, endTime, duration}
         :param stimName: If presenting stimuli, name of the stim file
         :type stimName: string
+        :param habTrialNo: Tracking if this is a habituation trial and if so what number
+        :type habTrialNo: int
+        :param habCrit: Habituation criterion, if it's been set
+        :type habCrit: float
         :return:
         :rtype:
         """
@@ -142,7 +150,7 @@ class PyHabHPP(PyHab):
                 totalduration = totalduration - offArray[-1]['duration']
 
         tempData={'sNum':self.sNum, 'sID': self.sID, 'months':self.ageMo, 'days':self.ageDay, 'sex':self.sex, 'cond':self.cond,'condLabel':self.condLabel,
-                                'trial':trial, 'GNG':1, 'trialType':type, 'stimName':stimName, 'habCrit':self.habCrit, 'habTrialNo': habTrialNo,
+                                'trial':trial, 'GNG':1, 'trialType':type, 'stimName':stimName, 'habCrit':habCrit, 'habTrialNo': habTrialNo,
                                 'sumOnC':sumOn, 'numOnC':len(onArray),
                                 'sumOnL':sumOnL,'numOnL':len(onArrayL),
                                 'sumOnR':sumOnR,'numOnR':len(onArrayR),'sumOff':sumOff, 'numOff':len(offArray),
@@ -339,7 +347,7 @@ class PyHabHPP(PyHab):
         localType = deepcopy(ttype)
         while '.' in localType:
             localType = localType[localType.index('.') + 1:]
-        if ttype[0:3] == 'hab' and '.' in ttype:  # Hab sub-trials. Hard to ID definitively, actually.
+        if ttype[0:3] == 'hab' and '.' in ttype:  # todo Hab sub-trials. Hard to ID definitively, actually.
             spliceType = ttype[ttype.index('.') + 1:]
             if '.' in spliceType:
                 spliceType = spliceType[0:spliceType.index('.')]  # Isolate the part between '.'s, which will be what shows up in habtriallist.

@@ -440,10 +440,9 @@ class PyHab:
             for n,q in self.habMetWhen.items(): # Cycle through all the hab blocks to find the right one.
                 if self.actualTrialOrder[trialNum-1][0:len(n)] == n:
                     habBlock = n
-            tempName = tempName[4:] # Just removing 'hab.' - shouldn't be needed?
             trialName = deepcopy(tempName)
             while '.' in trialName:
-                trialName = trialName[trialName.index('.'):]
+                trialName = trialName[trialName.index('.')+1:]
             # Subtract data from self.habDataCompiled before checking whether we reduce the hab count, do make indexing
             # the correct part of habDataCompiled easier. Notably, reduces but does not inherently zero out.
             if trialName in self.blockList[habBlock]['calcHabOver']:  # Make sure it's part of the hab calc
@@ -957,8 +956,6 @@ class PyHab:
         """
         Lays the groundwork for redoTrial, including correcting the trial order, selecting the right stim, etc.
 
-        TODO: Block and hab redos.
-
         :param tn: Trial number (trialNum)
         :type tn: int
         :param autoAdv: The current auto-advance trial type list (different on first trial for Reasons)
@@ -1104,8 +1101,6 @@ class PyHab:
     def insertHab(self, tn, block, hn=-1):
         """
         Literally insert a new hab trial or meta-trial into actualTrialOrder, get the right movie, etc.
-
-        TODO: New multi-hab-trial stuff.
 
         :param tn: trial number to insert the trial
         :type tn: int
@@ -1276,7 +1271,7 @@ class PyHab:
                             if self.actualTrialOrder[trialNum-2][0:len(k)] == k and t > 0:
                                 [disMovie, trialType] = self.insertHab(trialNum, k)
                                 while '.' in trialType:
-                                    trialType = trialType[trialType.index('.') + 1:] # todo: Is this still needed?
+                                    trialType = trialType[trialType.index('.') + 1:]
                 elif trialNum > 1 and not self.stimPres and self.keyboard[self.key.P] and not reviewed:  # Print data so far, as xHab. Non-stimulus version only. Only between trials.
                     reviewed = True
                     self.printCurrentData()
@@ -1390,7 +1385,7 @@ class PyHab:
                                 if self.actualTrialOrder[trialNum - 2][0:len(k)] == k and t > 0:
                                     [disMovie, trialType] = self.insertHab(trialNum, k)
                                     while '.' in trialType:
-                                        trialType = trialType[trialType.index('.') + 1:]  # todo: Is this still needed?
+                                        trialType = trialType[trialType.index('.') + 1:]
                     elif self.keyboard[self.key.S] and '*' not in trialType:  # Skip trial. Doesn't work on things required for habituation.
                         skip = True
                     else:
@@ -1498,7 +1493,6 @@ class PyHab:
         if '*' in ttype:  # Hab block trial
             # Hab trials have this * marker, but also the hab block will always be the top-level block, i.e., before the first .
             # Even if it's a one-trial block this will be true.
-            # TODO: Isolate top-level block for various hab indexes.
             # datatype should be the full block-trial name minus *^ todo:[I think]?
             dataType = ttype.translate({94:None, 42:None})
             habBlock = ttype[:ttype.index('*')]
@@ -2201,13 +2195,13 @@ class PyHab:
                 while '.' in tempType:
                     tempType = tempType[tempType.index('.')+1:]
 
-                # todo: Blocks, multiple hab blocks per experiment. One file per hab block?
+                # todo: Blocks, multiple hab blocks per experiment.
                 if tempType in self.blockList[blockType]['calcHabOver']:  # If not, this should specifically be ignored.
                     tempNo = self.dataMatrix[i]['habTrialNo']
                     addTo = False
                     addIndex = -1
                     tempLine = deepcopy(self.dataMatrix[i])
-                    tempLine['trialType'] = 'Hab'
+                    tempLine['trialType'] = blockType
                     for j in range(0, len(habMatrix)):
                         if habMatrix[j]['habTrialNo'] == tempNo:
                             addTo = True

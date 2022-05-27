@@ -25,7 +25,7 @@ class PyHabPL(PyHab):
         self.verbDatList = {'verboseOn': [], 'verboseOn2': [], 'verboseOff': []}  # a dict of the verbose data arrays
         self.verbBadList = {'verboseOn': [], 'verboseOn2': [],  'verboseOff': []}  # Corresponding for bad data
 
-    def abortTrial(self, onArray, offArray, trial, ttype, onArray2, stimName = '', habTrialNo = 0):
+    def abortTrial(self, onArray, offArray, trial, ttype, onArray2, stimName = '', habTrialNo = 0, habCrit=0.0):
         """
         Aborts a trial in progress, saves any data recorded thus far to the bad-data structures
 
@@ -41,6 +41,10 @@ class PyHabPL(PyHab):
         :type onArray2: list of dicts {trial, trialType, startTime, endTime, duration}
         :param stimName: If presenting stimuli, name of the stim file
         :type stimName: string
+        :param habTrialNo: Tracking if this is a habituation trial and if so what number
+        :type habTrialNo: int
+        :param habCrit: Habituation criterion, if it's been set
+        :type habCrit: float
         :return:
         :rtype:
         """
@@ -71,13 +75,13 @@ class PyHabPL(PyHab):
 
         tempData = {'sNum': self.sNum, 'sID': self.sID, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex, 'cond': self.cond,
                     'condLabel': self.condLabel,
-                    'trial': trial, 'GNG': 0, 'trialType': ttype, 'stimName': stimName, 'habCrit': self.habCrit, 'habTrialNo': habTrialNo,
+                    'trial': trial, 'GNG': 0, 'trialType': ttype, 'stimName': stimName, 'habCrit': habCrit, 'habTrialNo': habTrialNo,
                     'sumOnL': sumOn, 'numOnL': len(onArray),
                     'sumOnR': sumOn2, 'numOnR': len(onArray2), 'sumOff': sumOff, 'numOff': len(offArray),
                     'trialDuration': totalduration}
         self.badTrials.append(tempData)
 
-    def dataRec(self, onArray, offArray, trial, type, onArray2, stimName = '', habTrialNo = 0):
+    def dataRec(self, onArray, offArray, trial, type, onArray2, stimName = '', habTrialNo = 0, habCrit = 0.0):
         """
         Records the data for a trial that ended normally.
 
@@ -93,6 +97,10 @@ class PyHabPL(PyHab):
         :type onArray2: list of dicts {trial, trialType, startTime, endTime, duration}
         :param stimName: If presenting stimuli, name of the stim file
         :type stimName: string
+        :param habTrialNo: Tracking if this is a habituation trial and if so what number
+        :type habTrialNo: int
+        :param habCrit: Habituation criterion, if it's been set
+        :type habCrit: float
         :return:
         :rtype:
         """
@@ -123,7 +131,7 @@ class PyHabPL(PyHab):
                 totalduration = totalduration - offArray[-1]['duration']
 
         tempData={'sNum':self.sNum, 'sID': self.sID, 'months':self.ageMo, 'days':self.ageDay, 'sex':self.sex, 'cond':self.cond,'condLabel':self.condLabel,
-                                'trial':trial, 'GNG':1, 'trialType':type, 'stimName':stimName, 'habCrit':self.habCrit, 'habTrialNo': habTrialNo,
+                                'trial':trial, 'GNG':1, 'trialType':type, 'stimName':stimName, 'habCrit':habCrit, 'habTrialNo': habTrialNo,
                                 'sumOnL':sumOn, 'numOnL':len(onArray),
                                 'sumOnR':sumOn2,'numOnR':len(onArray2),'sumOff':sumOff, 'numOff':len(offArray),
                                 'trialDuration': totalduration}
