@@ -435,12 +435,11 @@ class PyHab:
         # add the new 'bad' trial to badTrials
         newTempData['GNG'] = 0
         if '*' in self.actualTrialOrder[trialNum-1]:  # Redoing a habituation trial
-            tempName = deepcopy(self.dataMatrix[trialIndex]['trialType'])
+            trialName = deepcopy(self.dataMatrix[trialIndex]['trialType'])
             habBlock = ''
             for n,q in self.habMetWhen.items(): # Cycle through all the hab blocks to find the right one.
                 if self.actualTrialOrder[trialNum-1][0:len(n)] == n:
                     habBlock = n
-            trialName = deepcopy(tempName)
             while '.' in trialName:
                 trialName = trialName[trialName.index('.')+1:]
             # Subtract data from self.habDataCompiled before checking whether we reduce the hab count, do make indexing
@@ -449,7 +448,7 @@ class PyHab:
                 self.habDataCompiled[habBlock][self.habCount[habBlock]-1] = self.habDataCompiled[habBlock][self.habCount[habBlock]-1] - self.dataMatrix[trialIndex]['sumOnA']
                 if self.habDataCompiled[habBlock][self.habCount[habBlock]-1] < 0:  # For rounding errors
                     self.habDataCompiled[habBlock][self.habCount[habBlock]-1] = 0
-            # If it's the end of the hab iteration, then reduce the hab count.
+            # If it's from the end of the hab iteration, then reduce the hab count.
             if '^' in self.actualTrialOrder[trialNum-1]:  # This is kind of a dangerous kludge that hopefully won't come up that often.
                 self.habCount[habBlock] -= 1
         self.badTrials.append(newTempData)
@@ -1005,6 +1004,7 @@ class PyHab:
                             elif c > 8:
                                 if eval(blockName[-2:]) == c + 1:
                                     blockName = blockName[0:-2]
+                        tempHabCount = deepcopy(self.habCount[blockName])
             if self.stimPres:
                 if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
                     self.stimName = self.stimNames[trialType][self.counters[trialType] % len(self.stimNames[trialType])]

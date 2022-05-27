@@ -221,7 +221,7 @@ class TestDataFunc(object):
                                         'metCritWindow': 3,
                                         'metCritDivisor': 1.0,
                                         'metCritStatic': 'Moving',
-                                        'calcHabOver': []}}
+                                        'calcHabOver': ['C']}}
         i = 'D'
         # These are settings which would normally happen during init, but we are doing here b/c hab is added late.
         self.dataInst.habCount[i] = 0
@@ -1631,9 +1631,9 @@ class TestCommands(object):
         assert self.commandInst.habSetWhen['Hab'] == 3
         assert self.commandInst.habCrit['Hab'] == 15
         # OK, assuming all that got set up properly, lets get messy.
-        self.commandInst.redoSetup(11,['B','C'], 'Hab')
+        self.commandInst.redoSetup(11, ['B','C'], 'Hab')
         assert self.commandInst.habDataCompiled['Hab'][2] == 0
-        assert self.commandInst.habSetWhen['Hab'] == -1
+        assert self.commandInst.habSetWhen['Hab'] == -1 # fails, either an issue with redo failing to decrement or setup failing to idetnify
         assert self.commandInst.habMetWhen['Hab'] == -1
         assert self.commandInst.habCrit['Hab'] == 0
         assert self.commandInst.habCount['Hab'] == 2
@@ -1887,27 +1887,27 @@ class TestPrefLook(object):
     def test_PLhabSave(self):
         self.dataInstPL.dataMatrix = copy.deepcopy(self.testMatrixPL)
         self.dataInstPL.dataMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-                          'condLabel': 'dataTest', 'trial': 3, 'GNG': 1, 'trialType': 'D.A', 'stimName': 'movie1.mov',
+                          'condLabel': 'dataTest', 'trial': 3, 'GNG': 1, 'trialType': 'D.B', 'stimName': 'movie1.mov',
                           'habCrit': 0, 'habTrialNo': 1, 'sumOnL': 3.5, 'numOnL': 2,
                           'sumOnR': 3.0, 'numOnR': 2, 'sumOff': 3.5,'numOff': 2})
         self.dataInstPL.dataMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-                          'condLabel': 'dataTest', 'trial': 4, 'GNG': 1, 'trialType': 'D.B', 'stimName': 'movie1.mov',
+                          'condLabel': 'dataTest', 'trial': 4, 'GNG': 1, 'trialType': 'D.C', 'stimName': 'movie1.mov',
                           'habCrit': 0, 'habTrialNo': 1, 'sumOnL': 3.5, 'numOnL': 2,
                           'sumOnR': 3.0, 'numOnR': 2, 'sumOff': 3.5,'numOff': 2})
         self.dataInstPL.dataMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-                          'condLabel': 'dataTest', 'trial': 5, 'GNG': 1, 'trialType': 'D.A', 'stimName': 'movie1.mov',
+                          'condLabel': 'dataTest', 'trial': 5, 'GNG': 1, 'trialType': 'D.B', 'stimName': 'movie1.mov',
                           'habCrit': 0, 'habTrialNo': 2, 'sumOnL': 3.5, 'numOnL': 2,
                           'sumOnR': 3.0, 'numOnR': 2, 'sumOff': 3.5,'numOff': 2})
         self.dataInstPL.dataMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-                          'condLabel': 'dataTest', 'trial': 6, 'GNG': 1, 'trialType': 'D.B', 'stimName': 'movie1.mov',
+                          'condLabel': 'dataTest', 'trial': 6, 'GNG': 1, 'trialType': 'D.C', 'stimName': 'movie1.mov',
                           'habCrit': 0, 'habTrialNo': 2, 'sumOnL': 3.5, 'numOnL': 2,
                           'sumOnR': 3.0, 'numOnR': 2, 'sumOff': 3.5,'numOff': 2})
         self.dataInstPL.dataMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-                          'condLabel': 'dataTest', 'trial': 7, 'GNG': 1, 'trialType': 'D.A', 'stimName': 'movie1.mov',
+                          'condLabel': 'dataTest', 'trial': 7, 'GNG': 1, 'trialType': 'D.B', 'stimName': 'movie1.mov',
                           'habCrit': 0, 'habTrialNo': 3, 'sumOnL': 3.5, 'numOnL': 2,
                           'sumOnR': 3.0, 'numOnR': 2, 'sumOff': 3.5,'numOff': 2})
         self.dataInstPL.dataMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-                          'condLabel': 'dataTest', 'trial': 8, 'GNG': 1, 'trialType': 'D.B', 'stimName': 'movie1.mov',
+                          'condLabel': 'dataTest', 'trial': 8, 'GNG': 1, 'trialType': 'D.C', 'stimName': 'movie1.mov',
                           'habCrit': 0, 'habTrialNo': 3, 'sumOnL': 3.5, 'numOnL': 2,
                           'sumOnR': 3.0, 'numOnR': 2, 'sumOff': 3.5,'numOff': 2})
 
@@ -2129,7 +2129,7 @@ class TestHPP(object):
 
         habSaveData = self.dataInstHPP.saveHabFile()
         assert len(habSaveData) == 5
-        assert habSaveData[3]['trialType'] == 'D.B'
+        assert habSaveData[3]['trialType'] == 'D'
         assert habSaveData[3]['sumOnC'] == 3.5
         assert habSaveData[3]['sumOnL'] == 3.5
         assert habSaveData[3]['sumOnR'] == 3.0
@@ -2137,7 +2137,7 @@ class TestHPP(object):
         self.dataInstHPP.blockList['D']['calcHabOver'] = ['A', 'B']
         habSaveData = self.dataInstHPP.saveHabFile()
         assert len(habSaveData) == 5
-        assert habSaveData[3]['trialType'] == 'D.B'
+        assert habSaveData[3]['trialType'] == 'D'
         assert habSaveData[3]['sumOnC'] == 7.0
         assert habSaveData[3]['sumOnL'] == 7.0
         assert habSaveData[3]['sumOnR'] == 6.0
