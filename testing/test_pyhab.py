@@ -1314,7 +1314,7 @@ class TestMultiHabBlock(object):
 
         self.habInst.counters = {'A':2, 'B':0,'C':0,'D':0, 'X':6}
 
-        [x, y] = self.habInst.jumpToTest(8, 'E')
+        [x, y] = self.habInst.jumpToTest(9, 'E') # Because jumpToTest is being called from the trial AFTER habituation
 
         assert x == 'Movie5'
         assert y == 'B'
@@ -1324,7 +1324,7 @@ class TestMultiHabBlock(object):
     def test_insert_first(self):
         [x, y] = self.habInst.insertHab(8,'E')
 
-        assert x == 0
+        assert x == 'Movie12'
         assert y == 'X'
         assert len(self.habInst.actualTrialOrder) == 53 # Up one from before.
 
@@ -1466,7 +1466,7 @@ class TestCommands(object):
         self.commandInst.habSetWhen[i] = -1
         self.commandInst.habMetWhen[i] = -1
         self.commandInst.maxHabIndex[i] = 0
-        self.commandInst.habDataCompiled[i] = [0] * self.dataInst.blockList[i]['maxHabTrials']
+        self.commandInst.habDataCompiled[i] = [0] * self.commandInst.blockList[i]['maxHabTrials']
 
         [x, y] = self.commandInst.jumpToTest(7,'Z')
         assert x == 'Movie9'
@@ -1502,7 +1502,7 @@ class TestCommands(object):
         self.commandInst.habSetWhen[i] = -1
         self.commandInst.habMetWhen[i] = -1
         self.commandInst.maxHabIndex[i] = 0
-        self.commandInst.habDataCompiled[i] = [0] * self.dataInst.blockList[i]['maxHabTrials']
+        self.commandInst.habDataCompiled[i] = [0] * self.commandInst.blockList[i]['maxHabTrials']
 
         [x, y] = self.commandInst.jumpToTest(7,'Hab')
         assert x == 'Movie9'
