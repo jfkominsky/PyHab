@@ -1058,12 +1058,13 @@ class PyHab:
         if not met:
             self.habMetWhen[block] = 0  # Necessary to make sure that once you have jumped to test you cannot jump trials again.
         trialNum = tn
-        maxHab = deepcopy(tn)
+        maxHab = deepcopy(tn)-1 # index rather than trial number
         # Look for the last instance of block and '^', which will definitionally be the last trial of type.
+        # Since hab blocks are always top-level blocks, this will always be the first set of characters.
         for x in range(trialNum, len(self.actualTrialOrder)):
-            if block in self.actualTrialOrder[x] and '^' in self.actualTrialOrder[x]:
-                maxHab = x+1
-        tempNum = maxHab
+            if block in self.actualTrialOrder[x][0:len(block)] and '^' in self.actualTrialOrder[x]:
+                maxHab = x
+        tempNum = maxHab # This should be the index in actualtrialorder of the final hab trial of this block.
         # It's actually necessary to decrement the counter for the current trial type to deal with jump/insert!
         if not met:
             currType = self.actualTrialOrder[trialNum - 1]
@@ -1074,9 +1075,10 @@ class PyHab:
                 self.counters[currType] = 0
         # trialNum is in fact the index after the current trial at this point
         # so we can just erase everything between that and the first non-hab trial.
-        del self.actualTrialOrder[(trialNum - 1):(tempNum + 1)]
+        # del does not erase the last index in its range.
+        del self.actualTrialOrder[(trialNum - 1):(tempNum+1)]
         try:
-            trialType = self.actualTrialOrder[trialNum - 1] # note: need to clean this.
+            trialType = self.actualTrialOrder[trialNum - 1] # note: this comes with all of the ^*. markings and needs cleanup
             while '.' in trialType:
                 trialType = trialType[trialType.index('.')+1:]
             if self.stimPres:

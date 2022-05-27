@@ -1454,7 +1454,7 @@ class TestCommands(object):
         [x, y] = self.commandInst.jumpToTest(7,'Z')
         assert x == 'Movie9'
         assert y == 'D'
-        assert self.commandInst.actualTrialOrder ==['A', 'A', 'B', 'B', 'Hab', 'Hab','D']
+        assert self.commandInst.actualTrialOrder ==['A', 'A', 'B', 'B', 'Z1*^.Hab', 'Z2*^.Hab','D']
 
         self.commandInst.stimPres = False # Insert would require loading movies otherwise. Requires manual testing.
         [x,y] = self.commandInst.insertHab(7,'Z')
