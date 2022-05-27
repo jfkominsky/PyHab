@@ -1687,12 +1687,12 @@ class TestCommands(object):
         assert len(self.commandInst.actualTrialOrder) == 33  # check initial
         assert self.commandInst.checkStop('Hab') == True
         assert self.commandInst.habMetWhen['Hab'] == 6
-        self.commandInst.jumpToTest(17,'Hab', met=True)
+        self.commandInst.jumpToTest(17,'Hab')
         assert len(self.commandInst.actualTrialOrder) == 17
         assert self.commandInst.actualTrialOrder[16] == 'C'
         self.commandInst.redoSetup(17,['B','C'],'Hab') # Because C is auto-redo, it should go back one step.
         assert self.commandInst.checkStop('Hab') == False
-        assert self.commandInst.habMetWhen['Hab'] == -1 # Why is this getitng set to 0 of all things? It should be 6!
+        assert self.commandInst.habMetWhen['Hab'] == -1
         assert len(self.commandInst.actualTrialOrder) == 33
         assert self.commandInst.habCount['Hab'] == 5
         assert len(self.commandInst.dataMatrix) == 14

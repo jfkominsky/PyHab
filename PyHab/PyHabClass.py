@@ -1028,7 +1028,7 @@ class PyHab:
                 # If habituation has been reached, we have to basically undo what happens when a hab crit is met.
                 if self.habMetWhen[blockName] > -1 and self.habCount[blockName] != self.blockList[blockName]['maxHabTrials'] - 1:  # If it was the last hab trial possible, it'll just solve itself with no further action
                     if not self.checkStop(blockName):  # Almost always true in this case, because we're redoing a hab trial.
-                        self.habMetWhen['blockName'] = -1  # Reset
+                        self.habMetWhen[blockName] = -1  # Reset
                         tempTN = trialNum + max(len(self.blockList[blockName]['trialList']), 1)  # Starting with the next trial.
                         ctr = 0
                         for h in range(self.habCount[blockName]+1, self.blockList[blockName]['maxHabTrials']):
