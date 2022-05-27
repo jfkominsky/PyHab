@@ -1484,7 +1484,7 @@ class TestCommands(object):
 
         self.commandInst.stimPres = True
         self.commandInst.blockList={'Hab': {'trialList': ['B','C'],
-               'habituation': 0,
+               'habituation': 1,
                'habByDuration': 0,
                'maxHabTrials': 14,
                'setCritWindow': 3,
@@ -1510,7 +1510,7 @@ class TestCommands(object):
         assert len(self.commandInst.actualTrialOrder) == 33
         assert self.commandInst.actualTrialOrder[32] == 'D'
 
-        [x, y] = self.commandInst.jumpToTest(7,'Hab') # yields index out of range?
+        [x, y] = self.commandInst.jumpToTest(7,'Hab')
         assert x == 'Movie9'
         assert y == 'D'
         assert self.commandInst.actualTrialOrder == ['A', 'A', 'B', 'B', 'Hab1*.B', 'Hab1*^.C', 'D']
