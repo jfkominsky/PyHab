@@ -447,8 +447,8 @@ class PyHab:
             # the correct part of habDataCompiled easier. Notably, reduces but does not inherently zero out.
             if trialName in self.blockList[habBlock]['calcHabOver']:  # Make sure it's part of the hab calc
                 self.habDataCompiled[habBlock][self.habCount[habBlock]-1] = self.habDataCompiled[habBlock][self.habCount[habBlock]-1] - self.dataMatrix[trialIndex]['sumOnA']
-                if self.habDataCompiled[self.habCount[habBlock]-1] < 0:  # For rounding errors
-                    self.habDataCompiled[self.habCount[habBlock]-1] = 0
+                if self.habDataCompiled[habBlock][self.habCount[habBlock]-1] < 0:  # For rounding errors
+                    self.habDataCompiled[habBlock][self.habCount[habBlock]-1] = 0
             # If it's the end of the hab iteration, then reduce the hab count.
             if '^' in self.actualTrialOrder[trialNum-1]:  # This is kind of a dangerous kludge that hopefully won't come up that often.
                 self.habCount[habBlock] -= 1
