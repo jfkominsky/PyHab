@@ -996,7 +996,6 @@ class PyHab:
                     blockName = blockName[0:blockName.index('.')]
                     if '*' in blockName: # hab block.
                         blockName = blockName[0:blockName.index('*')]  # problem: also includes hab number!
-                        # Let's assume less than 100 for max hab.
                         for b, c in self.habCount.items():
                             if blockName[0:len(b)] == b:
                                 blockName = blockName[0:len(b)]
