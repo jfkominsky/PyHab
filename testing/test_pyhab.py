@@ -290,7 +290,7 @@ class TestDataFunc(object):
         self.dataInst.verbDatList['verboseOff'].append(
             {'trial': 3, 'trialType': 'D.B', 'startTime': 11.5, 'endTime': 13.5, 'duration': 2.0})
         self.dataInst.habDataCompiled['D'][self.dataInst.habCount['D']] = self.dataInst.dataMatrix[-1]['sumOnA']
-        self.dataInst.habCount = 0  # Has not yet proceeded to end of hab trial!
+        self.dataInst.habCount['D'] = 0  # Has not yet proceeded to end of hab trial!
 
         self.dataInst.dataMatrix.append(
             {'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
@@ -1559,7 +1559,7 @@ class TestCommands(object):
                                      'C': ['Movie1', 'Movie2'],
                                      'D': ['Movie9', 'Movie10'],
                                      'H': ['Movie11']}
-        self.commandInst.trialOrder = ['A', 'A', 'B', 'B', 'Hab', 'D']
+        self.commandInst.trialOrder = ['A', 'A', 'B', 'B', 'Hab', 'C']
         self.commandInst.autoAdvance = ['B','C']
         self.commandInst.blockList = {'Hab': {'trialList': ['H','C'],
                'habituation': 1,
@@ -1689,7 +1689,7 @@ class TestCommands(object):
         assert self.commandInst.habMetWhen['Hab'] == 6
         self.commandInst.jumpToTest(17,'Hab')
         assert len(self.commandInst.actualTrialOrder) == 17
-        assert '^' in self.commandInst.actualTrialOrder[-1] # Checking sources of failure
+        assert '^' in self.commandInst.actualTrialOrder[-1]
         self.commandInst.redoSetup(17,['B','C'],'Hab')
         assert self.commandInst.checkStop('Hab') == False
         assert self.commandInst.habMetWhen['Hab'] == -1 # Failing for reasons unclear.
