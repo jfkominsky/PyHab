@@ -289,7 +289,7 @@ class TestDataFunc(object):
             {'trial': 3, 'trialType': 'D.B', 'startTime': 5.0, 'endTime': 11.5, 'duration': 6.5})
         self.dataInst.verbDatList['verboseOff'].append(
             {'trial': 3, 'trialType': 'D.B', 'startTime': 11.5, 'endTime': 13.5, 'duration': 2.0})
-        self.dataInst.habDataCompiled[self.dataInst.habCount] = self.dataInst.dataMatrix[-1]['sumOnA']
+        self.dataInst.habDataCompiled['D'][self.dataInst.habCount] = self.dataInst.dataMatrix[-1]['sumOnA']
         self.dataInst.habCount = 0  # Has not yet proceeded to end of hab trial!
 
         self.dataInst.dataMatrix.append(

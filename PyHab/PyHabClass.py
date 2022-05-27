@@ -998,12 +998,8 @@ class PyHab:
                         blockName = blockName[0:blockName.index('*')]  # problem: also includes hab number!
                         # Let's assume less than 100 for max hab.
                         for b, c in self.habCount.items():
-                            if c < 9:
-                                if eval(blockName[-1]) == c + 1:  # need to od it this way because otherwise risks an eval error
-                                    blockName = blockName[0:-1]
-                            elif c > 8:
-                                if eval(blockName[-2:]) == c + 1:
-                                    blockName = blockName[0:-2]
+                            if blockName[0:len(b)] == b:
+                                blockName = blockName[0:len(b)]
                         tempHabCount = deepcopy(self.habCount[blockName])
             if self.stimPres:
                 if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
