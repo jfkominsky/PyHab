@@ -172,7 +172,7 @@ class TestDataFunc(object):
 
     def test_redo(self):
         """
-        Test that redo properly updates the data file and structures. TODO: Does not test 'redosetup' for auto-advancing
+        Test that redo properly updates the data file and structures. Does not test 'redosetup' for auto-advancing
         :return:
         :rtype:
         """
@@ -182,7 +182,8 @@ class TestDataFunc(object):
         self.dataInst.verbDatList = copy.deepcopy(self.testDatList)
         self.dataInst.badTrials = []  # It doesn't teardown until ALL of the functions have been run so we have to reset it
         self.dataInst.verbBadList = {'verboseOn':[], 'verboseOff':[], 'verboseOn2':[], 'verboseOff2':[]}
-
+        # Needs an ActualTrialOrder
+        self.dataInst.actualTrialOrder=['A','A','A']
         self.dataInst.redoTrial(2)
 
         assert len(self.dataInst.dataMatrix) == 1
@@ -229,6 +230,8 @@ class TestDataFunc(object):
         self.dataInst.habMetWhen[i] = -1
         self.dataInst.maxHabIndex[i] = 0
         self.dataInst.habDataCompiled[i] = [0] * self.dataInst.blockList['D']['maxHabTrials']
+
+        self.dataInst.actualTrialOrder = ['A','A','A','D1*^.C','D2*^.C','D3*^.C','D4*^.C']
 
         self.dataInst.dataMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
                 'condLabel': 'dataTest', 'trial': 3, 'GNG': 1, 'trialType': 'D.C', 'stimName': 'movie1.mov',
@@ -1494,7 +1497,6 @@ class TestCommands(object):
                'calcHabOver': ['B']}}
         self.commandInst.trialOrder = ['A', 'A', 'B', 'B', 'Hab', 'D']
         self.commandInst.counters = {'A': 2, 'B': 2, 'C': 1, 'D': 0,'Hab':1}
-        self.commandInst.run(testMode=testOne)
 
         i = 'Hab'
         self.commandInst.habCount[i] = 0
@@ -1503,8 +1505,9 @@ class TestCommands(object):
         self.commandInst.habMetWhen[i] = -1
         self.commandInst.maxHabIndex[i] = 0
         self.commandInst.habDataCompiled[i] = [0] * self.commandInst.blockList[i]['maxHabTrials']
+        self.commandInst.run(testMode=testOne) 
 
-        [x, y] = self.commandInst.jumpToTest(7,'Hab')
+        [x, y] = self.commandInst.jumpToTest(7,'Hab') # yields index out of range?
         assert x == 'Movie9'
         assert y == 'D'
         assert self.commandInst.actualTrialOrder == ['A', 'A', 'B', 'B', 'Hab1*.B', 'Hab1*^.C', 'D']
