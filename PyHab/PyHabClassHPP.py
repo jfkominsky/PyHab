@@ -343,21 +343,21 @@ class PyHabHPP(PyHab):
         """
 
         self.trialText.text = "Trial no. " + str(number)
-        habTrial = False
+        habTrial = False  # Just for tracking if this is part of a habituation, whether or not it is included in the hab calc
+        habBlock = ''
         localType = deepcopy(ttype)
         while '.' in localType:
             localType = localType[localType.index('.') + 1:]
-        if ttype[0:3] == 'hab' and '.' in ttype:  # todo Hab sub-trials. Hard to ID definitively, actually.
-            spliceType = ttype[ttype.index('.') + 1:]
-            if '.' in spliceType:
-                spliceType = spliceType[0:spliceType.index('.')]  # Isolate the part between '.'s, which will be what shows up in habtriallist.
-            if spliceType in self.habTrialList:
-                dataType = 'hab' + ttype[ttype.index('.'):]  # Collapses down the number and ^ markings for the data file
-                habTrial = True
-            else:
-                dataType = ttype
-        elif len(self.habTrialList) == 0 and ttype == 'Hab':
-            dataType = ttype
+        if '*' in ttype:  # Hab block trial
+            # Hab trials have this * marker, but also the hab block will always be the top-level block, i.e., before the first .
+            # Even if it's a one-trial block this will be true.
+            # datatype should be the full block-trial name minus *^
+            dataType = ttype.translate({94: None, 42: None})
+            habBlock = ttype[:ttype.index('*')]
+            # Now we need to trim out the hab number. Assume maxHab < 100
+            for b, c in self.habCount.items():
+                if habBlock[0:len(b)] == b and habBlock[len(b):] == str(c + 1):
+                    habBlock = habBlock[0:len(b)]
             habTrial = True
         else:
             dataType = ttype
@@ -957,9 +957,11 @@ class PyHabHPP(PyHab):
                                      'endTime': endTrial, 'duration': offDur}
                     offArray.append(tempGazeArray)
         if habTrial:
-            habDataRec = self.habCount + 1
+            habDataRec = self.habCount[habBlock] + 1
+            habCrit = self.habCrit[habBlock]
         else:
             habDataRec = 0
+            habCrit = -1
         if self.stimPres:
             # Reset everything, stop playing sounds and movies.
             for i, j in disMovie.items():
@@ -1028,107 +1030,63 @@ class PyHabHPP(PyHab):
                         if j['stimType'] == 'Movie':
                             j['stim'].seek(0.0)  # this is the reset, we hope.
                             j['stim'].pause()
-            self.abortTrial(onArrayC, offArray, number, dataType, onArrayL, onArrayR, self.stimName, habDataRec)
+            self.abortTrial(onArrayC, offArray, number, dataType, onArrayL, onArrayR, self.stimName, habDataRec, habCrit)
             return 3
         else:
-            self.dataRec(onArrayC, offArray, number, dataType, onArrayL, onArrayR, self.stimName, habDataRec)
-        if self.habMetWhen == -1 and len(self.habTrialList) > 0 and not abort:   # if still during habituation BLOCK
-            if dataType[0:4] == 'hab.' and dataType[4:] in self.calcHabOver:
-                tempSum = 0
-                # This if for habituation by total trial duration, ignores hppStimScrOnly
-                if self.habByDuration == 1:
-                    for c in range(0, len(onArrayC)):
-                        tempSum += onArrayC[c]['duration']
-                    for d in range(0, len(onArrayL)):
-                        tempSum += onArrayL[d]['duration']
-                    for g in range(0, len(onArrayR)):
-                        tempSum += onArrayR[g]['duration']
-                    for f in range(0, len(offArray)):
-                        tempSum += offArray[f]['duration']
-                    if self.durationInclude == 0 and len(offArray) > 0:
-                        if offArray[-1]['endTime'] > onArrayC[-1]['endTime'] and offArray[-1]['endTime'] > onArrayL[-1]['endTime'] and offArray[-1]['endTime'] > onArrayR[-1]['endTime']:
-                            tempSum = tempSum - offArray[-1]['duration']
-                else:
-                    # If HPPStimScrOnly, hab only pays attention to the relevant screen.
-                    # Because CheckStop only looks at habDataCompiled, this can be done entirely here.
-                    if localType in self.hppStimScrOnly:
-                        if 'C' in stimScreens:
+            self.dataRec(onArrayC, offArray, number, dataType, onArrayL, onArrayR, self.stimName, habDataRec, habCrit)
+        if habTrial:
+            if self.habMetWhen[habBlock] == -1 and not abort:  # if still during habituation
+                if localType in self.blockList[habBlock]['calcHabOver']:
+                    tempSum = 0
+                    # This if for habituation by total trial duration, ignores hppStimScrOnly
+                    if self.blockList[habBlock]['habByDuration']:
+                        for c in range(0, len(onArrayC)):
+                            tempSum += onArrayC[c]['duration']
+                        for d in range(0, len(onArrayL)):
+                            tempSum += onArrayL[d]['duration']
+                        for g in range(0, len(onArrayR)):
+                            tempSum += onArrayR[g]['duration']
+                        for f in range(0, len(offArray)):
+                            tempSum += offArray[f]['duration']
+                        if self.durationInclude == 0 and len(offArray) > 0:
+                            if offArray[-1]['endTime'] > onArrayC[-1]['endTime'] and offArray[-1]['endTime'] > onArrayL[-1]['endTime'] and offArray[-1]['endTime'] > onArrayR[-1]['endTime']:
+                                tempSum = tempSum - offArray[-1]['duration']
+                    else:
+                        # If HPPStimScrOnly, hab only pays attention to the relevant screen.
+                        # Because CheckStop only looks at habDataCompiled, this can be done entirely here.
+                        if localType in self.hppStimScrOnly:
+                            if 'C' in stimScreens:
+                                for c in range(0, len(onArrayC)):
+                                    tempSum += onArrayC[c]['duration']
+                            if 'L' in stimScreens:
+                                for d in range(0, len(onArrayL)):
+                                    tempSum += onArrayL[d]['duration']
+                            if 'R' in stimScreens:
+                                for f in range(0, len(onArrayR)):
+                                    tempSum += onArrayR[f]['duration']
+                        else:
                             for c in range(0, len(onArrayC)):
                                 tempSum += onArrayC[c]['duration']
-                        if 'L' in stimScreens:
                             for d in range(0, len(onArrayL)):
                                 tempSum += onArrayL[d]['duration']
-                        if 'R' in stimScreens:
                             for f in range(0, len(onArrayR)):
                                 tempSum += onArrayR[f]['duration']
+                    self.habDataCompiled[habBlock][self.habCount] += tempSum
+                if ttype == 4:
+                    return 2
+                elif '^' in ttype:
+                    self.habCount[habBlock] += 1
+                    # Check if criteria need to be set or have been met
+                    if self.checkStop(habBlock):  # If criteria met
+                        # Check if there are any trials FOLLOWING the hab trials.
+                        if self.maxHabIndex[habBlock] < len(self.actualTrialOrder)-1:
+                            return 1
+                        else:
+                            return 2  # End experiment.
                     else:
-                        for c in range(0, len(onArrayC)):
-                            tempSum += onArrayC[c]['duration']
-                        for d in range(0, len(onArrayL)):
-                            tempSum += onArrayL[d]['duration']
-                        for f in range(0, len(onArrayR)):
-                            tempSum += onArrayR[f]['duration']
-                self.habDataCompiled[self.habCount] += tempSum
-            if ttype == 4:
-                return 2
-            elif '^' in ttype:
-                self.habCount += 1
-                # Check if criteria need to be set or have been met
-                if self.checkStop():  # If criteria met
-                    # Check if there are any trials FOLLOWING the hab trials.
-                    if self.maxHabIndex < len(self.actualTrialOrder)-1:
-                        return 1
-                    else:
-                        return 2  # End experiment.
+                        return 0
                 else:
                     return 0
-            else:
-                return 0
-        elif ttype == 'Hab' and self.habMetWhen == -1 and not abort:
-            tempSum = 0
-            # This if for habituation by total trial duration, ignores hppStimScrOnly
-            if self.habByDuration == 1:
-                for c in range(0, len(onArrayC)):
-                    tempSum += onArrayC[c]['duration']
-                for d in range(0, len(onArrayL)):
-                    tempSum += onArrayL[d]['duration']
-                for g in range(0, len(onArrayR)):
-                    tempSum += onArrayR[g]['duration']
-                for f in range(0, len(offArray)):
-                    tempSum += offArray[f]['duration']
-                if self.durationInclude == 0 and len(offArray) > 0:
-                    if offArray[-1]['endTime'] > onArrayC[-1]['endTime'] and offArray[-1]['endTime'] > onArrayL[-1]['endTime'] and offArray[-1]['endTime'] > onArrayR[-1]['endTime']:
-                        tempSum = tempSum - offArray[-1]['duration']
-            else:
-                # If HPPStimScrOnly, hab only pays attention to the relevant screen.
-                # Because CheckStop only looks at habDataCompiled, this can be done entirely here.
-                if localType in self.hppStimScrOnly:
-                    if 'C' in stimScreens:
-                        for c in range(0, len(onArrayC)):
-                            tempSum += onArrayC[c]['duration']
-                    if 'L' in stimScreens:
-                        for d in range(0, len(onArrayL)):
-                            tempSum += onArrayL[d]['duration']
-                    if 'R' in stimScreens:
-                        for f in range(0, len(onArrayR)):
-                            tempSum += onArrayR[f]['duration']
-                else:
-                    for c in range(0, len(onArrayC)):
-                        tempSum += onArrayC[c]['duration']
-                    for d in range(0, len(onArrayL)):
-                        tempSum += onArrayL[d]['duration']
-                    for f in range(0, len(onArrayR)):
-                        tempSum += onArrayR[f]['duration']
-            self.habDataCompiled[self.habCount] += tempSum
-            self.habCount += 1
-            if self.checkStop():  # If criteria met
-                # Check if there are any trials FOLLOWING the hab trials.
-                if self.actualTrialOrder[-1] != 'Hab':
-                    return 1
-                else:
-                    return 2  # End experiment.
-            else:
-                return 0
         elif number >= len(self.actualTrialOrder) or ttype == 4:
             # End experiment
             return 2
@@ -1172,7 +1130,11 @@ class PyHabHPP(PyHab):
 
         # If there is habituation data, create hab summary file. Similar to the block one, but a little easier thanks to
         # the tagging of habituation trial numbers.
-        if self.habSetWhen > 0 and len(self.habTrialList) > 0:  # If there's a 'Hab' trial type, the main summary file does the trick just fine.
+        wasHab = False
+        for q, r in self.blockList.items():
+            if r['habituation'] in [1, '1', True, 'True']:
+                wasHab = True
+        if wasHab:  # If there's a 'Hab' trial type, the main summary file does the trick just fine.
             habMatrix = self.saveHabFile()
             # Now, actually write the file
             nDupe = ''  # This infrastructure eliminates the risk of overwriting existing data

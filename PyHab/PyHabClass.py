@@ -294,6 +294,8 @@ class PyHab:
         Only happens when the 'abort' button is pressed during a trial. Creates a "bad trial" entry
         out of any data recorded for the trial so far, to be saved later.
 
+        TODO: Block-level rewinds?
+
         :param onArray: Gaze-on events for coder 1
         :type onArray: list of dicts {trial, trialType, startTime, endTime, duration}
         :param offArray: Gaze-off events for coder 1
@@ -955,6 +957,8 @@ class PyHab:
         """
         Lays the groundwork for redoTrial, including correcting the trial order, selecting the right stim, etc.
 
+        TODO: Block-level redo?
+
         :param tn: Trial number (trialNum)
         :type tn: int
         :param autoAdv: The current auto-advance trial type list (different on first trial for Reasons)
@@ -997,7 +1001,7 @@ class PyHab:
                     if '*' in blockName: # hab block.
                         blockName = blockName[0:blockName.index('*')]  # problem: also includes hab number!
                         for b, c in self.habCount.items():
-                            if blockName[0:len(b)] == b:
+                            if blockName[0:len(b)] == b: # Note: This only works if the name isn't reused. e.g., hab block 'A' and 'A2' would be a problem
                                 blockName = blockName[0:len(b)]
                         tempHabCount = deepcopy(self.habCount[blockName])
             if self.stimPres:
@@ -1135,7 +1139,7 @@ class PyHab:
                 self.counters[trialType] = 0
         else:
             disMovie = 0
-        if self.blindPres < 1:  # TODO: Do we need this?
+        if self.blindPres < 1:
             self.rdyTextAppend = " NEXT: " + self.actualTrialOrder[trialNum - 1] + " TRIAL"
         return [disMovie,trialType]
 
@@ -1435,7 +1439,7 @@ class PyHab:
         Basically, allows you to set an arbitrary set of keys to start a trial once the attngetter has played.
         In this case, only B (coder A on) is sufficient.
 
-        TODO: This function can become the eye-tracker interface, basically. It will listen for the eye-tracker input.
+        This function can become the eye-tracker interface, basically. It will listen for the eye-tracker input.
 
         :return: True if the B key is pressed, False otherwise.
         :rtype: bool
@@ -1488,18 +1492,14 @@ class PyHab:
         if '*' in ttype:  # Hab block trial
             # Hab trials have this * marker, but also the hab block will always be the top-level block, i.e., before the first .
             # Even if it's a one-trial block this will be true.
-            # datatype should be the full block-trial name minus *^ todo:[I think]?
+            # datatype should be the full block-trial name minus *^
             dataType = ttype.translate({94:None, 42:None})
             habBlock = ttype[:ttype.index('*')]
-            habTrial = True
             # Now we need to trim out the hab number. Assume maxHab < 100
             for b, c in self.habCount.items():
-                if c < 9:
-                    if eval(habBlock[-1]) == c+1:  # need to do it this way because otherwise risks an eval error
-                        habBlock = habBlock[0:-1]
-                elif c > 8:
-                    if eval(habBlock[-2:]) == c+1:
-                        habBlock = habBlock[0:-2]
+                if habBlock[0:len(b)] == b and habBlock[len(b):] == str(c+1):
+                    habBlock = habBlock[0:len(b)]
+            habTrial = True
         else:
             dataType = ttype
         self.frameCount['C'] = 0  # reset display
@@ -1784,8 +1784,10 @@ class PyHab:
         # print offArray2
         if habTrial:
             habDataRec = self.habCount[habBlock] + 1
+            habCrit = self.habCrit[habBlock]
         else:
             habDataRec = 0
+            habCrit = -1
         if self.stimPres:
             # Reset everything, stop playing sounds and movies.
             if disMovie['stimType'] == 'Movie':
@@ -1816,11 +1818,11 @@ class PyHab:
             if self.stimPres and disMovie['stimType'] == 'Movie':
                 disMovie['stim'].seek(0.0)
                 disMovie['stim'].pause()
-            # Todo: Do a proper redo, including rewinding trials using redoSetup.
-            self.abortTrial(onArray, offArray, number, dataType, onArray2, offArray2, self.stimName, habDataRec)
+            # Todo: Do a proper redo, including rewinding trials using redoSetup? Or a new function that's similar?
+            self.abortTrial(onArray, offArray, number, dataType, onArray2, offArray2, self.stimName, habDataRec, habCrit)
             return 3
         else:
-            self.dataRec(onArray, offArray, number, dataType, onArray2, offArray2, self.stimName, habDataRec)
+            self.dataRec(onArray, offArray, number, dataType, onArray2, offArray2, self.stimName, habDataRec, habCrit)
         # If this is a habituation block
         if habTrial:
             if self.habMetWhen[habBlock] == -1 and not abort:   # if still during habituation
@@ -1904,8 +1906,8 @@ class PyHab:
         wasHab = False
         for q, r in self.blockList.items():
             if r['habituation'] in [1,'1',True,'True']:
-                wasHab == True
-        if wasHab:  # If there's a 'Hab' trial type, the main summary file does the trick just fine.
+                wasHab = True
+        if wasHab:
             habMatrix = self.saveHabFile()
             # Now, actually write the file
             nDupe = ''  # This infrastructure eliminates the risk of overwriting existing data
@@ -2186,11 +2188,14 @@ class PyHab:
         for i in range(0, len(self.dataMatrix)):
             if isinstance(self.dataMatrix[i]['habTrialNo'], int):
                 tempType = deepcopy(self.dataMatrix[i]['trialType'])
-                blockType = tempType[0:tempType.index('.')]
+                blockType = tempType[0:tempType.index('.')] # still has hab trial no?
+                for b,c in self.habCount.items():
+                    if blockType[0:len(b)] == b:
+                        blockType = blockType[0:len(b)]
                 while '.' in tempType:
                     tempType = tempType[tempType.index('.')+1:]
 
-                # todo: Blocks, multiple hab blocks per experiment.
+                # Having multiple hab blocks per experiment comlicates this.
                 if tempType in self.blockList[blockType]['calcHabOver']:  # If not, this should specifically be ignored.
                     tempNo = self.dataMatrix[i]['habTrialNo']
                     addTo = False
