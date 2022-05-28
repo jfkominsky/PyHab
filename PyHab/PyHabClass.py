@@ -1441,6 +1441,8 @@ class PyHab:
 
         This function can become the eye-tracker interface, basically. It will listen for the eye-tracker input.
 
+        Todo: Can we implement a debug mode that simulates key-presses for some amount of time?
+
         :return: True if the B key is pressed, False otherwise.
         :rtype: bool
         """
