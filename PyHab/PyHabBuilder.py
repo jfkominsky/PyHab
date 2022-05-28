@@ -43,8 +43,7 @@ class PyHabBuilder:
                                                         'autoRedo': [],
                                                         'onTimeDeadline': {},
                                                         'durationInclude': '1',
-                                                        'habByDuration': '0', # TODO: Block property
-                                                        'blindPres': '0', 
+                                                        'blindPres': '0',
                                                         'autoAdvance': [],
                                                         'randPres': '0',
                                                         'condPath': '', 
@@ -54,18 +53,8 @@ class PyHabBuilder:
                                                         'baseCondList': [],  # 0.8 New, for remembering pre-counterbalancing
                                                         'trialTypes': [],
                                                         'trialOrder': [],
-                                                        'blockList': {},  # 0.8, create blocks of trials (hab remains special) TODO: Block objects, not just names.
+                                                        'blockList': {},  # 0.10 habituaiton is now handled by blocks entirely
                                                         'blockDataList': [],
-                                                        'maxHabTrials': '14', # TODO: Block property
-                                                        'setCritWindow': '3',  # TODO: block property
-                                                        'setCritDivisor': '2.0', # TODO: Block property
-                                                        'setCritType': 'First', # TODO: Block property
-                                                        'habThresh': '5.0', # TODO: Block property
-                                                        'metCritWindow': '3',  # TODO: Block property
-                                                        'metCritDivisor': '1.0', # TODO: Block property
-                                                        'metCritStatic': 'Moving', # TODO: Block property
-                                                        'habTrialList': [], # TODO: Block property - rather, replaced by block revamp
-                                                        'calcHabOver': [], # TODO: Block property
                                                         'stimPres': 0,  # Will be set on each run anyways.
                                                         'stimPath': 'stimuli'+self.dirMarker,
                                                         'stimNames': {},
@@ -106,11 +95,6 @@ class PyHabBuilder:
                 self.settings['baseCondFile'] = ''
             if 'blockList' not in self.settings.keys():
                 self.settings['blockList'] = '{}'
-            if 'calcHabOver' not in self.settings.keys():
-                if len(self.settings['habTrialList']) > 0:
-                    self.settings['calcHabOver'] = "['Hab']"  # Default to old behavior.
-                else:
-                    self.settings['calcHabOver'] = "[]"
             if 'blockDataList' not in self.settings.keys():
                 self.settings['blockDataList'] = "[]"
             if 'blockSum' not in self.settings.keys():
@@ -131,9 +115,9 @@ class PyHabBuilder:
             # Settings requiring evaluation to get sensible values. Mostly dicts.
             evalList = ['dataColumns','blockSum','trialSum','maxDur','condList','baseCondList','movieEnd','playThrough',
                         'trialOrder','stimNames', 'stimList', 'ISI', 'maxOff','minOn','durationCriterion','autoRedo',
-                        'onTimeDeadline','autoAdvance','playAttnGetter','attnGetterList','trialTypes','habTrialList',
-                        'calcHabOver', 'nextFlash', 'blockList', 'dynamicPause','midAG','screenWidth','screenHeight',
-                        'screenIndex','movieWidth','movieHeight', 'durationInclude', 'loadSep', 'hppStimScrOnly']  # in 0.9, this becomes necessary.
+                        'onTimeDeadline','autoAdvance','playAttnGetter','attnGetterList','trialTypes', 'nextFlash',
+                        'blockList', 'dynamicPause','midAG','screenWidth','screenHeight','screenIndex','movieWidth',
+                        'movieHeight', 'durationInclude', 'loadSep', 'hppStimScrOnly']  # in 0.9, this becomes necessary.
             for i in evalList:
                 self.settings[i] = eval(self.settings[i])
                 if i in ['stimList','attnGetterList']:
@@ -153,8 +137,6 @@ class PyHabBuilder:
             if 'startImage' not in self.settings.keys():
                 self.settings['startImage'] = ''
                 self.settings['endImage'] = ''
-            if 'habThresh' not in self.settings.keys():
-                self.settings['habThresh'] = '1.0'
             # Backwards compatiblity for attention-getters v0.9.0
             for i, j in self.settings['playAttnGetter'].items():
                 if isinstance(j, str):
@@ -339,6 +321,7 @@ class PyHabBuilder:
 
         addHabButton = visual.Rect(self.win, width=.9*(self.paletteArea[1]-self.paletteArea[0]),height=self.standardPaletteHeight*.10, fillColor="yellow", lineColor="black",
                 pos=[self.paletteArea[0]+float(abs(self.paletteArea[1]-self.paletteArea[0]))/2,self.paletteArea[2]-self.standardPaletteHeight*.18])
+        # TODO: remove/alter all this
         if 'Hab' in self.settings['trialTypes'] or len(self.settings['habTrialList']) > 0:
             txt = 'Mod Hab Block'
         else:
@@ -523,10 +506,6 @@ class PyHabBuilder:
                     # Determine whether we're dealing with a trial or block, launch appropriate interface
                     if self.trialTypesArray['labels'][j] in self.settings['blockList'].keys():
                         self.makeBlockDlg(self.trialTypesArray['labels'][j], new=False)
-                    elif self.trialTypesArray['labels'][j] == 'Hab' and len(self.settings['habTrialList']) > 0:
-                        self.addHabBlock(makeNew=False)
-                    elif self.trialTypesArray['labels'][j] == 'Hab': # TODO: remove all this.
-                        self.makeHabTypeDlg(makeNew=False)
                     else:
                         self.trialTypeDlg(trialType=self.trialTypesArray['labels'][j], makeNew=False)
                     if os.name is not 'posix':
@@ -1202,7 +1181,7 @@ class PyHabBuilder:
         """
         A function for creating a habituation trial type, rather than multi-trial block.
 
-        TODO: Total redesign.
+        TODO: This function can be removed.
 
         0: Maximum duration
         1: Maximum off-time
@@ -1364,19 +1343,32 @@ class PyHabBuilder:
             newBlock = newBlockDlg.show()
             if newBlockDlg.OK:
                 newBlock[0] = str(newBlock[0])  # In case PyQT does something weird
+                startsSameAs = False
+                for i,j in self.settings['blockList'].items():
+                    if len(newBlock[0]) <= len(i):
+                        if newBlock[0] == i[0:len(newBlock[0])]:
+                            startsSameAs = True
+                    if len(i) <= len(newBlock[0]):
+                        if i == newBlock[0][0:len(i)]:
+                            startsSameAs = True
                 if newBlock[0] == '':
                     errDlg = gui.Dlg(title="Missing information!")
                     errDlg.addText("Name cannot be blank!")
                     irrel = errDlg.show()
                     self.makeBlockDlg(name, new)
                 elif '.' in newBlock[0] or '^' in newBlock[0] or '*' in newBlock[0]:
-                    # TODO: Remove 'Hab' as forbidden
                     errDlg = gui.Dlg(title="Illegal block name!")
                     errDlg.addText("Name contains illegal character, or is reserved. Please rename!")
                     irrel = errDlg.show()
                     self.makeBlockDlg(name, new)
                 elif new and newBlock[0] in self.settings['trialTypes']:
                     errDlg = gui.Dlg(title="Name already in use!")
+                    errDlg.addText("Name is already in use for another trial or block. Please rename!")
+                    irrel = errDlg.show()
+                    self.makeBlockDlg(name, new)
+                elif startsSameAs:
+                    # For safety, make it so names can't start the same as an existing block
+                    errDlg = gui.Dlg(title="Block name is the start of another block name!")
                     errDlg.addText("Name is already in use for another trial or block. Please rename!")
                     irrel = errDlg.show()
                     self.makeBlockDlg(name, new)
@@ -1547,23 +1539,6 @@ class PyHabBuilder:
                             errDlg = gui.Dlg(title="Empty block!")
                             errDlg.addText("Block must contain at least one trial! Use cancel to stop block construction")
                             errDlg.show()
-                            """elif hab:  # Create or modify hab block. Special rules apply. TODO: CHange this.
-                            for z in range(0, len(blockOrder)):
-                                if blockOrder[z] != 'Hab':
-                                    blockOrder[z] = blockOrder[z]
-                            if 'Hab' in self.settings['trialTypes'] and 'Hab' not in self.settings['blockList'].keys():
-                                self.deleteType('Hab')  # It's that simple. It'll shuffle 'hab' to the end of the pallette, but it won't change the color or anything.
-                            self.settings['habTrialList'] = blockOrder
-                            self.settings['blockList']['Hab'] = blockOrder #TODO: Doubling up for now...
-                            if new:
-                                self.settings['calcHabOver'] = [blockOrder[-1]]  # Default to last trial.
-                                self.settings['trialTypes'].append('Hab')
-                                # Update palette pages if needed.
-                                self.totalPalettePages = floor((len(self.settings['trialTypes'])-1) / 8) + 1
-                                self.trialPalettePage = deepcopy(self.totalPalettePages)
-                                self.trialTypesArray = self.loadTypes(self.typeLocs, self.settings['trialTypes'], page=self.trialPalettePage)
-                            done = True
-                            self.habSettingsDlg()  # For setting which things to hab over."""
                         else:  # Create our new block or modify existing
                             # Since most of the fields are going to come from the hab fields, we start with that
                             # and add the trial list entry, and done!
@@ -1874,9 +1849,6 @@ class PyHabBuilder:
 
         numItems = len(tOrd)
         tTypes = types
-        for i in range(0,len(tOrd)): #TODO: remove 'hab' special treatment
-            if tOrd[i] == 'Hab':
-                numItems += 1 #Double-size for blocks
         outputDict = {'lines':[],'shapes':[],'text':[],'labels':[], 'extras':[]}  #Labels allows us to index the others while still keeping order.
         j = 0 # This serves a purpose, trust me. It's for rendering hab blocks.
         if specNumItems > 0:
@@ -1892,38 +1864,41 @@ class PyHabBuilder:
                     c = tTypes.index(tOrd[i])  # find the trial type, get color index
                 except:
                     c=0
-                if tOrd[i] == 'Hab':  # The special category todo: remove
-                    if j % 10 == 9:
-                        j += 1 # Just in case we're at the point where it would loop around to the second row. We don't want that.
-                        if numItems == 20 or numItems == 39:  # Special case of breaking flowLocs limits.
-                            #TODO: BF: if there are multiple hab blocks or if there are precisely 41 items when you have a line skip like this it doesn't count them correctly in the study flow interface.
-                            #But, having more than one hab block breaks the whole program anyways. Will become an issue with generic blocks
-                            return self.loadFlow(tOrd, space, locs, overflow, types, specNumItems=numItems+1)
-                    lx1 = flowSpace[j][0]
-                    j += 1
-                    lx2 = flowSpace[j][0]
-                    lx = (lx2+lx1)/2  # Ideally putting it square in between the two places.
-                    loc = [lx,flowSpace[j][1]]
-                    tempObj = visual.Rect(self.win,width=self.flowWidthObj*2, height=self.flowHeightObj, fillColor=self.colorsArray[c], pos=loc)
-                    if tOrd[i] == 'Hab' and len(self.settings['habTrialList']) > 1:  # If there are hab sub-trials, add pips to the hab block object
-                        #TODO: This needs to be changed
-                        for q in range(0, len(self.settings['habTrialList'])):
-                            tempStr = self.settings['habTrialList'][q]
-                            newwidth = self.flowWidthObj/len(self.settings['habTrialList'])
-                            tempPip = visual.Rect(self.win, width=newwidth, height=self.flowHeightObj/2.5,
+                if tOrd[i] in self.settings['blockList'].keys() and trials:
+                    if self.settings['blockList'][tOrd[i]]['habituation'] in [1, '1', True, 'True']:  # The special category todo: remove
+                        numItems += 1
+                        if j % 10 == 9:
+                            j += 1  # Just in case we're at the point where it would loop around to the second row. We don't want that.
+                            if numItems == 20 or numItems == 39:  # Special case of breaking flowLocs limits.
+                                # TODO: BF: if there are multiple hab blocks or if there are precisely 41 items when you have a line skip like this it doesn't count them correctly in the study flow interface.
+                                # But, having more than one hab block breaks the whole program anyways. Will become an issue with generic blocks
+                                return self.loadFlow(tOrd, space, locs, overflow, types, specNumItems=numItems + 1)
+                        lx1 = flowSpace[j][0]
+                        j += 1
+                        lx2 = flowSpace[j][0]
+                        lx = (lx2 + lx1) / 2  # Ideally putting it square in between the two places.
+                        loc = [lx, flowSpace[j][1]]
+                        tempObj = visual.Rect(self.win, width=self.flowWidthObj * 2, height=self.flowHeightObj,
+                                              fillColor=self.colorsArray[c], pos=loc)
+                        for q in range(0, len(self.settings['blockList'][tOrd[i]]['trialList'])):
+                            tempStr = self.settings['blockList'][tOrd[i]]['trialList'][q]
+                            newwidth = self.flowWidthObj / len(self.settings['blockList'][tOrd[i]]['trialList'])
+                            tempPip = visual.Rect(self.win, width=newwidth, height=self.flowHeightObj / 2.5,
                                                   fillColor=self.colorsArray[tTypes.index(tempStr)],
-                                                  pos=[lx+newwidth*(q-(len(self.settings['habTrialList'])-1)/2), flowSpace[j][1]-self.flowHeightObj/2.25])
+                                                  pos=[lx + newwidth * (
+                                                              q - (len(self.settings['blockList'][tOrd[i]]['trialList']) - 1) / 2),
+                                                       flowSpace[j][1] - self.flowHeightObj / 2.25])
                             outputDict['extras'].append(tempPip)
-                elif tOrd[i] in self.settings['blockList'].keys() and trials:
-                    tempObj = visual.Rect(self.win, width=self.flowWidthObj, height=self.flowHeightObj, fillColor=self.colorsArray[c], pos=flowSpace[j])
-                    for q in range(0, len(self.settings['blockList'][tOrd[i]])):
-                        tempStr = self.settings['blockList'][tOrd[i]][q]
-                        newwidth = self.flowWidthObj/(2*len(self.settings['blockList'][tOrd[i]]))
-                        tempPip = visual.Rect(self.win, width=newwidth, height=self.flowHeightObj / 2.5,
-                                              fillColor=self.colorsArray[tTypes.index(tempStr)],
-                                              pos=[flowSpace[j][0] + newwidth * (q - (len(self.settings['blockList'][tOrd[i]]) - 1) / 2),
-                                                   flowSpace[j][1] - self.flowHeightObj / 2.25])
-                        outputDict['extras'].append(tempPip)
+                    else:
+                        tempObj = visual.Rect(self.win, width=self.flowWidthObj, height=self.flowHeightObj, fillColor=self.colorsArray[c], pos=flowSpace[j])
+                        for q in range(0, len(self.settings['blockList'][tOrd[i]]['trialList'])):
+                            tempStr = self.settings['blockList'][tOrd[i]]['trialList'][q]
+                            newwidth = self.flowWidthObj/(2*len(self.settings['blockList'][tOrd[i]]['trialList']))
+                            tempPip = visual.Rect(self.win, width=newwidth, height=self.flowHeightObj / 2.5,
+                                                  fillColor=self.colorsArray[tTypes.index(tempStr)],
+                                                  pos=[flowSpace[j][0] + newwidth * (q - (len(self.settings['blockList'][tOrd[i]]['trialList']) - 1) / 2),
+                                                       flowSpace[j][1] - self.flowHeightObj / 2.25])
+                            outputDict['extras'].append(tempPip)
                 elif tOrd[i] in self.settings['autoAdvance'] and j not in [0, 10, 20, 30] and trials:
                     # Make it adjacent to the last one, unless it would start a row, in which case leave it.
                     loc = [flowSpace[j][0]-abs(space[1]-space[0])*((self.flowGap-self.flowWidMult)/2), flowSpace[j][1]]
@@ -2679,9 +2654,6 @@ class PyHabBuilder:
             for i in range(0, len(self.trialTypesArray['labels'])): # Not just copying list b/c it would add start/end to it
                 if self.trialTypesArray['labels'][i] in self.settings['blockList'].keys():
                     pass
-                elif self.trialTypesArray['labels'][i] == 'Hab' and len(self.settings['habTrialList'])>0:
-                    # TODO: change 'hab' treatment. I think this can just be removed b/c it already excludes blocks.
-                    pass
                 else:
                     choiceList.append(self.trialTypesArray['labels'][i])
             choiceList.append('Start and end of experiment screens')
@@ -2977,10 +2949,7 @@ class PyHabBuilder:
                     allReady = False
                 for i in range(0,len(self.settings['trialTypes'])):
                     if self.settings['trialTypes'][i] not in self.settings['blockList'].keys(): # If a trial type has no movies associated with it
-                        if self.settings['trialTypes'][i] == 'Hab' and len(self.settings['habTrialList']) > 0:
-                            # TODO: remove special treatment for 'hab'
-                            pass
-                        elif self.settings['trialTypes'][i] not in self.settings['stimNames'].keys():
+                        if self.settings['trialTypes'][i] not in self.settings['stimNames'].keys():
                             allReady = False
                         elif len(self.settings['stimNames'][self.settings['trialTypes'][i]]) == 0:  # Another way that it can have no movies associated with it.
                             allReady = False
