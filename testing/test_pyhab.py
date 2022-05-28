@@ -1495,7 +1495,7 @@ class TestMultiHabBlock(object):
                                      'Y': ['Movie13'],
                                      'Z': ['Movie14']}
 
-        self.habInst.counters = {'A':2, 'B':0,'C':0,'D':0, 'X':6}
+        self.habInst.counters = {'A':2, 'B':0,'C':0,'D':0, 'X':6, 'Y':0, 'Z':0}
 
         [x, y] = self.habInst.jumpToTest(9, 'E') # Because jumpToTest is being called from the trial AFTER habituation
 
@@ -1515,11 +1515,16 @@ class TestMultiHabBlock(object):
         self.habInst.dataMatrix.append(self.firstTestTrialMatrix[0])
         for j in range(0, 6):
             self.habInst.dataMatrix.append(self.secondHabTrialMatrix[j])
+            if self.habInst.dataMatrix[-1]['trialType'] in ['F.Y', 'F.X']:
+                self.habInst.habDataCompiled['F'][self.habInst.habCount['F']] += self.habInst.dataMatrix[-1]['sumOnA']
             self.habInst.habCount['F'] = math.floor(j/3)+1
             assert self.habInst.checkStop('F') == False
             assert self.habInst.habSetWhen['F'] == -1
         for k in range(6,9):
             self.habInst.dataMatrix.append(self.secondHabTrialMatrix[k])
+            if self.habInst.dataMatrix[-1]['trialType'] in ['F.Y', 'F.X']:
+                self.habInst.habDataCompiled['F'][self.habInst.habCount['F']] += self.habInst.dataMatrix[-1]['sumOnA']
+
         self.habInst.habCount['F'] = 3
         assert self.habInst.checkStop('F') == False
         assert self.habInst.habSetWhen['F'] == 3
@@ -1527,6 +1532,8 @@ class TestMultiHabBlock(object):
 
         for a in range(9,12):
             self.habInst.dataMatrix.append(self.secondHabTrialMatrix[a])
+            if self.habInst.dataMatrix[-1]['trialType'] in ['F.Y', 'F.X']:
+                self.habInst.habDataCompiled['F'][self.habInst.habCount['F']] += self.habInst.dataMatrix[-1]['sumOnA']
         self.habInst.habCount['F'] = 4
         assert self.habInst.checkStop('F') == False
         assert self.habInst.habSetWhen['F'] == 3
@@ -1534,6 +1541,8 @@ class TestMultiHabBlock(object):
 
         for a in range(12,15):
             self.habInst.dataMatrix.append(self.secondHabTrialMatrix[a])
+            if self.habInst.dataMatrix[-1]['trialType'] in ['F.Y', 'F.X']:
+                self.habInst.habDataCompiled['F'][self.habInst.habCount['F']] += self.habInst.dataMatrix[-1]['sumOnA']
         self.habInst.habCount['F'] = 5
         assert self.habInst.checkStop('F') == False
         assert self.habInst.habSetWhen['F'] == 3
@@ -1541,6 +1550,8 @@ class TestMultiHabBlock(object):
 
         for a in range(15,18):
             self.habInst.dataMatrix.append(self.secondHabTrialMatrix[a])
+            if self.habInst.dataMatrix[-1]['trialType'] in ['F.Y', 'F.X']:
+                self.habInst.habDataCompiled['F'][self.habInst.habCount['F']] += self.habInst.dataMatrix[-1]['sumOnA']
         self.habInst.habCount['F'] = 6
         assert self.habInst.checkStop('F') == True
         assert self.habInst.habMetWhen['F'] == 6
