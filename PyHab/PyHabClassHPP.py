@@ -1079,7 +1079,11 @@ class PyHabHPP(PyHab):
                     # Check if criteria need to be set or have been met
                     if self.checkStop(habBlock):  # If criteria met
                         # Check if there are any trials FOLLOWING the hab trials.
-                        if self.maxHabIndex[habBlock] < len(self.actualTrialOrder)-1:
+                        # First we find the last hab trial in THIS hab block.
+                        maxHab = 0
+                        if habBlock in self.actualTrialOrder[number][0:len(habBlock)] and '^' in self.actualTrialOrder[number]:
+                            maxHab = number
+                        if maxHab < len(self.actualTrialOrder) - 1:
                             return 1
                         else:
                             return 2  # End experiment.

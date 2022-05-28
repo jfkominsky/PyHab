@@ -745,6 +745,18 @@ class TestDataFunc(object):
                                         'metCritDivisor': 1.0,
                                         'metCritStatic': 'Moving',
                                         'calcHabOver': ['A']}
+        self.dataInst.blockList['secondHab'] = {'trialList': ['A','B'],
+                                        'habituation': 1,
+                                        'habByDuration': 0,
+                                        'maxHabTrials': 14,
+                                        'setCritWindow': 3,
+                                        'setCritDivisor': 2.0,
+                                        'setCritType': 'First',
+                                        'habThresh': 5.0,
+                                        'metCritWindow': 3,
+                                        'metCritDivisor': 1.0,
+                                        'metCritStatic': 'Moving',
+                                        'calcHabOver': ['A']}
 
         habSaveData = self.dataInst.saveHabFile()
         assert len(habSaveData) == 5  # 5 because it includes non-hab trials, of which there are 2 at the start
@@ -758,7 +770,48 @@ class TestDataFunc(object):
         assert habSaveData[3]['sumOnA'] == 20.0
         assert habSaveData[3]['stimName'] == 'movie1.mov+movie1.mov'
 
+        habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                          'condLabel': 'dataTest', 'trial': 9, 'GNG': 1, 'trialType': 'secondHab.A', 'stimName': 'movie1.mov',
+                          'habCrit': 0, 'habTrialNo': 1, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
+                          'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
+                          'numOffB': 2})
+        habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                          'condLabel': 'dataTest', 'trial': 10, 'GNG': 1, 'trialType': 'secondHab.B', 'stimName': 'movie1.mov',
+                          'habCrit': 0, 'habTrialNo': 1, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
+                          'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
+                          'numOffB': 2})
+        habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                          'condLabel': 'dataTest', 'trial': 11, 'GNG': 1, 'trialType': 'secondHab.A', 'stimName': 'movie1.mov',
+                          'habCrit': 0, 'habTrialNo': 2, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
+                          'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
+                          'numOffB': 2})
+        habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                          'condLabel': 'dataTest', 'trial': 12, 'GNG': 1, 'trialType': 'secondHab.B', 'stimName': 'movie1.mov',
+                          'habCrit': 0, 'habTrialNo': 2, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
+                          'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
+                          'numOffB': 2})
+        habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                          'condLabel': 'dataTest', 'trial': 13, 'GNG': 1, 'trialType': 'secondHab.A', 'stimName': 'movie1.mov',
+                          'habCrit': 0, 'habTrialNo': 3, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
+                          'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
+                          'numOffB': 2})
+        habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                          'condLabel': 'dataTest', 'trial': 14, 'GNG': 1, 'trialType': 'secondHab.B', 'stimName': 'movie1.mov',
+                          'habCrit': 0, 'habTrialNo': 3, 'sumOnA': 10.0, 'numOnA': 2, 'sumOffA': 3.5,
+                          'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
+                          'numOffB': 2})
 
+        habSaveData = self.dataInst.saveHabFile()
+        assert len(habSaveData) == 8  # 5 because it includes non-hab trials, of which there are 2 at the start
+        assert habSaveData[6]['trialType'] == 'secondHab'
+        assert habSaveData[6]['sumOnA'] == 10.0
+
+        self.dataInst.blockList['secondHab']['calcHabOver'] = ['A', 'B']
+        habSaveData = self.dataInst.saveHabFile()
+        assert len(habSaveData) == 8
+        assert habSaveData[6]['trialType'] == 'secondHab'
+        assert habSaveData[6]['sumOnA'] == 20.0
+        assert habSaveData[6]['stimName'] == 'movie1.mov+movie1.mov'
 
 
     def test_checkstop(self):
@@ -1462,30 +1515,33 @@ class TestMultiHabBlock(object):
         self.habInst.dataMatrix.append(self.firstTestTrialMatrix[0])
         for j in range(0, 6):
             self.habInst.dataMatrix.append(self.secondHabTrialMatrix[j])
-            self.habInst.habCount = math.floor(j/3)+1
+            self.habInst.habCount['F'] = math.floor(j/3)+1
             assert self.habInst.checkStop('F') == False
             assert self.habInst.habSetWhen['F'] == -1
         for k in range(6,9):
             self.habInst.dataMatrix.append(self.secondHabTrialMatrix[k])
-        self.habInst.habCount = 3
+        self.habInst.habCount['F'] = 3
         assert self.habInst.checkStop('F') == False
         assert self.habInst.habSetWhen['F'] == 3
         assert self.habInst.habCrit['F'] == 12.0
 
         for a in range(9,12):
             self.habInst.dataMatrix.append(self.secondHabTrialMatrix[a])
+        self.habInst.habCount['F'] = 4
         assert self.habInst.checkStop('F') == False
         assert self.habInst.habSetWhen['F'] == 3
         assert self.habInst.habCrit['F'] == 12.0
 
         for a in range(12,15):
             self.habInst.dataMatrix.append(self.secondHabTrialMatrix[a])
+        self.habInst.habCount['F'] = 5
         assert self.habInst.checkStop('F') == False
         assert self.habInst.habSetWhen['F'] == 3
         assert self.habInst.habCrit['F'] == 12.0
 
         for a in range(15,18):
             self.habInst.dataMatrix.append(self.secondHabTrialMatrix[a])
+        self.habInst.habCount['F'] = 6
         assert self.habInst.checkStop('F') == True
         assert self.habInst.habMetWhen['F'] == 6
         assert self.habInst.habSetWhen['F'] == 3

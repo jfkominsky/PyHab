@@ -2194,14 +2194,14 @@ class PyHab:
         for i in range(0, len(self.dataMatrix)):
             if isinstance(self.dataMatrix[i]['habTrialNo'], int):
                 tempType = deepcopy(self.dataMatrix[i]['trialType'])
-                blockType = tempType[0:tempType.index('.')] # still has hab trial no?
+                blockType = tempType[0:tempType.index('.')] # still has hab trial num
                 for b,c in self.habCount.items():
                     if blockType[0:len(b)] == b:
                         blockType = blockType[0:len(b)]
                 while '.' in tempType:
                     tempType = tempType[tempType.index('.')+1:]
 
-                # Having multiple hab blocks per experiment comlicates this.
+                # Having multiple hab blocks per experiment complicates this.
                 if tempType in self.blockList[blockType]['calcHabOver']:  # If not, this should specifically be ignored.
                     tempNo = self.dataMatrix[i]['habTrialNo']
                     addTo = False
@@ -2209,7 +2209,7 @@ class PyHab:
                     tempLine = deepcopy(self.dataMatrix[i])
                     tempLine['trialType'] = blockType
                     for j in range(0, len(habMatrix)):
-                        if habMatrix[j]['habTrialNo'] == tempNo:
+                        if habMatrix[j]['habTrialNo'] == tempNo and blockType == habMatrix[j]['trialType']:
                             addTo = True
                             addIndex = deepcopy(j)
                     if addTo:
