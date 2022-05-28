@@ -321,11 +321,10 @@ class PyHabBuilder:
 
         addHabButton = visual.Rect(self.win, width=.9*(self.paletteArea[1]-self.paletteArea[0]),height=self.standardPaletteHeight*.10, fillColor="yellow", lineColor="black",
                 pos=[self.paletteArea[0]+float(abs(self.paletteArea[1]-self.paletteArea[0]))/2,self.paletteArea[2]-self.standardPaletteHeight*.18])
+
         # TODO: remove/alter all this
-        if 'Hab' in self.settings['trialTypes'] or len(self.settings['habTrialList']) > 0:
-            txt = 'Mod Hab Block'
-        else:
-            txt = 'Add Habituation'
+        txt = 'Add Habituation'
+
         addHabText = visual.TextStim(self.win, alignHoriz='center', alignVert='center', text = txt,height=.5*addHabButton.height, pos=addHabButton.pos,color="black")
         self.buttonList['shapes'].append(addHabButton)
         self.buttonList['text'].append(addHabText)
@@ -779,10 +778,7 @@ class PyHabBuilder:
                                 if trialType in self.settings[listsList[k]]:
                                     self.settings[listsList[k]].remove(trialType)
                                     self.settings[listsList[k]].append(typeInfo[0])
-                            if len(self.settings['habTrialList']) > 0:
-                                for z in range(0, len(self.settings['habTrialList'])):
-                                    if self.settings['habTrialList'][z] == trialType:
-                                        self.settings['habTrialList'][z] = typeInfo[0]
+
                             for a, b in self.settings['blockList'].items():
                                 for c in range(0, len(b)):
                                     if b[c] == trialType:
@@ -2047,6 +2043,7 @@ class PyHabBuilder:
             if not self.loadSave and len(self.folderPath)>0: #If this is the first time saving a new experiment, relaunch from launcher!
                 self.win.close()
                 launcherPath = self.folderPath+self.settings['prefix']+'Launcher.py'
+                # TODO: This no longer works.
                 launcher = coder.ScriptThread(target=self._runLauncher(launcherPath), gui=self)
                 launcher.start()
     

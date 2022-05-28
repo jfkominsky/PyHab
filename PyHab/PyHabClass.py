@@ -1416,7 +1416,7 @@ class PyHab:
                 maxHab = deepcopy(trialNum)
                 for x in range(trialNum, len(self.actualTrialOrder)):
                     if topBlockName in self.actualTrialOrder[x] and '^' in self.actualTrialOrder[x]:
-                        maxHab = x + 1
+                        maxHab = x # Index, not hab number
                 tempNum = maxHab
                 del self.actualTrialOrder[(trialNum):(tempNum + 1)]
                 trialNum += 1
