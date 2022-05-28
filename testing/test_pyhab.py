@@ -1,3 +1,5 @@
+import math
+
 import pytest
 import os, sys, copy, time, mock
 from psychopy import event
@@ -1259,6 +1261,117 @@ class TestMultiHabBlock(object):
                               'stimName': 'movie2.mov', 'habCrit': 12.0, 'sumOnA': 3.0, 'numOnA': 2,'sumOffA': 3.5,
                               'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}]
 
+        self.firstTestTrialMatrix = [{'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                            'condLabel': 'dataTest', 'trial': 9, 'GNG': 1, 'trialType': 'B', 'stimName': 'movie2.mov',
+                            'habCrit': 0, 'sumOnA': 15.0, 'numOnA': 2, 'sumOffA': 3.5,
+                            'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}]
+
+        self.secondHabTrialMatrix = [{'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                            'condLabel': 'dataTest', 'trial': 10, 'GNG': 1, 'trialType': 'F.Z', 'stimName': 'movie14.mov',
+                            'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
+                            'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2},
+                                     {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                                      'condLabel': 'dataTest', 'trial': 11, 'GNG': 1, 'trialType': 'F.Y',
+                                      'stimName': 'movie14.mov',
+                                      'habCrit': 0, 'sumOnA': 4.0, 'numOnA': 2, 'sumOffA': 3.5,
+                                      'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2},
+                                     {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                                      'condLabel': 'dataTest', 'trial': 12, 'GNG': 1, 'trialType': 'F.X',
+                                      'stimName': 'movie14.mov',
+                                      'habCrit': 0, 'sumOnA': 4.0, 'numOnA': 2, 'sumOffA': 3.5,
+                                      'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2},
+                                     {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                                      'condLabel': 'dataTest', 'trial': 13, 'GNG': 1, 'trialType': 'F.Z',
+                                      'stimName': 'movie14.mov',
+                                      'habCrit': 0, 'sumOnA': 8.0, 'numOnA': 2, 'sumOffA': 3.5,
+                                      'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2},
+                                     {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                                      'condLabel': 'dataTest', 'trial': 14, 'GNG': 1, 'trialType': 'F.Y',
+                                      'stimName': 'movie14.mov',
+                                      'habCrit': 0, 'sumOnA': 4.0, 'numOnA': 2, 'sumOffA': 3.5,
+                                      'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2},
+                                     {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                                      'condLabel': 'dataTest', 'trial': 15, 'GNG': 1, 'trialType': 'F.X',
+                                      'stimName': 'movie14.mov',
+                                      'habCrit': 0, 'sumOnA': 4.0, 'numOnA': 2, 'sumOffA': 3.5,
+                                      'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2},
+                                     {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                                      'condLabel': 'dataTest', 'trial': 16, 'GNG': 1, 'trialType': 'F.Z',
+                                      'stimName': 'movie14.mov',
+                                      'habCrit': 0, 'sumOnA': 8.0, 'numOnA': 2, 'sumOffA': 3.5,
+                                      'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2},
+                                     {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                                      'condLabel': 'dataTest', 'trial': 17, 'GNG': 1, 'trialType': 'F.Y',
+                                      'stimName': 'movie14.mov',
+                                      'habCrit': 0, 'sumOnA': 4.0, 'numOnA': 2, 'sumOffA': 3.5,
+                                      'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2},
+                                     {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                                      'condLabel': 'dataTest', 'trial': 18, 'GNG': 1, 'trialType': 'F.X',
+                                      'stimName': 'movie14.mov',
+                                      'habCrit': 0, 'sumOnA': 4.0, 'numOnA': 2, 'sumOffA': 3.5,
+                                      'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2},
+                                     {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                                      'condLabel': 'dataTest', 'trial': 16, 'GNG': 1, 'trialType': 'F.Z',
+                                      'stimName': 'movie14.mov',
+                                      'habCrit': 0, 'sumOnA': 8.0, 'numOnA': 2, 'sumOffA': 3.5,
+                                      'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2},
+                                     {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                                      'condLabel': 'dataTest', 'trial': 17, 'GNG': 1, 'trialType': 'F.Y',
+                                      'stimName': 'movie14.mov',
+                                      'habCrit': 0, 'sumOnA': 4.0, 'numOnA': 2, 'sumOffA': 3.5,
+                                      'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2},
+                                     {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                                      'condLabel': 'dataTest', 'trial': 18, 'GNG': 1, 'trialType': 'F.X',
+                                      'stimName': 'movie14.mov',
+                                      'habCrit': 0, 'sumOnA': 4.0, 'numOnA': 2, 'sumOffA': 3.5,
+                                      'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2},
+                                     {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                                      'condLabel': 'dataTest', 'trial': 19, 'GNG': 1, 'trialType': 'F.Z',
+                                      'stimName': 'movie14.mov',
+                                      'habCrit': 0, 'sumOnA': 8.0, 'numOnA': 2, 'sumOffA': 3.5,
+                                      'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2},
+                                     {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                                      'condLabel': 'dataTest', 'trial': 20, 'GNG': 1, 'trialType': 'F.Y',
+                                      'stimName': 'movie14.mov',
+                                      'habCrit': 0, 'sumOnA': 1.5, 'numOnA': 2, 'sumOffA': 3.5,
+                                      'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2},
+                                     {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                                      'condLabel': 'dataTest', 'trial': 21, 'GNG': 1, 'trialType': 'F.X',
+                                      'stimName': 'movie14.mov',
+                                      'habCrit': 0, 'sumOnA': 1.5, 'numOnA': 2, 'sumOffA': 3.5,
+                                      'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2},
+                                     {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                                      'condLabel': 'dataTest', 'trial': 22, 'GNG': 1, 'trialType': 'F.Z',
+                                      'stimName': 'movie14.mov',
+                                      'habCrit': 0, 'sumOnA': 8.0, 'numOnA': 2, 'sumOffA': 3.5,
+                                      'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2},
+                                     {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                                      'condLabel': 'dataTest', 'trial': 23, 'GNG': 1, 'trialType': 'F.Y',
+                                      'stimName': 'movie14.mov',
+                                      'habCrit': 0, 'sumOnA': 1.5, 'numOnA': 2, 'sumOffA': 3.5,
+                                      'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2},
+                                     {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                                      'condLabel': 'dataTest', 'trial': 24, 'GNG': 1, 'trialType': 'F.X',
+                                      'stimName': 'movie14.mov',
+                                      'habCrit': 0, 'sumOnA': 1.5, 'numOnA': 2, 'sumOffA': 3.5,
+                                      'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2},
+                                     {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                                      'condLabel': 'dataTest', 'trial': 25, 'GNG': 1, 'trialType': 'F.Z',
+                                      'stimName': 'movie14.mov',
+                                      'habCrit': 0, 'sumOnA': 8.0, 'numOnA': 2, 'sumOffA': 3.5,
+                                      'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2},
+                                     {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                                      'condLabel': 'dataTest', 'trial': 26, 'GNG': 1, 'trialType': 'F.Y',
+                                      'stimName': 'movie14.mov',
+                                      'habCrit': 0, 'sumOnA': 1.5, 'numOnA': 2, 'sumOffA': 3.5,
+                                      'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2},
+                                     {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                                      'condLabel': 'dataTest', 'trial': 27, 'GNG': 1, 'trialType': 'F.X',
+                                      'stimName': 'movie14.mov',
+                                      'habCrit': 0, 'sumOnA': 1.5, 'numOnA': 2, 'sumOffA': 3.5,
+                                      'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
+                                     ]
+
     def teardown_class(self):
         del self.habInst
 
@@ -1318,12 +1431,16 @@ class TestMultiHabBlock(object):
                                       'B': ['Movie5', 'Movie6', 'Movie7', 'Movie8'],
                                       'C': ['Movie1', 'Movie2', 'Movie3', 'Movie4'],
                                       'D': ['Movie9', 'Movie10'],
-                                      'X': ['Movie12']}
+                                      'X': ['Movie12'],
+                                      'Y': ['Movie13'],
+                                      'Z': ['Movie14']}
         self.habInst.stimDict = {'A': ['Movie1', 'Movie2'],
                                      'B': ['Movie5', 'Movie6'],
                                      'C': ['Movie1', 'Movie2'],
                                      'D': ['Movie9', 'Movie10'],
-                                     'X': ['Movie12']}
+                                     'X': ['Movie12'],
+                                     'Y': ['Movie13'],
+                                     'Z': ['Movie14']}
 
         self.habInst.counters = {'A':2, 'B':0,'C':0,'D':0, 'X':6}
 
@@ -1331,8 +1448,8 @@ class TestMultiHabBlock(object):
 
         assert x == 'Movie5'
         assert y == 'B'
-        assert self.habInst.actualTrialOrder[7] == 'E6*^.X' # Did it erase the last hab trial from the order somehow?
-        assert len(self.habInst.actualTrialOrder) == 52  # 60-8 = 52 - but it's turning up 51?
+        assert self.habInst.actualTrialOrder[7] == 'E6*^.X'
+        assert len(self.habInst.actualTrialOrder) == 52
 
     def test_insert_first(self):
         [x, y] = self.habInst.insertHab(8,'E')
@@ -1340,6 +1457,54 @@ class TestMultiHabBlock(object):
         assert x == 'Movie12'
         assert y == 'X'
         assert len(self.habInst.actualTrialOrder) == 53 # Up one from before.
+
+    def test_second_checkstop(self):
+        self.habInst.dataMatrix.append(self.firstTestTrialMatrix[0])
+        for j in range(0, 6):
+            self.habInst.dataMatrix.append(self.secondHabTrialMatrix[j])
+            self.habInst.habCount = math.floor(j/3)+1
+            assert self.habInst.checkStop('F') == False
+            assert self.habInst.habSetWhen['F'] == -1
+        for k in range(6,9):
+            self.habInst.dataMatrix.append(self.secondHabTrialMatrix[k])
+        self.habInst.habCount = 3
+        assert self.habInst.checkStop('F') == False
+        assert self.habInst.habSetWhen['F'] == 3
+        assert self.habInst.habCrit['F'] == 12.0
+
+        for a in range(9,12):
+            self.habInst.dataMatrix.append(self.secondHabTrialMatrix[a])
+        assert self.habInst.checkStop('F') == False
+        assert self.habInst.habSetWhen['F'] == 3
+        assert self.habInst.habCrit['F'] == 12.0
+
+        for a in range(12,15):
+            self.habInst.dataMatrix.append(self.secondHabTrialMatrix[a])
+        assert self.habInst.checkStop('F') == False
+        assert self.habInst.habSetWhen['F'] == 3
+        assert self.habInst.habCrit['F'] == 12.0
+
+        for a in range(15,18):
+            self.habInst.dataMatrix.append(self.secondHabTrialMatrix[a])
+        assert self.habInst.checkStop('F') == True
+        assert self.habInst.habMetWhen['F'] == 6
+        assert self.habInst.habSetWhen['F'] == 3
+        assert self.habInst.habCrit['F'] == 12.0
+
+    def test_second_jump(self):
+        [x,y] = self.habInst.jumpToTest(28,'F')
+
+        assert x == 'Movie1'
+        assert y == 'C'
+        assert len(self.habInst.actualTrialOrder) == 28
+
+    def test_second_insert(self):
+        [x, y] = self.habInst.insertHab(27, 'F')
+
+        assert x == 'Movie14'
+        assert y == 'Z'
+        assert len(self.habInst.actualTrialOrder) == 29  # Up one from before.
+
 
 
 

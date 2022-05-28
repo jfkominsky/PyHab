@@ -319,16 +319,6 @@ class PyHabBuilder:
         self.trialTypesArray = self.loadTypes(self.typeLocs, self.settings['trialTypes'], page=self.trialPalettePage)
         self.studyFlowArray = self.loadFlow(self.settings['trialOrder'], self.flowArea, self.flowLocs,self.overFlowLocs, self.settings['trialTypes'])
 
-        #addHabButton = visual.Rect(self.win, width=.9*(self.paletteArea[1]-self.paletteArea[0]),height=self.standardPaletteHeight*.10, fillColor="yellow", lineColor="black",
-                #pos=[self.paletteArea[0]+float(abs(self.paletteArea[1]-self.paletteArea[0]))/2,self.paletteArea[2]-self.standardPaletteHeight*.18])
-
-        # TODO: remove/alter all this
-        #txt = 'Add Habituation'
-
-        #addHabText = visual.TextStim(self.win, alignHoriz='center', alignVert='center', text = txt,height=.5*addHabButton.height, pos=addHabButton.pos,color="black")
-        #self.buttonList['shapes'].append(addHabButton)
-        #self.buttonList['text'].append(addHabText)
-        #self.buttonList['functions'].append(self.addHabBlock)
         addBlockButton = visual.Rect(self.win, width=.9*(self.paletteArea[1]-self.paletteArea[0]),height=self.standardPaletteHeight*.20, fillColor="yellow", lineColor="black",
                 pos=[self.paletteArea[0]+float(abs(self.paletteArea[1]-self.paletteArea[0]))/2,self.paletteArea[2]-self.standardPaletteHeight*.23])
         addBlockText = visual.TextStim(self.win, alignHoriz='center', alignVert='center', text="Create Block\n(incl. for\nHabituation)", height=.25*addBlockButton.height, pos=addBlockButton.pos,color="black")
@@ -364,27 +354,21 @@ class PyHabBuilder:
         self.buttonList['shapes'].append(condSetButton)
         self.buttonList['text'].append(condSetText)
         self.buttonList['functions'].append(self.condSettingsDlg)
-        # TODO: This button no longer matters, reshuffle stuff.
-        #habSetButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect),pos=[0,-.3], fillColor="white")
-        #habSetText = visual.TextStim(self.win, text="Habituation \nsettings",color="black",height=habSetButton.height*.3, alignHoriz='center', pos=habSetButton.pos)
-        #self.buttonList['shapes'].append(habSetButton)
-        #self.buttonList['text'].append(habSetText)
-        #self.buttonList['functions'].append(self.habSettingsDlg)
 
-        attnGetterButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect), pos=[.4, -.3], fillColor = "white")
+        attnGetterButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect), pos=[0, -.3], fillColor = "white")
         attnGetterText = visual.TextStim(self.win, text="Customize \nattention-getters",color="black",height=attnGetterButton.height*.3,alignHoriz='center', pos=attnGetterButton.pos)
         self.buttonList['shapes'].append(attnGetterButton)
         self.buttonList['text'].append(attnGetterText)
         self.buttonList['functions'].append(self.attnGetterDlg)
 
-        stimLibraryButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect), pos=[0, -.65], fillColor = "white")
+        stimLibraryButton = visual.Rect(self.win, width=.3, height=.5*(.2/self.aspect), pos=[.4, -.3], fillColor = "white")
         stimLibraryText = visual.TextStim(self.win, text="Add/remove stimuli \nto/from exp. library",color="black",height=stimLibraryButton.height*.3,alignHoriz='center', pos=stimLibraryButton.pos)
         self.buttonList['shapes'].append(stimLibraryButton)
         self.buttonList['text'].append(stimLibraryText)
         self.buttonList['functions'].append(self.addStimToLibraryDlg)
 
         if len(list(self.settings['stimList'].keys())) > 0:
-            addMovButton = visual.Rect(self.win, width=.3, height=.5 * (.2 / self.aspect), pos=[.4, -.65],
+            addMovButton = visual.Rect(self.win, width=.3, height=.5 * (.2 / self.aspect), pos=[0, -.65],
                                        fillColor="white")
             addMovText = visual.TextStim(self.win, text="Add stimulus files \nto trial types", color="black",
                                          height=addMovButton.height * .3, alignHoriz='center', pos=addMovButton.pos)
@@ -408,7 +392,7 @@ class PyHabBuilder:
             self.buttonList['text'][dataIndex].pos = [-.875, -.65]
 
         if len(self.settings['trialTypes']) > 0:
-            advTrialButton = visual.Rect(self.win, width=.3, height=.5 * (.2 / self.aspect), pos=[.8, -.65], fillColor="white")
+            advTrialButton = visual.Rect(self.win, width=.3, height=.5 * (.2 / self.aspect), pos=[.4, -.65], fillColor="white")
             advTrialText = visual.TextStim(self.win, text="Advanced trial \nsettings", color="black",
                                            height=advTrialButton.height * .3, alignHoriz='center', pos=advTrialButton.pos)
             self.buttonList['shapes'].append(advTrialButton)
@@ -3701,8 +3685,8 @@ class PyHabBuilder:
                         chk = True
                     else:
                         chk = False
-                    hDlg.addField(self.settings['habTrialList'][q], initial=chk)
-                    expandedHabList.append(self.settings['habTrialList'][q])
+                    hDlg.addField(trialList[q], initial=chk)
+                    expandedHabList.append(trialList[q])
         habDat=hDlg.show()
         if hDlg.OK:
             skip = False
