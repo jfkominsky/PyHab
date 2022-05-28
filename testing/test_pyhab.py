@@ -1535,7 +1535,7 @@ class TestMultiHabBlock(object):
             if self.habInst.dataMatrix[-1]['trialType'] in ['F.Y', 'F.X']:
                 self.habInst.habDataCompiled['F'][self.habInst.habCount['F']] += self.habInst.dataMatrix[-1]['sumOnA']
         self.habInst.habCount['F'] = 4
-        assert self.habInst.habDataCompiled['F'][3] == 3
+        assert self.habInst.habDataCompiled['F'][3] == 8.0
         assert self.habInst.checkStop('F') == False
         assert self.habInst.habSetWhen['F'] == 3
         assert self.habInst.habCrit['F'] == 12.0
@@ -1545,19 +1545,28 @@ class TestMultiHabBlock(object):
             if self.habInst.dataMatrix[-1]['trialType'] in ['F.Y', 'F.X']:
                 self.habInst.habDataCompiled['F'][self.habInst.habCount['F']] += self.habInst.dataMatrix[-1]['sumOnA']
         self.habInst.habCount['F'] = 5
-        assert self.habInst.habDataCompiled['F'][4] == 3
+        assert self.habInst.habDataCompiled['F'][4] == 3.0
         assert self.habInst.checkStop('F') == False
         assert self.habInst.habSetWhen['F'] == 3
         assert self.habInst.habCrit['F'] == 12.0
 
-        for a in range(15,len(self.secondHabTrialMatrix)):
+        for a in range(15,18):
             self.habInst.dataMatrix.append(self.secondHabTrialMatrix[a])
             if self.habInst.dataMatrix[-1]['trialType'] in ['F.Y', 'F.X']:
                 self.habInst.habDataCompiled['F'][self.habInst.habCount['F']] += self.habInst.dataMatrix[-1]['sumOnA']
         self.habInst.habCount['F'] = 6
-        assert self.habInst.habDataCompiled['F'][5] == 3
-        assert self.habInst.checkStop('F') == True # fails?
-        assert self.habInst.habMetWhen['F'] == 6
+        assert self.habInst.habDataCompiled['F'][5] == 3.0
+        assert self.habInst.checkStop('F') == False
+        assert self.habInst.habSetWhen['F'] == 3
+        assert self.habInst.habCrit['F'] == 12.0
+
+        for a in range(18,len(self.secondHabTrialMatrix)):
+            self.habInst.dataMatrix.append(self.secondHabTrialMatrix[a])
+            if self.habInst.dataMatrix[-1]['trialType'] in ['F.Y', 'F.X']:
+                self.habInst.habDataCompiled['F'][self.habInst.habCount['F']] += self.habInst.dataMatrix[-1]['sumOnA']
+        self.habInst.habCount['F'] = 7
+        assert self.habInst.checkStop('F') == True
+        assert self.habInst.habMetWhen['F'] == 7
         assert self.habInst.habSetWhen['F'] == 3
         assert self.habInst.habCrit['F'] == 12.0
 
