@@ -2509,7 +2509,8 @@ class PyHab:
                             else:
                                 newTempTrials.append(j[q])
                         if i in self.blockList.keys():
-                            finalBlock[i] = newTempTrials
+                            finalBlock[i] = deepcopy(self.blockList[i])
+                            finalBlock[i]['trialList'] = newTempTrials
                         finalDict[i] = newTempTrials
                     self.stimNames = finalDict
                     self.blockList = finalBlock
