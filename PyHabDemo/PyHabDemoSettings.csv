@@ -1,4 +1,6 @@
 dataColumns,"['sNum', 'sID', 'months', 'days', 'sex', 'cond', 'condLabel', 'trial', 'GNG', 'trialType', 'stimName', 'habCrit', 'habTrialNo', 'sumOnA', 'numOnA', 'sumOffA', 'numOffA', 'sumOnB', 'numOnB', 'sumOffB', 'numOffB', 'trialDuration']"
+blockSum,1
+trialSum,1
 prefix,PyHabDemo
 dataloc,data/
 maxDur,"{'Intro': 60.0, 'Fam': 60.0, 'Test': 60.0}"
@@ -6,53 +8,43 @@ playThrough,"{'Intro': 0, 'Fam': 0, 'Test': 0}"
 movieEnd,[]
 maxOff,"{'Intro': 2.0, 'Fam': 2.0, 'Test': 2.0}"
 minOn,"{'Intro': 1.0, 'Fam': 1.0, 'Test': 1.0}"
+durationCriterion,[]
+autoRedo,[]
+onTimeDeadline,{}
+durationInclude,1
 blindPres,0
 autoAdvance,['Fam']
 randPres,True
 condPath,
 condFile,conditions.csv
-condList,"['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']"
+condList,"['1', '2', '3', '4', '5', '6', '7', '8']"
 baseCondFile,
 baseCondList,[]
 trialTypes,"['Intro', 'Fam', 'Test', 'BlockA']"
 trialOrder,"['BlockA', 'BlockA', 'BlockA', 'BlockA', 'Test', 'Test']"
-blockList,"{'BlockA': ['Intro', 'Fam']}"
+blockList,"{'BlockA': {'habituation': 0, 'habByDuration': 0, 'maxHabTrials': 14, 'setCritWindow': 3, 'setCritDivisor': 2.0, 'setCritType': 'First', 'habThresh': 5.0, 'metCritWindow': 3, 'metCritDivisor': 1.0, 'metCritStatic': 'Moving', 'calcHabOver': [], 'trialList': ['Intro', 'Fam']}}"
 blockDataList,[]
-maxHabTrials,14
-setCritWindow,3
-setCritDivisor,2.0
-setCritType,First
-habThresh,5.0
-metCritWindow,3
-metCritDivisor,1.0
-metCritStatic,Moving
-habTrialList,[]
-calcHabOver,[]
 stimPres,0
 stimPath,stimuli/
 stimNames,"{'Intro': ['3x2_1_1_1-converted.mp4', '3x2_1_2_1_1-converted.mp4'], 'Fam': ['3x2_1_3_1_1-converted.mp4', '3x2_2_1_1_1-converted.mp4'], 'Test': ['3x2_2_2_1_1-converted.mp4', '3x2_2_3_1_1-converted.mp4']}"
 stimList,"{'3x2_1_1_1-converted.mp4': {'stimType': 'Movie', 'stimLoc': 'stimuli/3x2_1_1_1-converted.mp4'}, '3x2_1_2_1_1-converted.mp4': {'stimType': 'Movie', 'stimLoc': 'stimuli/3x2_1_2_1_1-converted.mp4'}, '3x2_1_3_1_1-converted.mp4': {'stimType': 'Movie', 'stimLoc': 'stimuli/3x2_1_3_1_1-converted.mp4'}, '3x2_2_1_1_1-converted.mp4': {'stimType': 'Movie', 'stimLoc': 'stimuli/3x2_2_1_1_1-converted.mp4'}, '3x2_2_2_1_1-converted.mp4': {'stimType': 'Movie', 'stimLoc': 'stimuli/3x2_2_2_1_1-converted.mp4'}, '3x2_2_3_1_1-converted.mp4': {'stimType': 'Movie', 'stimLoc': 'stimuli/3x2_2_3_1_1-converted.mp4'}}"
-screenWidth,"{'L': 1080, 'C': 1080, 'R': 1080}"
-screenHeight,"{'L': 700, 'C': 700, 'R': 700}"
-screenColor,"{'L': 'black', 'C': 'black', 'R': 'black'}"
-movieWidth,"{'L': 800, 'C': 800, 'R': 800}"
-movieHeight,"{'L': 600, 'C': 600, 'R': 600}"
-screenIndex,"{'L': 1, 'C': 1, 'R': 1}"
+screenWidth,"{'C': 1080, 'L': 1080, 'R': 1080}"
+screenHeight,"{'C': 700, 'L': 700, 'R': 700}"
+screenColor,"{'C': 'black', 'L': 'black', 'R': 'black'}"
+movieWidth,"{'C': 800, 'L': 800, 'R': 800}"
+movieHeight,"{'C': 600, 'L': 600, 'R': 600}"
+screenIndex,"{'C': 1, 'L': 1, 'R': 1}"
 expScreenIndex,0
-ISI,"{'Example': 0.0, 'Intro': 0.0, 'Fam': 0.0, 'Test': 0.0}"
+ISI,"{'Intro': 0.0, 'Fam': 0.0, 'Test': 0.0}"
 freezeFrame,0.0
-playAttnGetter,"{'Example': {'attnGetter': 'PyHabDefault', 'cutoff': 0, 'onmin': 0.0}, 'Intro': {'attnGetter': 'PyHabDefault', 'cutoff': 0, 'onmin': 0.0}, 'Fam': {'attnGetter': 'PyHabDefault', 'cutoff': 0, 'onmin': 0.0}, 'Test': {'attnGetter': 'PyHabDefault', 'cutoff': 0, 'onmin': 0.0}}"
+playAttnGetter,"{'Intro': {'attnGetter': 'PyHabDefault', 'cutoff': 0, 'onmin': 0.0}, 'Test': {'attnGetter': 'PyHabDefault', 'cutoff': 0, 'onmin': 0.0}}"
 attnGetterList,"{'PyHabDefault': {'stimType': 'Audio', 'stimName': 'upchime1.wav', 'stimDur': 2, 'stimLoc': 'stimuli/attnGetters/upchime1.wav', 'shape': 'Rectangle', 'color': 'yellow'}}"
+dynamicPause,[]
+midAG,{}
+hppStimScrOnly,[]
 folderPath,/Users/jonk/Desktop/Active Studies/Infant studies/PyHab/PyHab Repository/PyHab/PyHabDemo/
 prefLook,0
 startImage,
 endImage,
 nextFlash,0
-blockSum,1
-trialSum,1
-midAG,{}
-dynamicPause,[]
-durationCriterion,[]
-autoRedo,[]
-onTimeDeadline,{}
-durationInclude,1
+loadSep,0

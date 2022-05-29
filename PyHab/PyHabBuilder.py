@@ -1144,7 +1144,7 @@ class PyHabBuilder:
                     errDlg.addText("Name is already in use for another trial or block. Please rename!")
                     irrel = errDlg.show()
                     self.makeBlockDlg(name, new)
-                elif startsSameAs:
+                elif new and startsSameAs:
                     # For safety, make it so names can't start the same as an existing block
                     errDlg = gui.Dlg(title="Block name is the start of another block name!")
                     errDlg.addText("Name is already in use for another trial or block. Please rename!")
@@ -1180,10 +1180,10 @@ class PyHabBuilder:
                             for c in range(0, len(b)):
                                 if b[c] == name:
                                     b[c] = newBlock[0]
-                if os.name is not 'posix':
-                    # For Windows, because now we snap back to the regular window.
-                    self.win.winHandle.set_visible(visible=True)
-                self.blockMaker(newBlock[0], new)
+                    if os.name is not 'posix':
+                        # For Windows, because now we snap back to the regular window.
+                        self.win.winHandle.set_visible(visible=True)
+                    self.blockMaker(newBlock[0], new)
         elif len(self.settings['trialTypes']) == 0:
             errDlg = gui.Dlg(title="No trials to make blocks with!")
             errDlg.addText("Make some trial types before trying to add them to a block.")
@@ -1293,7 +1293,7 @@ class PyHabBuilder:
         if not new:
             blockOrder = deepcopy(self.settings['blockList'][blockName]['trialList'])
             blockFlow = self.loadFlow(tOrd=blockOrder, space=newFlowArea, locs=newFlowLocs, overflow=newFlowLocs, types=self.settings['trialTypes'])
-            if self.setting['blockList'][blockName]['habituation'] in [1, '1', True, 'True']:
+            if self.settings['blockList'][blockName]['habituation'] in [1, '1', True, 'True']:
                 habSettingsText.text = 'Habituation (ON)'
                 habSettingsButton.fillColor = "DarkGreen"
                 # Copy over existing habituation settings.
@@ -2952,7 +2952,7 @@ class PyHabBuilder:
                             thisDict = self.settings['stimNames']
                             bm = False
                         else:
-                            thisDict = self.settings['blockList']
+                            thisDict = self.settings['blockList'] # TODO: This is not going to work?
                             bm = True
                         self.condSetter(thisDict, cond=condList[i], ex=True, blockmode=bm)
                         if os.name is not 'posix':
@@ -3156,6 +3156,8 @@ class PyHabBuilder:
                 # Rebuilding this every time allows us to make boxes for each instance and update the instr text
                 condUI['bg'] = [newFlowRect, bigPaletteRect, instrText]
                 tempStims = deepcopy(shuffleList[tempType])
+                if blockmode:
+                    tempStims = tempStims['trialList']
                 if HPP and not blockmode:
                     tempStims = [x['C'] for x in tempStims]
                     for l in range(0, len(newFlowLocs)):
@@ -3365,7 +3367,7 @@ class PyHabBuilder:
             for q in listAll:
                 if q not in outputDict.keys() and not ex:
                     if q in self.settings['blockList'].keys():
-                        outputDict[q] = self.settings['blockList'][q]
+                        outputDict[q] = self.settings['blockList'][q]['trialList']
                     elif q in self.settings['stimNames'].keys():
                         outputDict[q] = self.settings['stimNames'][q]
                 elif q not in outputDict.keys():  # Implied: ex == True
@@ -3453,7 +3455,7 @@ class PyHabBuilder:
                     counterDict[i] = len(j)
             if blockGen:  # This is only true if there are blocks to start with, so no risk of errors
                 for k, l in self.settings['blockList'].items():
-                    counterDict[k] = len(l)
+                    counterDict[k] = len(l['trialList'])
             # Next step: Give the option to 'lock' some blocks and/or trials so they are constant across conditions
             if not abort:
                 lockDlg = gui.Dlg("Select trials/blocks to generate conditions over")
@@ -3513,7 +3515,7 @@ class PyHabBuilder:
             if i in self.settings['stimNames'].keys():
                 template[i] = deepcopy(self.settings['stimNames'][i])
             elif i in self.settings['blockList'].keys():
-                template[i] = deepcopy(self.settings['blockList'][i])
+                template[i] = deepcopy(self.settings['blockList'][i]['trialList'])
         # Python has this beautiful thing called itertools, which can permute automatically.
         for i, j in counters.items():
             permutates.append(list(itertools.permutations(template[i],j)))
@@ -3535,7 +3537,7 @@ class PyHabBuilder:
         for i, j in outputDict.items():
             for y in excludes:
                 if y in self.settings['blockList'].keys():
-                    j[y] = self.settings['blockList'][y]
+                    j[y] = self.settings['blockList'][y]['trialList']
                 elif y in self.settings['stimNames'].keys():
                     j[y] = self.settings['stimNames'][y]
 
