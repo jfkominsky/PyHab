@@ -1256,12 +1256,12 @@ class TestRunSetup(object):
         self.trialInst.randPres = True
         self.trialInst.stimPres = True
 
-        testTwo = [99, 'Test', 'NB', '7', '2', '16', 'A']  # corresponds to {Intro:[1,2], Fam:[1,2], Test:[1,2]}
+        testTwo = [99, 'Test', 'NB', '7', '2', '16', '1']  # corresponds to {Intro:[1,2], Fam:[1,2], Test:[1,2]}
         self.trialInst.run(testMode=testTwo)
 
         # First make sure it won't go without condlist
         assert self.trialInst.stimNames['Intro'] == ['3x2_1_1_1-converted.mp4', '3x2_1_2_1_1-converted.mp4','Movie1','Movie2']
-        self.trialInst.condList = ['A', 'B', 'C', 'D','E','F','G','H']
+        self.trialInst.condList = ['1', '2', '3', '4','5','6','7','8']
         self.trialInst.run(testMode=testTwo)
 
         assert self.trialInst.stimNames['Intro'] == ['3x2_1_1_1-converted.mp4', '3x2_1_2_1_1-converted.mp4']
