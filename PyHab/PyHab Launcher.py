@@ -59,15 +59,11 @@ def checkIfStim(setDict, tempOrd):
     """
     tempMovs = eval(setDict['stimNames'])
     tempBlocks = eval(setDict['blockList'])
-    tempHabList = eval(setDict['habTrialList'])
     stPres = True
     if len(tempMovs) > 0:
         for i in tempOrd:
             if i in tempMovs:
                 if len(tempMovs[i]) == 0:
-                    stPres = False
-            elif i == 'Hab' and len(tempHabList) > 0:
-                if not checkIfStim(setDict, tempHabList):
                     stPres = False
             elif i in tempBlocks.keys():
                 if not checkIfStim(setDict, tempBlocks[i]):

@@ -4,10 +4,9 @@ from PyHab import PyHabClassPL as PHL
 from PyHab import PyHabClassHPP as PHPP
 from PyHab import PyHabBuilder as PB
 import csv, os
-os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
 setName = "PyHabDemoSettings.csv"
-#Created in PsychoPy version 3.1.2
+#Created in PsychoPy version 2021.2.3
 
 def run():
     setFile=csv.reader(open(setName,'rU'))
@@ -60,15 +59,11 @@ def checkIfStim(setDict, tempOrd):
     """
     tempMovs = eval(setDict['stimNames'])
     tempBlocks = eval(setDict['blockList'])
-    tempHabList = eval(setDict['habTrialList'])
     stPres = True
     if len(tempMovs) > 0:
         for i in tempOrd:
             if i in tempMovs:
                 if len(tempMovs[i]) == 0:
-                    stPres = False
-            elif i == 'Hab' and len(tempHabList) > 0:
-                if not checkIfStim(setDict, tempHabList):
                     stPres = False
             elif i in tempBlocks.keys():
                 if not checkIfStim(setDict, tempBlocks[i]):

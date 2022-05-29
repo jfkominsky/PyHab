@@ -98,13 +98,11 @@ class PyHab:
             self.autoRedo = eval(settingsDict['autoRedo'])  # List of trials with auto-redo behavior
             self.onTimeDeadline = eval(settingsDict['onTimeDeadline'])  # Dict of trials w/ a deadline to meet on-time, plus deadline.
             self.durationInclude = eval(settingsDict['durationInclude'])  # Duration calculation reports full duration (True) or excludes last gaze-off (False)
-            self.habByDuration = eval(settingsDict['habByDuration'])
         except:
             self.durationCriterion = []
             self.autoRedo = []
             self.onTimeDeadline = {}
             self.durationInclude = 1
-            self.habByDuration = 0
         # new setting for 0.9.4
         try:
             self.loadSep = eval(settingsDict['loadSep'])
@@ -117,29 +115,10 @@ class PyHab:
 
 
         # ORDER OF PRESENTATION
-        # NOTE: a SINGLE instance of 'Hab' will insert a contiguous habituation BLOCK of up to maxHabTrials.
         # Recommend you make sure repetitions of each trial type is a multiple of the list length, if you want even presentation
         self.trialOrder = eval(settingsDict['trialOrder'])
 
-        # HABITUATION DESIGN SETTINGS
-        self.maxHabTrials = eval(settingsDict['maxHabTrials'])  # number of habituation trials in a HAB design
-        self.setCritWindow = eval(settingsDict['setCritWindow'])  # Number of trials to use when setting the habituation window, e.g., 3 = first three hab trials
-        self.setCritDivisor = eval(settingsDict['setCritDivisor'])  # Divide sum of looking time over first setHabWindow trials by this value. for average, set equal to setHabWindow. For sum, set to 1.
-        self.setCritType = settingsDict['setCritType']  # Criterion set by dynamic window or first set of trials
-        self.metCritWindow = eval(settingsDict['metCritWindow'])  # size of moving window of trials to sum looking times and compare to habituation criterion.
-        self.metCritDivisor = eval(settingsDict['metCritDivisor'])  # If you want to compare, e.g., average rather than sum of looking times of last metCritWindow trials, change this accordingly.
-        self.metCritStatic = settingsDict['metCritStatic']  # Criterion evaluated over moving or static windows
-        self.habTrialList = eval(settingsDict['habTrialList'])  # A new "meta-hab" trial type consisting of several sub-trial-types.
-        if 'calcHabOver' in settingsDict.keys():
-            self.calcHabOver = eval(settingsDict['calcHabOver'])
-        else:
-            if len(self.habTrialList) > 0:
-                if 'Hab' in self.habTrialList:
-                    self.calcHabOver = ['Hab']  # Mimics old behavior
-                else:
-                    self.calcHabOver = [self.habTrialList[-1]]
-            else:
-                self.calcHabOver = []
+        # BLOCK SETTINGS (INCLUDES HABITUATION)
         if 'blockList' in settingsDict.keys():
             self.blockList = eval(settingsDict['blockList'])
             self.blockDataList = eval(settingsDict['blockDataList'])
@@ -255,12 +234,22 @@ class PyHab:
         '''
         END SETTINGS
         '''
-        self.habCount = 0  # For hab designs, checks the # of habituation trials completed
-        self.habCrit = 0  # initial setting of habcrit at 0
-        self.habSetWhen = -1
-        self.habMetWhen = -1  # Ported from MB4: Tracks both when the habituation criterion is set, and met.
-        self.maxHabIndex = 0
-        self.habDataCompiled=[0]*self.maxHabTrials  # A new easy way to track just hab trials, even with complex meta-trial structure.
+        self.habCount = {}  # For hab designs, checks the # of habituation trials completed
+        self.habCrit = {}  # initial setting of habcrit at 0
+        self.habSetWhen = {}
+        self.habMetWhen = {}  # Ported from MB4: Tracks both when the habituation criterion is set, and met.
+        self.maxHabIndex = {}
+        self.habDataCompiled = {}  # A new easy way to track just hab trials, even with complex meta-trial structure.
+
+        for i, j in self.blockList.items():
+            if j['habituation'] in [1, '1', True, 'True']:
+                self.habCount[i] = 0
+                self.habCrit[i] = 0
+                self.habSetWhen[i] = -1
+                self.habMetWhen[i] = -1
+                self.maxHabIndex[i] = 0
+                self.habDataCompiled[i] = [0]*j['maxHabTrials']
+
         self.dataMatrix = []  # primary data array
         self.blockDataTags = {}
         for i in self.blockDataList:
@@ -300,10 +289,12 @@ class PyHab:
     FUNCTIONS
     '''
 
-    def abortTrial(self, onArray, offArray, trial, ttype, onArray2, offArray2, stimName = '', habTrialNo = 0):  # the 2nd arrays are if there are two coders.
+    def abortTrial(self, onArray, offArray, trial, ttype, onArray2, offArray2, stimName = '', habTrialNo = 0, habCrit = 0.0):  # the 2nd arrays are if there are two coders.
         """
         Only happens when the 'abort' button is pressed during a trial. Creates a "bad trial" entry
         out of any data recorded for the trial so far, to be saved later.
+
+        TODO: Block-level rewinds?
 
         :param onArray: Gaze-on events for coder 1
         :type onArray: list of dicts {trial, trialType, startTime, endTime, duration}
@@ -319,6 +310,10 @@ class PyHab:
         :type offArray2: list of dicts
         :param stimName: If presenting stimuli, name of the stim file
         :type stimName: string
+        :param habTrialNo: Tracking if this is a habituation trial and if so what number
+        :type habTrialNo: int
+        :param habCrit: Habituation criterion, if it's been set
+        :type habCrit: float
         :return:
         :rtype:
         """
@@ -351,12 +346,12 @@ class PyHab:
                 totalduration = totalduration - offArray[-1]['duration']
         tempData = {'sNum': self.sNum, 'sID':self.sID, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex, 'cond': self.cond,
                     'condLabel': self.condLabel,'trial': trial, 'GNG': 0, 'trialType': ttype, 'stimName': stimName,
-                    'habCrit': self.habCrit, 'habTrialNo': habTrialNo, 'sumOnA': sumOn, 'numOnA': len(onArray), 'sumOffA': sumOff,
+                    'habCrit': habCrit, 'habTrialNo': habTrialNo, 'sumOnA': sumOn, 'numOnA': len(onArray), 'sumOffA': sumOff,
                     'numOffA': len(offArray), 'sumOnB': sumOn2, 'numOnB': len(onArray2), 'sumOffB': sumOff2,
                     'numOffB': len(offArray2), 'trialDuration': totalduration}
         self.badTrials.append(tempData)
 
-    def dataRec(self, onArray, offArray, trial, type, onArray2, offArray2, stimName = '', habTrialNo = 0):
+    def dataRec(self, onArray, offArray, trial, type, onArray2, offArray2, stimName = '', habTrialNo = 0, habCrit = 0.0):
         """
         Records the data for a trial that ended normally.
 
@@ -376,6 +371,8 @@ class PyHab:
         :type stimName: string
         :param habTrialNo: If part of a hab block, what hab trial it was part of.
         :type habTrialNo: int
+        :param habCrit: If part of a hab block, the current habituation criterion.
+        :type habCrit: double
         :return:
         :rtype:
         """
@@ -408,7 +405,7 @@ class PyHab:
                 totalduration = totalduration - offArray[-1]['duration']
         tempData = {'sNum': self.sNum, 'sID': self.sID, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex, 'cond': self.cond,
                     'condLabel': self.condLabel, 'trial': trial, 'GNG': 1, 'trialType': type, 'stimName': stimName,
-                    'habCrit': self.habCrit, 'habTrialNo': habTrialNo, 'sumOnA': sumOn, 'numOnA': len(onArray), 'sumOffA': sumOff,
+                    'habCrit': habCrit, 'habTrialNo': habTrialNo, 'sumOnA': sumOn, 'numOnA': len(onArray), 'sumOffA': sumOff,
                     'numOffA': len(offArray), 'sumOnB': sumOn2, 'numOnB': len(onArray2), 'sumOffB': sumOff2,
                     'numOffB': len(offArray2), 'trialDuration': totalduration}
         self.dataMatrix.append(tempData)
@@ -417,8 +414,10 @@ class PyHab:
         """
         Allows you to redo a trial after it has ended. Similar to abort trial, but under
         the assumption that the data has already been recorded and needs to be replaced.
-        Decrementing of trial numbers is handled in doExperiment when the relevant key is
-        pressed.
+
+        This function only handles the data part. The actual re-assignment of the trial
+        is done elsewhere.
+
 
         :param trialNum: Trial number to redo
         :type trialNum: int
@@ -437,21 +436,23 @@ class PyHab:
                 i += 1
         # add the new 'bad' trial to badTrials
         newTempData['GNG'] = 0
-        if self.dataMatrix[trialIndex]['trialType'][0:4] == 'hab.':  # Redoing a habituation trial
-            tempName = deepcopy(self.dataMatrix[trialIndex]['trialType'])
-            tempName = tempName[4:] # Just removing 'hab.'
+        if '*' in self.actualTrialOrder[trialNum-1]:  # Redoing a habituation trial
+            trialName = deepcopy(self.dataMatrix[trialIndex]['trialType'])
+            habBlock = ''
+            for n,q in self.habMetWhen.items(): # Cycle through all the hab blocks to find the right one.
+                if self.actualTrialOrder[trialNum-1][0:len(n)] == n:
+                    habBlock = n
+            while '.' in trialName:
+                trialName = trialName[trialName.index('.')+1:]
             # Subtract data from self.habDataCompiled before checking whether we reduce the hab count, do make indexing
             # the correct part of habDataCompiled easier. Notably, reduces but does not inherently zero out.
-            if tempName in self.calcHabOver:  # Make sure it's part of the hab calc
-                self.habDataCompiled[self.habCount-1] = self.habDataCompiled[self.habCount-1] - self.dataMatrix[trialIndex]['sumOnA']
-                if self.habDataCompiled[self.habCount-1] < 0:  # For rounding errors
-                    self.habDataCompiled[self.habCount-1] = 0
-            # If it's the end of the hab iteration, then reduce the hab count.
+            if trialName in self.blockList[habBlock]['calcHabOver']:  # Make sure it's part of the hab calc
+                self.habDataCompiled[habBlock][self.habCount[habBlock]-1] = self.habDataCompiled[habBlock][self.habCount[habBlock]-1] - self.dataMatrix[trialIndex]['sumOnA']
+                if self.habDataCompiled[habBlock][self.habCount[habBlock]-1] < 0:  # For rounding errors
+                    self.habDataCompiled[habBlock][self.habCount[habBlock]-1] = 0
+            # If it's from the end of the hab iteration, then reduce the hab count.
             if '^' in self.actualTrialOrder[trialNum-1]:  # This is kind of a dangerous kludge that hopefully won't come up that often.
-                self.habCount -= 1
-        elif newTempData['trialType'] == 'Hab':
-            self.habCount -= 1
-            self.habDataCompiled[self.habCount] = 0 # Resets the appropriate instance of the hab data structure
+                self.habCount[habBlock] -= 1 # TODO: Option 1 is that this isn't tripping.
         self.badTrials.append(newTempData)
         # remove it from dataMatrix
         self.dataMatrix.remove(self.dataMatrix[trialIndex])
@@ -469,7 +470,7 @@ class PyHab:
 
 
 
-    def checkStop(self):
+    def checkStop(self, blockName):
         """
         After a hab trial, checks the habitution criteria and returns 'true' if any of them are met.
         Also responsible for setting the habituation criteria according to settings.
@@ -478,95 +479,94 @@ class PyHab:
         Uses a sort of parallel data structure that just tracks hab-relevant gaze totals. As a bonus, this means it now
         works for both single-target and preferential looking designs (and HPP designs) with no modification.
 
-        TODO: Habituation using trial duration instead of on-time
+        To support multiple hab blocks, this needs to take the block name as an argument, to only look at that block's hab settings.
+        That means each block with habituation turned on can only be used once, but you can have more than one block
 
-        Todo: Reconfigure for multiple habituation blocks
-
+        :param blockName: The name of the block associated with the hab trial, required to look up its particular settings.
+        :type blockName: str
         :return: True if hab criteria have been met, False otherwise
-        :rtype:
+        :rtype: bool
         """
 
-
-
-        if self.habCount == self.setCritWindow and self.setCritType != 'Threshold':  # time to set the hab criterion.
+        if self.habCount[blockName] == self.blockList[blockName]['setCritWindow'] and self.blockList[blockName]['setCritType'] != 'Threshold':  # time to set the hab criterion.
             # This condition sets the initial criterion for peak/max, first, and last. Threshold needs more.
             sumOnTimes = 0
-            for j in range(0,self.habCount):
-                sumOnTimes = sumOnTimes + self.habDataCompiled[j]
-            self.habCrit = sumOnTimes / self.setCritDivisor
-            self.habSetWhen = deepcopy(self.habCount)
-        elif self.setCritType == 'Peak':  # Checks if we need to update the hab criterion
+            for j in range(0,self.habCount[blockName]):
+                sumOnTimes = sumOnTimes + self.habDataCompiled[blockName][j]
+            self.habCrit[blockName] = sumOnTimes / self.blockList[blockName]['setCritDivisor']
+            self.habSetWhen[blockName] = deepcopy(self.habCount[blockName])
+        elif self.blockList[blockName]['setCritType'] == 'Peak':  # Checks if we need to update the hab criterion
             sumOnTimes = 0
-            index = self.habCount - self.setCritWindow #How far back should we look?
-            for n in range(index, self.habCount):  # now, starting with that trial, go through and add up the good trial looking times
-                sumOnTimes = sumOnTimes + self.habDataCompiled[n]
-            sumOnTimes = sumOnTimes / self.setCritDivisor
-            if sumOnTimes > self.habCrit:
-                self.habCrit = sumOnTimes
-                self.habSetWhen = deepcopy(self.habCount)
-        elif self.setCritType == 'Max' and self.habCount > self.setCritWindow:  # Absolute max looking time among hab trials, regardless of order.
+            index = self.habCount[blockName] - self.blockList[blockName]['setCritWindow'] #How far back should we look?
+            for n in range(index, self.habCount[blockName]):  # now, starting with that trial, go through and add up the good trial looking times
+                sumOnTimes = sumOnTimes + self.habDataCompiled[blockName][n]
+            sumOnTimes = sumOnTimes / self.blockList[blockName]['setCritDivisor']
+            if sumOnTimes > self.habCrit[blockName]:
+                self.habCrit[blockName] = sumOnTimes
+                self.habSetWhen[blockName] = deepcopy(self.habCount[blockName])
+        elif self.blockList[blockName]['setCritType'] == 'Max' and self.habCount[blockName] > self.blockList[blockName]['setCritWindow']:  # Absolute max looking time among hab trials, regardless of order.
             sumOnTimes = 0
-            habOns = deepcopy(self.habDataCompiled)
+            habOns = deepcopy(self.habDataCompiled[blockName])
             habOns.sort()  # Rearranges the array into lowest-highest.
             lastHabUsed = 0
-            for i in range(-1*self.setCritWindow,0):
+            for i in range(-1*self.blockList[blockName]['setCritWindow'],0):
                 sumOnTimes = sumOnTimes + habOns[i]
                 # This convoluted mess finds the last instance of the 'max' value(s) used in the computation.
-                lastHabUsed = max(lastHabUsed,len(self.habDataCompiled) - self.habDataCompiled[::-1].index(habOns[i]))
-            sumOnTimes = sumOnTimes / self.setCritDivisor
-            if sumOnTimes > self.habCrit:
-                self.habCrit = sumOnTimes
-                self.habSetWhen = lastHabUsed
-        elif self.setCritType == 'Threshold' and self.habCount >= self.setCritWindow and self.habSetWhen == -1:
+                lastHabUsed = max(lastHabUsed,len(self.habDataCompiled[blockName]) - self.habDataCompiled[blockName][::-1].index(habOns[i]))
+            sumOnTimes = sumOnTimes / self.blockList[blockName]['setCritDivisor']
+            if sumOnTimes > self.habCrit[blockName]:
+                self.habCrit[blockName] = sumOnTimes
+                self.habSetWhen[blockName] = lastHabUsed
+        elif self.blockList[blockName]['setCritType'] == 'Threshold' and self.habCount[blockName] >= self.blockList[blockName]['setCritWindow'] and self.habSetWhen[blockName] == -1:
             sumOnTimes = 0
-            index = self.habCount - self.setCritWindow  # How far back should we look?
-            for j in range(index,self.habCount):
-                sumOnTimes = sumOnTimes + self.habDataCompiled[j]
-            if sumOnTimes > self.habThresh:
-                self.habCrit = sumOnTimes / self.setCritDivisor
-                self.habSetWhen = deepcopy(self.habCount)
+            index = self.habCount[blockName] - self.blockList[blockName]['setCritWindow']  # How far back should we look?
+            for j in range(index, self.habCount[blockName]):
+                sumOnTimes = sumOnTimes + self.habDataCompiled[blockName][j]
+            if sumOnTimes > self.habThresh[blockName]:
+                self.habCrit[blockName] = sumOnTimes / self.blockList[blockName]['setCritDivisor']
+                self.habSetWhen[blockName] = deepcopy(self.habCount[blockName])
 
         # Now we separate out the set and met business.
-        if self.habCount == self.maxHabTrials:
+        if self.habCount[blockName] == self.blockList[blockName]['maxHabTrials']:
             # end habituation and goto test
             if not self.stimPres:
                 for i in [0, 1, 2]:
                     core.wait(.25)  # an inadvertent side effect of playing the sound is a short pause before the test trial can begin
                     self.endHabSound.play()
                     self.endHabSound = sound.Sound('G', octave=4, sampleRate=44100, secs=0.2)
-            self.habMetWhen = self.habCount
+            self.habMetWhen[blockName] = self.habCount[blockName]
             return True
-        elif self.habCount > self.setCritWindow and self.habSetWhen > -1:  # if we're far enough in that we can plausibly meet the hab criterion
+        elif self.habCount[blockName] > self.blockList[blockName]['setCritWindow'] and self.habSetWhen[blockName] > -1:  # if we're far enough in that we can plausibly meet the hab criterion
             # Problem: Fixed window, peak, and max as relates to habsetwhen....
             # Not problem per se. Essentially, trials that set the criterion are never included when evaluating it.
             # TODO: Make that an option instead of a general behavior?
             # Fixed window is the only thing that ignores habsetwhen.
             # Last needs to ignore HabSetWhen, or rather, cannot wait MetCritWindow trials past when it is set.
-            if self.habCount < self.habSetWhen + self.metCritWindow and self.metCritStatic == 'Moving' and self.setCritType != 'Last': # Was the hab set "late" and are we too early as a result
+            if self.habCount[blockName] < self.habSetWhen[blockName] + self.blockList[blockName]['metCritWindow'] and self.blockList[blockName]['metCritStatic'] == 'Moving' and self.blockList[blockName]['setCritType'] != 'Last': # Was the hab set "late" and are we too early as a result
                 return False
             else:
                 sumOnTimes = 0
-                index = self.habCount - self.metCritWindow
-                if (self.metCritStatic == 'Moving') or (self.habCount-self.setCritWindow) % self.metCritWindow == 0:
-                    for n in range(index, self.habCount):  # now, starting with that trial, go through and add up the good trial looking times
-                        sumOnTimes = sumOnTimes + self.habDataCompiled[n]
-                    sumOnTimes = sumOnTimes / self.metCritDivisor
-                    if sumOnTimes < self.habCrit:
+                index = self.habCount[blockName] - self.blockList[blockName]['metCritWindow']
+                if (self.blockList[blockName]['metCritStatic'] == 'Moving') or (self.habCount[blockName]-self.blockList[blockName]['setCritWindow']) % self.blockList[blockName]['metCritWindow'] == 0:
+                    for n in range(index, self.habCount[blockName]):  # now, starting with that trial, go through and add up the good trial looking times
+                        sumOnTimes = sumOnTimes + self.habDataCompiled[blockName][n]
+                    sumOnTimes = sumOnTimes / self.blockList[blockName]['metCritDivisor']
+                    if sumOnTimes < self.habCrit[blockName]:
                         # end habituation and go to test
                         if not self.stimPres:
                             for i in [0, 1, 2]:
                                 core.wait(.25)  # TODO: an inadvertent side effect of playing the sound is a short pause before the test trial can begin
                                 self.endHabSound.play()
-                        self.habMetWhen = self.habCount
+                        self.habMetWhen[blockName] = self.habCount[blockName]
                         return True
                     else:
-                        if self.setCritType == 'Last':  # For the 'last' crit type, we must update after checking.
+                        if self.blockList[blockName]['setCritType'] == 'Last':  # For the 'last' crit type, we must update after checking.
                             sumOnTimeSet = 0
-                            index = self.habCount - self.setCritWindow
-                            for j in range(index, self.habCount):
-                                sumOnTimeSet = sumOnTimeSet + self.habDataCompiled[j]
-                            self.habCrit = sumOnTimeSet / self.setCritDivisor
-                            self.habSetWhen = deepcopy(self.habCount)
+                            index = self.habCount[blockName] - self.blockList[blockName]['setCritWindow']
+                            for j in range(index, self.habCount[blockName]):
+                                sumOnTimeSet = sumOnTimeSet + self.habDataCompiled[blockName][j]
+                            self.habCrit[blockName] = sumOnTimeSet / self.blockList[blockName]['setCritDivisor']
+                            self.habSetWhen[blockName] = deepcopy(self.habCount[blockName])
                         return False
                 else:
                     return False
@@ -953,20 +953,26 @@ class PyHab:
             t = 0  # Totally irrelevant.
         return t
 
-    def redoSetup(self, tn, autoAdv):
+    def redoSetup(self, tn, autoAdv, blockName):
         """
         Lays the groundwork for redoTrial, including correcting the trial order, selecting the right stim, etc.
+
+        TODO: Block-level redo?
 
         :param tn: Trial number (trialNum)
         :type tn: int
         :param autoAdv: The current auto-advance trial type list (different on first trial for Reasons)
         :type autoAdv: list
+        :param blockName: Pulls topBlockName from doExperiment to deal with redoing block and habituations.
+        :type blockName: str
         :return: list, [disMovie, trialNum], the former being the movie file to play if relevant, and the latter being the new trial number
         :rtype:
         """
         numTrialsRedo = 0
         trialNum = tn
-        tempHabCount = deepcopy(self.habCount)
+        tempHabCount = 0
+        if blockName in self.habCount.keys():
+            tempHabCount = deepcopy(self.habCount[blockName])
         if trialNum > 1:  # This stops it from trying to redo a trial before the experiment begins.
             trialNum -= 1
             trialType = self.actualTrialOrder[trialNum - 1]
@@ -987,6 +993,17 @@ class PyHab:
                     self.counters[trialType] -= 1
                     if self.counters[trialType] < 0:  # b/c counters operates over something that is like actualTrialOrder, it should never go beneath 0
                         self.counters[trialType] = 0
+            # Update blockName accordingly.
+            if numTrialsRedo > 1:
+                blockName = self.actualTrialOrder[trialNum - 1]
+                if '.' in blockName:
+                    blockName = blockName[0:blockName.index('.')]
+                    if '*' in blockName: # hab block.
+                        blockName = blockName[0:blockName.index('*')]  # problem: also includes hab number!
+                        for b, c in self.habCount.items():
+                            if blockName[0:len(b)] == b: # Note: This only works if the name isn't reused. e.g., hab block 'A' and 'A2' would be a problem
+                                blockName = blockName[0:len(b)]
+                        tempHabCount = deepcopy(self.habCount[blockName])
             if self.stimPres:
                 if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
                     self.stimName = self.stimNames[trialType][self.counters[trialType] % len(self.stimNames[trialType])]
@@ -1001,50 +1018,70 @@ class PyHab:
                 disMovie = 0
             self.trialText.text = "Trial no. " + str(trialNum)
             if self.blindPres < 1:
-                self.rdyTextAppend = " NEXT: " + self.actualTrialOrder[trialNum - 1] + " TRIAL"
+                tempTrialText = deepcopy(self.actualTrialOrder[trialNum - 1])
+                tempTrialText= tempTrialText.translate(({94:None, 42:None})) # removes *^ from display.
+                self.rdyTextAppend = " NEXT: " + tempTrialText + " TRIAL"
         for i in range(trialNum, trialNum + numTrialsRedo):  # Should now rewind all the way to the last non-AA trial.
             self.redoTrial(i)
-        if self.habCount != tempHabCount:  # Did we change a trial that can change checkStop?
-            # If hab type is threshold, max, or peak, we might need to recalculate dynamically
-            if self.habSetWhen >= self.habCount:
-                self.habSetWhen = -1
-                self.habCrit = 0
-                if self.setCritType != 'First':  # If it's 'first', it'll just solve itself.
-                    dummy = self.checkStop()
-            # If habituation has been reached, we have to basically undo what happens when a hab crit is met.
-            if self.habMetWhen > -1 and self.habCount != self.maxHabTrials - 1:  # If it was the last hab trial possible, it'll just solve itself with no further action
-                if not self.checkStop():  # Almost always true in this case, because we're redoing a hab trial.
-                    self.habMetWhen = -1  # Reset
-                    tempTN = trialNum + max(len(self.habTrialList), 1)  # Starting with the next trial.
-                    ctr = 0
-                    for h in range(self.habCount+1, self.maxHabTrials):
-                        [irrel, irrel2] = self.insertHab(tn=tempTN+ctr*max(len(self.habTrialList), 1), hn=h)
-                        ctr += 1
+        if blockName in self.habCount.keys():
+            if self.habCount[blockName] != tempHabCount:  # Did we change a trial that can change checkStop? Trips if redoTrial decrements it.
+                # If hab type is threshold, max, or peak, we might need to recalculate dynamically
+                if self.habSetWhen[blockName] >= self.habCount[blockName]:
+                    self.habSetWhen[blockName] = -1
+                    self.habCrit[blockName] = 0
+                    if self.blockList[blockName]['setCritType'] != 'First':  # If it's 'first', it'll just solve itself.
+                        dummy = self.checkStop(blockName)
+                # If habituation has been reached, we have to basically undo what happens when a hab crit is met.
+                if self.habMetWhen[blockName] > -1 and self.habCount[blockName] != self.blockList[blockName]['maxHabTrials'] - 1:  # If it was the last hab trial possible, it'll just solve itself with no further action
+                    if not self.checkStop(blockName):  # Almost always true in this case, because we're redoing a hab trial.
+                        self.habMetWhen[blockName] = -1  # Reset
+                        tempTN = trialNum + max(len(self.blockList[blockName]['trialList']), 1)  # Starting with the next trial.
+                        ctr = 0
+                        for h in range(self.habCount[blockName]+1, self.blockList[blockName]['maxHabTrials']):
+                            [irrel, irrel2] = self.insertHab(tn=tempTN+ctr*max(len(self.blockList[blockName]['trialList']), 1), block=blockName, hn=h)
+                            ctr += 1
         return [disMovie, trialNum]
 
-    def jumpToTest(self, tn):
+    def jumpToTest(self, tn, block, met=False):
         """
-        Jumps out of a hab block into whatever the first trial is that is not a hab trial or in a hab meta-trial-type
-        :param tn: trial number
+        Jumps out of a hab block into whatever the first trial after the current hab block.
+
+        :param tn: current trial number when the function is called
         :type tn: int
+        :param block: Block the habituation belongs to. Find end of block, done, because hab blocks can't be embedded and each one can only occur in the flow once.
+        :type block: str
+        :param met: A boolean for whether this is because of J (False) or whether this is a genuine hab-criterion-met
+        :type met: bool
         :return: [disMovie, trialType] as insertHab, the former being the movie file to play if relevant, and the latter being the new trial type
         :rtype: list
         """
-        self.habMetWhen = 0  # Necessary to make sure that once you have jumped to test you cannot jump trials again.
+
+        if not met:
+            self.habMetWhen[block] = 0  # Necessary to make sure that once you have jumped to test you cannot jump trials again.
         trialNum = tn
-        tempNum = self.maxHabIndex
+        maxHab = deepcopy(tn)-1 # index rather than trial number
+        # Look for the last instance of block and '^', which will definitionally be the last trial of type.
+        # Since hab blocks are always top-level blocks, this will always be the first set of characters.
+        for x in range(trialNum, len(self.actualTrialOrder)):
+            if block in self.actualTrialOrder[x][0:len(block)] and '^' in self.actualTrialOrder[x]:
+                maxHab = x
+        tempNum = maxHab # This should be the index in actualtrialorder of the final hab trial of this block.
         # It's actually necessary to decrement the counter for the current trial type to deal with jump/insert!
-        currType = self.actualTrialOrder[trialNum - 1]
-        while '.' in currType:  # Dealing with blocks and recursions
-            currType = currType[currType.index('.') + 1:]
-        self.counters[currType] -= 1
-        if self.counters[currType] < 0:
-            self.counters[currType] = 0
+        if not met:
+            currType = self.actualTrialOrder[trialNum - 1]
+            while '.' in currType:  # Dealing with blocks and recursions
+                currType = currType[currType.index('.') + 1:]
+            self.counters[currType] -= 1
+            if self.counters[currType] < 0:
+                self.counters[currType] = 0
         # trialNum is in fact the index after the current trial at this point
         # so we can just erase everything between that and the first non-hab trial.
-        del self.actualTrialOrder[(trialNum - 1):(tempNum + 1)]
+        # del does not erase the last index in its range.
+        del self.actualTrialOrder[(trialNum - 1):(tempNum+1)]
         try:
-            trialType = self.actualTrialOrder[trialNum - 1]  # Doesn't look for hab trial because...should never happen!
+            trialType = self.actualTrialOrder[trialNum - 1] # note: this comes with all of the ^*. markings and needs cleanup
+            while '.' in trialType:
+                trialType = trialType[trialType.index('.')+1:]
             if self.stimPres:
                 if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
                     self.stimName = self.stimNames[trialType][self.counters[trialType] % len(self.stimNames[trialType])]
@@ -1062,7 +1099,7 @@ class PyHab:
             self.endExperiment()
             return[0,'4']
 
-    def insertHab(self, tn, hn=-1):
+    def insertHab(self, tn, block, hn=-1):
         """
         Literally insert a new hab trial or meta-trial into actualTrialOrder, get the right movie, etc.
 
@@ -1071,26 +1108,21 @@ class PyHab:
         :param hn: HabCount number to insert the hab trial. By default, whatever the current habcount is. However, there
         are edge cases when recovering from "redo" trials when we want to throw in a hab trial further down the line.
         :type hn: int
+        :param block: The habituation block the trial is being added to
+        :type block: str
         :return: [disMovie, trialType], the former being the movie file to play if relevant, and the latter being the new trial type
         :rtype: list
         """
         trialNum = tn
         if hn == -1:
-            hn = self.habCount
+            hn = self.habCount[block]
         habNum = hn
-        if len(self.habTrialList) > 0:
-            self.blockExpander(self.habTrialList, 'hab', hab=True, habNum=habNum+1, insert=trialNum-1)
-            # reset self.maxHabIndex based on last instance of '^'.
-            for n in range(trialNum, len(self.actualTrialOrder)):
-                if '^' in self.actualTrialOrder[n]:
-                    self.maxHabIndex = n
-        else:
-            self.actualTrialOrder.insert(trialNum - 1, 'Hab')
-            self.maxHabIndex = trialNum - 1
+        if len(self.blockList[block]['trialList']) > 0:
+            self.blockExpander(self.blockList[block], block, hab=True, habNum=habNum+1, insert=trialNum-1)
         trialType = self.actualTrialOrder[trialNum - 1]
         while '.' in trialType:
             trialType = trialType[trialType.index('.') + 1:]
-        if self.stimPres and habNum == self.habCount:  # If we're inserting something way down the line, don't mess with it yet.
+        if self.stimPres and habNum == self.habCount[block]:  # If we're inserting something way down the line, don't mess with it yet.
             if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
                 self.stimName = self.stimNames[trialType][self.counters[trialType] % len(self.stimNames[trialType])]
             else:
@@ -1109,7 +1141,7 @@ class PyHab:
                 self.counters[trialType] = 0
         else:
             disMovie = 0
-        if self.blindPres < 1:  # TODO: Do we need this?
+        if self.blindPres < 1:
             self.rdyTextAppend = " NEXT: " + self.actualTrialOrder[trialNum - 1] + " TRIAL"
         return [disMovie,trialType]
 
@@ -1167,6 +1199,20 @@ class PyHab:
             trialType = self.actualTrialOrder[trialNum - 1]
             while '.' in trialType:
                 trialType = trialType[trialType.index('.')+1:]
+            topBlockName = self.actualTrialOrder[trialNum - 1]
+            if '*' in topBlockName: # if it's a hab block, it will always be the top-level block.
+                topBlockName = topBlockName[0:topBlockName.index('*')]  # problem: also includes hab number!
+                # Let's assume less than 100 for max hab.
+                for b, c in self.habCount.items():
+                    if c < 9:
+                        if eval(topBlockName[-1]) == c+1: # need to od it this way because otherwise risks an eval error
+                            topBlockName = topBlockName[0:-1]
+                    elif c > 8:
+                        if eval(topBlockName[-2:]) == c+1:
+                            topBlockName = topBlockName[0:-2]
+            elif '.' in topBlockName:
+                topBlockName = topBlockName[0:topBlockName.index('.')]
+
             # select movie for trial
             if self.stimPres:
                 if self.counters[trialType] >= len(self.stimNames[trialType]) and not self.loadSep:  # Comes up with multiple repetitions of few movies
@@ -1194,17 +1240,39 @@ class PyHab:
                     if self.stimPres:
                         if self.counters[trialType] > 0:
                             self.counters[trialType] -= 1
-                    [disMovie,trialNum] = self.redoSetup(trialNum, AA) #This returns a new value for DisMovie and trialNum
+                    # need to give the blockName of the previous trial, NOT the current one!
+                    lastBlockName = ''
+                    if '.' in self.actualTrialOrder[trialNum-2]:
+                        lastBlockName = self.actualTrialOrder[trialNum-2][0:self.actualTrialOrder[trialNum-2].index('.')]
+                        if '*' in lastBlockName: # for hab blocks, need to get rid of # and *^ marks.
+                            lastBlockName = lastBlockName[0:lastBlockName.index('*')]  # problem: also includes hab number!
+                            # Let's assume less than 100 for max hab.
+                            for b, c in self.habCount.items():
+                                if c < 9:
+                                    if eval(lastBlockName[-1]) == c + 1:  # need to od it this way because otherwise risks an eval error
+                                        lastBlockName = lastBlockName[0:-1]
+                                elif c > 8:
+                                    if eval(lastBlockName[-2:]) == c + 1:
+                                        lastBlockName = lastBlockName[0:-2]
+                    else:
+                        lastBlockName = self.actualTrialOrder[trialNum-2]
+                    [disMovie,trialNum] = self.redoSetup(trialNum, AA, lastBlockName) #This returns a new value for DisMovie and trialNum
                     trialType = self.actualTrialOrder[trialNum - 1]
                     while '.' in trialType:
                         trialType = trialType[trialType.index('.') + 1:]
                     didRedo = True
-                elif self.keyboard[self.key.J] and self.habMetWhen == -1 and 'Hab' in self.trialOrder:  # jump to test in a hab design
-                    [disMovie, trialType] = self.jumpToTest(trialNum)
-                elif self.actualTrialOrder[trialNum-1][0:3] not in ['Hab', 'hab'] and self.keyboard[self.key.I] and 'Hab' in self.trialOrder and self.habMetWhen > 0: # insert additional hab trial
-                    [disMovie, trialType] = self.insertHab(trialNum)
-                    while '.' in trialType:
-                        trialType = trialType[trialType.index('.') + 1:]
+                elif self.keyboard[self.key.J] and topBlockName in self.habMetWhen.keys():
+                        if self.habMetWhen[topBlockName] == -1:  # jump to test in a hab design
+                            [disMovie, trialType] = self.jumpToTest(trialNum, topBlockName)
+                # Insert add'l hab trial. Problem: this can only be invoked outside of a hab block, but needs to refer back to the hab block!
+                elif self.keyboard[self.key.I] and len(self.habMetWhen.keys()) > 0: # insert additional hab trial
+                    # Find the most recent hab block. It should be the most recent trial, in fact.
+                    if '*' in self.actualTrialOrder[trialNum-2]:
+                        for k, t in self.habMetWhen.items():
+                            if self.actualTrialOrder[trialNum-2][0:len(k)] == k and t > 0:
+                                [disMovie, trialType] = self.insertHab(trialNum, k)
+                                while '.' in trialType:
+                                    trialType = trialType[trialType.index('.') + 1:]
                 elif trialNum > 1 and not self.stimPres and self.keyboard[self.key.P] and not reviewed:  # Print data so far, as xHab. Non-stimulus version only. Only between trials.
                     reviewed = True
                     self.printCurrentData()
@@ -1286,19 +1354,40 @@ class PyHab:
                     elif self.keyboard[self.key.R] and not didRedo:  # Redo last trial, mark last trial as bad
                         if self.counters[trialType] > 0:
                             self.counters[trialType] -= 1
-                        [disMovie, trialNum] = self.redoSetup(trialNum, AA)  # This returns a new value for DisMovie and trialNum
+                        # need to give the blockName of the previous trial, NOT the current one!
+                        lastBlockName = ''
+                        if '.' in self.actualTrialOrder[trialNum - 2]:
+                            lastBlockName = self.actualTrialOrder[trialNum - 2][0:self.actualTrialOrder[trialNum - 2].index('.')]
+                            if '*' in lastBlockName:  # for hab blocks, need to get rid of # and *^ marks.
+                                lastBlockName = lastBlockName[0:lastBlockName.index('*')]  # problem: also includes hab number!
+                                # Let's assume less than 100 for max hab.
+                                for b, c in self.habCount.items():
+                                    if c < 9:
+                                        if eval(lastBlockName[-1]) == c + 1:  # need to od it this way because otherwise risks an eval error
+                                            lastBlockName = lastBlockName[0:-1]
+                                    elif c > 8:
+                                        if eval(lastBlockName[-2:]) == c + 1:
+                                            lastBlockName = lastBlockName[0:-2]
+                        else:
+                            lastBlockName = self.actualTrialOrder[trialNum - 2]
+                        [disMovie, trialNum] = self.redoSetup(trialNum, AA, lastBlockName)  # This returns a new value for DisMovie and trialNum
 
                         trialType = self.actualTrialOrder[trialNum - 1]
                         while '.' in trialType:
                             trialType = trialType[trialType.index('.') + 1:]
                         didRedo = True
-                    elif self.keyboard[self.key.J] and 'Hab' in self.trialOrder and self.habMetWhen == -1:  # jump to test in a hab design.
-                        [disMovie,trialType] = self.jumpToTest(trialNum)
-                    elif self.keyboard[self.key.I] and self.habMetWhen > 0:  # insert additional hab trial
-                        [disMovie,trialType] = self.insertHab(trialNum)
-                        while '.' in trialType:
-                            trialType = trialType[trialType.index('.') + 1:]
-                    elif self.keyboard[self.key.S] and trialType != 'Hab' and '^' not in trialType:  #  Skip trial. Doesn't work on things required for habituation.
+                    elif self.keyboard[self.key.J] and topBlockName in self.habMetWhen.keys():
+                        if self.habMetWhen[topBlockName] == -1:  # jump to test in a hab design
+                            [disMovie, trialType] = self.jumpToTest(trialNum)
+                    elif self.keyboard[self.key.I] and len(self.habMetWhen.keys()) > 0:  # insert additional hab trial
+                        # Only works if trial before this one was a hab block trial.
+                        if '*' in self.actualTrialOrder[trialNum - 2]:
+                            for k, t in self.habMetWhen.items():
+                                if self.actualTrialOrder[trialNum - 2][0:len(k)] == k and t > 0:
+                                    [disMovie, trialType] = self.insertHab(trialNum, k)
+                                    while '.' in trialType:
+                                        trialType = trialType[trialType.index('.') + 1:]
+                    elif self.keyboard[self.key.S] and '*' not in trialType:  # Skip trial. Doesn't work on things required for habituation.
                         skip = True
                     else:
                         self.dispCoderWindow(0)
@@ -1323,10 +1412,15 @@ class PyHab:
                     if self.counters[trialType] < 0:
                         self.counters[trialType] = 0
             elif x == 1:  # end hab block!
-                tempNum = self.maxHabIndex
-                # trialNum is in fact the index after the current trial at this point
-                # so we can just erase everything between that and the first non-hab trial.
-                del self.actualTrialOrder[trialNum:tempNum + 1]  # oddly, the del function does not erase the final index.
+                # Find the end of this hab block and skip to there. JumpToTest does this!
+                # But JumpToTest can't be used except between two trials for complex reasons
+                # So instead, we partially replicate its code.
+                maxHab = deepcopy(trialNum)
+                for x in range(trialNum, len(self.actualTrialOrder)):
+                    if topBlockName in self.actualTrialOrder[x] and '^' in self.actualTrialOrder[x]:
+                        maxHab = x # Index, not hab number
+                tempNum = maxHab
+                del self.actualTrialOrder[(trialNum):(tempNum + 1)]
                 trialNum += 1
                 trialType = self.actualTrialOrder[trialNum - 1]  # No need to check for hab sub-trials.
                 if self.blindPres == 0:
@@ -1347,7 +1441,9 @@ class PyHab:
         Basically, allows you to set an arbitrary set of keys to start a trial once the attngetter has played.
         In this case, only B (coder A on) is sufficient.
 
-        TODO: This function can become the eye-tracker interface, basically. It will listen for the eye-tracker input.
+        This function can become the eye-tracker interface, basically. It will listen for the eye-tracker input.
+
+        Todo: Can we implement a debug mode that simulates key-presses for some amount of time?
 
         :return: True if the B key is pressed, False otherwise.
         :rtype: bool
@@ -1384,7 +1480,7 @@ class PyHab:
 
         :param number: Trial number
         :type number: int
-        :param ttype: Trial type
+        :param ttype: Trial type - the full expanded one with block hierarchy and hab trial info included.
         :type ttype: string
         :param  disMovie: A dictionary as follows {'stim':[psychopy object for stimulus presentation], 'stimType':[movie,image,audio, pair]}
         :type disMovie: dictionary
@@ -1392,21 +1488,21 @@ class PyHab:
         :rtype:
         """
         self.trialText.text = "Trial no. " + str(number)
-        habTrial = False  # Just for tracking if this is part of a habituation
+        habTrial = False  # Just for tracking if this is part of a habituation, whether or not it is included in the hab calc
+        habBlock = ''
         localType = deepcopy(ttype)
         while '.' in localType:
             localType = localType[localType.index('.')+1:]
-        if ttype[0:3] == 'hab' and '.' in ttype:  # Hab sub-trials. Hard to ID definitively, actually.
-            spliceType = ttype[ttype.index('.')+1:]
-            if '.' in spliceType:
-                spliceType = spliceType[0:spliceType.index('.')] # Isolate the part between '.'s, which will be what shows up in habtriallist.
-            if spliceType in self.habTrialList:
-                dataType = 'hab' + ttype[ttype.index('.'):]  # Collapses down the number and ^ markings for the data file
-                habTrial = True
-            else:
-                dataType = ttype
-        elif len(self.habTrialList) == 0 and ttype == 'Hab':
-            dataType = ttype
+        if '*' in ttype:  # Hab block trial
+            # Hab trials have this * marker, but also the hab block will always be the top-level block, i.e., before the first .
+            # Even if it's a one-trial block this will be true.
+            # datatype should be the full block-trial name minus *^
+            dataType = ttype.translate({94:None, 42:None})
+            habBlock = ttype[:ttype.index('*')]
+            # Now we need to trim out the hab number. Assume maxHab < 100
+            for b, c in self.habCount.items():
+                if habBlock[0:len(b)] == b and habBlock[len(b):] == str(c+1):
+                    habBlock = habBlock[0:len(b)]
             habTrial = True
         else:
             dataType = ttype
@@ -1476,7 +1572,7 @@ class PyHab:
                     offDur = endTrial - startOff
                     tempGazeArray = {'trial':number, 'trialType':dataType, 'startTime':startOff, 'endTime':endTrial, 'duration':offDur}
                     offArray.append(tempGazeArray)
-            elif core.getTime() - startTrial >= .5 and self.keyboard[self.key.S] and ttype != 'Hab' and '^' not in ttype:
+            elif core.getTime() - startTrial >= .5 and self.keyboard[self.key.S] and '*' not in ttype:
                 # New feature: End trial and go forward manually. Disabled for hab trials and meta-trials.
                 # Disabled for the first half-second to stop you from skipping through multiple auto-advancing trials
                 if localType in self.movieEnd:
@@ -1691,9 +1787,11 @@ class PyHab:
         # print onArray2
         # print offArray2
         if habTrial:
-            habDataRec = self.habCount + 1
+            habDataRec = self.habCount[habBlock] + 1
+            habCrit = self.habCrit[habBlock]
         else:
             habDataRec = 0
+            habCrit = -1
         if self.stimPres:
             # Reset everything, stop playing sounds and movies.
             if disMovie['stimType'] == 'Movie':
@@ -1724,65 +1822,48 @@ class PyHab:
             if self.stimPres and disMovie['stimType'] == 'Movie':
                 disMovie['stim'].seek(0.0)
                 disMovie['stim'].pause()
-            # Todo: Do a proper redo, including rewinding trials using redoSetup.
-            self.abortTrial(onArray, offArray, number, dataType, onArray2, offArray2, self.stimName, habDataRec)
+            # Todo: Do a proper redo, including rewinding trials using redoSetup? Or a new function that's similar?
+            self.abortTrial(onArray, offArray, number, dataType, onArray2, offArray2, self.stimName, habDataRec, habCrit)
             return 3
         else:
-            self.dataRec(onArray, offArray, number, dataType, onArray2, offArray2, self.stimName, habDataRec)
-        if self.habMetWhen == -1 and len(self.habTrialList) > 0 and not abort:   # if still during habituation
-            if dataType[0:4] == 'hab.' and dataType[4:] in self.calcHabOver:
-                tempSum = 0
-                # Check if computing habituation by duration or on-time
-                if self.habByDuration == 1:
-                    for c in range(0, len(onArray)):
-                        tempSum += onArray[c]['duration']
-                    for d in range(0, len(offArray)):
-                        tempSum += offArray[d]['duration']
-                    if self.durationInclude == 0 and len(offArray) > 0:
-                        if offArray[-1]['endTime'] > onArray[-1]['endTime']:
-                            tempSum = tempSum - offArray[-1]['duration']
-                else:
-                    for c in range(0, len(onArray)):
-                        tempSum += onArray[c]['duration']
-                self.habDataCompiled[self.habCount] += tempSum
-            if number >= len(self.actualTrialOrder) or ttype == 4:
-                return 2
-            elif '^' in ttype:
-                self.habCount += 1  # Note: Occurs after data recording, making recording hab trial number hard.
-                # Check if criteria need to be set or have been met
-                if self.checkStop():  # If criteria met
-                    # Check if there are any trials FOLLOWING the hab trials.
-                    if self.maxHabIndex < len(self.actualTrialOrder)-1:
-                        return 1
+            self.dataRec(onArray, offArray, number, dataType, onArray2, offArray2, self.stimName, habDataRec, habCrit)
+        # If this is a habituation block
+        if habTrial:
+            if self.habMetWhen[habBlock] == -1 and not abort:   # if still during habituation
+                if localType in self.blockList[habBlock]['calcHabOver']:
+                    tempSum = 0
+                    # Check if computing habituation by duration or on-time
+                    if self.blockList[habBlock]['habByDuration'] == 1:
+                        for c in range(0, len(onArray)):
+                            tempSum += onArray[c]['duration']
+                        for d in range(0, len(offArray)):
+                            tempSum += offArray[d]['duration']
+                        if self.durationInclude == 0 and len(offArray) > 0:
+                            if offArray[-1]['endTime'] > onArray[-1]['endTime']:
+                                tempSum = tempSum - offArray[-1]['duration']
                     else:
-                        return 2  # End experiment.
+                        for c in range(0, len(onArray)):
+                            tempSum += onArray[c]['duration']
+                    self.habDataCompiled[habBlock][self.habCount[habBlock]] += tempSum
+                if number >= len(self.actualTrialOrder) or ttype == 4:
+                    return 2
+                elif '^' in ttype:  # Final trial of a hab block repetition.
+                    self.habCount[habBlock] += 1  # Note: Occurs after data recording, making recording hab trial number hard.
+                    # Check if criteria need to be set or have been met
+                    if self.checkStop(habBlock):  # If criteria met
+                        # Check if there are any trials FOLLOWING the hab trials.
+                        # First we find the last hab trial in THIS hab block.
+                        maxHab = 0
+                        if habBlock in self.actualTrialOrder[number][0:len(habBlock)] and '^' in self.actualTrialOrder[number]:
+                            maxHab = number
+                        if maxHab < len(self.actualTrialOrder)-1:
+                            return 1
+                        else:
+                            return 2  # End experiment.
+                    else:
+                        return 0
                 else:
                     return 0
-            else:
-                return 0
-        elif ttype == 'Hab' and self.habMetWhen == -1 and not abort:
-            tempSum = 0
-            if self.habByDuration == 1:
-                for c in range(0, len(onArray)):
-                    tempSum += onArray[c]['duration']
-                for d in range(0, len(offArray)):
-                    tempSum += offArray[d]['duration']
-                if self.durationInclude == 0 and len(offArray) > 0:
-                    if offArray[-1]['endTime'] > onArray[-1]['endTime']:
-                        tempSum = tempSum - offArray[-1]['duration']
-            else:
-                for c in range(0, len(onArray)):
-                    tempSum += onArray[c]['duration']
-            self.habDataCompiled[self.habCount] += tempSum
-            self.habCount += 1
-            if self.checkStop():  # If criteria met
-                # Check if there are any trials FOLLOWING the hab trials.
-                if self.actualTrialOrder[-1] != 'Hab':
-                    return 1
-                else:
-                    return 2  # End experiment.
-            else:
-                return 0
         elif number >= len(self.actualTrialOrder) or ttype == 4:
             # End experiment
             return 2
@@ -1830,7 +1911,11 @@ class PyHab:
 
         # If there is habituation data, create hab summary file. Similar to the block one, but a little easier thanks to
         # the tagging of habituation trial numbers.
-        if self.habSetWhen > 0 and len(self.habTrialList) > 0:  # If there's a 'Hab' trial type, the main summary file does the trick just fine.
+        wasHab = False
+        for q, r in self.blockList.items():
+            if r['habituation'] in [1,'1',True,'True']:
+                wasHab = True
+        if wasHab:
             habMatrix = self.saveHabFile()
             # Now, actually write the file
             nDupe = ''  # This infrastructure eliminates the risk of overwriting existing data
@@ -2111,15 +2196,22 @@ class PyHab:
         for i in range(0, len(self.dataMatrix)):
             if isinstance(self.dataMatrix[i]['habTrialNo'], int):
                 tempType = deepcopy(self.dataMatrix[i]['trialType'])
-                tempType = tempType[4:] # to remove 'hab.'
-                if tempType in self.calcHabOver:  # If not, this should specifically be ignored.
+                blockType = tempType[0:tempType.index('.')] # still has hab trial num
+                for b,c in self.habCount.items():
+                    if blockType[0:len(b)] == b:
+                        blockType = blockType[0:len(b)]
+                while '.' in tempType:
+                    tempType = tempType[tempType.index('.')+1:]
+
+                # Having multiple hab blocks per experiment complicates this.
+                if tempType in self.blockList[blockType]['calcHabOver']:  # If not, this should specifically be ignored.
                     tempNo = self.dataMatrix[i]['habTrialNo']
                     addTo = False
                     addIndex = -1
                     tempLine = deepcopy(self.dataMatrix[i])
-                    tempLine['trialType'] = 'Hab'
+                    tempLine['trialType'] = blockType
                     for j in range(0, len(habMatrix)):
-                        if habMatrix[j]['habTrialNo'] == tempNo:
+                        if habMatrix[j]['habTrialNo'] == tempNo and blockType == habMatrix[j]['trialType']:
                             addTo = True
                             addIndex = deepcopy(j)
                     if addTo:
@@ -2419,29 +2511,27 @@ class PyHab:
                             else:
                                 newTempTrials.append(j[q])
                         if i in self.blockList.keys():
-                            finalBlock[i] = newTempTrials
+                            finalBlock[i] = deepcopy(self.blockList[i])
+                            finalBlock[i]['trialList'] = newTempTrials
                         finalDict[i] = newTempTrials
                     self.stimNames = finalDict
                     self.blockList = finalBlock
-                    if 'Hab' in self.blockList.keys():
-                        self.habTrialList = self.blockList['Hab']
                 else:
                     self.cond = thisInfo[6]
                     self.condLabel = self.cond
                 # Set actual order of trials
                 self.actualTrialOrder = []  # in this version, mostly a key for the hab trials and blocks.
                 for i in range(0, len(self.trialOrder)):
-                    if self.trialOrder[i] == 'Hab':
-                        for j in range(0, self.maxHabTrials):
-                            if len(self.habTrialList) > 0:
-                                self.blockExpander(self.habTrialList, 'hab', hab=True, habNum=j + 1)
-                            else:
-                                self.actualTrialOrder.append('Hab')
-                        self.maxHabIndex = len(self.actualTrialOrder) - 1  # Tracks the very last hab trial.
-                    elif self.trialOrder[i] in self.blockList.keys():
+                    if self.trialOrder[i] in self.blockList.keys():
                         if self.trialOrder[i] in self.blockDataList:
                             start = len(self.actualTrialOrder)
-                        self.blockExpander(self.blockList[self.trialOrder[i]], self.trialOrder[i])
+                        if self.blockList[self.trialOrder[i]]['habituation'] in [1, '1', True, 'True']:
+                            # hab block!
+                            for k in range(0, self.blockList[self.trialOrder[i]]['maxHabTrials']):
+                                self.blockExpander(self.blockList[self.trialOrder[i]], self.trialOrder[i], habNum=k+1)
+                            self.maxHabIndex[self.trialOrder[i]] = len(self.actualTrialOrder)-1 # The last trial of this hab block.
+                        else:
+                            self.blockExpander(self.blockList[self.trialOrder[i]], self.trialOrder[i])
                         if self.trialOrder[i] in self.blockDataList:
                             end = len(self.actualTrialOrder)
                             tempList = list(range(start+1,end+1))
@@ -2459,49 +2549,84 @@ class PyHab:
             else:
                 self.run()
 
-    def blockExpander(self, blockTrials, prefixes, hab=False, habNum=0, insert=-1):
+    def blockExpander(self, blockInfo, prefixes, hab=False, habNum=0, insert=-1, baseStart=-1):
         """
         A method for constructing actualTrialOrder while dealing with recursive blocks. Can create incredibly long trial
         codes, but ensures that all information is accurately preserved. Works for both hab blocks and other things.
+
         For hab blocks, we can take advantage of the fact that hab cannot appear inside any other block. It will always
         be the top-level block, and so we can adjust the prefix once and it will carry through.
 
-        :param blockTrials: The list of trials in self.blockList or self.habSubTrials
-        :type blockTrials: list
+        The trial naming preserves hierarchy in a block.trial or block.subblock.trial form.
+        Hab blocks are designated by a '*' at the start, and the last trial in a hab block is marked with '^',
+        which is needed to trip checkStop.
+
+        Because hab blocks cannot be embedded in other blocks, the top-level block is always the one with the hab settings.
+
+        :param blockInfo: The data of the block object, including trialList and hab info.
+        :type blockInfo: dict
         :param prefixes: A recursively growing stack of prefixes. If block A has B and block B has C, then an instance of A will be A.B.C in self.actualTrialOrder. This keeps track of the A.B. part.
         :type prefixes: str
         :param hab: Are we dealing with a habituation trial expansion?
         :type hab: bool
-        :param habNum: If we are dealing with a habituation trial expansion, what number of it are we on?
+        :param habNum: If we are dealing with a habituation trial expansion, what hab iteration of it are we on?
         :type habNum: int
         :param insert: An int specifying where in actualTrialOrder to put a trial. Needed to generalize this function for insertHab
         :type insert: int
+        :param baseStart: Marks the index where the top-level block started in actualTrialOrder.
+        :type baseStart: int
         :return:
         :rtype:
         """
-        if hab:
+
+        blockTrials = blockInfo['trialList']
+        if blockInfo['habituation'] in [1, '1', True, 'True']:
             prefixes = prefixes + str(habNum)
+            hab = True
         for q in range(0, len(blockTrials)):
             tempName = blockTrials[q]
             if tempName in self.blockList.keys():
                 # If a block contains a different block. So, a recursive call that expands the lower-level block within
                 # the top-level one. Notably, hab can only be a top-level block.
+                if baseStart == -1:
+                    baseStart = len(self.actualTrialOrder)
                 if tempName in self.blockDataList:
                     start = len(self.actualTrialOrder)
-                self.blockExpander(self.blockList[tempName], prefixes+'.'+tempName, hab=False, insert=insert)
+                self.blockExpander(self.blockList[tempName], prefixes+'.'+tempName, hab=hab, insert=insert, baseStart=baseStart)
                 if tempName in self.blockDataList:
                     end = len(self.actualTrialOrder)
                     tempList = list(range(start + 1, end + 1))
                     self.blockDataTags[tempName].append(tempList)
-                if hab and q == len(self.habTrialList) - 1: # Go back and pin on the ^ if needed. A little cheaty
+                # If this is a hab block, make sure the last trial is marked for checkStop.
+                if hab:
+                    # Remove all previous instances of '^' and then add it again.
+                    # Because recursion, this will end up appending it to the last trial of the top-level block.
+                    # uses baseStart to find the starting point of the current iteration.
+                    for n in range(baseStart, len(self.actualTrialOrder)):
+                        if '^' in self.actualTrialOrder[n]:
+                            tmpString = deepcopy(self.actualTrialOrder[n])
+                            # The unicode num for '^' is 94. Using string.translate, we can remove all instances of it.
+                            self.actualTrialOrder[n] = tmpString.translate({94: None})
                     revise = deepcopy(self.actualTrialOrder[-1])
                     revise = revise[:revise.index('.')] + '^' + revise[revise.index('.'):]
                     self.actualTrialOrder[-1] = revise
             else:
                 # For everything else.
-                if hab and q == len(self.habTrialList) - 1:
-                    prefixes = prefixes + '^'  # End-of-hab-cycle marker
-                tempName = prefixes + '.' + tempName
+                if hab:
+                    if '*' not in prefixes:
+                        prefixes = prefixes + '*' # A universal hab marker. Applies to every trial in a hab block.
+                    # Identify end of hab cycle.
+                    if q == len(blockTrials) - 1:
+                        # Edge case: there is a sub-block, but the final item in the top-level hab block is a trial.
+                        # This ensures that the end of the hab cycle is marked correctly.
+                        if baseStart > -1:
+                            for n in range(baseStart, len(self.actualTrialOrder)):
+                                if '^' in self.actualTrialOrder[n]:
+                                    tmpString = deepcopy(self.actualTrialOrder[n])
+                                    # The unicode num for '^' is 94. Using string.translate, we can remove all instances of it.
+                                    self.actualTrialOrder[n] = tmpString.translate({94: None})
+                        prefixes = prefixes + '^'  # End-of-hab-cycle marker
+                tempName = prefixes + '.' + tempName # e.g., A*^.B if A is the block and B is the trial, and it's a hab
                 if insert == -1:
                     self.actualTrialOrder.append(tempName)
                 else:
