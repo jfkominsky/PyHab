@@ -1018,7 +1018,9 @@ class PyHab:
                 disMovie = 0
             self.trialText.text = "Trial no. " + str(trialNum)
             if self.blindPres < 1:
-                self.rdyTextAppend = " NEXT: " + self.actualTrialOrder[trialNum - 1] + " TRIAL"
+                tempTrialText = deepcopy(self.actualTrialOrder[trialNum - 1])
+                tempTrialText= tempTrialText.translate(({94:None, 42:None})) # removes *^ from display.
+                self.rdyTextAppend = " NEXT: " + tempTrialText + " TRIAL"
         for i in range(trialNum, trialNum + numTrialsRedo):  # Should now rewind all the way to the last non-AA trial.
             self.redoTrial(i)
         if blockName in self.habCount.keys():
