@@ -1076,6 +1076,7 @@ class TestRunSetup(object):
                                         'metCritDivisor': 1.0,
                                         'metCritStatic': 'Moving',
                                         'calcHabOver': ['F']}}
+        self.trialInst.blockStartIndexes['C'] = []
         self.trialInst.run(testMode=testOne)
         assert len(self.trialInst.actualTrialOrder) == 19
         assert len([x for x in self.trialInst.actualTrialOrder if '*' in x]) == 14
@@ -1111,6 +1112,8 @@ class TestRunSetup(object):
                                           'metCritDivisor': 1.0,
                                           'metCritStatic': 'Moving',
                                           'calcHabOver': []}}
+        self.trialInst.blockStartIndexes['C'] = []
+        self.trialInst.blockStartIndexes['E'] = []
         self.trialInst.run(testMode=testOne)
         assert len(self.trialInst.actualTrialOrder) == 55
         assert len([x for x in self.trialInst.actualTrialOrder if '^' in x]) == 10
@@ -1144,13 +1147,18 @@ class TestRunSetup(object):
                                         'metCritDivisor': 1.0,
                                         'metCritStatic': 'Moving',
                                         'calcHabOver': []}}
+        self.trialInst.blockStartIndexes['C'] = []
+        self.trialInst.blockStartIndexes['E'] = []
         self.trialInst.run(testMode=testOne)
         assert len(self.trialInst.actualTrialOrder) == 10
         assert self.trialInst.actualTrialOrder == ['A', 'A', 'B', 'B', 'C.X', 'C.E.Z','C.E.Y','C.E.X','C.B', 'D']
 
         # now let's try again with a block that starts with another block. Edge case.
         self.trialInst.actualTrialOrder = []
+        self.trialInst.blockStartIndexes['C'] = []
+        self.trialInst.blockStartIndexes['E'] = []
         self.trialInst.blockList['C']['trialList'] = ['E', 'X', 'B']
+        self.trialInst.run(testMode=testOne)
         assert len(self.trialInst.actualTrialOrder) == 10
         assert self.trialInst.actualTrialOrder == ['A', 'A', 'B', 'B', 'C.E.Z', 'C.E.Y', 'C.E.X', 'C.X', 'C.B', 'D']
 
@@ -1168,6 +1176,7 @@ class TestRunSetup(object):
                                         'metCritDivisor': 1.0,
                                         'metCritStatic': 'Moving',
                                         'calcHabOver': ['B']}
+        self.trialInst.blockStartIndexes['Hab'] = []
         self.trialInst.trialOrder = ['A', 'A', 'B', 'B', 'Hab', 'D']
         self.trialInst.run(testMode=testOne)
         # Length is going to be...big...5+14+14*5 = 19+70=89. Recursion gets out of hand pretty quickly!
@@ -1205,6 +1214,8 @@ class TestRunSetup(object):
                                         'metCritStatic': 'Moving',
                                         'calcHabOver': []}}
         self.trialInst.actualTrialOrder = []
+        self.trialInst.blockStartIndexes['C'] = []
+        self.trialInst.blockStartIndexes['E'] = []
         self.trialInst.blockDataList = ['E']
         self.trialInst.blockDataTags['E'] = []
         self.trialInst.run(testMode=testOne)
@@ -1214,6 +1225,8 @@ class TestRunSetup(object):
         self.trialInst.actualTrialOrder=[]
         self.trialInst.blockDataTags = {}
         self.trialInst.blockDataTags['C'] = []
+        self.trialInst.blockStartIndexes['C'] = []
+        self.trialInst.blockStartIndexes['E'] = []
         self.trialInst.run(testMode=testOne)
         assert self.trialInst.blockDataTags=={'C':[[5,6,7,8,9]]}
         self.trialInst.trialOrder = ['A', 'A', 'B', 'B', 'C', 'D','E']
@@ -1221,6 +1234,8 @@ class TestRunSetup(object):
         self.trialInst.blockDataList = ['E']
         self.trialInst.blockDataTags={}
         self.trialInst.blockDataTags['E'] = []
+        self.trialInst.blockStartIndexes['C'] = []
+        self.trialInst.blockStartIndexes['E'] = []
         self.trialInst.run(testMode=testOne)
         assert self.trialInst.actualTrialOrder == ['A', 'A', 'B', 'B', 'C.X', 'C.E.Z','C.E.Y','C.E.X','C.B', 'D','E.Z','E.Y','E.X']
         assert self.trialInst.blockDataTags=={'E':[[6,7,8],[11,12,13]]}
