@@ -953,11 +953,12 @@ class PyHab:
             t = 0  # Totally irrelevant.
         return t
 
-    def redoSetup(self, tn, autoAdv, blockName):
+    def redoSetup(self, tn, autoAdv, blockName, blockRedo=False, abortNotRedo = False):
         """
         Lays the groundwork for redoTrial, including correcting the trial order, selecting the right stim, etc.
 
-        TODO: Block-level redo?
+        TODO: Block-level redo? At the level of the top-level block only.
+        TODO: Add an abort/redo toggle? The counting is a little different, specifically around habs.
 
         :param tn: Trial number (trialNum)
         :type tn: int
@@ -965,14 +966,22 @@ class PyHab:
         :type autoAdv: list
         :param blockName: Pulls topBlockName from doExperiment to deal with redoing block and habituations.
         :type blockName: str
+        :param blockRedo: A special type of redo reserved for blocks, that rewinds to the start of the top-level block.
+        :type blockRedo: bool
+        :param abortNotRedo: This function can also be used for mid-trial aborts, but the math is different.
+        :type abortNotRedo: bool
         :return: list, [disMovie, trialNum], the former being the movie file to play if relevant, and the latter being the new trial number
         :rtype:
         """
         numTrialsRedo = 0
         trialNum = tn
         tempHabCount = 0
+        habBlock = False
         if blockName in self.habCount.keys():
-            tempHabCount = deepcopy(self.habCount[blockName])
+            habBlock = True
+            # bools have numerical values! Use this to adjust hab count for a mid-trial abort.
+            tempHabCount = deepcopy(self.habCount[blockName]) + abortNotRedo
+            blockRedo = True # Hab trials are always redone at the level of a block.
         if trialNum > 1:  # This stops it from trying to redo a trial before the experiment begins.
             trialNum -= 1
             trialType = self.actualTrialOrder[trialNum - 1]
@@ -983,16 +992,54 @@ class PyHab:
                 self.counters[trialType] -= 1
                 if self.counters[trialType] < 0:
                     self.counters[trialType] = 0
-            while trialType in autoAdv and trialNum > 1:  # go find the last non-AA trial and redo from there
-                trialNum -= 1
-                trialType = self.actualTrialOrder[trialNum - 1]
-                while '.' in trialType:
-                    trialType = trialType[trialType.index('.') + 1:]
-                numTrialsRedo += 1
-                if self.stimPres:
-                    self.counters[trialType] -= 1
-                    if self.counters[trialType] < 0:  # b/c counters operates over something that is like actualTrialOrder, it should never go beneath 0
-                        self.counters[trialType] = 0
+            if not blockRedo:
+                while trialType in autoAdv and trialNum > 1:  # go find the last non-AA trial and redo from there
+                    trialNum -= 1
+                    trialType = self.actualTrialOrder[trialNum - 1]
+                    while '.' in trialType:
+                        trialType = trialType[trialType.index('.') + 1:]
+                    numTrialsRedo += 1
+                    if self.stimPres:
+                        self.counters[trialType] -= 1
+                        if self.counters[trialType] < 0:  # b/c counters operates over something that is like actualTrialOrder, it should never go beneath 0
+                            self.counters[trialType] = 0
+            else:
+                # Todo: find the first trial of this block and rewind to that point. This is tricky.
+                found = False
+                # First, is it a hab block? that actually makes it kind of easier.
+                if habBlock:
+                    # Using temphabcount, we can find the first trial of this block.
+                    while not found:
+                        currType = self.actualTrialOrder[trialNum-1]
+                        if '*' in currType:
+                            currType = currType[0:currType.index('*')]
+                            # Compare last characters (representing hab count #) against tempHabCount
+                            # e.g., if tempHabCount = 3, we are looking for the first trial that ends in 3.
+                            if tempHabCount < 10:
+                                if eval(currType[-1]) < tempHabCount:
+                                    found = True
+                            else:
+                                if eval(currType[-2:]) < tempHabCount:
+                                    found = True
+                        else:
+                            # If we backed out of the hab block altogether we're automatically done
+                            found = True
+                        if not found:
+                            # Rewind another trial, try again.
+                            trialNum -= 1
+                            trialType = self.actualTrialOrder[trialNum - 1]
+                            while '.' in trialType:
+                                trialType = trialType[trialType.index('.') + 1:]
+                            numTrialsRedo += 1
+                            if self.stimPres:
+                                self.counters[trialType] -= 1
+                                if self.counters[trialType] < 0:  # b/c counters operates over something that is like actualTrialOrder, it should never go beneath 0
+                                    self.counters[trialType] = 0
+                else:
+                    # If not we need another way to identify where we're going.
+                    # This requires some complex coordination between the trialorder and the expansion
+                    pass
+
             # Update blockName accordingly.
             if numTrialsRedo > 1:
                 blockName = self.actualTrialOrder[trialNum - 1]
