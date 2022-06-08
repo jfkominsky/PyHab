@@ -1147,6 +1147,14 @@ class TestRunSetup(object):
         self.trialInst.run(testMode=testOne)
         assert len(self.trialInst.actualTrialOrder) == 10
         assert self.trialInst.actualTrialOrder == ['A', 'A', 'B', 'B', 'C.X', 'C.E.Z','C.E.Y','C.E.X','C.B', 'D']
+
+        # now let's try again with a block that starts with another block. Edge case.
+        self.trialInst.actualTrialOrder = []
+        self.trialInst.blockList['C']['trialList'] = ['E', 'X', 'B']
+        assert len(self.trialInst.actualTrialOrder) == 10
+        assert self.trialInst.actualTrialOrder == ['A', 'A', 'B', 'B', 'C.E.Z', 'C.E.Y', 'C.E.X', 'C.X', 'C.B', 'D']
+
+        # And with habituation
         self.trialInst.actualTrialOrder = []
         self.trialInst.blockList['Hab'] = {'trialList': ['B','C'],
                                         'habituation': 1,
@@ -1166,6 +1174,8 @@ class TestRunSetup(object):
         assert len(self.trialInst.actualTrialOrder) == 89
         assert len([x for x in self.trialInst.actualTrialOrder if '^.C.B' in x]) == 14
         assert len(self.trialInst.actualTrialOrder)-2 == self.trialInst.maxHabIndex['Hab']
+
+
 
     def test_block_data_setup(self):
         testOne = [99, 'Test', 'NB', '7', '2', '18', 'testcond', '8', '2', '18']

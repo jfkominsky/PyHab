@@ -2,7 +2,7 @@ import os, sys
 from psychopy import gui, visual, event, core, data, monitors, tools, prefs, logging
 from psychopy.constants import (STARTED, PLAYING)  # Added for new stimulus types
 prefs.hardware['audioLib'] = ['PTB']
-if os.name is 'posix':
+if os.name == 'posix':
     prefs.general['audioDevice'] = ['Built-in Output']
 from psychopy import sound
 import pyglet
@@ -44,10 +44,10 @@ class PyHab:
         :param settingsDict: a dict built from a csv by the launcher script and passed to the class
         :type settingsDict: dict
         """
-        if os.name is 'posix':  # glorious simplicity of unix filesystem
+        if os.name == 'posix':  # glorious simplicity of unix filesystem
             self.dirMarker = '/'
             otherOS = '\\'
-        elif os.name is 'nt':  # Nonsensical Windows-based contrarianism
+        elif os.name == 'nt':  # Nonsensical Windows-based contrarianism
             self.dirMarker = '\\'
             otherOS = '/'
         self.dataColumns = eval(settingsDict['dataColumns'])
@@ -240,6 +240,7 @@ class PyHab:
         self.habMetWhen = {}  # Ported from MB4: Tracks both when the habituation criterion is set, and met.
         self.maxHabIndex = {}
         self.habDataCompiled = {}  # A new easy way to track just hab trials, even with complex meta-trial structure.
+        self.blockStartIndexes = {}  # 0.10.1 a little thing that'll make block-level redos easier.
 
         for i, j in self.blockList.items():
             if j['habituation'] in [1, '1', True, 'True']:
@@ -249,6 +250,7 @@ class PyHab:
                 self.habMetWhen[i] = -1
                 self.maxHabIndex[i] = 0
                 self.habDataCompiled[i] = [0]*j['maxHabTrials']
+            self.blockStartIndexes[i] = []  # Doesn't care if it's hab or not
 
         self.dataMatrix = []  # primary data array
         self.blockDataTags = {}
@@ -618,10 +620,10 @@ class PyHab:
         if 'bgColor' in attnGetter.keys():
             if attnGetter['bgColor'] != 'default':
                 self.win.setColor(attnGetter['bgColor'])
-        if attnGetter['stimType'] is 'Audio':
-            if attnGetter['shape'] is 'Rectangle':
+        if attnGetter['stimType'] == 'Audio':
+            if attnGetter['shape'] == 'Rectangle':
                 useShape = self.attnGetterSquare
-            elif attnGetter['shape'] is 'Cross':
+            elif attnGetter['shape'] == 'Cross':
                 useShape = self.attnGetterCross
                 sizeMult = 50
             else:
@@ -635,7 +637,7 @@ class PyHab:
             for i in range(0, animDur):  # Animation set to length of sound
                 useShape.ori += 5  # Defines rotation speed in degrees. Arbitrary.
                 x += .1
-                if attnGetter['shape'] is 'Rectangle':
+                if attnGetter['shape'] == 'Rectangle':
                     useShape.height = sin(x) * (2*animDur)  # I don't know why this one works so well, but it does.
                     useShape.width = tan(.25 * x) * (2*animDur)
                 else:
@@ -960,7 +962,7 @@ class PyHab:
         TODO: Block-level redo? At the level of the top-level block only.
         TODO: Add an abort/redo toggle? The counting is a little different, specifically around habs.
 
-        :param tn: Trial number (trialNum)
+        :param tn: Trial number (trialNum), to be redone (or in the process of being aborted)
         :type tn: int
         :param autoAdv: The current auto-advance trial type list (different on first trial for Reasons)
         :type autoAdv: list
@@ -1037,9 +1039,29 @@ class PyHab:
                                     self.counters[trialType] = 0
                 else:
                     # If not we need another way to identify where we're going.
-                    # This requires some complex coordination between the trialorder and the expansion
-                    pass
-
+                    while not found:
+                        if trialNum in self.blockStartIndexes[blockName]:
+                            # We already reached the beginning of the block iteration
+                            found = True
+                        else:
+                            # Make sure we haven't backed out of the block altogether
+                            currentTrialName = self.actualTrialOrder[trialNum-1]
+                            if '.' in currentTrialName:
+                                # Not hab trial by definition so we can do this the easy way
+                                currentTrialName = currentTrialName[0:currentTrialName.index('.')]
+                            if currentTrialName != blockName:
+                                found = True # We've backed out of the block entirely.
+                            else:
+                                # Back up one and try again!
+                                trialNum -= 1
+                                trialType = self.actualTrialOrder[trialNum - 1]
+                                while '.' in trialType:
+                                    trialType = trialType[trialType.index('.') + 1:]
+                                numTrialsRedo += 1
+                                if self.stimPres:
+                                    self.counters[trialType] -= 1
+                                    if self.counters[trialType] < 0:
+                                        self.counters[trialType] = 0
             # Update blockName accordingly.
             if numTrialsRedo > 1:
                 blockName = self.actualTrialOrder[trialNum - 1]
@@ -1069,8 +1091,9 @@ class PyHab:
                 tempTrialText= tempTrialText.translate(({94:None, 42:None})) # removes *^ from display.
                 self.rdyTextAppend = " NEXT: " + tempTrialText + " TRIAL"
         for i in range(trialNum, trialNum + numTrialsRedo):  # Should now rewind all the way to the last non-AA trial.
+            # Todo: Abort/redo distinction. For aborts, we abort the current trial, and redo the rest.
             self.redoTrial(i)
-        if blockName in self.habCount.keys():
+        if habBlock:
             if self.habCount[blockName] != tempHabCount:  # Did we change a trial that can change checkStop? Trips if redoTrial decrements it.
                 # If hab type is threshold, max, or peak, we might need to recalculate dynamically
                 if self.habSetWhen[blockName] >= self.habCount[blockName]:
@@ -2605,8 +2628,8 @@ class PyHab:
         be the top-level block, and so we can adjust the prefix once and it will carry through.
 
         The trial naming preserves hierarchy in a block.trial or block.subblock.trial form.
-        Hab blocks are designated by a '*' at the start, and the last trial in a hab block is marked with '^',
-        which is needed to trip checkStop.
+        Hab blocks are designated by a '*' before the first '.', and the last trial in a hab block
+        is marked with '^', which is needed to trip checkStop.
 
         Because hab blocks cannot be embedded in other blocks, the top-level block is always the one with the hab settings.
 
@@ -2627,6 +2650,15 @@ class PyHab:
         """
 
         blockTrials = blockInfo['trialList']
+        topBlockName = deepcopy(prefixes)
+        while '.' in topBlockName:
+            topBlockName = topBlockName[0:topBlockName.index('.')]
+            # might get messy around habs w/ sub-blocks, so...
+            while topBlockName not in self.blockStartIndexes.keys():
+                topBlockName = topBlockName[0:-1]  # Trim off the extra symbols until we get a pure block name.
+        if baseStart == -1:
+            # Add this to the list of trial numbers that are the first trials of block iterations.
+            self.blockStartIndexes[topBlockName].append(len(self.actualTrialOrder))
         if blockInfo['habituation'] in [1, '1', True, 'True']:
             prefixes = prefixes + str(habNum)
             hab = True
@@ -2677,6 +2709,7 @@ class PyHab:
                 if insert == -1:
                     self.actualTrialOrder.append(tempName)
                 else:
+                    # Only comes up with insertHab
                     self.actualTrialOrder.insert(insert, tempName)
                     insert += 1
 
@@ -2741,7 +2774,7 @@ class PyHab:
             tempText.draw()
             self.win2.flip()
             # Step 1: Load and present "startImage"
-            if self.startImage is not '':
+            if self.startImage != '':
                 self.dummyThing.draw()
                 tempStim = self.stimList[self.startImage]
                 tempStimObj = visual.ImageStim(self.win, tempStim['stimLoc'], size=[self.movieWidth['C'], self.movieHeight['C']])
@@ -2778,7 +2811,7 @@ class PyHab:
                                                                            flipHoriz=False, flipVert=False, loop=False)
                         if self.attnGetterList[i]['stimType'] == 'Movie + Audio':
                             self.attnGetterList[i]['audioFile'] = sound.Sound(self.attnGetterList[i]['audioLoc'])
-            if self.endImage is not '': # Load image for end of experiment, if needed.
+            if self.endImage != '':  # Load image for end of experiment, if needed.
                 tempStim = self.stimList[self.endImage]
                 self.endImageObject = visual.ImageStim(self.win, tempStim['stimLoc'], size=[self.movieWidth['C'], self.movieHeight['C']])
             else:
