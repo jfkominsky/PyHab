@@ -983,7 +983,7 @@ class PyHab:
             habBlock = True
             # bools have numerical values! Use this to adjust hab count for a mid-trial abort.
             tempHabCount = deepcopy(self.habCount[blockName]) + abortNotRedo
-            blockRedo = True # Hab trials are always redone at the level of a block.
+            blockRedo = True  # Hab trials are always redone at the level of a block.
         if trialNum > 1:  # This stops it from trying to redo a trial before the experiment begins.
             trialNum -= 1
             trialType = self.actualTrialOrder[trialNum - 1]
@@ -1017,11 +1017,11 @@ class PyHab:
                             currType = currType[0:currType.index('*')]
                             # Compare last characters (representing hab count #) against tempHabCount
                             # e.g., if tempHabCount = 3, we are looking for the first trial that ends in 3.
-                            if tempHabCount < 10:
-                                if eval(currType[-1]) < tempHabCount:
+                            if tempHabCount <= 10:
+                                if eval(currType[-1]) == tempHabCount-1:
                                     found = True
                             else:
-                                if eval(currType[-2:]) < tempHabCount:
+                                if eval(currType[-2:]) == tempHabCount-1:
                                     found = True
                         else:
                             # If we backed out of the hab block altogether we're automatically done
