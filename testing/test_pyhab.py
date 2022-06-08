@@ -1737,6 +1737,7 @@ class TestCommands(object):
                                         'metCritDivisor': 1.0,
                                         'metCritStatic': 'Moving',
                                         'calcHabOver': ['Hab']}}
+        self.commandInst.blockStartIndexes['Z'] = []
         self.commandInst.trialOrder = ['A', 'A', 'B', 'B', 'Z', 'D']
         self.commandInst.counters = {'A': 2, 'B': 2, 'C': 0, 'D': 0,'Hab':2}
         self.commandInst.run(testMode=testOne)
@@ -1774,6 +1775,7 @@ class TestCommands(object):
                'metCritDivisor': 1.0,
                'metCritStatic': 'Moving',
                'calcHabOver': ['B']}}
+        self.commandInst.blockStartIndexes['Hab'] = []
         self.commandInst.trialOrder = ['A', 'A', 'B', 'B', 'Hab', 'D']
         self.commandInst.counters = {'A': 2, 'B': 2, 'C': 1, 'D': 0,'Hab':1}
 
@@ -1842,6 +1844,7 @@ class TestCommands(object):
                'metCritDivisor': 1.0,
                'metCritStatic': 'Moving',
                'calcHabOver': ['H','C']}}
+        self.commandInst.blockStartIndexes['Hab'] = []
         self.commandInst.counters = {'A': 2, 'B': 2, 'C': 0, 'D': 0, 'H': 0}
         self.commandInst.run(testMode=testOne)
         self.commandInst.habMetWhen['Hab'] = -1 # Resetting after the jump tests above on principle.
