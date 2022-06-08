@@ -1904,7 +1904,7 @@ class TestCommands(object):
         assert self.commandInst.habCrit['Hab'] == 15
         # OK, assuming all that got set up properly, lets get messy.
         self.commandInst.redoSetup(11, ['B','C'], 'Hab')
-        assert self.commandInst.habDataCompiled['Hab'][2] == 0
+        assert self.commandInst.habDataCompiled['Hab'][2] == 0  # this gets 5.0, indicating a partial rewind.
         assert self.commandInst.habSetWhen['Hab'] == -1
         assert self.commandInst.habMetWhen['Hab'] == -1
         assert self.commandInst.habCrit['Hab'] == 0

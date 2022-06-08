@@ -1011,32 +1011,45 @@ class PyHab:
                 # First, is it a hab block? that actually makes it kind of easier.
                 if habBlock:
                     # Using temphabcount, we can find the first trial of this block.
+                    currType = self.actualTrialOrder[trialNum - 1]
+                    if '*' in currType:
+                        currType = currType[0:currType.index('*')]
+                        # Compare last characters (representing hab count #) against tempHabCount
+                        # e.g., if tempHabCount = 3, we are looking for the first trial that ends in 2.
+                        if tempHabCount <= 10:
+                            if eval(currType[-1]) == tempHabCount - 1:
+                                found = True
+                        else:
+                            if eval(currType[-2:]) == tempHabCount - 1:
+                                found = True
+                    else:
+                        # If we backed out of the hab block altogether we're automatically done
+                        found = True
                     while not found:
-                        currType = self.actualTrialOrder[trialNum-1]
+                        # Rewind another trial, try again.
+                        trialNum -= 1
+                        trialType = self.actualTrialOrder[trialNum - 1]
+                        while '.' in trialType:
+                            trialType = trialType[trialType.index('.') + 1:]
+                        numTrialsRedo += 1
+                        if self.stimPres:
+                            self.counters[trialType] -= 1
+                            if self.counters[trialType] < 0:  # b/c counters operates over something that is like actualTrialOrder, it should never go beneath 0
+                                self.counters[trialType] = 0
+                        currType = self.actualTrialOrder[trialNum - 1]
                         if '*' in currType:
                             currType = currType[0:currType.index('*')]
                             # Compare last characters (representing hab count #) against tempHabCount
-                            # e.g., if tempHabCount = 3, we are looking for the first trial that ends in 3.
+                            # e.g., if tempHabCount = 3, we are looking for the first trial that ends in 2.
                             if tempHabCount <= 10:
-                                if eval(currType[-1]) == tempHabCount-1:
+                                if eval(currType[-1]) == tempHabCount - 1:
                                     found = True
                             else:
-                                if eval(currType[-2:]) == tempHabCount-1:
+                                if eval(currType[-2:]) == tempHabCount - 1:
                                     found = True
                         else:
                             # If we backed out of the hab block altogether we're automatically done
                             found = True
-                        if not found:
-                            # Rewind another trial, try again.
-                            trialNum -= 1
-                            trialType = self.actualTrialOrder[trialNum - 1]
-                            while '.' in trialType:
-                                trialType = trialType[trialType.index('.') + 1:]
-                            numTrialsRedo += 1
-                            if self.stimPres:
-                                self.counters[trialType] -= 1
-                                if self.counters[trialType] < 0:  # b/c counters operates over something that is like actualTrialOrder, it should never go beneath 0
-                                    self.counters[trialType] = 0
                 else:
                     # If not we need another way to identify where we're going.
                     while not found:
