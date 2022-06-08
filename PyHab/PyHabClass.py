@@ -1011,7 +1011,7 @@ class PyHab:
                 # First, is it a hab block? that actually makes it kind of easier.
                 if habBlock:
                     # Using temphabcount, we can find the first trial of this block.
-                    currType = self.actualTrialOrder[trialNum - 1]
+                    currType = self.actualTrialOrder[trialNum]
                     if '*' in currType:
                         currType = currType[0:currType.index('*')]
                         # Compare last characters (representing hab count #) against tempHabCount
@@ -1036,7 +1036,7 @@ class PyHab:
                             self.counters[trialType] -= 1
                             if self.counters[trialType] < 0:  # b/c counters operates over something that is like actualTrialOrder, it should never go beneath 0
                                 self.counters[trialType] = 0
-                        currType = self.actualTrialOrder[trialNum - 1]
+                        currType = self.actualTrialOrder[trialNum]
                         if '*' in currType:
                             currType = currType[0:currType.index('*')]
                             # Compare last characters (representing hab count #) against tempHabCount
