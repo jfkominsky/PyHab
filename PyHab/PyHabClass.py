@@ -979,12 +979,13 @@ class PyHab:
         trialNum = tn
         tempHabCount = 0
         habBlock = False
+        localBlockRedo = blockRedo == True
         if trialNum > 1:  # This stops it from trying to redo a trial before the experiment begins.
             if '*' in self.actualTrialOrder[trialNum - 1] or '*' in self.actualTrialOrder[trialNum - 2]:
                 habBlock = True
                 # bools have numerical values! Use this to adjust hab count for a mid-trial abort.
                 tempHabCount = deepcopy(self.habCount[blockName]) + abortNotRedo
-                blockRedo = True  # Hab trials are always redone at the level of a block.
+                localBlockRedo = True  # Hab trials are always redone at the level of a block.
             trialNum -= 1
             trialType = self.actualTrialOrder[trialNum - 1]
             while '.' in trialType:
@@ -994,7 +995,7 @@ class PyHab:
                 self.counters[trialType] -= 1
                 if self.counters[trialType] < 0:
                     self.counters[trialType] = 0
-            if blockRedo:
+            if localBlockRedo:
                 while trialType in autoAdv and trialNum > 1:  # go find the last non-AA trial and redo from there
                     trialNum -= 1
                     trialType = self.actualTrialOrder[trialNum - 1]
