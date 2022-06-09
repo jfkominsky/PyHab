@@ -1904,7 +1904,7 @@ class TestCommands(object):
         assert self.commandInst.habCrit['Hab'] == 15
         # OK, assuming all that got set up properly, lets get messy.
         [x,y] = self.commandInst.redoSetup(11, ['B','C'], 'Hab')
-        assert y == 9 # The start of the last hab block iteration, in principle.
+        assert y == 9  # The start of the last hab block iteration, in principle.
         assert self.commandInst.habDataCompiled['Hab'][2] == 0
         assert self.commandInst.habSetWhen['Hab'] == -1
         assert self.commandInst.habMetWhen['Hab'] == -1
