@@ -979,12 +979,12 @@ class PyHab:
         trialNum = tn
         tempHabCount = 0
         habBlock = False
-        if blockName in self.habCount.keys():
-            habBlock = True
-            # bools have numerical values! Use this to adjust hab count for a mid-trial abort.
-            tempHabCount = deepcopy(self.habCount[blockName]) + abortNotRedo
-            blockRedo = True  # Hab trials are always redone at the level of a block.
         if trialNum > 1:  # This stops it from trying to redo a trial before the experiment begins.
+            if '*' in self.actualTrialOrder[trialNum - 1] or '*' in self.actualTrialOrder[trialNum - 2]:
+                habBlock = True
+                # bools have numerical values! Use this to adjust hab count for a mid-trial abort.
+                tempHabCount = deepcopy(self.habCount[blockName]) + abortNotRedo
+                blockRedo = True  # Hab trials are always redone at the level of a block.
             trialNum -= 1
             trialType = self.actualTrialOrder[trialNum - 1]
             while '.' in trialType:
