@@ -1012,8 +1012,9 @@ class PyHab:
                 # First, is it a hab block? that actually makes it kind of easier.
                 if habBlock:
                     while not found:
-                        # Using temphabcount, we can find the first trial of this block.
-                        currType = self.actualTrialOrder[trialNum-1]
+                        # Using temphabcount, we can find the first trial of this block,
+                        # or rather, if we're about to go past it
+                        currType = self.actualTrialOrder[trialNum-2]
                         if '*' in currType:
                             currType = currType[0:currType.index('*')]
                             # Compare last characters (representing hab count #) against tempHabCount
