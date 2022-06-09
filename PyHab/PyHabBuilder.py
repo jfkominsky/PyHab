@@ -438,8 +438,7 @@ class PyHabBuilder:
                         if self.buttonList['functions'][i] not in [self.toST, self.toPL, self.toHPP]:
                             # If we're opening a dialog box, basically.
                             self.win.winHandle.set_visible(visible=False)
-                    else:
-                        self.buttonList['functions'][i]() #It should not be this easy, BUT IT IS. Python is great.
+                    self.buttonList['functions'][i]() #It should not be this easy, BUT IT IS. Python is great.
                     if os.name != 'posix':
                         self.win.winHandle.set_visible(visible=True)
             # Some conditions to check if we need to remove buttons, must be done outside the for loop to prevent index errors

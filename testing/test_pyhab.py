@@ -1845,11 +1845,21 @@ class TestCommands(object):
                'metCritStatic': 'Moving',
                'calcHabOver': ['H','C']}}
         self.commandInst.blockStartIndexes['Hab'] = []
+        i = 'Hab'
+        self.commandInst.habCount[i] = 0
+        self.commandInst.habCrit[i] = 0
+        self.commandInst.habSetWhen[i] = -1
+        self.commandInst.habMetWhen[i] = -1
+        self.commandInst.maxHabIndex[i] = 0
+        self.commandInst.habDataCompiled[i] = [0] * self.commandInst.blockList[i]['maxHabTrials']
+
         self.commandInst.counters = {'A': 2, 'B': 2, 'C': 0, 'D': 0, 'H': 0}
         self.commandInst.run(testMode=testOne)
         self.commandInst.habMetWhen['Hab'] = -1 # Resetting after the jump tests above on principle.
         self.commandInst.verbDatList = copy.deepcopy(self.testDatList)
         self.commandInst.dataMatrix = copy.deepcopy(self.testMatrix)
+
+
 
 
 
@@ -1909,7 +1919,7 @@ class TestCommands(object):
         assert self.commandInst.habSetWhen['Hab'] == -1
         assert self.commandInst.habMetWhen['Hab'] == -1
         assert self.commandInst.habCrit['Hab'] == 0
-        assert self.commandInst.habCount['Hab'] == 2 # This gets rewound TOO much, to 1
+        assert self.commandInst.habCount['Hab'] == 2
 
         self.commandInst.dataMatrix.append(temp5)
         self.commandInst.dataMatrix.append(temp6)

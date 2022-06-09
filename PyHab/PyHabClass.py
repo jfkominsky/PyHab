@@ -994,7 +994,7 @@ class PyHab:
                 self.counters[trialType] -= 1
                 if self.counters[trialType] < 0:
                     self.counters[trialType] = 0
-            if blockRedo:
+            if not blockRedo:
                 while trialType in autoAdv and trialNum > 1:  # go find the last non-AA trial and redo from there
                     trialNum -= 1
                     trialType = self.actualTrialOrder[trialNum - 1]
