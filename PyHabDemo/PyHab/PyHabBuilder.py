@@ -157,6 +157,10 @@ class PyHabBuilder:
                 self.settings['screenIndex'] = tmpDict6
             else:
                 self.settings['screenColor'] = eval(self.settings['screenColor']) # This is special b/c it cannot be eval'd if it's just a string.
+            # back compat for block redo in 0.10.1
+            for i,j in self.settings['blockList'].items():
+                if 'blockRedo' not in j.keys():
+                    self.settings['blockList'][i]['blockRedo'] = False
             self.settings['dataloc'] = ''.join([self.dirMarker if x == otherOS else x for x in self.settings['dataloc']])
             self.settings['stimPath'] = ''.join([self.dirMarker if x == otherOS else x for x in self.settings['stimPath']])
             self.settings['folderPath'] = os.getcwd()+self.dirMarker  # On load, reset the folder path to wherever you are now.
@@ -432,15 +436,14 @@ class PyHabBuilder:
                     self.workingRect.draw()
                     self.workingText.draw()
                     self.win.flip()
-                    if os.name is not 'posix':
+                    if os.name != 'posix':
                         while self.mouse.getPressed()[0] == 1:
                             pass
                         if self.buttonList['functions'][i] not in [self.toST, self.toPL, self.toHPP]:
                             # If we're opening a dialog box, basically.
                             self.win.winHandle.set_visible(visible=False)
-                    else:
-                        self.buttonList['functions'][i]() #It should not be this easy, BUT IT IS. Python is great.
-                    if os.name is not 'posix':
+                    self.buttonList['functions'][i]() #It should not be this easy, BUT IT IS. Python is great.
+                    if os.name != 'posix':
                         self.win.winHandle.set_visible(visible=True)
             # Some conditions to check if we need to remove buttons, must be done outside the for loop to prevent index errors
             if self.advTrialSetup in self.buttonList['functions'] and len(self.settings['trialTypes']) == 0:
@@ -476,7 +479,7 @@ class PyHabBuilder:
                     self.workingRect.draw()
                     self.workingText.draw()
                     self.win.flip()
-                    if os.name is not 'posix': #There's an issue with windows and dialog boxes, don't ask.
+                    if os.name != 'posix': #There's an issue with windows and dialog boxes, don't ask.
                         while 1 in self.mouse.getPressed():
                             pass
                         self.win.winHandle.set_visible(visible=False)
@@ -485,7 +488,7 @@ class PyHabBuilder:
                         self.makeBlockDlg(self.trialTypesArray['labels'][j], new=False)
                     else:
                         self.trialTypeDlg(trialType=self.trialTypesArray['labels'][j], makeNew=False)
-                    if os.name is not 'posix':
+                    if os.name != 'posix':
                         self.win.winHandle.set_visible(visible=True)
             for k in range(0, len(self.studyFlowArray['shapes'])):
                 if self.mouse.isPressedIn(self.studyFlowArray['shapes'][k]):
@@ -1036,7 +1039,7 @@ class PyHabBuilder:
         :return:
         :rtype:
         """
-        if os.name is not 'posix':
+        if os.name != 'posix':
             self.win.winHandle.set_visible(visible=True) # Might cause a little flicker, but the best solution for now
 
         blockUI = {'bg': [], 'buttons': {'shapes': [], 'text': [], 'functions': []}}
@@ -1094,7 +1097,7 @@ class PyHabBuilder:
                     done = True
                     while self.mouse.isPressedIn(trialTypes['shapes'][k], buttons=[0]):
                         pass  # Wait until mouse-up
-                    if os.name is not 'posix':
+                    if os.name != 'posix':
                         self.win.winHandle.set_visible(visible=False)
                     self.advTrialDlg(trialTypes['labels'][k])
 
@@ -1180,7 +1183,7 @@ class PyHabBuilder:
                             for c in range(0, len(b)):
                                 if b[c] == name:
                                     b[c] = newBlock[0]
-                    if os.name is not 'posix':
+                    if os.name != 'posix':
                         # For Windows, because now we snap back to the regular window.
                         self.win.winHandle.set_visible(visible=True)
                     self.blockMaker(newBlock[0], new)
@@ -1231,6 +1234,8 @@ class PyHabBuilder:
                     'metCritStatic': 'Moving',
                     'calcHabOver': []
         }
+        blockRedo = False # 0.10.1: Block-level redo setting
+
         end = False
         newFlowArea = [-.97, .75, .97, -.97]  # X,X,Y,Y
         newFlowRect = visual.Rect(self.win, width=newFlowArea[1] - newFlowArea[0],
@@ -1244,10 +1249,15 @@ class PyHabBuilder:
                                  fillColor="red")
         cancelText = visual.TextStim(self.win, text="Cancel", height=.45 * doneButton.height, pos=cancelButton.pos,
                                    color='white')
-        habSettingsButton = visual.Rect(self.win, width=.4, height=.67*(.15/self.aspect), pos=[-.25,-.8],fillColor = "DarkOrange")
+        habSettingsButton = visual.Rect(self.win, width=.4, height=.67*(.15/self.aspect), pos=[-.32,-.8],fillColor = "DarkOrange")
         habSettingsText = visual.TextStim(self.win, text="Habituation (OFF)", height=.45 * habSettingsButton.height, pos=habSettingsButton.pos,
                                    color='white')
-        instrText = visual.TextStim(self.win, text="Construct block trial order", pos=[.3, -.9], color='black', height=.1)
+
+        blockRedoButton = visual.Rect(self.win, width=.4, height=.67*(.15/self.aspect), pos=[.1,-.8],fillColor = "grey")
+        blockRedoText = visual.TextStim(self.win, text="Block redo (OFF)", height=.45 * blockRedoButton.height, pos=blockRedoButton.pos,
+                                   color='white')
+
+        instrText = visual.TextStim(self.win, text="Construct block trial order", pos=[.5, -.8], color='black', height=.06)
         bigPaletteArea = [.7,.95,.97,-.97]  # temporary, bigger palette, without trial type maker buttons!
         bigPaletteRect = visual.Rect(self.win, width=bigPaletteArea[1] - bigPaletteArea[0],
                                        height=bigPaletteArea[3] - bigPaletteArea[2], fillColor='white', lineColor='black',
@@ -1262,6 +1272,8 @@ class PyHabBuilder:
         blockUI['buttons']['text'].append(cancelText)
         blockUI['buttons']['shapes'].append(habSettingsButton)
         blockUI['buttons']['text'].append(habSettingsText)
+        blockUI['buttons']['shapes'].append(blockRedoButton)
+        blockUI['buttons']['text'].append(blockRedoText)
 
         bigPaletteLocs = []
         newFlowLocs = []
@@ -1300,6 +1312,8 @@ class PyHabBuilder:
                 for i,j in ['blockList'][blockName].items():
                     if i in habFields.keys():
                         habFields[i] = j
+            if self.settings['blockList'][blockName]['blockRedo'] in [1, '1', True, 'True']:
+                blockRedo = True
         else:
             blockFlow = {'lines': [], 'shapes': [], 'text': [], 'labels': [], 'extras': []}
 
@@ -1320,6 +1334,7 @@ class PyHabBuilder:
                             # and add the trial list entry, and done!
                             tempBlockObject = habFields
                             tempBlockObject['trialList'] = blockOrder
+                            tempBlockObject['blockRedo'] = blockRedo
                             self.settings['blockList'][blockName] = tempBlockObject
                             if new:
                                 self.settings['trialTypes'].append(blockName)
@@ -1354,10 +1369,24 @@ class PyHabBuilder:
                             pass
                     elif blockUI['buttons']['text'][i].text[0] == 'H': # Since hab can have two text values.
                         if len(blockFlow['labels']) > 0:
-                            habFields = self.habSettingsDlg(trialList=blockOrder, lastSet=deepcopy(habFields)) # TODO: This now needs to return something to this function to save.
+                            habFields = self.habSettingsDlg(trialList=blockOrder, lastSet=deepcopy(habFields))
                             if habFields['habituation'] in [1, '1', True, 'True']:
                                 habSettingsText.text = 'Habituation (ON)'
                                 habSettingsButton.fillColor = "DarkGreen"
+                    elif blockUI['buttons']['text'][i].text[0] == 'B': # Block redo also has multiple values.
+                        if blockRedo == False:
+                            blockRedo = True
+                            blockRedoText.text="Block redo (ON)"
+                            blockRedoButton.fillColor = "Gold"
+                            while self.mouse.isPressedIn(blockUI['buttons']['shapes'][i], buttons=[0]):  # waits until the mouse is released before continuing.
+                                pass
+                        else:
+                            blockRedo = False
+                            blockRedoText.text = "Block redo (OFF)"
+                            blockRedoButton.fillColor = "Gray"
+                            while self.mouse.isPressedIn(blockUI['buttons']['shapes'][i], buttons=[0]):  # waits until the mouse is released before continuing.
+                                pass
+
             for j in range(0, len(trialTypes['shapes'])):  # Only need to worry about adding trials, no modding them from here!
                 if self.mouse.isPressedIn(trialTypes['shapes'][j], buttons=[0]):
                     blockOrder.append(trialTypes['labels'][j])
@@ -1975,7 +2004,7 @@ class PyHabBuilder:
                 warnDlg.addText("You are about to convert the experiment away from head-turn preference procedure.")
                 warnDlg.addText("This will remove all HPP stimulus and data settings, and all conditions settings")
                 warnDlg.addText("Press OK to continue, or cancel to cancel.")
-                if os.name is not 'posix':
+                if os.name != 'posix':
                     self.win.winHandle.set_visible(visible=False)
                 irrel = warnDlg.show()
                 if warnDlg.OK:
@@ -1997,7 +2026,7 @@ class PyHabBuilder:
                     self.settings['condList'] = []
                     self.condDict = {}
                     self.settings['randPres'] = 0
-                if os.name is not 'posix':
+                if os.name != 'posix':
                     self.win.winHandle.set_visible(visible=True)
 
             else:
@@ -2027,7 +2056,7 @@ class PyHabBuilder:
                 warnDlg.addText("You are about to convert the experiment away from head-turn preference procedure.")
                 warnDlg.addText("This will remove all HPP stimulus and data settings, and all conditions settings")
                 warnDlg.addText("Press OK to continue, or cancel to cancel.")
-                if os.name is not 'posix':
+                if os.name != 'posix':
                     self.win.winHandle.set_visible(visible=False)
                 irrel = warnDlg.show()
                 if warnDlg.OK:
@@ -2048,7 +2077,7 @@ class PyHabBuilder:
                     self.settings['condList'] = []
                     self.condDict = {}
                     self.settings['randPres'] = 0
-                if os.name is not 'posix':
+                if os.name != 'posix':
                     self.win.winHandle.set_visible(visible=True)
 
 
@@ -2080,7 +2109,7 @@ class PyHabBuilder:
             warnDlg.addText("the conditions interface to control which screen stimuli appear on. Any")
             warnDlg.addText("existing conditions settings and conditions will be removed.")
             warnDlg.addText("Press OK to continue, or cancel to cancel.")
-            if os.name is not 'posix':
+            if os.name != 'posix':
                 self.win.winHandle.set_visible(visible=False)
             irrel = warnDlg.show()
             if warnDlg.OK:
@@ -2108,7 +2137,7 @@ class PyHabBuilder:
                 self.condDict = {}
                 self.settings['randPres'] = 0
 
-            if os.name is not 'posix':
+            if os.name != 'posix':
                 self.win.winHandle.set_visible(visible=True)
             while 1 in self.mouse.getPressed():
                 pass # Just a little thing so it doesn't get called for every frame the mouse is down on the button.
@@ -2735,7 +2764,7 @@ class PyHabBuilder:
                         self.settings['condFile'] = condInfo[1]
                     else:
                         self.settings['condFile'] = ""
-                    if os.name is not 'posix':
+                    if os.name != 'posix':
                         self.win.winHandle.set_visible(visible=True)
                     if baseConds:
                         self.condMaker(bc=baseConds, resetDict=deepcopy(self.baseCondDict))
@@ -2944,7 +2973,7 @@ class PyHabBuilder:
                 for i in range((currPage-1)*4, currPage*4):
                     p = self.mouse.getPos()
                     if i < len(clickRanges) and p[1] <= clickRanges[i][0] and p[1] >= clickRanges[i][1]:
-                        if os.name is not 'posix':
+                        if os.name != 'posix':
                             while 1 in self.mouse.getPressed():  # Work on mouseup, impt. for windows.
                                 pass
                             self.win.winHandle.set_visible(visible=False)
@@ -2955,7 +2984,7 @@ class PyHabBuilder:
                             thisDict = self.settings['blockList'] # TODO: This is not going to work?
                             bm = True
                         self.condSetter(thisDict, cond=condList[i], ex=True, blockmode=bm)
-                        if os.name is not 'posix':
+                        if os.name != 'posix':
                             self.win.winHandle.set_visible(visible=True)
                         while 1 in self.mouse.getPressed():
                             # Making sure that clicking "OK" doesn't immediately trip a click inside the interface
@@ -2964,7 +2993,7 @@ class PyHabBuilder:
                         # Refresh the condition display
                         self.condMaker(rep=True, currPage=currPage, trialMode=trialMode, resetDict=resetDict)
                 if self.mouse.isPressedIn(addCondButton):
-                    if os.name is not 'posix':
+                    if os.name != 'posix':
                         while 1 in self.mouse.getPressed():
                             pass
                         self.win.winHandle.set_visible(visible=False)
@@ -2975,7 +3004,7 @@ class PyHabBuilder:
                         thisDict = self.settings['blockList']
                         bm = True
                     self.condSetter(thisDict, ex=False, blockmode=bm)
-                    if os.name is not 'posix':
+                    if os.name != 'posix':
                         self.win.winHandle.set_visible(visible=True)
                     while 1 in self.mouse.getPressed():
                         pass
@@ -2988,12 +3017,12 @@ class PyHabBuilder:
                     done = True
                     self.condMaker(rep=True, currPage=currPage, bc=bc, trialMode=not trialMode, resetDict=resetDict)
                 if self.mouse.isPressedIn(deleteCondButton) and len(condList)>0:
-                    if os.name is not 'posix':
+                    if os.name != 'posix':
                         while 1 in self.mouse.getPressed():
                             pass
                         self.win.winHandle.set_visible(visible=False)
                     self.delCond()
-                    if os.name is not 'posix':
+                    if os.name != 'posix':
                         self.win.winHandle.set_visible(visible=True)
                     while len(self.mouse.getPressed()) < 0:
                         pass
@@ -3001,23 +3030,23 @@ class PyHabBuilder:
                     # Start this over...
                     self.condMaker(rep=True, currPage=currPage, bc=bc, trialMode=trialMode, resetDict=resetDict)
                 if self.mouse.isPressedIn(randomCondsButton) and len(condList)>0:
-                    if os.name is not 'posix':
+                    if os.name != 'posix':
                         while 1 in self.mouse.getPressed():
                             pass
                         self.win.winHandle.set_visible(visible=False)
                     self.condRandomizer()
-                    if os.name is not 'posix':
+                    if os.name != 'posix':
                         self.win.winHandle.set_visible(visible=True)
                     while len(self.mouse.getPressed()) < 0:
                         pass
                     done = True
                 elif self.mouse.isPressedIn(randomCondsButton) and len(condList) == 0 and self.settings['prefLook'] not in [2, '2']:
-                    if os.name is not 'posix':
+                    if os.name != 'posix':
                         while 1 in self.mouse.getPressed():
                             pass
                         self.win.winHandle.set_visible(visible=False)
                     self.autoCondSetup()
-                    if os.name is not 'posix':
+                    if os.name != 'posix':
                         self.win.winHandle.set_visible(visible=True)
                     while len(self.mouse.getPressed()) < 0:
                         pass
@@ -3071,7 +3100,7 @@ class PyHabBuilder:
         condDlg2.addText("You will have separate screens to set the order of movies in each trial type. Press OK to begin")
         condDinfo = condDlg2.show()
         if condDlg2.OK:
-            if os.name is not 'posix':
+            if os.name != 'posix':
                 self.win.winHandle.set_visible(visible=True)
             condDinfo[0] = str(condDinfo[0])
             if ex and condDinfo[0] != cond:  # Renamed existing condition

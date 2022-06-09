@@ -2,7 +2,7 @@ import os, sys
 from psychopy import visual, event, core, data, gui, monitors, tools, prefs, logging
 from psychopy.constants import (STARTED, PLAYING)  # Added for new stimulus types
 prefs.hardware['audioLib'] = ['PTB']
-if os.name is 'posix':
+if os.name == 'posix':
     prefs.general['audioDevice'] = ['Built-in Output']
 from psychopy import sound
 import pyglet
@@ -1369,7 +1369,7 @@ class PyHabHPP(PyHab):
             tempText.draw()
             self.win2.flip()
             # Step 1: Load and present "startImage"
-            if self.startImage is not '':  #TODO: For now start/end is restricted to center screen.
+            if self.startImage != '':  #TODO: For now start/end is restricted to center screen.
                 self.dummyThing.draw()
                 tempStim = self.stimList[self.startImage]
                 tempStimObj = visual.ImageStim(self.win, tempStim['stimLoc'], size=[self.movieWidth['C'], self.movieHeight['C']])
@@ -1411,7 +1411,7 @@ class PyHabHPP(PyHab):
                                                                            flipHoriz=False, flipVert=False, loop=False)
                         if self.attnGetterList[i]['stimType'] == 'Movie + Audio':
                             self.attnGetterList[i]['audioFile'] = sound.Sound(self.attnGetterList[i]['audioLoc'])
-            if self.endImage is not '': # Load image for end of experiment, if needed.
+            if self.endImage != '': # Load image for end of experiment, if needed.
                 tempStim = self.stimList[self.endImage]
                 self.endImageObject = visual.ImageStim(self.win, tempStim['stimLoc'], size=[self.movieWidth['C'], self.movieHeight['C']])
             else:

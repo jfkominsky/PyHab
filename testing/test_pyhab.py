@@ -1076,6 +1076,7 @@ class TestRunSetup(object):
                                         'metCritDivisor': 1.0,
                                         'metCritStatic': 'Moving',
                                         'calcHabOver': ['F']}}
+        self.trialInst.blockStartIndexes['C'] = []
         self.trialInst.run(testMode=testOne)
         assert len(self.trialInst.actualTrialOrder) == 19
         assert len([x for x in self.trialInst.actualTrialOrder if '*' in x]) == 14
@@ -1111,6 +1112,8 @@ class TestRunSetup(object):
                                           'metCritDivisor': 1.0,
                                           'metCritStatic': 'Moving',
                                           'calcHabOver': []}}
+        self.trialInst.blockStartIndexes['C'] = []
+        self.trialInst.blockStartIndexes['E'] = []
         self.trialInst.run(testMode=testOne)
         assert len(self.trialInst.actualTrialOrder) == 55
         assert len([x for x in self.trialInst.actualTrialOrder if '^' in x]) == 10
@@ -1144,9 +1147,22 @@ class TestRunSetup(object):
                                         'metCritDivisor': 1.0,
                                         'metCritStatic': 'Moving',
                                         'calcHabOver': []}}
+        self.trialInst.blockStartIndexes['C'] = []
+        self.trialInst.blockStartIndexes['E'] = []
         self.trialInst.run(testMode=testOne)
         assert len(self.trialInst.actualTrialOrder) == 10
         assert self.trialInst.actualTrialOrder == ['A', 'A', 'B', 'B', 'C.X', 'C.E.Z','C.E.Y','C.E.X','C.B', 'D']
+
+        # now let's try again with a block that starts with another block. Edge case.
+        self.trialInst.actualTrialOrder = []
+        self.trialInst.blockStartIndexes['C'] = []
+        self.trialInst.blockStartIndexes['E'] = []
+        self.trialInst.blockList['C']['trialList'] = ['E', 'X', 'B']
+        self.trialInst.run(testMode=testOne)
+        assert len(self.trialInst.actualTrialOrder) == 10
+        assert self.trialInst.actualTrialOrder == ['A', 'A', 'B', 'B', 'C.E.Z', 'C.E.Y', 'C.E.X', 'C.X', 'C.B', 'D']
+
+        # And with habituation
         self.trialInst.actualTrialOrder = []
         self.trialInst.blockList['Hab'] = {'trialList': ['B','C'],
                                         'habituation': 1,
@@ -1160,12 +1176,15 @@ class TestRunSetup(object):
                                         'metCritDivisor': 1.0,
                                         'metCritStatic': 'Moving',
                                         'calcHabOver': ['B']}
+        self.trialInst.blockStartIndexes['Hab'] = []
         self.trialInst.trialOrder = ['A', 'A', 'B', 'B', 'Hab', 'D']
         self.trialInst.run(testMode=testOne)
         # Length is going to be...big...5+14+14*5 = 19+70=89. Recursion gets out of hand pretty quickly!
         assert len(self.trialInst.actualTrialOrder) == 89
         assert len([x for x in self.trialInst.actualTrialOrder if '^.C.B' in x]) == 14
         assert len(self.trialInst.actualTrialOrder)-2 == self.trialInst.maxHabIndex['Hab']
+
+
 
     def test_block_data_setup(self):
         testOne = [99, 'Test', 'NB', '7', '2', '18', 'testcond', '8', '2', '18']
@@ -1195,6 +1214,8 @@ class TestRunSetup(object):
                                         'metCritStatic': 'Moving',
                                         'calcHabOver': []}}
         self.trialInst.actualTrialOrder = []
+        self.trialInst.blockStartIndexes['C'] = []
+        self.trialInst.blockStartIndexes['E'] = []
         self.trialInst.blockDataList = ['E']
         self.trialInst.blockDataTags['E'] = []
         self.trialInst.run(testMode=testOne)
@@ -1204,6 +1225,8 @@ class TestRunSetup(object):
         self.trialInst.actualTrialOrder=[]
         self.trialInst.blockDataTags = {}
         self.trialInst.blockDataTags['C'] = []
+        self.trialInst.blockStartIndexes['C'] = []
+        self.trialInst.blockStartIndexes['E'] = []
         self.trialInst.run(testMode=testOne)
         assert self.trialInst.blockDataTags=={'C':[[5,6,7,8,9]]}
         self.trialInst.trialOrder = ['A', 'A', 'B', 'B', 'C', 'D','E']
@@ -1211,6 +1234,8 @@ class TestRunSetup(object):
         self.trialInst.blockDataList = ['E']
         self.trialInst.blockDataTags={}
         self.trialInst.blockDataTags['E'] = []
+        self.trialInst.blockStartIndexes['C'] = []
+        self.trialInst.blockStartIndexes['E'] = []
         self.trialInst.run(testMode=testOne)
         assert self.trialInst.actualTrialOrder == ['A', 'A', 'B', 'B', 'C.X', 'C.E.Z','C.E.Y','C.E.X','C.B', 'D','E.Z','E.Y','E.X']
         assert self.trialInst.blockDataTags=={'E':[[6,7,8],[11,12,13]]}
@@ -1712,6 +1737,7 @@ class TestCommands(object):
                                         'metCritDivisor': 1.0,
                                         'metCritStatic': 'Moving',
                                         'calcHabOver': ['Hab']}}
+        self.commandInst.blockStartIndexes['Z'] = []
         self.commandInst.trialOrder = ['A', 'A', 'B', 'B', 'Z', 'D']
         self.commandInst.counters = {'A': 2, 'B': 2, 'C': 0, 'D': 0,'Hab':2}
         self.commandInst.run(testMode=testOne)
@@ -1749,6 +1775,7 @@ class TestCommands(object):
                'metCritDivisor': 1.0,
                'metCritStatic': 'Moving',
                'calcHabOver': ['B']}}
+        self.commandInst.blockStartIndexes['Hab'] = []
         self.commandInst.trialOrder = ['A', 'A', 'B', 'B', 'Hab', 'D']
         self.commandInst.counters = {'A': 2, 'B': 2, 'C': 1, 'D': 0,'Hab':1}
 
@@ -1817,11 +1844,22 @@ class TestCommands(object):
                'metCritDivisor': 1.0,
                'metCritStatic': 'Moving',
                'calcHabOver': ['H','C']}}
+        self.commandInst.blockStartIndexes['Hab'] = []
+        i = 'Hab'
+        self.commandInst.habCount[i] = 0
+        self.commandInst.habCrit[i] = 0
+        self.commandInst.habSetWhen[i] = -1
+        self.commandInst.habMetWhen[i] = -1
+        self.commandInst.maxHabIndex[i] = 0
+        self.commandInst.habDataCompiled[i] = [0] * self.commandInst.blockList[i]['maxHabTrials']
+
         self.commandInst.counters = {'A': 2, 'B': 2, 'C': 0, 'D': 0, 'H': 0}
         self.commandInst.run(testMode=testOne)
         self.commandInst.habMetWhen['Hab'] = -1 # Resetting after the jump tests above on principle.
         self.commandInst.verbDatList = copy.deepcopy(self.testDatList)
         self.commandInst.dataMatrix = copy.deepcopy(self.testMatrix)
+
+
 
 
 
@@ -1875,7 +1913,8 @@ class TestCommands(object):
         assert self.commandInst.habSetWhen['Hab'] == 3
         assert self.commandInst.habCrit['Hab'] == 15
         # OK, assuming all that got set up properly, lets get messy.
-        self.commandInst.redoSetup(11, ['B','C'], 'Hab')
+        [x,y] = self.commandInst.redoSetup(11, ['B','C'], 'Hab')
+        assert y == 9  # The start of the last hab block iteration, in principle.
         assert self.commandInst.habDataCompiled['Hab'][2] == 0
         assert self.commandInst.habSetWhen['Hab'] == -1
         assert self.commandInst.habMetWhen['Hab'] == -1
@@ -1992,6 +2031,127 @@ class TestCommands(object):
         assert self.commandInst.checkStop('Hab') == False
         assert self.commandInst.habCrit['Hab'] == 16
         assert self.commandInst.habSetWhen['Hab'] == 4  # Verifying unchanged.
+
+    def test_blockredo(self):
+        testOne = [99, 'Test', 'NB', '7', '2', '18', 'testcond', '8', '2', '18']
+        self.commandInst.blockList = {'C': {'trialList': ['X', 'E', 'B'],
+                                            'habituation': 0,
+                                            'habByDuration': 0,
+                                            'maxHabTrials': 14,
+                                            'setCritWindow': 3,
+                                            'setCritDivisor': 2.0,
+                                            'setCritType': 'First',
+                                            'habThresh': 5.0,
+                                            'metCritWindow': 3,
+                                            'metCritDivisor': 1.0,
+                                            'metCritStatic': 'Moving',
+                                            'calcHabOver': []},
+                                      'E': {'trialList': ['A', 'Y', 'X'],
+                                            'habituation': 0,
+                                            'habByDuration': 0,
+                                            'maxHabTrials': 14,
+                                            'setCritWindow': 3,
+                                            'setCritDivisor': 2.0,
+                                            'setCritType': 'First',
+                                            'habThresh': 5.0,
+                                            'metCritWindow': 3,
+                                            'metCritDivisor': 1.0,
+                                            'metCritStatic': 'Moving',
+                                            'calcHabOver': []}}
+        self.commandInst.blockStartIndexes['C'] = []
+        self.commandInst.blockStartIndexes['E'] = []
+
+        self.commandInst.stimNames = {'A': ['Movie1', 'Movie2', 'Movie3', 'Movie4'],
+                                      'B': ['Movie5', 'Movie6', 'Movie7', 'Movie8'],
+                                      'X': ['Movie1', 'Movie2', 'Movie3', 'Movie4'],
+                                      'Y': ['Movie9', 'Movie10']}
+        self.commandInst.stimDict = {'A': ['Movie1', 'Movie2'],
+                                     'B': ['Movie5', 'Movie6'],
+                                     'X': ['Movie1', 'Movie2'],
+                                     'Y': ['Movie9', 'Movie10']}
+
+        self.commandInst.trialOrder = ['A', 'A', 'C', 'C', 'C', 'D']
+        self.commandInst.counters = {'A': 3, 'B': 2, 'X': 2, 'Y': 2}
+        self.commandInst.run(testMode=testOne)
+
+        # Reset data objects too
+        self.commandInst.verbDatList = copy.deepcopy(self.testDatList)
+        self.commandInst.dataMatrix = copy.deepcopy(self.testMatrix)
+
+        # Append two rounds of trial C.
+        temp1 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                 'condLabel': 'dataTest', 'trial': 3, 'GNG': 1, 'trialType': 'C.X', 'stimName': 'Movie1.mov',
+                 'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
+                 'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
+        temp2 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                 'condLabel': 'dataTest', 'trial': 4, 'GNG': 1, 'trialType': 'C.E.A',
+                 'stimName': 'Movie3.mov', 'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
+                 'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
+        temp3 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                 'condLabel': 'dataTest', 'trial': 5, 'GNG': 1, 'trialType': 'C.E.Y', 'stimName': 'Movie9.mov',
+                 'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
+                 'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
+        temp4 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                 'condLabel': 'dataTest', 'trial': 6, 'GNG': 1, 'trialType': 'C.E.X',
+                 'stimName': 'Movie2.mov', 'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
+                 'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
+        temp5 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                 'condLabel': 'dataTest', 'trial': 7, 'GNG': 1, 'trialType': 'C.B', 'stimName': 'Movie5.mov',
+                 'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
+                 'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
+
+        self.commandInst.dataMatrix.append(temp1)
+        self.commandInst.dataMatrix.append(temp2)
+        self.commandInst.dataMatrix.append(temp3)
+        self.commandInst.dataMatrix.append(temp4)
+        self.commandInst.dataMatrix.append(temp5)
+
+        temp6 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                 'condLabel': 'dataTest', 'trial': 8, 'GNG': 1, 'trialType': 'C.X', 'stimName': 'Movie1.mov',
+                 'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
+                 'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
+        temp7 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                 'condLabel': 'dataTest', 'trial': 9, 'GNG': 1, 'trialType': 'C.E.A',
+                 'stimName': 'Movie4.mov', 'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
+                 'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
+        temp8 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                 'condLabel': 'dataTest', 'trial': 10, 'GNG': 1, 'trialType': 'C.E.Y', 'stimName': 'Movie10.mov',
+                 'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
+                 'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
+        temp9 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                 'condLabel': 'dataTest', 'trial': 11, 'GNG': 1, 'trialType': 'C.E.X',
+                 'stimName': 'Movie2.mov', 'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
+                 'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
+        temp10 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                 'condLabel': 'dataTest', 'trial': 12, 'GNG': 1, 'trialType': 'C.B', 'stimName': 'Movie6.mov',
+                 'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
+                 'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
+        self.commandInst.dataMatrix.append(temp6)
+        self.commandInst.dataMatrix.append(temp7)
+        self.commandInst.dataMatrix.append(temp8)
+        self.commandInst.dataMatrix.append(temp9)
+        self.commandInst.dataMatrix.append(temp10)
+
+        # This would put us at the start of trial number 13
+        # First, let's try one step back withou block redo
+        [x, y] = self.commandInst.redoSetup(13,[],'C')
+        assert y == 12
+        assert x == 'Movie6'
+
+        # Now let's do that again, with blockRedo. This should rewind to trial 8
+        [x, y] = self.commandInst.redoSetup(12,[],'C',blockRedo=True)
+        assert y == 8
+        assert x == 'Movie1'
+
+        # Now let's reappend and pretend we aborted on trial 12
+        self.commandInst.dataMatrix.append(temp6)
+        self.commandInst.dataMatrix.append(temp7)
+        self.commandInst.dataMatrix.append(temp8)
+        self.commandInst.dataMatrix.append(temp9)
+        [x, y] = self.commandInst.redoSetup(12,[],'C',blockRedo=True,fromAbort=True)
+        assert y == 8
+        assert x == 'Movie1'
+
 
 
 class TestPrefLook(object):
