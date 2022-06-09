@@ -2143,6 +2143,15 @@ class TestCommands(object):
         assert y == 8
         assert x == 'Movie1'
 
+        # Now let's reappend and pretend we aborted on trial 12
+        self.commandInst.dataMatrix.append(temp6)
+        self.commandInst.dataMatrix.append(temp7)
+        self.commandInst.dataMatrix.append(temp8)
+        self.commandInst.dataMatrix.append(temp9)
+        [x, y] = self.commandInst.redoSetup(12,[],'C',blockRedo=True,fromAbort=True)
+        assert y == 8
+        assert x == 'Movie1'
+
 
 
 class TestPrefLook(object):

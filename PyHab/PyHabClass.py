@@ -987,7 +987,7 @@ class PyHab:
                 tempHabCount = deepcopy(self.habCount[blockName])
                 blockRedo = True  # Hab trials are always redone at the level of a block.
             if not fromAbort:
-                # If this is tripped off an abort, we shouldn't start redoing until we've checked the rewind first.
+                # If this is tripped off an abort, we shouldn't start redoing until we've checked whether we need to redo
                 trialNum -= 1
                 trialType = self.actualTrialOrder[trialNum - 1]
                 while '.' in trialType:
