@@ -2071,7 +2071,7 @@ class TestCommands(object):
                                      'Y': ['Movie9', 'Movie10']}
 
         self.commandInst.trialOrder = ['A', 'A', 'C', 'C', 'C', 'D']
-        self.commandInst.counters = {'A': 2, 'B': 0, 'X': 0, 'Y': 0}
+        self.commandInst.counters = {'A': 3, 'B': 2, 'X': 2, 'Y': 2}
         self.commandInst.run(testMode=testOne)
 
         # Reset data objects too
@@ -2106,6 +2106,42 @@ class TestCommands(object):
         self.commandInst.dataMatrix.append(temp4)
         self.commandInst.dataMatrix.append(temp5)
 
+        temp6 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                 'condLabel': 'dataTest', 'trial': 8, 'GNG': 1, 'trialType': 'C.X', 'stimName': 'Movie1.mov',
+                 'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
+                 'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
+        temp7 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                 'condLabel': 'dataTest', 'trial': 9, 'GNG': 1, 'trialType': 'C.E.A',
+                 'stimName': 'Movie4.mov', 'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
+                 'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
+        temp8 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                 'condLabel': 'dataTest', 'trial': 10, 'GNG': 1, 'trialType': 'C.E.Y', 'stimName': 'Movie10.mov',
+                 'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
+                 'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
+        temp9 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                 'condLabel': 'dataTest', 'trial': 11, 'GNG': 1, 'trialType': 'C.E.X',
+                 'stimName': 'Movie2.mov', 'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
+                 'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
+        temp10 = {'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                 'condLabel': 'dataTest', 'trial': 12, 'GNG': 1, 'trialType': 'C.B', 'stimName': 'Movie6.mov',
+                 'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
+                 'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5, 'numOffB': 2}
+        self.commandInst.dataMatrix.append(temp6)
+        self.commandInst.dataMatrix.append(temp7)
+        self.commandInst.dataMatrix.append(temp8)
+        self.commandInst.dataMatrix.append(temp9)
+        self.commandInst.dataMatrix.append(temp10)
+
+        # This would put us at the start of trial number 13
+        # First, let's try one step back withou block redo
+        [x, y] = self.commandInst.redoSetup(13,[],'C')
+        assert y == 12
+        assert x == 'Movie6'
+
+        # Now let's do that again, with blockRedo. This should rewind to trial 8
+        [x, y] = self.commandInst.redoSetup(12,[],'C',blockRedo=True)
+        assert y == 8
+        assert x == 'Movie1'
 
 
 
