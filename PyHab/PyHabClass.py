@@ -1042,7 +1042,7 @@ class PyHab:
                 else:
                     # If not we need another way to identify where we're going.
                     while not found:
-                        if trialNum in self.blockStartIndexes[blockName]:
+                        if (trialNum-1) in self.blockStartIndexes[blockName]:
                             # We already reached the beginning of the block iteration
                             found = True
                         else:
