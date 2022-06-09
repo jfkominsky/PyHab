@@ -1494,8 +1494,9 @@ class PyHab:
                         self.counters[trialType] = 0
                 # Here we check if we need to rewind further using redosetup and the block property.
                 # This basically just invokes redo like R was pressed before the trial started.
-                if self.blockList[topBlockName]['blockRedo'] in [True, 'True', 1, '1']:
-                    self.redoSetup(trialNum, AA, topBlockName, blockRedo=True, fromAbort=True)
+                if topBlockName in self.blockList.keys():
+                    if self.blockList[topBlockName]['blockRedo'] in [True, 'True', 1, '1']:
+                        [disMovie, trialNum] = self.redoSetup(trialNum, AA, topBlockName, blockRedo=True, fromAbort=True)
 
             elif x == 1:  # end hab block!
                 # Find the end of this hab block and skip to there. JumpToTest does this!
@@ -1730,10 +1731,6 @@ class PyHab:
                         endCondMet = True
                         if localType in self.autoRedo and sumOn < self.minOn[localType]:
                             endNow = True
-                elif localType in self.autoRedo and sumOn < self.minOn[localType]:
-                    if nowOff - startOff >= self.maxOff[localType] and not endFlag:
-                        endCondMet = True
-                        endNow = True
 
                 if localType in self.autoRedo and localType in self.onTimeDeadline.keys() and not deadlineChecked:
                     # Belt-and-suspenders check that mid-trial auto-redu is enabled, because if auto-redo only checks
