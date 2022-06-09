@@ -122,6 +122,9 @@ class PyHab:
         if 'blockList' in settingsDict.keys():
             self.blockList = eval(settingsDict['blockList'])
             self.blockDataList = eval(settingsDict['blockDataList'])
+            for i,j in self.blockList.items(): # Back compat for 0.10.1
+                if 'blockRedo' not in j.keys():
+                    self.blockList[i]['blockRedo'] = False
         else:
             self.blockList = {}
             self.blockDataList = []
@@ -295,8 +298,6 @@ class PyHab:
         """
         Only happens when the 'abort' button is pressed during a trial. Creates a "bad trial" entry
         out of any data recorded for the trial so far, to be saved later.
-
-        TODO: Block-level rewinds?
 
         :param onArray: Gaze-on events for coder 1
         :type onArray: list of dicts {trial, trialType, startTime, endTime, duration}
@@ -955,7 +956,7 @@ class PyHab:
             t = 0  # Totally irrelevant.
         return t
 
-    def redoSetup(self, tn, autoAdv, blockName, blockRedo=False, abortNotRedo = False):
+    def redoSetup(self, tn, autoAdv, blockName, blockRedo=False, fromAbort = False):
         """
         Lays the groundwork for redoTrial, including correcting the trial order, selecting the right stim, etc.
 
@@ -970,8 +971,8 @@ class PyHab:
         :type blockName: str
         :param blockRedo: A special type of redo reserved for blocks, that rewinds to the start of the top-level block.
         :type blockRedo: bool
-        :param abortNotRedo: This function can also be used for mid-trial aborts, but the math is different.
-        :type abortNotRedo: bool
+        :param fromAbort: A bool for blockRedos, to see if this is coming off a redo, which requires an extra check.
+        :type fromAbort: bool
         :return: list, [disMovie, trialNum], the former being the movie file to play if relevant, and the latter being the new trial number
         :rtype:
         """
@@ -983,18 +984,19 @@ class PyHab:
             # Identify habituation blocks, which need more careful handling.
             if '*' in self.actualTrialOrder[trialNum - 1] or '*' in self.actualTrialOrder[trialNum - 2]:
                 habBlock = True
-                # bools have numerical values! Use this to adjust hab count for a mid-trial abort.
-                tempHabCount = deepcopy(self.habCount[blockName]) + abortNotRedo
+                tempHabCount = deepcopy(self.habCount[blockName])
                 blockRedo = True  # Hab trials are always redone at the level of a block.
-            trialNum -= 1
-            trialType = self.actualTrialOrder[trialNum - 1]
-            while '.' in trialType:
-                trialType = trialType[trialType.index('.')+1:]
-            numTrialsRedo += 1
-            if self.stimPres:
-                self.counters[trialType] -= 1
-                if self.counters[trialType] < 0:
-                    self.counters[trialType] = 0
+            if not fromAbort:
+                # If this is tripped off an abort, we shouldn't start redoing until we've checked the rewind first.
+                trialNum -= 1
+                trialType = self.actualTrialOrder[trialNum - 1]
+                while '.' in trialType:
+                    trialType = trialType[trialType.index('.')+1:]
+                numTrialsRedo += 1
+                if self.stimPres:
+                    self.counters[trialType] -= 1
+                    if self.counters[trialType] < 0:
+                        self.counters[trialType] = 0
             if not blockRedo:
                 while trialType in autoAdv and trialNum > 1:  # go find the last non-AA trial and redo from there
                     trialNum -= 1
@@ -1093,7 +1095,6 @@ class PyHab:
                 tempTrialText= tempTrialText.translate(({94:None, 42:None})) # removes *^ from display.
                 self.rdyTextAppend = " NEXT: " + tempTrialText + " TRIAL"
         for i in range(trialNum, trialNum + numTrialsRedo):  # Should now rewind all the way to the last non-AA trial.
-            # Todo: Abort/redo distinction. For aborts, we abort the current trial, and redo the rest.
             self.redoTrial(i)
         if habBlock:
             if self.habCount[blockName] != tempHabCount:  # Did we change a trial that can change checkStop? Trips if redoTrial decrements it.
@@ -1328,7 +1329,10 @@ class PyHab:
                                         lastBlockName = lastBlockName[0:-2]
                     else:
                         lastBlockName = self.actualTrialOrder[trialNum-2]
-                    [disMovie,trialNum] = self.redoSetup(trialNum, AA, lastBlockName) #This returns a new value for DisMovie and trialNum
+                    blockRedo = False
+                    if self.blockList[lastBlockName]['blockRedo'] in [True, 'True',1,'1']:
+                        blockRedo = True
+                    [disMovie,trialNum] = self.redoSetup(trialNum, AA, lastBlockName, blockRedo=blockRedo) #This returns a new value for DisMovie and trialNum
                     trialType = self.actualTrialOrder[trialNum - 1]
                     while '.' in trialType:
                         trialType = trialType[trialType.index('.') + 1:]
@@ -1442,8 +1446,10 @@ class PyHab:
                                             lastBlockName = lastBlockName[0:-2]
                         else:
                             lastBlockName = self.actualTrialOrder[trialNum - 2]
-                        [disMovie, trialNum] = self.redoSetup(trialNum, AA, lastBlockName)  # This returns a new value for DisMovie and trialNum
-
+                        blockRedo = False
+                        if self.blockList[lastBlockName]['blockRedo'] in [True, 'True', 1, '1']:
+                            blockRedo = True
+                        [disMovie, trialNum] = self.redoSetup(trialNum, AA, lastBlockName, blockRedo)  # This returns a new value for DisMovie and trialNum
                         trialType = self.actualTrialOrder[trialNum - 1]
                         while '.' in trialType:
                             trialType = trialType[trialType.index('.') + 1:]
@@ -1483,6 +1489,11 @@ class PyHab:
                     self.counters[trialType] -= 1
                     if self.counters[trialType] < 0:
                         self.counters[trialType] = 0
+                # Here we check if we need to rewind further using redosetup and the block property.
+                # This basically just invokes redo like R was pressed before the trial started.
+                if self.blockList[topBlockName]['blockRedo'] in [True, 'True', 1, '1']:
+                    self.redoSetup(trialNum, AA, topBlockName, blockRedo=True, fromAbort=True)
+
             elif x == 1:  # end hab block!
                 # Find the end of this hab block and skip to there. JumpToTest does this!
                 # But JumpToTest can't be used except between two trials for complex reasons
@@ -1894,7 +1905,7 @@ class PyHab:
             if self.stimPres and disMovie['stimType'] == 'Movie':
                 disMovie['stim'].seek(0.0)
                 disMovie['stim'].pause()
-            # Todo: Do a proper redo, including rewinding trials using redoSetup? Or a new function that's similar?
+            # Todo: Do a proper redo, including rewinding trials using redoSetup.
             self.abortTrial(onArray, offArray, number, dataType, onArray2, offArray2, self.stimName, habDataRec, habCrit)
             return 3
         else:

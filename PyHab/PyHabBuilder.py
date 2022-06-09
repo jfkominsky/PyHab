@@ -157,6 +157,10 @@ class PyHabBuilder:
                 self.settings['screenIndex'] = tmpDict6
             else:
                 self.settings['screenColor'] = eval(self.settings['screenColor']) # This is special b/c it cannot be eval'd if it's just a string.
+            # back compat for block redo in 0.10.1
+            for i,j in self.settings['blockList'].items():
+                if 'blockRedo' not in j.keys():
+                    self.settings['blockList'][i]['blockRedo'] = False
             self.settings['dataloc'] = ''.join([self.dirMarker if x == otherOS else x for x in self.settings['dataloc']])
             self.settings['stimPath'] = ''.join([self.dirMarker if x == otherOS else x for x in self.settings['stimPath']])
             self.settings['folderPath'] = os.getcwd()+self.dirMarker  # On load, reset the folder path to wherever you are now.
@@ -1230,6 +1234,8 @@ class PyHabBuilder:
                     'metCritStatic': 'Moving',
                     'calcHabOver': []
         }
+        blockRedo = False # 0.10.1: Block-level redo setting
+
         end = False
         newFlowArea = [-.97, .75, .97, -.97]  # X,X,Y,Y
         newFlowRect = visual.Rect(self.win, width=newFlowArea[1] - newFlowArea[0],
@@ -1243,10 +1249,15 @@ class PyHabBuilder:
                                  fillColor="red")
         cancelText = visual.TextStim(self.win, text="Cancel", height=.45 * doneButton.height, pos=cancelButton.pos,
                                    color='white')
-        habSettingsButton = visual.Rect(self.win, width=.4, height=.67*(.15/self.aspect), pos=[-.25,-.8],fillColor = "DarkOrange")
+        habSettingsButton = visual.Rect(self.win, width=.4, height=.67*(.15/self.aspect), pos=[-.32,-.8],fillColor = "DarkOrange")
         habSettingsText = visual.TextStim(self.win, text="Habituation (OFF)", height=.45 * habSettingsButton.height, pos=habSettingsButton.pos,
                                    color='white')
-        instrText = visual.TextStim(self.win, text="Construct block trial order", pos=[.3, -.9], color='black', height=.1)
+
+        blockRedoButton = visual.Rect(self.win, width=.4, height=.67*(.15/self.aspect), pos=[.1,-.8],fillColor = "grey")
+        blockRedoText = visual.TextStim(self.win, text="Block redo (OFF)", height=.45 * blockRedoButton.height, pos=blockRedoButton.pos,
+                                   color='white')
+
+        instrText = visual.TextStim(self.win, text="Construct block trial order", pos=[.5, -.8], color='black', height=.06)
         bigPaletteArea = [.7,.95,.97,-.97]  # temporary, bigger palette, without trial type maker buttons!
         bigPaletteRect = visual.Rect(self.win, width=bigPaletteArea[1] - bigPaletteArea[0],
                                        height=bigPaletteArea[3] - bigPaletteArea[2], fillColor='white', lineColor='black',
@@ -1261,6 +1272,8 @@ class PyHabBuilder:
         blockUI['buttons']['text'].append(cancelText)
         blockUI['buttons']['shapes'].append(habSettingsButton)
         blockUI['buttons']['text'].append(habSettingsText)
+        blockUI['buttons']['shapes'].append(blockRedoButton)
+        blockUI['buttons']['text'].append(blockRedoText)
 
         bigPaletteLocs = []
         newFlowLocs = []
@@ -1299,6 +1312,8 @@ class PyHabBuilder:
                 for i,j in ['blockList'][blockName].items():
                     if i in habFields.keys():
                         habFields[i] = j
+            if self.settings['blockList'][blockName]['blockRedo'] in [1, '1', True, 'True']:
+                blockRedo = True
         else:
             blockFlow = {'lines': [], 'shapes': [], 'text': [], 'labels': [], 'extras': []}
 
@@ -1319,6 +1334,7 @@ class PyHabBuilder:
                             # and add the trial list entry, and done!
                             tempBlockObject = habFields
                             tempBlockObject['trialList'] = blockOrder
+                            tempBlockObject['blockRedo'] = blockRedo
                             self.settings['blockList'][blockName] = tempBlockObject
                             if new:
                                 self.settings['trialTypes'].append(blockName)
@@ -1353,10 +1369,24 @@ class PyHabBuilder:
                             pass
                     elif blockUI['buttons']['text'][i].text[0] == 'H': # Since hab can have two text values.
                         if len(blockFlow['labels']) > 0:
-                            habFields = self.habSettingsDlg(trialList=blockOrder, lastSet=deepcopy(habFields)) # TODO: This now needs to return something to this function to save.
+                            habFields = self.habSettingsDlg(trialList=blockOrder, lastSet=deepcopy(habFields))
                             if habFields['habituation'] in [1, '1', True, 'True']:
                                 habSettingsText.text = 'Habituation (ON)'
                                 habSettingsButton.fillColor = "DarkGreen"
+                    elif blockUI['buttons']['text'][i].text[0] == 'B': # Block redo also has multiple values.
+                        if blockRedo == False:
+                            blockRedo = True
+                            blockRedoText.text="Block redo (ON)"
+                            blockRedoButton.fillColor = "Gold"
+                            while self.mouse.isPressedIn(blockUI['buttons']['shapes'][i], buttons=[0]):  # waits until the mouse is released before continuing.
+                                pass
+                        else:
+                            blockRedo = False
+                            blockRedoText.text = "Block redo (OFF)"
+                            blockRedoButton.fillColor = "Gray"
+                            while self.mouse.isPressedIn(blockUI['buttons']['shapes'][i], buttons=[0]):  # waits until the mouse is released before continuing.
+                                pass
+
             for j in range(0, len(trialTypes['shapes'])):  # Only need to worry about adding trials, no modding them from here!
                 if self.mouse.isPressedIn(trialTypes['shapes'][j], buttons=[0]):
                     blockOrder.append(trialTypes['labels'][j])
