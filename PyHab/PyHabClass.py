@@ -1047,7 +1047,7 @@ class PyHab:
                             found = True
                         else:
                             # Make sure we haven't backed out of the block altogether
-                            currentTrialName = self.actualTrialOrder[trialNum-1]
+                            currentTrialName = self.actualTrialOrder[trialNum-2]
                             if '.' in currentTrialName:
                                 # Not hab trial by definition so we can do this the easy way
                                 currentTrialName = currentTrialName[0:currentTrialName.index('.')]
