@@ -430,6 +430,7 @@ class PyHab:
 
         newTempData = {}
         i = 0
+        trialIndex = -1
         while i < len(self.dataMatrix):
             if self.dataMatrix[i]['trial'] == trialNum and self.dataMatrix[i]['GNG'] == 1:
                 trialIndex = i
@@ -437,39 +438,41 @@ class PyHab:
                 break
             else:
                 i += 1
-        # add the new 'bad' trial to badTrials
-        newTempData['GNG'] = 0
-        if '*' in self.actualTrialOrder[trialNum-1]:  # Redoing a habituation trial
-            trialName = deepcopy(self.dataMatrix[trialIndex]['trialType'])
-            habBlock = ''
-            for n,q in self.habMetWhen.items(): # Cycle through all the hab blocks to find the right one.
-                if self.actualTrialOrder[trialNum-1][0:len(n)] == n:
-                    habBlock = n
-            while '.' in trialName:
-                trialName = trialName[trialName.index('.')+1:]
-            # Subtract data from self.habDataCompiled before checking whether we reduce the hab count, do make indexing
-            # the correct part of habDataCompiled easier. Notably, reduces but does not inherently zero out.
-            if trialName in self.blockList[habBlock]['calcHabOver']:  # Make sure it's part of the hab calc
-                self.habDataCompiled[habBlock][self.habCount[habBlock]-1] = self.habDataCompiled[habBlock][self.habCount[habBlock]-1] - self.dataMatrix[trialIndex]['sumOnA']
-                if self.habDataCompiled[habBlock][self.habCount[habBlock]-1] < 0:  # For rounding errors
-                    self.habDataCompiled[habBlock][self.habCount[habBlock]-1] = 0
-            # If it's from the end of the hab iteration, then reduce the hab count.
-            if '^' in self.actualTrialOrder[trialNum-1]:  # This is kind of a dangerous kludge that hopefully won't come up that often.
-                self.habCount[habBlock] -= 1
-        self.badTrials.append(newTempData)
-        # remove it from dataMatrix
-        self.dataMatrix.remove(self.dataMatrix[trialIndex])
-        # basically need to read through the verbose matrices, add everything that references that trial to the 'bad'
-        # verbose data matrices, and mark the relevant lines for later deletion
-        for q,z in self.verbDatList.items():
-            if len(z) > 0: # Avoid any blank arrays (e.g. if there is no coder 2)
-                for i in range(0, len(self.verbDatList[q])):
-                    if self.verbDatList[q][i]['trial'] == trialNum:
-                        # Deepcopy needed to stop it from tying the badlist entries to the regular entries and removing them.
-                        self.verbBadList[q].append(deepcopy(self.verbDatList[q][i]))
-                        self.verbDatList[q][i]['trial'] = 99
-                # Elegantly removes all tagged lines of verbose data
-                self.verbDatList[q] = [vo for vo in self.verbDatList[q] if vo['trial'] != 99]
+        # New safety valve: If trialIndex is not set, just back off, it means something went bad in the redo setup.
+        if trialIndex > -1:
+            # add the new 'bad' trial to badTrials
+            newTempData['GNG'] = 0
+            if '*' in self.actualTrialOrder[trialNum-1]:  # Redoing a habituation trial
+                trialName = deepcopy(self.dataMatrix[trialIndex]['trialType'])
+                habBlock = ''
+                for n,q in self.habMetWhen.items(): # Cycle through all the hab blocks to find the right one.
+                    if self.actualTrialOrder[trialNum-1][0:len(n)] == n:
+                        habBlock = n
+                while '.' in trialName:
+                    trialName = trialName[trialName.index('.')+1:]
+                # Subtract data from self.habDataCompiled before checking whether we reduce the hab count, do make indexing
+                # the correct part of habDataCompiled easier. Notably, reduces but does not inherently zero out.
+                if trialName in self.blockList[habBlock]['calcHabOver']:  # Make sure it's part of the hab calc
+                    self.habDataCompiled[habBlock][self.habCount[habBlock]-1] = self.habDataCompiled[habBlock][self.habCount[habBlock]-1] - self.dataMatrix[trialIndex]['sumOnA']
+                    if self.habDataCompiled[habBlock][self.habCount[habBlock]-1] < 0:  # For rounding errors
+                        self.habDataCompiled[habBlock][self.habCount[habBlock]-1] = 0
+                # If it's from the end of the hab iteration, then reduce the hab count.
+                if '^' in self.actualTrialOrder[trialNum-1]:  # This is kind of a dangerous kludge that hopefully won't come up that often.
+                    self.habCount[habBlock] -= 1
+            self.badTrials.append(newTempData)
+            # remove it from dataMatrix
+            self.dataMatrix.remove(self.dataMatrix[trialIndex])
+            # basically need to read through the verbose matrices, add everything that references that trial to the 'bad'
+            # verbose data matrices, and mark the relevant lines for later deletion
+            for q,z in self.verbDatList.items():
+                if len(z) > 0: # Avoid any blank arrays (e.g. if there is no coder 2)
+                    for i in range(0, len(self.verbDatList[q])):
+                        if self.verbDatList[q][i]['trial'] == trialNum:
+                            # Deepcopy needed to stop it from tying the badlist entries to the regular entries and removing them.
+                            self.verbBadList[q].append(deepcopy(self.verbDatList[q][i]))
+                            self.verbDatList[q][i]['trial'] = 99
+                    # Elegantly removes all tagged lines of verbose data
+                    self.verbDatList[q] = [vo for vo in self.verbDatList[q] if vo['trial'] != 99]
 
 
 
