@@ -39,7 +39,8 @@ jobs:
         # We need openal-soft, but the latest version breaks and brew is bad at versions
         brew tap-new $USER/local-openal-soft
         brew extract --version=1.21.1 openal-soft $USER/local-openal-soft
-        brew install openal-soft
+        brew search /openal-soft/ #backup in case the below line breaks
+        brew install $USER/local-openal-soft/openal-soft@1.21.1
         pip install git+https://github.com/Im-Fran/pocketsphinx-python
         pip install mock
         pip install psychopy
