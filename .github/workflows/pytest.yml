@@ -41,6 +41,10 @@ jobs:
         brew extract --version=1.21.1 openal-soft $USER/local-openal-soft
         brew search /openal-soft/ #backup in case the below line breaks
         brew install $USER/local-openal-soft/openal-soft@1.21.1
+        # Trying to force the right version
+        echo 'export PATH="/usr/local/opt/openal-soft@1.21.1/bin:$PATH"' >> /Users/runner/.bash_profile
+        export LDFLAGS="-L/usr/local/opt/openal-soft@1.21.1/lib"
+        export CPPFLAGS="-I/usr/local/opt/openal-soft@1.21.1/include"
         pip install git+https://github.com/Im-Fran/pocketsphinx-python
         pip install mock
         pip install psychopy
