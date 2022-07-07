@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        os: [macos-10.15]
+        os: [macos-latest]
         python-version: [3.8]
 
     steps:
@@ -36,7 +36,7 @@ jobs:
       run: |
         # for pocketsphinx we need this adapted package:
         brew install swig vlc
-        brew install openal-soft
+        brew install https://raw.githubusercontent.com/Homebrew/homebrew-core/fd091ac3789f78c1977dfc28289114eb05a4a860/Formula/openal-soft.rb
         pip install git+https://github.com/Im-Fran/pocketsphinx-python
         pip install mock
         pip install psychopy
