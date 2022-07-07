@@ -36,7 +36,10 @@ jobs:
       run: |
         # for pocketsphinx we need this adapted package:
         brew install swig vlc
-        brew install openal-soft@1.21.1 # 1.22 breaks
+        # We need openal-soft, but the latest version breaks and brew is bad at versions
+        brew tap-new $USER/local-openal-soft
+        brew extract --version=1.21.1 openal-soft $USER/local-openal-soft
+        brew install openal-soft
         pip install git+https://github.com/Im-Fran/pocketsphinx-python
         pip install mock
         pip install psychopy
