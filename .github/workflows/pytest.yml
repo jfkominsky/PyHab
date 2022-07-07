@@ -73,6 +73,7 @@ jobs:
           pip install wheel
           pip install six  # for configobj and wxpython
           pip install distro  # used by createInitFile
+          pip install mock
           pip install psychopy
       - name: Test with Pytest
         run: |
