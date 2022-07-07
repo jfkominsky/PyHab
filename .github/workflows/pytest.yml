@@ -36,7 +36,7 @@ jobs:
       run: |
         # for pocketsphinx we need this adapted package:
         brew install swig vlc
-        brew install https://raw.githubusercontent.com/Homebrew/homebrew-core/fd091ac3789f78c1977dfc28289114eb05a4a860/Formula/openal-soft.rb
+        brew install openal-soft@1.21.1 # 1.22 breaks
         pip install git+https://github.com/Im-Fran/pocketsphinx-python
         pip install mock
         pip install psychopy
