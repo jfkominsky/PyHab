@@ -77,4 +77,4 @@ jobs:
           pip install psychopy
       - name: Test with Pytest
         run: |
-          pytest
+          xvfb-run -a --server-args="-screen 0 1024x768x24" pytest
