@@ -1300,7 +1300,9 @@ class TestMultiHabBlock(object):
 
     def setup_class(self):
         mhab_settings = copy.deepcopy(base_settings)
-        mhab_settings['blockList'] = "{'E':{'trialList': ['X'],'habituation': 1,'habByDuration': 0,'maxHabTrials': 14,'setCritWindow': 3,'setCritDivisor': 2.0,'setCritType': 'First','habThresh': 5.0,'metCritWindow': 3,'metCritDivisor': 1.0,'metCritStatic': 'Moving','calcHabOver': ['X']},'F':{'trialList': ['Z', 'Y', 'X'],'habituation': 1,'habByDuration': 0,'maxHabTrials': 14,'setCritWindow': 3,'setCritDivisor': 2.0,'setCritType': 'First','habThresh': 5.0,'metCritWindow': 3,'metCritDivisor': 1.0,'metCritStatic': 'Moving','calcHabOver': ['Y','X']}}"
+        #mhab_settings['blockList'] = "{'E':{'trialList': ['X'],'habituation': 1,'habByDuration': 0,'maxHabTrials': 14,'setCritWindow': 3,'setCritDivisor': 2.0,'setCritType': 'First','habThresh': 5.0,'metCritWindow': 3,'metCritDivisor': 1.0,'metCritStatic': 'Moving','calcHabOver': ['X']},'F':{'trialList': ['Z', 'Y', 'X'],'habituation': 1,'habByDuration': 0,'maxHabTrials': 14,'setCritWindow': 3,'setCritDivisor': 2.0,'setCritType': 'First','habThresh': 5.0,'metCritWindow': 3,'metCritDivisor': 1.0,'metCritStatic': 'Moving','calcHabOver': ['Y','X']}}"
+        # EDGE CASE TEST
+        mhab_settings['blockList'] = "{'E':{'trialList': ['X'],'habituation': 1,'habByDuration': 0,'maxHabTrials': 6,'setCritWindow': 3,'setCritDivisor': 2.0,'setCritType': 'First','habThresh': 5.0,'metCritWindow': 3,'metCritDivisor': 1.0,'metCritStatic': 'Moving','calcHabOver': ['X']},'F':{'trialList': ['Z', 'Y', 'X'],'habituation': 1,'habByDuration': 0,'maxHabTrials': 14,'setCritWindow': 3,'setCritDivisor': 2.0,'setCritType': 'First','habThresh': 5.0,'metCritWindow': 3,'metCritDivisor': 1.0,'metCritStatic': 'Moving','calcHabOver': ['Y','X']}}"
         mhab_settings['trialOrder'] = "['A','A','E','B','F','C']"
         self.habInst = PH.PyHab(mhab_settings)
 

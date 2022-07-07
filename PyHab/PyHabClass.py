@@ -1280,8 +1280,8 @@ class PyHab:
                 topBlockName = topBlockName[0:topBlockName.index('*')]  # problem: also includes hab number!
                 # Let's assume less than 100 for max hab.
                 for b, c in self.habCount.items():
-                    if c < 9:
-                        if eval(topBlockName[-1]) == c+1: # need to od it this way because otherwise risks an eval error
+                    if c < 9: # TODO: This is somehow hitting a non-numeric value?
+                        if eval(topBlockName[-1]) == c+1: # need to do it this way because otherwise risks an eval error
                             topBlockName = topBlockName[0:-1]
                     elif c > 8:
                         if eval(topBlockName[-2:]) == c+1:
