@@ -45,6 +45,8 @@ jobs:
         echo 'export PATH="/usr/local/opt/openal-soft@1.21.1/bin:$PATH"' >> /Users/runner/.bash_profile
         export LDFLAGS="-L/usr/local/opt/openal-soft@1.21.1/lib"
         export CPPFLAGS="-I/usr/local/opt/openal-soft@1.21.1/include"
+        export CFLAGS="-I$(brew --cellar)/openal-soft/1.21.0/include/AL" 
+        export LDFLAGS=-L"$(brew --cellar)/openal-soft/1.21.0/lib" 
         pip install git+https://github.com/Im-Fran/pocketsphinx-python
         pip install mock
         pip install psychopy
