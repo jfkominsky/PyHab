@@ -77,4 +77,4 @@ jobs:
           pip install psychopy
       - name: Test with Pytest
         run: |
-          xvfb-run -a --server-args="-screen 0 1024x768x24" pytest
+          xvfb-run -a --server-args="-screen 0 1024x768x24" pytest -m "not needs_sound and not needs_wx and not needs_qt and not needs_pygame"
