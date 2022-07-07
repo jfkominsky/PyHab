@@ -53,9 +53,7 @@ jobs:
           sudo apt install llvm-6.0-dev  # for xvfb
           sudo apt install xvfb xauth libgl1-mesa-dri
           # set up fake sound device?
-          # sudo apt-get install -y -qq libasound2-dev alsa-utils alsa-oss
-          # sudo apt-get install -y linux-modules-extra-$(uname -r)  # needed for modprobe snd-dummy
-          # sudo sh .github/workflows/prep_dummy_soundcard.sh  # couldn't find that file
+          sudo jackd -d dummy &
           # for PyQt:
           sudo apt-get install -y -qq libdbus-1-3 libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1
           sudo apt-get install -y -qq libxcb-randr0 libxcb-render-util0 libxcb-xinerama0 libxcb-xfixes0
@@ -77,4 +75,4 @@ jobs:
           pip install psychopy
       - name: Test with Pytest
         run: |
-          xvfb-run -a --server-args="-screen 0 1024x768x24" pytest -m "not needs_sound and not needs_wx and not needs_qt and not needs_pygame"
+          xvfb-run -a --server-args="-screen 0 1024x768x24" pytest
