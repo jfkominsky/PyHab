@@ -1641,10 +1641,47 @@ class TestMultiHabBlock(object):
         [x, y] = self.habInst2.jumpToTest(8, 'E')  # essentially from hab trial 5.
         assert x == 'Movie5'
         assert y == 'B'
-        assert self.habInst.actualTrialOrder[6] == 'E5*^.X'
-        assert self.habInst.actualTrialOrder[7] == 'B'
+        assert self.habInst2.actualTrialOrder[6] == 'E5*^.X'
+        assert self.habInst2.actualTrialOrder[7] == 'B'
         assert len(self.habInst2.actualTrialOrder) == 27
 
+class TestHabNaming(object):
+    """
+    Tests for what appears to be a strange edge case in the naming of a particular study.
+    """
+    def setup_class(self):
+        hab3_settings = copy.deepcopy(base_settings)
+        hab3_settings['blockList'] = "{'HAB_A': {'habituation': True, 'maxHabTrials': 6, 'setCritWindow': 3, 'setCritDivisor': 2.0, 'setCritType': 'First', 'habThresh': 5.0, 'metCritWindow': 3, 'metCritDivisor': 1.0, 'metCritStatic': 'Moving', 'habByDuration': 0, 'calcHabOver': 'Vid1', 'trialList': ['Vid1'], 'blockRedo': False}, 'HAB_B': {'habituation': True, 'maxHabTrials': 6, 'setCritWindow': 3, 'setCritDivisor': 2.0, 'setCritType': 'First', 'habThresh': 5.0, 'metCritWindow': 3, 'metCritDivisor': 1.0, 'metCritStatic': 'Moving', 'habByDuration': 0, 'calcHabOver': 'Vid2', 'trialList': ['Vid2'], 'blockRedo': False}}"
+        hab3_settings['trialOrder'] = "['HAB_A', 'Test1', 'Test2', 'HAB_B', 'Test3', 'Test4']"
+        hab3_settings['trialTypes'] = "['Test1', 'Test2', 'Test3', 'Test4', 'Vid1', 'Vid2', 'HAB_A', 'HAB_B']"
+        hab3_settings['stimNames'] = "{'Test1': ['Asian_A_D_updated.png', 'Asian_B_C.png', 'Asian_C_B.png', 'Asian_D_A.png', 'Caucasian_A_D.png', 'Caucasian_B_C.png', 'Caucasian_C_B.png', 'Caucasian_D_A.png'], 'Test2': ['Asian_A_D_updated.png', 'Asian_B_C.png', 'Asian_C_B.png', 'Asian_D_A.png', 'Caucasian_A_D.png', 'Caucasian_B_C.png', 'Caucasian_C_B.png', 'Caucasian_D_A.png'], 'Test3': ['Asian_A_D_updated.png', 'Asian_B_C.png', 'Asian_C_B.png', 'Asian_D_A.png', 'Caucasian_A_D.png', 'Caucasian_B_C.png', 'Caucasian_C_B.png', 'Caucasian_D_A.png'], 'Test4': ['Asian_A_D_updated.png', 'Asian_B_C.png', 'Asian_C_B.png', 'Asian_D_A.png', 'Caucasian_A_D.png', 'Caucasian_B_C.png', 'Caucasian_C_B.png', 'Caucasian_D_A.png'], 'Vid1': ['Asian_A.mov', 'Asian_B.mov', 'Asian_C.mov', 'Asian_D.mov', 'Caucasian_A.mov', 'Caucasian_B.mov', 'Caucasian_C.mov', 'Caucasian_D.mov'], 'Vid2': ['Asian_A.mov', 'Asian_B.mov', 'Asian_C.mov', 'Asian_D.mov', 'Caucasian_A.mov', 'Caucasian_B.mov', 'Caucasian_C.mov', 'Caucasian_D.mov']}"
+        hab3_settings['autoAdvance'] = "['Test4', 'Test2']"
+
+        self.habInst3 = PH.PyHab(hab3_settings)
+
+    def teardown_class(self):
+        del self.habInst3
+
+    def test_initial_setup(self):
+        testOne = [99, 'Test', 'NB', '7', '2', '18', 'testcond', '8', '2', '18']
+        self.habInst3.run(testMode=testOne)
+
+        assert 'HAB_A' in self.habInst3.habCount.keys()
+        assert 'HAB_A' in self.habInst3.habCrit.keys()
+        assert 'HAB_A' in self.habInst3.habSetWhen.keys()
+        assert 'HAB_A' in self.habInst3.habMetWhen.keys()
+        assert 'HAB_A' in self.habInst3.maxHabIndex.keys()
+        assert 'HAB_B' in self.habInst3.habDataCompiled.keys()
+        assert 'HAB_B' in self.habInst3.habCount.keys()
+        assert 'HAB_B' in self.habInst3.habCrit.keys()
+        assert 'HAB_B' in self.habInst3.habSetWhen.keys()
+        assert 'HAB_B' in self.habInst3.habMetWhen.keys()
+        assert 'HAB_B' in self.habInst3.maxHabIndex.keys()
+        assert 'HAB_B' in self.habInst3.habDataCompiled.keys()
+
+        assert len(self.habInst3.actualTrialOrder) == 16
+        assert self.habInst3.actualTrialOrder[0] == 'HAB_A1*^.Vid1'
+        assert self.habInst3.actualTrialOrder[8] == 'HAB_B1*^.Vid2'
 
 class TestCommands(object):
     """
