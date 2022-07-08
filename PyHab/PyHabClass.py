@@ -113,6 +113,11 @@ class PyHab:
             self.hppStimScrOnly = eval(settingsDict['hppStimScrOnly'])
         except:
             self.hppStimScrOnly = []
+        # new settings for 0.10.2
+        try:
+            self.maxOn = eval(settingsDict['maxOn'])
+        except:
+            self.maxOn = []
 
 
         # ORDER OF PRESENTATION
@@ -1279,14 +1284,10 @@ class PyHab:
             topBlockName = self.actualTrialOrder[trialNum - 1]
             if '*' in topBlockName: # if it's a hab block, it will always be the top-level block.
                 topBlockName = topBlockName[0:topBlockName.index('*')]  # problem: also includes hab number!
-                # Let's assume less than 100 for max hab.
                 for b, c in self.habCount.items():
-                    if c < 9: # TODO: This is somehow hitting a non-numeric value?
-                        if eval(topBlockName[-1]) == c+1: # need to do it this way because otherwise risks an eval error
-                            topBlockName = topBlockName[0:-1]
-                    elif c > 8:
-                        if eval(topBlockName[-2:]) == c+1:
-                            topBlockName = topBlockName[0:-2]
+                    # Sharing a name is blocked by the builder so this solves that problem outright.
+                    if b == topBlockName[0:len(b)]:
+                        topBlockName = topBlockName[0:len(b)]
             elif '.' in topBlockName:
                 topBlockName = topBlockName[0:topBlockName.index('.')]
 
@@ -1325,12 +1326,8 @@ class PyHab:
                             lastBlockName = lastBlockName[0:lastBlockName.index('*')]  # problem: also includes hab number!
                             # Let's assume less than 100 for max hab.
                             for b, c in self.habCount.items():
-                                if c < 9:
-                                    if eval(lastBlockName[-1]) == c + 1:  # need to od it this way because otherwise risks an eval error
-                                        lastBlockName = lastBlockName[0:-1]
-                                elif c > 8:
-                                    if eval(lastBlockName[-2:]) == c + 1:
-                                        lastBlockName = lastBlockName[0:-2]
+                                if b == lastBlockName[0:len(b)]:
+                                    lastBlockName = lastBlockName[0:len(b)]
                     else:
                         lastBlockName = self.actualTrialOrder[trialNum-2]
                     blockRedo = False
@@ -1442,12 +1439,8 @@ class PyHab:
                                 lastBlockName = lastBlockName[0:lastBlockName.index('*')]  # problem: also includes hab number!
                                 # Let's assume less than 100 for max hab.
                                 for b, c in self.habCount.items():
-                                    if c < 9:
-                                        if eval(lastBlockName[-1]) == c + 1:  # need to od it this way because otherwise risks an eval error
-                                            lastBlockName = lastBlockName[0:-1]
-                                    elif c > 8:
-                                        if eval(lastBlockName[-2:]) == c + 1:
-                                            lastBlockName = lastBlockName[0:-2]
+                                    if b == lastBlockName[0:len(b)]:
+                                        lastBlockName = lastBlockName[0:len(b)]
                         else:
                             lastBlockName = self.actualTrialOrder[trialNum - 2]
                         blockRedo = False
@@ -1821,6 +1814,20 @@ class PyHab:
                 nowOn = core.getTime() - startTrial
                 # the argument for oncheck accounts for the current gaze-on, if we aren't using duration mode.
                 if self.playThrough[localType] in [1, 3] and onDuration(adds=nowOn-startOn) > self.minOn[localType] and not endFlag:  # For trial types where the only crit is min-on.
+                    if localType in self.movieEnd and not endNow:
+                        endFlag = True
+                    else:
+                        runTrial = False
+                        endTrial = core.getTime() - startTrial
+                        if not self.stimPres:
+                            self.endTrialSound.play()
+                            self.endTrialSound = sound.Sound('A', octave=4, sampleRate=44100, secs=0.2)
+                        endOn = core.getTime() - startTrial
+                        onDur = endOn - startOn
+                        tempGazeArray = {'trial':number, 'trialType':dataType, 'startTime':startOn, 'endTime':endOn, 'duration':onDur}
+                        onArray.append(tempGazeArray)
+                # New "max-on" criterion, which is only used in combination with the "normal" minon/maxoff criterion. Only needs testing here.
+                elif self.playThrough[localType] == 4 and onDuration(adds=nowOn-startOn) > self.maxOn[localType] and not endFlag:
                     if localType in self.movieEnd and not endNow:
                         endFlag = True
                     else:
