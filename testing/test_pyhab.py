@@ -1657,7 +1657,7 @@ class TestHabNaming(object):
         hab3_settings['stimNames'] = "{'Test1': ['Asian_A_D_updated.png', 'Asian_B_C.png', 'Asian_C_B.png', 'Asian_D_A.png', 'Caucasian_A_D.png', 'Caucasian_B_C.png', 'Caucasian_C_B.png', 'Caucasian_D_A.png'], 'Test2': ['Asian_A_D_updated.png', 'Asian_B_C.png', 'Asian_C_B.png', 'Asian_D_A.png', 'Caucasian_A_D.png', 'Caucasian_B_C.png', 'Caucasian_C_B.png', 'Caucasian_D_A.png'], 'Test3': ['Asian_A_D_updated.png', 'Asian_B_C.png', 'Asian_C_B.png', 'Asian_D_A.png', 'Caucasian_A_D.png', 'Caucasian_B_C.png', 'Caucasian_C_B.png', 'Caucasian_D_A.png'], 'Test4': ['Asian_A_D_updated.png', 'Asian_B_C.png', 'Asian_C_B.png', 'Asian_D_A.png', 'Caucasian_A_D.png', 'Caucasian_B_C.png', 'Caucasian_C_B.png', 'Caucasian_D_A.png'], 'Vid1': ['Asian_A.mov', 'Asian_B.mov', 'Asian_C.mov', 'Asian_D.mov', 'Caucasian_A.mov', 'Caucasian_B.mov', 'Caucasian_C.mov', 'Caucasian_D.mov'], 'Vid2': ['Asian_A.mov', 'Asian_B.mov', 'Asian_C.mov', 'Asian_D.mov', 'Caucasian_A.mov', 'Caucasian_B.mov', 'Caucasian_C.mov', 'Caucasian_D.mov']}"
         hab3_settings['autoAdvance'] = "['Test4', 'Test2']"
 
-        self.habInst3 = PH.PyHab(hab3_settings)
+        self.habInst3 = PH.PyHab(hab3_settings, testMode=True)
 
     def teardown_class(self):
         del self.habInst3
