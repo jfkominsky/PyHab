@@ -67,7 +67,7 @@ def test_init():
     :return:
     :rtype:
     """
-    itest = PH.PyHab(base_settings)
+    itest = PH.PyHab(base_settings, testMode=True)
     TheDicts = [itest.maxDur, itest.playThrough, itest.maxOff, itest.minOn, itest.stimNames,
                 itest.stimList, itest.playAttnGetter, itest.attnGetterList, itest.ISI, itest.screenColor,
                 itest.screenWidth, itest.screenHeight, itest.movieWidth, itest.movieHeight, itest.screenIndex,
@@ -99,7 +99,7 @@ class TestDataFunc(object):
     """
 
     def setup_class(self):
-        self.dataInst = PH.PyHab(base_settings)
+        self.dataInst = PH.PyHab(base_settings, testMode=True)
         # Set values for things that are usually set in the experimenter dialog
         self.dataInst.sNum = 99
         self.dataInst.sID = 'TEST'
@@ -1046,7 +1046,7 @@ class TestRunSetup(object):
         trial_settings = copy.deepcopy(base_settings)
         trial_settings['trialOrder'] = "['A','A','B','B','C','C','D']"
 
-        self.trialInst = PH.PyHab(trial_settings)
+        self.trialInst = PH.PyHab(trial_settings, testMode=True)
 
     def teardown_class(self):
         del self.trialInst
@@ -1304,7 +1304,7 @@ class TestMultiHabBlock(object):
         # EDGE CASE TEST
         mhab_settings['blockList'] = "{'E':{'trialList': ['X'],'habituation': 1,'habByDuration': 0,'maxHabTrials': 6,'setCritWindow': 3,'setCritDivisor': 2.0,'setCritType': 'First','habThresh': 5.0,'metCritWindow': 3,'metCritDivisor': 1.0,'metCritStatic': 'Moving','calcHabOver': ['X']},'F':{'trialList': ['Z', 'Y', 'X'],'habituation': 1,'habByDuration': 0,'maxHabTrials': 14,'setCritWindow': 3,'setCritDivisor': 2.0,'setCritType': 'First','habThresh': 5.0,'metCritWindow': 3,'metCritDivisor': 1.0,'metCritStatic': 'Moving','calcHabOver': ['Y','X']}}"
         mhab_settings['trialOrder'] = "['A','A','E','B','F','C']"
-        self.habInst = PH.PyHab(mhab_settings)
+        self.habInst = PH.PyHab(mhab_settings, testMode=True)
 
         self.testMatrix = [{'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
                             'condLabel': 'dataTest', 'trial': 1, 'GNG': 1, 'trialType': 'A', 'stimName': 'movie1.mov',
@@ -1623,7 +1623,7 @@ class TestCommands(object):
         trial_settings = copy.deepcopy(base_settings)
         trial_settings['trialOrder'] = "['A','A','B','B','C','C','D']"
 
-        self.commandInst = PH.PyHab(trial_settings)
+        self.commandInst = PH.PyHab(trial_settings, testMode=True)
         self.commandInst.sNum = 99
         self.commandInst.ageMo = 5
         self.commandInst.ageDay = 15
@@ -2161,7 +2161,7 @@ class TestPrefLook(object):
     Tests preferential-looking-specific functions that can be tested, basically just the data functions + end exp.
     """
     def setup_class(self):
-        self.dataInstPL = PHL.PyHabPL(base_settings)
+        self.dataInstPL = PHL.PyHabPL(base_settings, testMode=True)
         # Set values for things that are usually set in the experimenter dialog
         self.dataInstPL.sNum = 99
         self.dataInstPL.sID = 'TEST'
@@ -2350,7 +2350,7 @@ class TestPrefLook(object):
 class TestHPP(object):
     """Tests for HPP-specific functions that can be tested, basically data and endexp."""
     def setup_class(self):
-        self.dataInstHPP = PHPP.PyHabHPP(base_settings)
+        self.dataInstHPP = PHPP.PyHabHPP(base_settings, testMode=True)
         # Set values for things that are usually set in the experimenter dialog
         self.dataInstHPP.sNum = 99
         self.dataInstHPP.sID = 'TEST'

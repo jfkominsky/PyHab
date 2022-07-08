@@ -37,7 +37,7 @@ class PyHab:
 
     """
 
-    def __init__(self, settingsDict):
+    def __init__(self, settingsDict, testMode = False):
         """
         Read all settings from settings file
 
@@ -67,6 +67,7 @@ class PyHab:
         self.verboseFolder = self.dataFolder + 'verbose' + self.dirMarker
         if not os.path.isdir(self.verboseFolder):
             os.makedirs(self.verboseFolder)
+        self.testMode = testMode
 
 
         # UNIVERSAL SETTINGS
@@ -270,7 +271,7 @@ class PyHab:
         self.badVerboseOff = []  # same as above but for bad trials
         self.badVerboseOn2 = []  # as above for coder B
         self.badVerboseOff2 = []  # as above for coder B
-        if not self.stimPres:
+        if not self.stimPres and not testMode:
             self.endTrialSound = sound.Sound('A', octave=4, sampleRate=44100, secs=0.2)
             self.endHabSound = sound.Sound('G', octave=4, sampleRate=44100, secs=0.2)
         if type(self.maxDur) is int:  # Secretly MaxDur will always be a dict, but if it's a constant we just create the dict here
@@ -535,7 +536,7 @@ class PyHab:
         # Now we separate out the set and met business.
         if self.habCount[blockName] == self.blockList[blockName]['maxHabTrials']:
             # end habituation and goto test
-            if not self.stimPres:
+            if not self.stimPres and not self.testMode:
                 for i in [0, 1, 2]:
                     core.wait(.25)  # an inadvertent side effect of playing the sound is a short pause before the test trial can begin
                     self.endHabSound.play()

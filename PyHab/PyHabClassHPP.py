@@ -20,8 +20,8 @@ class PyHabHPP(PyHab):
     to juggle which screen things are presented on, simultaneous presentation on multiple screens, and more.
     """
 
-    def __init__(self, settingsDict):
-        PyHab.__init__(self, settingsDict)
+    def __init__(self, settingsDict, testMode=False):
+        PyHab.__init__(self, settingsDict, testMode)
         self.centerKey = self.key.B
         self.secondKey = self.key.V  # Variable that determines what the second key is. Overwrites what is set in the default init
         self.rightKey = self.key.N

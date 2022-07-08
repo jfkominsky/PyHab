@@ -19,8 +19,8 @@ class PyHabPL(PyHab):
     A new preferential-looking version of PyHab that extends the base class rather than being a wholly separate class.
     There's still a lot of redundant code here, which will require significant restructuring of the base class to fix.
     """
-    def __init__(self, settingsDict):
-        PyHab.__init__(self, settingsDict)
+    def __init__(self, settingsDict, testMode=False):
+        PyHab.__init__(self, settingsDict, testMode)
         self.secondKey = self.key.M #Variable that determines what the second key is. Overwrites what is set in the default init
         self.verbDatList = {'verboseOn': [], 'verboseOn2': [], 'verboseOff': []}  # a dict of the verbose data arrays
         self.verbBadList = {'verboseOn': [], 'verboseOn2': [],  'verboseOff': []}  # Corresponding for bad data
