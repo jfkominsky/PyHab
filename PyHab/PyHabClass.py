@@ -117,7 +117,7 @@ class PyHab:
         try:
             self.maxOn = eval(settingsDict['maxOn'])
         except:
-            self.maxOn = []
+            self.maxOn = {}
 
 
         # ORDER OF PRESENTATION

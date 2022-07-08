@@ -39,6 +39,7 @@ class PyHabBuilder:
                                                         'movieEnd': [],
                                                         'maxOff': {},
                                                         'minOn': {},
+                                                        'maxOn': {},
                                                         'durationCriterion': [],
                                                         'autoRedo': [],
                                                         'onTimeDeadline': {},
@@ -112,6 +113,8 @@ class PyHabBuilder:
                 self.settings['loadSep'] = '0'
             if 'hppStimScrOnly' not in self.settings.keys():
                 self.settings['hppStimScrOnly'] = '[]'
+            if 'maxOn' not in self.settings.keys():
+                self.settings['maxOn'] = '{}'
             # Settings requiring evaluation to get sensible values. Mostly dicts.
             evalList = ['dataColumns','blockSum','trialSum','maxDur','condList','baseCondList','movieEnd','playThrough',
                         'trialOrder','stimNames', 'stimList', 'ISI', 'maxOff','minOn','durationCriterion','autoRedo',
@@ -566,7 +569,9 @@ class PyHabBuilder:
 
         11 = inter-stimulus interveral (ISI) for this trial type
 
-        [if movies assigned to trial type already, they occupy 12 - N]
+        12 = Maximum on-time (single use case, for new gaze contingent trial type mode).
+
+        [if movies assigned to trial type already, they occupy 13 - N]
 
         :param trialType: Name of the trial type
         :type trialType: str
@@ -610,32 +615,38 @@ class PyHabBuilder:
                         flowIndexes.append(i) 
                 typeIndex = self.trialTypesArray['labels'].index(trialType)
                 if self.settings['playThrough'][trialType] == 3:
-                    chz = ["EitherOr", "Yes", "OnOnly", "No"]
+                    chz = ["EitherOr", "Yes", "OnOnly", "No", "MaxOff/MaxOn"]
                 elif self.settings['playThrough'][trialType] == 2:
-                    chz = ["No", "OnOnly", "Yes", "EitherOr"]
+                    chz = ["No", "OnOnly", "Yes", "EitherOr", "MaxOff/MaxOn"]
                 elif self.settings['playThrough'][trialType] == 1:
-                    chz = ["OnOnly", "Yes", "No", "EitherOr"]
+                    chz = ["OnOnly", "Yes", "No", "EitherOr", "MaxOff/MaxOn"]
+                elif self.settings['playThrough'][trialType] == 4:
+                    chz = ["MaxOff/MaxOn", "Yes", "No", "OnOnly","EitherOr"]
                 else:
-                    chz = ["Yes", "OnOnly", "No", "EitherOr"]
+                    chz = ["Yes", "OnOnly", "No", "EitherOr","MaxOff/MaxOn"]
             elif len(prevInfo) > 0:
                 typeDlg.addField("Max duration", prevInfo[1])  # Index 1
                 maxOff = prevInfo[3]
                 minOn = prevInfo[4]
                 ISI = prevInfo[11]
+                maxOn = prevInfo[12]
                 if prevInfo[2] == 3:
-                    chz = ["EitherOr", "Yes", "OnOnly", "No"]
+                    chz = ["EitherOr", "Yes", "OnOnly", "No","MaxOff/MaxOn"]
                 elif prevInfo[2] == 2:
-                    chz = ["No", "Yes", "OnOnly", "EitherOr"]
+                    chz = ["No", "Yes", "OnOnly", "EitherOr","MaxOff/MaxOn"]
                 elif prevInfo[2] == 1:
-                    chz = ["OnOnly", "Yes", "EitherOr", "No"]
+                    chz = ["OnOnly", "Yes", "EitherOr", "No","MaxOff/MaxOn"]
+                elif prevInfo[2] == 4:
+                    chz = ["MaxOff/MaxOn","Yes", "OnOnly", "EitherOr", "No"]
                 else:
-                    chz = ["Yes", "OnOnly", "EitherOr", "No"]
+                    chz = ["Yes", "OnOnly", "EitherOr", "No","MaxOff/MaxOn"]
             else:  # if there are no existing indexes to refer to
                 typeDlg.addField("Max duration", 60.0)  # Index 1
                 maxOff = 2.0
                 minOn = 1.0
                 ISI = 0.0
-                chz = ["Yes", "OnOnly", "EitherOr", "No"]
+                maxOn = 5.0
+                chz = ["Yes", "OnOnly", "EitherOr", "No","MaxOff/MaxOn"]
             typeDlg.addField("Gaze-contingent trial type (next three lines ignored otherwise)", choices=chz)  # Index 2
             typeDlg.addField("Number of continuous seconds looking away to end trial", maxOff)  # Index 3
             typeDlg.addField("Minimum time looking at screen before stimuli can be ended (not consecutive)", minOn)  # Index 4
@@ -694,6 +705,7 @@ class PyHabBuilder:
                 chz4 = False
             typeDlg.addField("Only end trial on end of movie repetition? (Only works when presenting stimuli)", initial = chz4)  # Index 10
             typeDlg.addField("Inter-stimulus interval on loops (pause between end of one loop and start of next)", ISI)  # Index 11
+            typeDlg.addField("MAXIMUM on-time (only used for 'max-off and max-on' gaze contingent setting", maxOn) # Index 12
             if not makeNew:
                 if len(prevInfo) == 0:
                     if len(self.settings['stimNames'][trialType]) > 0:
@@ -703,7 +715,7 @@ class PyHabBuilder:
                                 typeDlg.addField(self.settings['stimNames'][trialType][i]['C'], initial=True) # HPP defaults to C on everything
                             else:
                                 typeDlg.addField(self.settings['stimNames'][trialType][i], initial=True)
-                elif len(prevInfo) > 12: # If there were no movies to start with, this will have a length of 12.
+                elif len(prevInfo) > 13: # If there were no movies to start with, this will have a length of 13.
                     typeDlg.addText("Current stimuli in trial type (uncheck to remove)")
                     for i in range(0,len(self.settings['stimNames'][trialType])):
                         if self.settings['prefLook'] in [2,'2']:
@@ -785,6 +797,7 @@ class PyHabBuilder:
                         self.settings['maxOff'][trialType] = typeInfo[3]
                         self.settings['minOn'][trialType] = typeInfo[4]
                         self.settings['ISI'][trialType] = typeInfo[11]
+                        self.settings['maxOn'][trialType] = typeInfo[12]
 
                         # Gaze-contingency settings
                         if trialType not in self.settings['playThrough'].keys(): #Initialize if needed.
@@ -797,6 +810,8 @@ class PyHabBuilder:
                             self.settings['playThrough'][trialType] = 1
                         elif typeInfo[2] == "EitherOr" and self.settings['playThrough'][trialType] is not 3:
                             self.settings['playThrough'][trialType] = 3
+                        elif typeInfo[2] == "MaxOn/MaxOff" and self.settings['playThrough'][trialType] is not 4:
+                            self.settings['playThrough'][trialType] = 4
 
                         # Auto-redo trial settings
                         if typeInfo[5] in [False,0,'False','0'] and trialType in self.settings['autoRedo']: #gaze-contingent trial type, not already tagged as such.
@@ -842,10 +857,10 @@ class PyHabBuilder:
                             self.settings['movieEnd'].append(trialType)
 
                         # Remove stimuli if needed
-                        if len(typeInfo) > 12: #Again, if there were movies to list.
+                        if len(typeInfo) > 13: #Again, if there were movies to list.
                             tempMovies = [] #This will just replace the stimNames list
                             for i in range(0,len(self.settings['stimNames'][trialType])):
-                                if typeInfo[i+12]:
+                                if typeInfo[i+13]:
                                     tempMovies.append(self.settings['stimNames'][trialType][i])
                             self.settings['stimNames'][trialType] = tempMovies
 
