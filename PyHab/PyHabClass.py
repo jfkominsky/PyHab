@@ -1501,13 +1501,15 @@ class PyHab:
 
             elif x == 1:  # end hab block!
                 # Find the end of this hab block and skip to there. JumpToTest does this!
-                # But JumpToTest can't be used except between two trials for complex reasons
+                # But JumpToTest can't be used except *between* two trials for complex reasons
                 # So instead, we partially replicate its code.
                 maxHab = deepcopy(trialNum)
                 for x in range(trialNum, len(self.actualTrialOrder)):
                     if topBlockName in self.actualTrialOrder[x] and '^' in self.actualTrialOrder[x]:
                         maxHab = x # Index, not hab number
                 tempNum = maxHab
+                # Del does not delete the final item in its range, in theory?
+                # But this does seem to generate an off-by-one error if maxhab is reached.
                 del self.actualTrialOrder[(trialNum):(tempNum + 1)]
                 trialNum += 1
                 trialType = self.actualTrialOrder[trialNum - 1]  # No need to check for hab sub-trials.
