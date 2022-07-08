@@ -1303,6 +1303,9 @@ class TestMultiHabBlock(object):
         mhab_settings['blockList'] = "{'E':{'trialList': ['X'],'habituation': 1,'habByDuration': 0,'maxHabTrials': 14,'setCritWindow': 3,'setCritDivisor': 2.0,'setCritType': 'First','habThresh': 5.0,'metCritWindow': 3,'metCritDivisor': 1.0,'metCritStatic': 'Moving','calcHabOver': ['X']},'F':{'trialList': ['Z', 'Y', 'X'],'habituation': 1,'habByDuration': 0,'maxHabTrials': 14,'setCritWindow': 3,'setCritDivisor': 2.0,'setCritType': 'First','habThresh': 5.0,'metCritWindow': 3,'metCritDivisor': 1.0,'metCritStatic': 'Moving','calcHabOver': ['Y','X']}}"
         mhab_settings['trialOrder'] = "['A','A','E','B','F','C']"
         self.habInst = PH.PyHab(mhab_settings, testMode=True)
+        mhab_settings2 = mhab_settings
+        mhab_settings2['blockList'] = "{'E':{'trialList': ['X'],'habituation': 1,'habByDuration': 0,'maxHabTrials': 6,'setCritWindow': 3,'setCritDivisor': 2.0,'setCritType': 'First','habThresh': 5.0,'metCritWindow': 3,'metCritDivisor': 1.0,'metCritStatic': 'Moving','calcHabOver': ['X']},'F':{'trialList': ['Z', 'Y', 'X'],'habituation': 1,'habByDuration': 0,'maxHabTrials': 6,'setCritWindow': 3,'setCritDivisor': 2.0,'setCritType': 'First','habThresh': 5.0,'metCritWindow': 3,'metCritDivisor': 1.0,'metCritStatic': 'Moving','calcHabOver': ['Y','X']}}"
+        self.habInst2 = PH.PyHab(mhab_settings2, testMode=True)
 
         self.testMatrix = [{'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
                             'condLabel': 'dataTest', 'trial': 1, 'GNG': 1, 'trialType': 'A', 'stimName': 'movie1.mov',
@@ -1611,16 +1614,13 @@ class TestMultiHabBlock(object):
         assert len(self.habInst.actualTrialOrder) == 31  # Up three from before because it's a 3-trial block
 
     def test_short_hab(self):
-        mhab_settings = copy.deepcopy(base_settings)
-        mhab_settings['trialOrder'] = "['A','A','E','B','F','C']"
-        mhab_settings['blockList'] = "{'E':{'trialList': ['X'],'habituation': 1,'habByDuration': 0,'maxHabTrials': 6,'setCritWindow': 3,'setCritDivisor': 2.0,'setCritType': 'First','habThresh': 5.0,'metCritWindow': 3,'metCritDivisor': 1.0,'metCritStatic': 'Moving','calcHabOver': ['X']},'F':{'trialList': ['Z', 'Y', 'X'],'habituation': 1,'habByDuration': 0,'maxHabTrials': 6,'setCritWindow': 3,'setCritDivisor': 2.0,'setCritType': 'First','habThresh': 5.0,'metCritWindow': 3,'metCritDivisor': 1.0,'metCritStatic': 'Moving','calcHabOver': ['Y','X']}}"
-        self.habInst2 = PH.PyHab(mhab_settings, testMode=True)
-
         # A specialized test for an edge case involving a very low number of maxhabtrials
         testOne = [99, 'Test', 'NB', '7', '2', '18', 'testcond', '8', '2', '18']
         self.habInst2.run(testMode=testOne)
 
         assert len(self.habInst2.actualTrialOrder) == 28  # 6+6*3+4 = 6*4+4 = 28
+        assert self.habInst2.actualTrialOrder[0:6] == ['A', 'A', 'E1*^.X', 'E2*^.X', 'E3*^.X', 'E4*^.X']
+        self.habInst2.stimPres = True
         self.habInst2.stimNames = {'A': ['Movie1', 'Movie2', 'Movie3', 'Movie4'],
                                   'B': ['Movie5', 'Movie6', 'Movie7', 'Movie8'],
                                   'C': ['Movie1', 'Movie2', 'Movie3', 'Movie4'],
@@ -1638,11 +1638,12 @@ class TestMultiHabBlock(object):
 
         self.habInst2.counters = {'A': 2, 'B': 0, 'C': 0, 'D': 0, 'X': 6, 'Y': 0, 'Z': 0}
 
-        [x, y] = self.habInst2.jumpToTest(8, 'E') 
+        [x, y] = self.habInst2.jumpToTest(8, 'E')  # essentially from hab trial 5.
         assert x == 'Movie5'
         assert y == 'B'
-        assert self.habInst.actualTrialOrder[7] == 'E6*^.X'
-        assert len(self.habInst2.actualTrialOrder) == 28
+        assert self.habInst.actualTrialOrder[6] == 'E5*^.X'
+        assert self.habInst.actualTrialOrder[7] == 'B'
+        assert len(self.habInst2.actualTrialOrder) == 27
 
 
 class TestCommands(object):
