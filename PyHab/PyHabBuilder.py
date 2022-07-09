@@ -724,9 +724,9 @@ class PyHabBuilder:
                     typeDlg.addText("Current stimuli in trial type (uncheck to remove)")
                     for i in range(0,len(self.settings['stimNames'][trialType])):
                         if self.settings['prefLook'] in [2,'2']:
-                            typeDlg.addField(self.settings['stimNames'][trialType][i+9]['C'], initial=prevInfo[i + 12])
+                            typeDlg.addField(self.settings['stimNames'][trialType][i+9]['C'], initial=prevInfo[i + 13])
                         else:
-                            typeDlg.addField(self.settings['stimNames'][trialType][i], initial=prevInfo[i+12])
+                            typeDlg.addField(self.settings['stimNames'][trialType][i], initial=prevInfo[i+13])
 
 
             typeInfo = typeDlg.show()
