@@ -375,7 +375,7 @@ class PyHabBuilder:
         self.buttonList['functions'].append(self.addStimToLibraryDlg)
 
         if len(list(self.settings['stimList'].keys())) > 0:
-            addMovButton = visual.Rect(self.win, width=.3, height=.5 * (.2 / self.aspect), pos=[0, -.65],
+            addMovButton = visual.Rect(self.win, width=.3, height=.5 * (.2 / self.aspect), pos=[.4, -.65],
                                        fillColor="white")
             addMovText = visual.TextStim(self.win, text="Add stimulus files \nto trial types", color="black",
                                          height=addMovButton.height * .3, alignHoriz='center', pos=addMovButton.pos)
@@ -385,7 +385,7 @@ class PyHabBuilder:
 
 
         if len(list(self.settings['blockList'].keys())) > 0:  # Add button for block data settings
-            blockDataButton = visual.Rect(self.win, width=.15, height=.5*(.2/self.aspect), pos=[-.65, -.65],
+            blockDataButton = visual.Rect(self.win, width=.15, height=.5*(.2/self.aspect), pos=[-.725, -.65],
                                           fillColor="white")
             blockDataText = visual.TextStim(self.win, text="Block \ndata", color="black",
                                             height=blockDataButton.height*.3, alignHoriz='center',pos=blockDataButton.pos)
@@ -399,7 +399,7 @@ class PyHabBuilder:
             self.buttonList['text'][dataIndex].pos = [-.875, -.65]
 
         if len(self.settings['trialTypes']) > 0:
-            advTrialButton = visual.Rect(self.win, width=.3, height=.5 * (.2 / self.aspect), pos=[.4, -.65], fillColor="white")
+            advTrialButton = visual.Rect(self.win, width=.3, height=.5 * (.2 / self.aspect), pos=[0, -.65], fillColor="white")
             advTrialText = visual.TextStim(self.win, text="Advanced trial \nsettings", color="black",
                                            height=advTrialButton.height * .3, alignHoriz='center', pos=advTrialButton.pos)
             self.buttonList['shapes'].append(advTrialButton)
@@ -601,12 +601,17 @@ class PyHabBuilder:
                     maxOff = self.settings['maxOff'][trialType]
                     minOn = self.settings['minOn'][trialType]
                     ISI = self.settings['ISI'][trialType]
+                    if trialType in self.settings['maxOn'].keys():
+                        maxOn = self.settings['maxOn'][trialType]
+                    else:
+                        maxOn = 5.0
 
                 else:
                     typeDlg.addField("Max duration", prevInfo[1])  # Index 1
                     maxOff = prevInfo[3]
                     minOn = prevInfo[4]
                     ISI = prevInfo[11]
+                    maxOn = prevInfo[12]
 
                 # Find the index of the existing trial type in the study flow and type pane.
                 flowIndexes=[]
@@ -621,9 +626,9 @@ class PyHabBuilder:
                 elif self.settings['playThrough'][trialType] == 1:
                     chz = ["OnOnly", "Yes", "No", "EitherOr", "MaxOff/MaxOn"]
                 elif self.settings['playThrough'][trialType] == 4:
-                    chz = ["MaxOff/MaxOn", "Yes", "No", "OnOnly","EitherOr"]
+                    chz = ["MaxOff/MaxOn", "Yes", "No", "OnOnly", "EitherOr"]
                 else:
-                    chz = ["Yes", "OnOnly", "No", "EitherOr","MaxOff/MaxOn"]
+                    chz = ["Yes", "OnOnly", "No", "EitherOr", "MaxOff/MaxOn"]
             elif len(prevInfo) > 0:
                 typeDlg.addField("Max duration", prevInfo[1])  # Index 1
                 maxOff = prevInfo[3]
@@ -631,13 +636,13 @@ class PyHabBuilder:
                 ISI = prevInfo[11]
                 maxOn = prevInfo[12]
                 if prevInfo[2] == 3:
-                    chz = ["EitherOr", "Yes", "OnOnly", "No","MaxOff/MaxOn"]
+                    chz = ["EitherOr", "Yes", "OnOnly", "No", "MaxOff/MaxOn"]
                 elif prevInfo[2] == 2:
-                    chz = ["No", "Yes", "OnOnly", "EitherOr","MaxOff/MaxOn"]
+                    chz = ["No", "Yes", "OnOnly", "EitherOr", "MaxOff/MaxOn"]
                 elif prevInfo[2] == 1:
-                    chz = ["OnOnly", "Yes", "EitherOr", "No","MaxOff/MaxOn"]
+                    chz = ["OnOnly", "Yes", "EitherOr", "No", "MaxOff/MaxOn"]
                 elif prevInfo[2] == 4:
-                    chz = ["MaxOff/MaxOn","Yes", "OnOnly", "EitherOr", "No"]
+                    chz = ["MaxOff/MaxOn", "Yes", "OnOnly", "EitherOr", "No"]
                 else:
                     chz = ["Yes", "OnOnly", "EitherOr", "No","MaxOff/MaxOn"]
             else:  # if there are no existing indexes to refer to
@@ -810,7 +815,7 @@ class PyHabBuilder:
                             self.settings['playThrough'][trialType] = 1
                         elif typeInfo[2] == "EitherOr" and self.settings['playThrough'][trialType] is not 3:
                             self.settings['playThrough'][trialType] = 3
-                        elif typeInfo[2] == "MaxOn/MaxOff" and self.settings['playThrough'][trialType] is not 4:
+                        elif typeInfo[2] == "MaxOff/MaxOn" and self.settings['playThrough'][trialType] is not 4:
                             self.settings['playThrough'][trialType] = 4
 
                         # Auto-redo trial settings
@@ -878,7 +883,7 @@ class PyHabBuilder:
                                 warnDlg.show()
                             if self.advTrialSetup not in self.buttonList['functions']:
                                 advTrialButton = visual.Rect(self.win, width=.3, height=.5 * (.2 / self.aspect),
-                                                             pos=[.8, -.65], fillColor="white")
+                                                             pos=[0, -.65], fillColor="white")
                                 advTrialText = visual.TextStim(self.win, text="Advanced trial \nsettings",
                                                                color="black",
                                                                height=advTrialButton.height * .3, alignHoriz='center',
