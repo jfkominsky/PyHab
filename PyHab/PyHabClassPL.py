@@ -364,7 +364,7 @@ class PyHabPL(PyHab):
             elif not gazeOn and not gazeOn2: #if they are not looking as of the previous refresh, check if they have been looking away for too long
                 nowOff = core.getTime() - startTrial
                 endCondMet = False
-                if self.playThrough[localType] == 0:  # Standard gaze-on then gaze-off
+                if self.playThrough[localType] in [0,4]:  # Standard gaze-on then gaze-off
                     if onDuration(subs=nowOff-startOff) >= self.minOn[localType] and nowOff - startOff >= self.maxOff[localType] and not endFlag:
                         endCondMet = True
                     elif localType in self.autoRedo and deadlineChecked and nowOff - startOff >= self.maxOff[localType] and not endFlag:
@@ -478,6 +478,27 @@ class PyHabPL(PyHab):
                         if gazeOn2:
                             onDur = endTrial - startOn2
                             tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOn2, 'endTime': endTrial,
+                                             'duration': onDur}
+                            onArray2.append(tempGazeArray)
+                elif self.playThrough[localType] == 4 and onDuration(adds=nowOn - tempOn) >= self.maxOn[localType] and not endFlag:
+                    if localType in self.movieEnd and not endNow:
+                        endFlag = True
+                    else:
+                        runTrial = False
+                        endTrial = core.getTime() - startTrial
+                        if not self.stimPres:
+                            self.endTrialSound.play()
+                            self.endTrialSound = sound.Sound('A', octave=4, sampleRate=44100, secs=0.2)
+                        if gazeOn:
+                            onDur = endTrial - startOn
+                            tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOn,
+                                             'endTime': endTrial,
+                                             'duration': onDur}
+                            onArray.append(tempGazeArray)
+                        if gazeOn2:
+                            onDur = endTrial - startOn2
+                            tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOn2,
+                                             'endTime': endTrial,
                                              'duration': onDur}
                             onArray2.append(tempGazeArray)
                 if gazeOn and not self.keyboard[self.key.B]: #if they were looking and have looked away.
