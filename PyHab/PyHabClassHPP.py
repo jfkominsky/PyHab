@@ -20,8 +20,8 @@ class PyHabHPP(PyHab):
     to juggle which screen things are presented on, simultaneous presentation on multiple screens, and more.
     """
 
-    def __init__(self, settingsDict):
-        PyHab.__init__(self, settingsDict)
+    def __init__(self, settingsDict, testMode=False):
+        PyHab.__init__(self, settingsDict, testMode)
         self.centerKey = self.key.B
         self.secondKey = self.key.V  # Variable that determines what the second key is. Overwrites what is set in the default init
         self.rightKey = self.key.N
@@ -587,7 +587,7 @@ class PyHabHPP(PyHab):
                 # dataStartOff exists to make sure the data file is still fully accurate to what actually happened.
                 nowOff = core.getTime() - startTrial
                 endCondMet = False
-                if self.playThrough[localType] == 0:  # Standard gaze-on then gaze-off
+                if self.playThrough[localType] in [0,4]:  # Standard gaze-on then gaze-off
                     if onDuration(subs=nowOff-startOff) >= self.minOn[localType] and nowOff - startOff >= self.maxOff[localType] and not endFlag:
                         endCondMet = True
                     elif localType in self.autoRedo and deadlineChecked and nowOff - startOff >= self.maxOff[localType] and not endFlag:
@@ -722,6 +722,31 @@ class PyHabHPP(PyHab):
 
                 if self.playThrough[localType] in [1,3] and onDuration(adds=tmpAdd) >= self.minOn[localType] and not endFlag:
                     # If the "on-only" condition has been met
+                    if localType in self.movieEnd and not endNow:
+                        endFlag = True
+                    else:
+                        runTrial = False
+                        endTrial = core.getTime() - startTrial
+                        if not self.stimPres:
+                            self.endTrialSound.play()
+                            self.endTrialSound = sound.Sound('A', octave=4, sampleRate=44100, secs=0.2)
+                        if gazeOnC:
+                            onDur = endTrial - startOnC
+                            tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOnC,
+                                             'endTime': endTrial, 'duration': onDur}
+                            onArrayC.append(tempGazeArray)
+                        if gazeOnL:
+                            onDur = endTrial - startOnL
+                            tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOnL,
+                                             'endTime': endTrial, 'duration': onDur}
+                            onArrayL.append(tempGazeArray)
+                        if gazeOnR:
+                            onDur = endTrial - startOnR
+                            tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOnR,
+                                             'endTime': endTrial, 'duration': onDur}
+                            onArrayR.append(tempGazeArray)
+                elif self.playThrough[localType] == 4 and onDuration(adds=tmpAdd) >= self.maxOn[localType] and not endFlag:
+                    # If the "maxOn" condition has been met
                     if localType in self.movieEnd and not endNow:
                         endFlag = True
                     else:

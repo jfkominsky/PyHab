@@ -67,7 +67,7 @@ def test_init():
     :return:
     :rtype:
     """
-    itest = PH.PyHab(base_settings)
+    itest = PH.PyHab(base_settings, testMode=True)
     TheDicts = [itest.maxDur, itest.playThrough, itest.maxOff, itest.minOn, itest.stimNames,
                 itest.stimList, itest.playAttnGetter, itest.attnGetterList, itest.ISI, itest.screenColor,
                 itest.screenWidth, itest.screenHeight, itest.movieWidth, itest.movieHeight, itest.screenIndex,
@@ -99,7 +99,7 @@ class TestDataFunc(object):
     """
 
     def setup_class(self):
-        self.dataInst = PH.PyHab(base_settings)
+        self.dataInst = PH.PyHab(base_settings, testMode=True)
         # Set values for things that are usually set in the experimenter dialog
         self.dataInst.sNum = 99
         self.dataInst.sID = 'TEST'
@@ -1046,7 +1046,7 @@ class TestRunSetup(object):
         trial_settings = copy.deepcopy(base_settings)
         trial_settings['trialOrder'] = "['A','A','B','B','C','C','D']"
 
-        self.trialInst = PH.PyHab(trial_settings)
+        self.trialInst = PH.PyHab(trial_settings, testMode=True)
 
     def teardown_class(self):
         del self.trialInst
@@ -1302,7 +1302,10 @@ class TestMultiHabBlock(object):
         mhab_settings = copy.deepcopy(base_settings)
         mhab_settings['blockList'] = "{'E':{'trialList': ['X'],'habituation': 1,'habByDuration': 0,'maxHabTrials': 14,'setCritWindow': 3,'setCritDivisor': 2.0,'setCritType': 'First','habThresh': 5.0,'metCritWindow': 3,'metCritDivisor': 1.0,'metCritStatic': 'Moving','calcHabOver': ['X']},'F':{'trialList': ['Z', 'Y', 'X'],'habituation': 1,'habByDuration': 0,'maxHabTrials': 14,'setCritWindow': 3,'setCritDivisor': 2.0,'setCritType': 'First','habThresh': 5.0,'metCritWindow': 3,'metCritDivisor': 1.0,'metCritStatic': 'Moving','calcHabOver': ['Y','X']}}"
         mhab_settings['trialOrder'] = "['A','A','E','B','F','C']"
-        self.habInst = PH.PyHab(mhab_settings)
+        self.habInst = PH.PyHab(mhab_settings, testMode=True)
+        mhab_settings2 = mhab_settings
+        mhab_settings2['blockList'] = "{'E':{'trialList': ['X'],'habituation': 1,'habByDuration': 0,'maxHabTrials': 6,'setCritWindow': 3,'setCritDivisor': 2.0,'setCritType': 'First','habThresh': 5.0,'metCritWindow': 3,'metCritDivisor': 1.0,'metCritStatic': 'Moving','calcHabOver': ['X']},'F':{'trialList': ['Z', 'Y', 'X'],'habituation': 1,'habByDuration': 0,'maxHabTrials': 6,'setCritWindow': 3,'setCritDivisor': 2.0,'setCritType': 'First','habThresh': 5.0,'metCritWindow': 3,'metCritDivisor': 1.0,'metCritStatic': 'Moving','calcHabOver': ['Y','X']}}"
+        self.habInst2 = PH.PyHab(mhab_settings2, testMode=True)
 
         self.testMatrix = [{'sNum': 99, 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
                             'condLabel': 'dataTest', 'trial': 1, 'GNG': 1, 'trialType': 'A', 'stimName': 'movie1.mov',
@@ -1452,6 +1455,7 @@ class TestMultiHabBlock(object):
 
     def teardown_class(self):
         del self.habInst
+        del self.habInst2
 
     def test_initial_setup(self):
         testOne = [99, 'Test', 'NB', '7', '2', '18', 'testcond', '8', '2', '18']
@@ -1609,8 +1613,75 @@ class TestMultiHabBlock(object):
         assert y == 'Z'
         assert len(self.habInst.actualTrialOrder) == 31  # Up three from before because it's a 3-trial block
 
+    def test_short_hab(self):
+        # A specialized test for an edge case involving a very low number of maxhabtrials
+        testOne = [99, 'Test', 'NB', '7', '2', '18', 'testcond', '8', '2', '18']
+        self.habInst2.run(testMode=testOne)
 
+        assert len(self.habInst2.actualTrialOrder) == 28  # 6+6*3+4 = 6*4+4 = 28
+        assert self.habInst2.actualTrialOrder[0:6] == ['A', 'A', 'E1*^.X', 'E2*^.X', 'E3*^.X', 'E4*^.X']
+        self.habInst2.stimPres = True
+        self.habInst2.stimNames = {'A': ['Movie1', 'Movie2', 'Movie3', 'Movie4'],
+                                  'B': ['Movie5', 'Movie6', 'Movie7', 'Movie8'],
+                                  'C': ['Movie1', 'Movie2', 'Movie3', 'Movie4'],
+                                  'D': ['Movie9', 'Movie10'],
+                                  'X': ['Movie12'],
+                                  'Y': ['Movie13'],
+                                  'Z': ['Movie14']}
+        self.habInst2.stimDict = {'A': ['Movie1', 'Movie2'],
+                                 'B': ['Movie5', 'Movie6'],
+                                 'C': ['Movie1', 'Movie2'],
+                                 'D': ['Movie9', 'Movie10'],
+                                 'X': ['Movie12'],
+                                 'Y': ['Movie13'],
+                                 'Z': ['Movie14']}
 
+        self.habInst2.counters = {'A': 2, 'B': 0, 'C': 0, 'D': 0, 'X': 6, 'Y': 0, 'Z': 0}
+
+        [x, y] = self.habInst2.jumpToTest(8, 'E')  # essentially from hab trial 5.
+        assert x == 'Movie5'
+        assert y == 'B'
+        assert self.habInst2.actualTrialOrder[6] == 'E5*^.X'
+        assert self.habInst2.actualTrialOrder[7] == 'B'
+        assert len(self.habInst2.actualTrialOrder) == 27
+
+class TestHabNaming(object):
+    """
+    Tests for what appears to be a strange edge case in the naming of a particular study.
+    """
+    def setup_class(self):
+        hab3_settings = copy.deepcopy(base_settings)
+        hab3_settings['blockList'] = "{'HAB_A': {'habituation': True, 'maxHabTrials': 6, 'setCritWindow': 3, 'setCritDivisor': 2.0, 'setCritType': 'First', 'habThresh': 5.0, 'metCritWindow': 3, 'metCritDivisor': 1.0, 'metCritStatic': 'Moving', 'habByDuration': 0, 'calcHabOver': 'Vid1', 'trialList': ['Vid1'], 'blockRedo': False}, 'HAB_B': {'habituation': True, 'maxHabTrials': 6, 'setCritWindow': 3, 'setCritDivisor': 2.0, 'setCritType': 'First', 'habThresh': 5.0, 'metCritWindow': 3, 'metCritDivisor': 1.0, 'metCritStatic': 'Moving', 'habByDuration': 0, 'calcHabOver': 'Vid2', 'trialList': ['Vid2'], 'blockRedo': False}}"
+        hab3_settings['trialOrder'] = "['HAB_A', 'Test1', 'Test2', 'HAB_B', 'Test3', 'Test4']"
+        hab3_settings['trialTypes'] = "['Test1', 'Test2', 'Test3', 'Test4', 'Vid1', 'Vid2', 'HAB_A', 'HAB_B']"
+        hab3_settings['stimNames'] = "{'Test1': ['Asian_A_D_updated.png', 'Asian_B_C.png', 'Asian_C_B.png', 'Asian_D_A.png', 'Caucasian_A_D.png', 'Caucasian_B_C.png', 'Caucasian_C_B.png', 'Caucasian_D_A.png'], 'Test2': ['Asian_A_D_updated.png', 'Asian_B_C.png', 'Asian_C_B.png', 'Asian_D_A.png', 'Caucasian_A_D.png', 'Caucasian_B_C.png', 'Caucasian_C_B.png', 'Caucasian_D_A.png'], 'Test3': ['Asian_A_D_updated.png', 'Asian_B_C.png', 'Asian_C_B.png', 'Asian_D_A.png', 'Caucasian_A_D.png', 'Caucasian_B_C.png', 'Caucasian_C_B.png', 'Caucasian_D_A.png'], 'Test4': ['Asian_A_D_updated.png', 'Asian_B_C.png', 'Asian_C_B.png', 'Asian_D_A.png', 'Caucasian_A_D.png', 'Caucasian_B_C.png', 'Caucasian_C_B.png', 'Caucasian_D_A.png'], 'Vid1': ['Asian_A.mov', 'Asian_B.mov', 'Asian_C.mov', 'Asian_D.mov', 'Caucasian_A.mov', 'Caucasian_B.mov', 'Caucasian_C.mov', 'Caucasian_D.mov'], 'Vid2': ['Asian_A.mov', 'Asian_B.mov', 'Asian_C.mov', 'Asian_D.mov', 'Caucasian_A.mov', 'Caucasian_B.mov', 'Caucasian_C.mov', 'Caucasian_D.mov']}"
+        hab3_settings['autoAdvance'] = "['Test4', 'Test2']"
+
+        self.habInst3 = PH.PyHab(hab3_settings, testMode=True)
+
+    def teardown_class(self):
+        del self.habInst3
+
+    def test_initial_setup(self):
+        testOne = [99, 'Test', 'NB', '7', '2', '18', 'testcond', '8', '2', '18']
+        self.habInst3.run(testMode=testOne)
+
+        assert 'HAB_A' in self.habInst3.habCount.keys()
+        assert 'HAB_A' in self.habInst3.habCrit.keys()
+        assert 'HAB_A' in self.habInst3.habSetWhen.keys()
+        assert 'HAB_A' in self.habInst3.habMetWhen.keys()
+        assert 'HAB_A' in self.habInst3.maxHabIndex.keys()
+        assert 'HAB_B' in self.habInst3.habDataCompiled.keys()
+        assert 'HAB_B' in self.habInst3.habCount.keys()
+        assert 'HAB_B' in self.habInst3.habCrit.keys()
+        assert 'HAB_B' in self.habInst3.habSetWhen.keys()
+        assert 'HAB_B' in self.habInst3.habMetWhen.keys()
+        assert 'HAB_B' in self.habInst3.maxHabIndex.keys()
+        assert 'HAB_B' in self.habInst3.habDataCompiled.keys()
+
+        assert len(self.habInst3.actualTrialOrder) == 16
+        assert self.habInst3.actualTrialOrder[0] == 'HAB_A1*^.Vid1'
+        assert self.habInst3.actualTrialOrder[8] == 'HAB_B1*^.Vid2'
 
 class TestCommands(object):
     """
@@ -1621,7 +1692,7 @@ class TestCommands(object):
         trial_settings = copy.deepcopy(base_settings)
         trial_settings['trialOrder'] = "['A','A','B','B','C','C','D']"
 
-        self.commandInst = PH.PyHab(trial_settings)
+        self.commandInst = PH.PyHab(trial_settings, testMode=True)
         self.commandInst.sNum = 99
         self.commandInst.ageMo = 5
         self.commandInst.ageDay = 15
@@ -2159,7 +2230,7 @@ class TestPrefLook(object):
     Tests preferential-looking-specific functions that can be tested, basically just the data functions + end exp.
     """
     def setup_class(self):
-        self.dataInstPL = PHL.PyHabPL(base_settings)
+        self.dataInstPL = PHL.PyHabPL(base_settings, testMode=True)
         # Set values for things that are usually set in the experimenter dialog
         self.dataInstPL.sNum = 99
         self.dataInstPL.sID = 'TEST'
@@ -2348,7 +2419,7 @@ class TestPrefLook(object):
 class TestHPP(object):
     """Tests for HPP-specific functions that can be tested, basically data and endexp."""
     def setup_class(self):
-        self.dataInstHPP = PHPP.PyHabHPP(base_settings)
+        self.dataInstHPP = PHPP.PyHabHPP(base_settings, testMode=True)
         # Set values for things that are usually set in the experimenter dialog
         self.dataInstHPP.sNum = 99
         self.dataInstHPP.sID = 'TEST'

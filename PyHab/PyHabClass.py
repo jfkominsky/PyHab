@@ -37,7 +37,7 @@ class PyHab:
 
     """
 
-    def __init__(self, settingsDict):
+    def __init__(self, settingsDict, testMode = False):
         """
         Read all settings from settings file
 
@@ -67,6 +67,7 @@ class PyHab:
         self.verboseFolder = self.dataFolder + 'verbose' + self.dirMarker
         if not os.path.isdir(self.verboseFolder):
             os.makedirs(self.verboseFolder)
+        self.testMode = testMode
 
 
         # UNIVERSAL SETTINGS
@@ -112,6 +113,11 @@ class PyHab:
             self.hppStimScrOnly = eval(settingsDict['hppStimScrOnly'])
         except:
             self.hppStimScrOnly = []
+        # new settings for 0.10.2
+        try:
+            self.maxOn = eval(settingsDict['maxOn'])
+        except:
+            self.maxOn = {}
 
 
         # ORDER OF PRESENTATION
@@ -270,7 +276,7 @@ class PyHab:
         self.badVerboseOff = []  # same as above but for bad trials
         self.badVerboseOn2 = []  # as above for coder B
         self.badVerboseOff2 = []  # as above for coder B
-        if not self.stimPres:
+        if not self.stimPres and not testMode:
             self.endTrialSound = sound.Sound('A', octave=4, sampleRate=44100, secs=0.2)
             self.endHabSound = sound.Sound('G', octave=4, sampleRate=44100, secs=0.2)
         if type(self.maxDur) is int:  # Secretly MaxDur will always be a dict, but if it's a constant we just create the dict here
@@ -535,7 +541,7 @@ class PyHab:
         # Now we separate out the set and met business.
         if self.habCount[blockName] == self.blockList[blockName]['maxHabTrials']:
             # end habituation and goto test
-            if not self.stimPres:
+            if not self.stimPres and not self.testMode:
                 for i in [0, 1, 2]:
                     core.wait(.25)  # an inadvertent side effect of playing the sound is a short pause before the test trial can begin
                     self.endHabSound.play()
@@ -1278,14 +1284,10 @@ class PyHab:
             topBlockName = self.actualTrialOrder[trialNum - 1]
             if '*' in topBlockName: # if it's a hab block, it will always be the top-level block.
                 topBlockName = topBlockName[0:topBlockName.index('*')]  # problem: also includes hab number!
-                # Let's assume less than 100 for max hab.
                 for b, c in self.habCount.items():
-                    if c < 9:
-                        if eval(topBlockName[-1]) == c+1: # need to od it this way because otherwise risks an eval error
-                            topBlockName = topBlockName[0:-1]
-                    elif c > 8:
-                        if eval(topBlockName[-2:]) == c+1:
-                            topBlockName = topBlockName[0:-2]
+                    # Sharing a name is blocked by the builder so this solves that problem outright.
+                    if b == topBlockName[0:len(b)]:
+                        topBlockName = topBlockName[0:len(b)]
             elif '.' in topBlockName:
                 topBlockName = topBlockName[0:topBlockName.index('.')]
 
@@ -1324,12 +1326,8 @@ class PyHab:
                             lastBlockName = lastBlockName[0:lastBlockName.index('*')]  # problem: also includes hab number!
                             # Let's assume less than 100 for max hab.
                             for b, c in self.habCount.items():
-                                if c < 9:
-                                    if eval(lastBlockName[-1]) == c + 1:  # need to od it this way because otherwise risks an eval error
-                                        lastBlockName = lastBlockName[0:-1]
-                                elif c > 8:
-                                    if eval(lastBlockName[-2:]) == c + 1:
-                                        lastBlockName = lastBlockName[0:-2]
+                                if b == lastBlockName[0:len(b)]:
+                                    lastBlockName = lastBlockName[0:len(b)]
                     else:
                         lastBlockName = self.actualTrialOrder[trialNum-2]
                     blockRedo = False
@@ -1441,12 +1439,8 @@ class PyHab:
                                 lastBlockName = lastBlockName[0:lastBlockName.index('*')]  # problem: also includes hab number!
                                 # Let's assume less than 100 for max hab.
                                 for b, c in self.habCount.items():
-                                    if c < 9:
-                                        if eval(lastBlockName[-1]) == c + 1:  # need to od it this way because otherwise risks an eval error
-                                            lastBlockName = lastBlockName[0:-1]
-                                    elif c > 8:
-                                        if eval(lastBlockName[-2:]) == c + 1:
-                                            lastBlockName = lastBlockName[0:-2]
+                                    if b == lastBlockName[0:len(b)]:
+                                        lastBlockName = lastBlockName[0:len(b)]
                         else:
                             lastBlockName = self.actualTrialOrder[trialNum - 2]
                         blockRedo = False
@@ -1500,19 +1494,33 @@ class PyHab:
 
             elif x == 1:  # end hab block!
                 # Find the end of this hab block and skip to there. JumpToTest does this!
-                # But JumpToTest can't be used except between two trials for complex reasons
+                # But JumpToTest can't be used except *between* two trials for complex reasons
                 # So instead, we partially replicate its code.
-                maxHab = deepcopy(trialNum)
-                for x in range(trialNum, len(self.actualTrialOrder)):
-                    if topBlockName in self.actualTrialOrder[x] and '^' in self.actualTrialOrder[x]:
-                        maxHab = x # Index, not hab number
-                tempNum = maxHab
-                del self.actualTrialOrder[(trialNum):(tempNum + 1)]
+                # But if maxhabtrials was reached, no trials should be deleted.
+                if self.habCount[topBlockName] < self.blockList[topBlockName]['maxHabTrials']:
+                    maxHab = deepcopy(trialNum)
+                    for x in range(trialNum, len(self.actualTrialOrder)):
+                        if topBlockName in self.actualTrialOrder[x] and '^' in self.actualTrialOrder[x]:
+                            maxHab = x # Index, not hab number
+                    tempNum = maxHab
+                    # Delete from the index after the current trial to the last hab trial index.
+                    # Del does not delete the final item in its range
+                    if tempNum == len(self.actualTrialOrder):
+                        # safety catch to prevent an IndexError if the last trial is a hab trial.
+                        del self.actualTrialOrder[(trialNum):]
+                    else:
+                        del self.actualTrialOrder[(trialNum):(tempNum + 1)]
                 trialNum += 1
-                trialType = self.actualTrialOrder[trialNum - 1]  # No need to check for hab sub-trials.
-                if self.blindPres == 0:
-                    self.rdyTextAppend = " NEXT: " + trialType + " TRIAL"
-                didRedo = False
+                # Edge case: experiment ended on a hab block.
+                if trialNum >= len(self.actualTrialOrder):
+                    runExp = False
+                    didRedo = False
+                    self.endExperiment()
+                else:
+                    trialType = self.actualTrialOrder[trialNum - 1]
+                    if self.blindPres == 0:
+                        self.rdyTextAppend = " NEXT: " + trialType + " TRIAL"
+                    didRedo = False
             elif x == 0:  # continue hab/proceed as normal
                 trialNum += 1
                 trialType = self.actualTrialOrder[trialNum - 1]
@@ -1720,7 +1728,7 @@ class PyHab:
                 nowOff = core.getTime() - startTrial
                 # Compartmentalizing conditions to end trial here for new either/or functionality
                 endCondMet = False
-                if self.playThrough[localType] == 0:  # Standard gaze-on then gaze-off
+                if self.playThrough[localType] in [0, 4]:  # Standard gaze-on then gaze-off or maxoff/maxon
                     if onDuration(subs=nowOff-startOff) >= self.minOn[localType] and nowOff - startOff >= self.maxOff[localType] and not endFlag:
                         endCondMet = True
                     elif localType in self.autoRedo and deadlineChecked and nowOff - startOff >= self.maxOff[localType] and not endFlag:
@@ -1806,6 +1814,20 @@ class PyHab:
                 nowOn = core.getTime() - startTrial
                 # the argument for oncheck accounts for the current gaze-on, if we aren't using duration mode.
                 if self.playThrough[localType] in [1, 3] and onDuration(adds=nowOn-startOn) > self.minOn[localType] and not endFlag:  # For trial types where the only crit is min-on.
+                    if localType in self.movieEnd and not endNow:
+                        endFlag = True
+                    else:
+                        runTrial = False
+                        endTrial = core.getTime() - startTrial
+                        if not self.stimPres:
+                            self.endTrialSound.play()
+                            self.endTrialSound = sound.Sound('A', octave=4, sampleRate=44100, secs=0.2)
+                        endOn = core.getTime() - startTrial
+                        onDur = endOn - startOn
+                        tempGazeArray = {'trial':number, 'trialType':dataType, 'startTime':startOn, 'endTime':endOn, 'duration':onDur}
+                        onArray.append(tempGazeArray)
+                # New "max-on" criterion, which is only used in combination with the "normal" minon/maxoff criterion. Only needs testing here.
+                elif self.playThrough[localType] == 4 and onDuration(adds=nowOn-startOn) > self.maxOn[localType] and not endFlag:
                     if localType in self.movieEnd and not endNow:
                         endFlag = True
                     else:
