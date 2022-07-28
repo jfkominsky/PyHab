@@ -117,7 +117,7 @@ class PyHabBuilder:
                 self.settings['maxOn'] = '{}'
             # Settings requiring evaluation to get sensible values. Mostly dicts.
             evalList = ['dataColumns','blockSum','trialSum','maxDur','condList','baseCondList','movieEnd','playThrough',
-                        'trialOrder','stimNames', 'stimList', 'ISI', 'maxOff','minOn','durationCriterion','autoRedo',
+                        'trialOrder','stimNames', 'stimList', 'ISI', 'maxOff','minOn', 'maxOn','durationCriterion','autoRedo',
                         'onTimeDeadline','autoAdvance','playAttnGetter','attnGetterList','trialTypes', 'nextFlash',
                         'blockList', 'dynamicPause','midAG','screenWidth','screenHeight','screenIndex','movieWidth',
                         'movieHeight', 'durationInclude', 'loadSep', 'hppStimScrOnly']  # in 0.9, this becomes necessary.
