@@ -1428,7 +1428,7 @@ class PyHab:
                     elif self.lookKeysPressed():
                         waitStart = False
                         self.dispCoderWindow(trialType)
-                    elif self.keyboard[self.key.R] and not didRedo:  # Redo last trial, mark last trial as bad
+                    elif self.keyboard[self.key.R] and not didRedo and trialNum > 1:  # Redo last trial, mark last trial as bad
                         if self.counters[trialType] > 0:
                             self.counters[trialType] -= 1
                         # need to give the blockName of the previous trial, NOT the current one!
