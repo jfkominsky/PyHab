@@ -127,6 +127,8 @@ class PyHabBuilder:
                     for [q,j] in self.settings[i].items():
                         try:
                             j['stimLoc'] = ''.join([self.dirMarker if x == otherOS else x for x in j['stimLoc']])
+                            if 'audioLoc' in j.keys(): # Specifically for attention-getters of the movie/audio type
+                                j['audioLoc'] = ''.join([self.dirMarker if x == otherOS else x for x in j['audioLoc']])
                         except KeyError: # For image/audio pairs
                             j['audioLoc'] = ''.join([self.dirMarker if x == otherOS else x for x in j['audioLoc']])
                             j['imageLoc'] = ''.join([self.dirMarker if x == otherOS else x for x in j['imageLoc']])
@@ -3944,9 +3946,14 @@ class PyHabBuilder:
                     if not os.path.exists(targPath + j['stimName']):
                         shutil.copyfile(j['stimLoc'], targPath + j['stimName'])
                         j['stimLoc'] = 'stimuli' + self.dirMarker + 'attnGetters' + self.dirMarker + j['stimName']
+                    # Edge case: Multiple attngetters using the same audio file, so it doesn't  need re-copying, but the path does need to be updated.
+                    elif j['stimLoc'] != 'stimuli' + self.dirMarker + 'attnGetters' + self.dirMarker + j['stimName']:
+                        j['stimLoc'] = 'stimuli' + self.dirMarker + 'attnGetters' + self.dirMarker + j['stimName']
                     if 'audioName' in j.keys():
                         if not os.path.exists(targPath + j['audioName']):
                             shutil.copyfile(j['audioLoc'], targPath + j['audioName'])
+                            j['audioLoc'] = 'stimuli' + self.dirMarker + 'attnGetters' + self.dirMarker + j['audioName']
+                        elif j['audioLoc'] != 'stimuli' + self.dirMarker + 'attnGetters' + self.dirMarker + j['audioName']:
                             j['audioLoc'] = 'stimuli' + self.dirMarker + 'attnGetters' + self.dirMarker + j['audioName']
                 except:
                     success = False

@@ -147,6 +147,8 @@ class PyHab:
         for [i,j] in self.stimList.items():
             try:
                 j['stimLoc'] = ''.join([self.dirMarker if x == otherOS else x for x in j['stimLoc']])
+                if 'audioLoc' in j.keys(): # For Movie + Audio pairs
+                    j['audioLoc'] = ''.join([self.dirMarker if x == otherOS else x for x in j['audioLoc']])
             except KeyError:  # For image/audio pairs
                 j['audioLoc'] = ''.join([self.dirMarker if x == otherOS else x for x in j['audioLoc']])
                 j['imageLoc'] = ''.join([self.dirMarker if x == otherOS else x for x in j['imageLoc']])
