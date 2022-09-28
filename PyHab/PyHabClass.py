@@ -278,6 +278,8 @@ class PyHab:
         self.badVerboseOff = []  # same as above but for bad trials
         self.badVerboseOn2 = []  # as above for coder B
         self.badVerboseOff2 = []  # as above for coder B
+        self.trialTiming = []  # new in 0.10.3: Records all stimulus start and end times relative to start of experiment.
+        self.absoluteStart = 0  # A value for recording the start time of the experiment for trialTiming.
         if not self.stimPres and not testMode:
             self.endTrialSound = sound.Sound('A', octave=4, sampleRate=44100, secs=0.2)
             self.endHabSound = sound.Sound('G', octave=4, sampleRate=44100, secs=0.2)
@@ -971,9 +973,6 @@ class PyHab:
         """
         Lays the groundwork for redoTrial, including correcting the trial order, selecting the right stim, etc.
 
-        TODO: Block-level redo? At the level of the top-level block only.
-        TODO: Add an abort/redo toggle? The counting is a little different, specifically around habs.
-
         :param tn: Trial number (trialNum), to be redone (or in the process of being aborted)
         :type tn: int
         :param autoAdv: The current auto-advance trial type list (different on first trial for Reasons)
@@ -1358,6 +1357,9 @@ class PyHab:
                 self.readyText.text = "No trial active" + self.rdyTextAppend
                 self.dispCoderWindow()
             AA = self.autoAdvance
+            # Record an absolute start time for the whole experiment.
+            if trialNum == 1:
+                self.absoluteStart = core.getTime()
             if not end: #This if statement checks if we're trying to quit.
                 self.frameCount = {k:0 for k,v in self.frameCount.items()}
                 # framerate = win.getActualFrameRate()
@@ -1369,8 +1371,13 @@ class PyHab:
                 if self.stimPres:
                     if trialType in self.playAttnGetter: #Shockingly, this will work.
                         # TODO: Data might want to record AG length, repeats. Add data columns? "AGreps" and "AGtime"? Also, duration
+                        # needs to be here to record trial number and type safely.
+                        tempTiming = {'trialNum':trialNum, 'trialType':trialType, 'event':'startAttnGetter', 'time':(core.getTime() - self.absoluteStart)}
+                        self.trialTiming.append(tempTiming)
                         # Pull relevant arguments out of the attngetter dictionary.
                         self.attnGetter(trialType, self.playAttnGetter[trialType]['cutoff'], self.playAttnGetter[trialType]['onmin'])  # plays the attention-getter
+                        tempTiming = {'trialNum':trialNum, 'trialType':trialType, 'event':'endAttnGetter', 'time':(core.getTime() - self.absoluteStart)}
+                        self.trialTiming.append(tempTiming) # this is going to be exhaustive but worth it
                         core.wait(.1)  # this wait is important to make the attentiongetter not look like it is turning into the stimulus
                         self.frameCount = {k: 0 for k, v in self.frameCount.items()}
                         irrel = self.dispTrial(0, disMovie)
@@ -1381,6 +1388,7 @@ class PyHab:
                         waitStart = True
                 else:
                     if trialType in self.playAttnGetter:
+                        # Todo: timing recording
                         simAG = True
                         startAG = core.getTime()
                         onCheck = 0
@@ -1404,6 +1412,7 @@ class PyHab:
                     elif self.keyboard[self.key.A]:
                         self.dispCoderWindow(0)
                         if self.stimPres:
+                            # todo: Timing recording
                             if trialType in self.playAttnGetter:
                                 self.attnGetter(trialType, self.playAttnGetter[trialType]['cutoff'],
                                                 self.playAttnGetter[trialType]['onmin'])  # plays the attention-getter
@@ -1412,6 +1421,7 @@ class PyHab:
                             core.wait(self.freezeFrame)
                         else:
                             if trialType in self.playAttnGetter:
+                                # todo: timing recording
                                 # an attempt to match the timing of the attention-getter
                                 simAG = True
                                 startAG = core.getTime()
@@ -1428,6 +1438,7 @@ class PyHab:
                                             onCheck = 0
                                 core.wait(self.freezeFrame)
                     elif self.lookKeysPressed():
+                        # todo: timing recording? Or do we just hand it over to doTrial at this point?
                         waitStart = False
                         self.dispCoderWindow(trialType)
                     elif self.keyboard[self.key.R] and not didRedo and trialNum > 1:  # Redo last trial, mark last trial as bad
@@ -1627,6 +1638,8 @@ class PyHab:
         endFlag = False
         endNow = False  # A special case for auto-redo that overrides end on movie end
 
+        # todo: Timing recording
+
         def onDuration(adds=0, subs=0):  # A function for the duration switch, while leaving sumOn intact
             if localType in self.durationCriterion:
                 return core.getTime() - startTrial - subs
@@ -1795,6 +1808,7 @@ class PyHab:
                             if startAG - startOff < 0:  # was this startAG from a previous gaze-off? If so set to current gaze-off.
                                 startAG = startOff
                         if nowOff - startAG >= self.midAG[localType]['trigger']:
+                            # TODO: record timing.
                             # TODO: Do something here to deal with recording data about mid-trial AG behavior?
                             if localType not in self.dynamicPause: # Need to pause it anyways to play the AG so they don't overlap
                                 if disMovie['stimType'] in ['Movie', 'Audio'] and disMovie['stim'].status == PLAYING:
@@ -1882,6 +1896,7 @@ class PyHab:
                     offDur = endTrial - startOff
                     tempGazeArray = {'trial':number, 'trialType':dataType, 'startTime':startOff, 'endTime':endTrial, 'duration':offDur}
                     offArray.append(tempGazeArray)
+        # Todo: Timing recording
         if gazeOn2:
             onDur2 = endTrial - startOn2
             tempGazeArray2 = {'trial':number, 'trialType':dataType, 'startTime':startOn2, 'endTime':endTrial, 'duration':onDur2}
@@ -1929,7 +1944,6 @@ class PyHab:
             if self.stimPres and disMovie['stimType'] == 'Movie':
                 disMovie['stim'].seek(0.0)
                 disMovie['stim'].pause()
-            # Todo: Do a proper redo, including rewinding trials using redoSetup.
             self.abortTrial(onArray, offArray, number, dataType, onArray2, offArray2, self.stimName, habDataRec, habCrit)
             return 3
         else:
@@ -1982,6 +1996,8 @@ class PyHab:
         """
         End experiment, save all data, calculate reliability if needed, close up shop. Displays "saving data" and
         end-of-experiment screen.
+
+        TODO: 0.10.3: Save new timing recording file
 
         :return:
         :rtype:
