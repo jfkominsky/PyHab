@@ -5,6 +5,7 @@ prefs.hardware['audioLib'] = ['PTB']
 if os.name == 'posix':
     prefs.general['audioDevice'] = ['Built-in Output']
 from psychopy import sound
+import numpy as np
 import pyglet
 from pyglet import input as pyglet_input
 import wx, random, csv
@@ -121,6 +122,19 @@ class PyHab:
             self.maxOn = eval(settingsDict['maxOn'])
         except:
             self.maxOn = {}
+        try:
+            self.eyetracker = eval(settingsDict['eyetracker'])
+        except:
+            self.eyetracker = 0
+
+        # Eye-tracker preparation. This is bad form, but better than having this module be required every time.
+        if self.eyetracker > 0:
+            try:
+                from psychopy_tobii_infant import TobiiInfantController
+            except:
+                self.eyetracker = 0
+                print("Please install psychopy_tobii_infant to the PyHab folder and try again.")
+                print("Experiment will run in manual mode.")
 
 
         # ORDER OF PRESENTATION
@@ -302,6 +316,12 @@ class PyHab:
         self.secondKey = self.key.L
         self.verbDatList = {'verboseOn':[], 'verboseOff':[], 'verboseOn2':[], 'verboseOff2':[]} # a dict of the verbose data arrays
         self.verbBadList = {'verboseOn':[], 'verboseOff':[], 'verboseOn2':[], 'verboseOff2':[]} # Corresponding for bad data
+
+        # Set up calibration for eye-tracker
+        if self.eyetracker > 0:
+            calnormp = [(-0.4, 0.4), (-0.4, -0.4), (0.0, 0.0), (0.4, 0.4), (0.4, -0.4)] # TODO: Make option for num calib points
+            self.calibPoints = [(x * self.screenWidth['C'], y * self.screenHeight['C']) for x, y in calnormp]
+            self.calibStim = ['calib/{}'.format(x) for x in os.listdir('calib') if x.endswith('.png') and not x.startswith('.')]
 
     '''
     FUNCTIONS
@@ -1253,6 +1273,9 @@ class PyHab:
         """
         The primary control function and main trial loop.
 
+        TODO: eye-tracker start and end recording. Calib is done during setupwindow.
+        Todo: events for .tsv file in eye-tracking mode. Fortunately this lines up closely with the timing file.
+
         :return:
         :rtype:
         """
@@ -1563,7 +1586,13 @@ class PyHab:
         :return: True if the B key is pressed, False otherwise.
         :rtype: bool
         """
-        if self.keyboard[self.key.B]:
+        if self.eyetracker == 2:  # for eye-tracker control mode only
+            gpos = self.tracker.get_current_gaze_position()
+            if np.nan not in gpos: # np.nan is what the tracker returns if it can't figure out gaze position.
+                return True
+            else:
+                return False
+        elif self.keyboard[self.key.B]:
             return True
         else:
             return False
@@ -2850,6 +2879,21 @@ class PyHab:
             self.win = visual.Window((self.screenWidth['C'], self.screenHeight['C']), fullscr=False, screen=self.screenIndex['C'], allowGUI=False,
                                      units='pix', color=self.screenColor['C'])
             self.dummyThing = visual.Circle(self.win, size=1, color=self.win.color) # This is for fixing a display glitch in PsychoPy3 involving multiple windows of different sizes.
+            if self.eyetracker > 0:
+                try:
+                    self.tracker = TobiiInfantController(self.win) # Todo: This is only conditionally imported, so it may throw errors.
+                    success = self.tracker.run_calibration(self.calibPoints, self.calibStim)
+                    if not success:
+                        # Failed to calibrate, quit.
+                        self.win.close()
+                        print("ERROR: Calibration failure!")
+                        core.quit()
+                except:
+                    self.eyetracker = 0
+                    print("Failed to connect to eye-tracker, experiment will run in manual mode.")
+        elif self.eyetracker > 0:
+            self.eyetracker = 0 # eye-tracking only works with stimulus presentation mode on, this essentially deactivates it.
+            print("eye-tracker mode deactivated (no stimulus presentation). Experiment will run in manual mode.")
         # Coder window
         self.win2 = visual.Window((400, 400), fullscr=False, screen=self.expScreenIndex, allowGUI=True, units='pix', waitBlanking=False,
                                   rgb=[-1, -1, -1])

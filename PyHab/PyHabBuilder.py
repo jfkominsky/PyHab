@@ -84,7 +84,8 @@ class PyHabBuilder:
                                                         'startImage': '',
                                                         'endImage': '',
                                                         'nextFlash': '0',
-                                                        'loadSep': '0'}
+                                                        'loadSep': '0',
+                                                        'eyetracker': '0'}
             self.condDict = {}
             self.baseCondDict = {}
         else:
@@ -115,12 +116,14 @@ class PyHabBuilder:
                 self.settings['hppStimScrOnly'] = '[]'
             if 'maxOn' not in self.settings.keys():
                 self.settings['maxOn'] = '{}'
+            if 'eyetracker' not in self.settings.keys():
+                self.settings['eyetracker'] = '0'
             # Settings requiring evaluation to get sensible values. Mostly dicts.
             evalList = ['dataColumns','blockSum','trialSum','maxDur','condList','baseCondList','movieEnd','playThrough',
                         'trialOrder','stimNames', 'stimList', 'ISI', 'maxOff','minOn', 'maxOn','durationCriterion','autoRedo',
                         'onTimeDeadline','autoAdvance','playAttnGetter','attnGetterList','trialTypes', 'nextFlash',
                         'blockList', 'dynamicPause','midAG','screenWidth','screenHeight','screenIndex','movieWidth',
-                        'movieHeight', 'durationInclude', 'loadSep', 'hppStimScrOnly']  # in 0.9, this becomes necessary.
+                        'movieHeight', 'durationInclude', 'loadSep', 'hppStimScrOnly', 'eyetracker']  # in 0.9, this becomes necessary.
             for i in evalList:
                 self.settings[i] = eval(self.settings[i])
                 if i in ['stimList','attnGetterList']:
@@ -1897,6 +1900,9 @@ class PyHabBuilder:
             instance of a trial, rather than trying to load one movie file and load it once. This setting controls
             whether that happens.
 
+        TODO: 5 = eyetracker: New in 0.10.4, Tobii integration (which is much more seamless than alternatives). Can be set
+            to simply record eye-tracking info OR to control the experiment as a replacement for a human coder. (0/1/2)
+
         :return:
         :rtype:
         """
@@ -1932,6 +1938,15 @@ class PyHabBuilder:
             ch5 = ["No", "Yes"]
         uDlg.addField("Load each stimulus file multiple times to prevent rewind glitches? SEE 'Troubleshooting' IN MANUAL", choices=ch5)
 
+        ch6 = []
+        if self.settings['eyetracker'] in ['1',1]:
+            ch6 = ["Record only", "Off", "Control advancement"]
+        elif self.settings['eyetracker'] in ['2',2]:
+            ch6 = ["Control advancement", "Off", "Record only"]
+        else:
+            ch6 = ["Off", "Record only", "Control advancement"]
+        uDlg.addField("Tobii eye-tracker integration", choices=ch6)
+
         uInfo = uDlg.show()
         if uDlg.OK:
             tryAgain = False
@@ -1954,6 +1969,12 @@ class PyHabBuilder:
                 self.settings['loadSep'] = 1
             else:
                 self.settings['loadSep'] = 0
+            if uInfo[5] == "Off":
+                self.settings['eyetracker'] = 0
+            elif uInfo[5] == "Record only":
+                self.settings['eyetracker'] = 1
+            else:
+                self.settings['eyetracker'] = 2
             if tryAgain:
                 self.univSettingsDlg()
         
@@ -3879,6 +3900,8 @@ class PyHabBuilder:
     def saveEverything(self):
         """
         Saves a PyHab project to a set of folders dictated by self.folderPath
+
+        todo: Add psychopy_tobii_infant to this? Do we just package PyHab with that?
 
         :return:
         :rtype:
