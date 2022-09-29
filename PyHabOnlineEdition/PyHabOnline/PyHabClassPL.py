@@ -211,6 +211,7 @@ class PyHabPL(PyHab):
         runTrial = True
         endFlag = False
         endNow = True  # special case for autoredo, but also handy for online
+        self.trialTiming.append({'trialNum': number,'trialType':dataType, 'event': 'startTrial', 'time': (core.getTime() - self.absoluteStart)})
 
         def onDuration(adds=0, subs=0):  # A function for the duration switch, while leaving sumOn intact
             if localType in self.durationCriterion:
@@ -424,7 +425,11 @@ class PyHabPL(PyHab):
                         if nowOff - startOff >= self.midAG[localType]['trigger']:
                             # TODO: Do something here to deal with recording data about mid-trial AG behavior?
                             startAG = core.getTime() - startTrial
+                            self.trialTiming.append({'trialNum': number, 'trialType': dataType, 'event': 'startAttnGetter',
+                                                     'time': (core.getTime() - self.absoluteStart)})
                             self.attnGetter(localType, cutoff=self.midAG[localType]['cutoff'], onmin=self.midAG[localType]['onmin'], midTrial=True)
+                            self.trialTiming.append({'trialNum': number, 'trialType': dataType, 'event': 'endAttnGetter',
+                                                     'time': (core.getTime() - self.absoluteStart)})
                             endAG = core.getTime() - startTrial  # Keeping everything relative to start of trial
                             durAG = endAG - startAG
                             maxDurAdd = maxDurAdd + durAG  # Increase max length of trial by duration that AG played.
@@ -507,6 +512,8 @@ class PyHabPL(PyHab):
                     tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOff, 'endTime': endTrial,
                                      'duration':offDur}
                     offArray.append(tempGazeArray)
+
+        self.trialTiming.append({'trialNum': number,'trialType':dataType, 'event': 'endTrial', 'time': (core.getTime() - self.absoluteStart)})
         if habTrial:
             habDataRec = self.habCount + 1
         else:
@@ -685,6 +692,29 @@ class PyHabPL(PyHab):
                 outputWriter.writeheader()
                 for r in range(0, len(self.dataMatrix)):
                     outputWriter.writerow(self.dataMatrix[r])
+
+        # If stimulus presentation, save timing file.
+        if self.stimPres:
+            nDupe = ''  # This infrastructure eliminates the risk of overwriting existing data
+            o = 1
+            filename = self.timingFolder + self.prefix + str(self.sNum) + '_' + str(
+                self.sID) + nDupe + '_' + str(
+                self.today.month) + str(
+                self.today.day) + str(self.today.year) + '_trialTiming.csv'
+            while os.path.exists(filename):
+                o += 1
+                nDupe = str(o)
+                filename = self.timingFolder + self.prefix + str(self.sNum) + '_' + str(
+                    self.sID) + nDupe + '_' + str(
+                    self.today.month) + str(
+                    self.today.day) + str(self.today.year) + '_trialTiming.csv'
+            timingHeaders = ['trialNum', 'trialType', 'event', 'time']
+            with open(filename, 'w') as f:
+                outputWriter = csv.DictWriter(f, fieldnames=timingHeaders, extrasaction='ignore', lineterminator='\n')
+                outputWriter.writeheader()
+                for r in range(0, len(self.trialTiming)):
+                    # print('writing rows')
+                    outputWriter.writerow(self.trialTiming[r])
 
         # Now to construct and save verbose data
         verboseMatrix = []

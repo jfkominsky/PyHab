@@ -76,6 +76,9 @@ class PyHab:
         self.verboseFolder = self.dataFolder + 'verbose' + self.dirMarker
         if not os.path.isdir(self.verboseFolder):
             os.makedirs(self.verboseFolder)
+        self.timingFolder = self.dataFolder + 'timing' + self.dirMarker
+        if not os.path.isdir(self.timingFolder):
+            os.makedirs(self.timingFolder)
 
 
         # UNIVERSAL SETTINGS
@@ -257,7 +260,7 @@ class PyHab:
             self.stimPath = [self.dirMarker if x == otherOS else x for x in self.stimPath]
             self.stimPath = ''.join(self.stimPath)
 
-        # TODO: WEB BASED INFO NEEDED AT STARTUP
+        # WEB BASED INFO NEEDED AT STARTUP
         self.presentationURL = settingsDict['presentationURL']
         self.slidesEmail = settingsDict['slidesEmail']
         self.slidesPW = settingsDict['slidesPW']
@@ -288,6 +291,9 @@ class PyHab:
         self.badVerboseOff = []  # same as above but for bad trials
         self.badVerboseOn2 = []  # as above for coder B
         self.badVerboseOff2 = []  # as above for coder B
+        self.trialTiming = []  # Records (Experimenter-side) trial timing.
+        self.absoluteStart = 0  # Will record the very beginning of the experiment, the first keypress.
+
         if not self.stimPres:
             self.endTrialSound = sound.Sound('A', octave=4, sampleRate=44100, secs=0.2)
             self.endHabSound = sound.Sound('G', octave=4, sampleRate=44100, secs=0.2)
@@ -1126,6 +1132,9 @@ class PyHab:
                     self.printCurrentData()
                 self.readyText.text = "No trial active" + self.rdyTextAppend
                 self.dispCoderWindow()
+            AA = self.autoAdvance
+            if trialNum == 1:
+                self.absoluteStart = core.getTime()
             if not end: #This if statement checks if we're trying to quit.
                 self.frameCount = {k:0 for k,v in self.frameCount.items()}
                 # framerate = win.getActualFrameRate()
@@ -1137,14 +1146,17 @@ class PyHab:
                 if self.stimPres:
                     if trialType in self.playAttnGetter: #Shockingly, this will work.
                         # TODO: Data might want to record AG length, repeats. Add data columns? "AGreps" and "AGtime"? Also, duration
+                        self.trialTiming.append({'trialNum':trialNum, 'trialType': self.actualTrialOrder[trialNum-1].translate({94:None, 42:None}), 'event':'startAttnGetter', 'time':(core.getTime()-self.absoluteStart)})
                         # Pull relevant arguments out of the attngetter dictionary.
                         self.attnGetter(trialType, self.playAttnGetter[trialType]['cutoff'], self.playAttnGetter[trialType]['onmin'])  # plays the attention-getter
+                        self.trialTiming.append({'trialNum': trialNum,
+                                                 'trialType': self.actualTrialOrder[trialNum - 1].translate({94: None, 42: None}),
+                                                 'event': 'endAttnGetter', 'time': (core.getTime() - self.absoluteStart)})
                         core.wait(.1)  # this wait is important to make the attentiongetter not look like it is turning into the stimulus
                         self.frameCount = {k: 0 for k, v in self.frameCount.items()}
                         irrel = self.dispTrial(0, disMovie)
                         core.wait(self.freezeFrame)  # this delay ensures that the trial only starts after the images have appeared on the screen, static, for a user-determined length of time
                         waitStart = True
-                        AA = self.autoAdvance # This is specific to attention-getters so that if you skip the AG, it immediately plays the first stimuli.
                     else:
                         self.frameCount = {k: 0 for k, v in self.frameCount.items()}
                         waitStart = True
@@ -1165,7 +1177,6 @@ class PyHab:
                                     onCheck = 0
                         core.wait(self.freezeFrame)  # an attempt to match the delay caused by the attention-getter playing.
                         waitStart = True
-                        AA = self.autoAdvance
                     else:
                         waitStart = True
                 while waitStart and trialType not in AA and not end:  # Wait for first gaze-on
@@ -1175,8 +1186,18 @@ class PyHab:
                         self.dispCoderWindow(0)
                         if self.stimPres:
                             if trialType in self.playAttnGetter:
+                                self.trialTiming.append({'trialNum': trialNum,
+                                                         'trialType': self.actualTrialOrder[trialNum - 1].translate(
+                                                             {94: None, 42: None}),
+                                                         'event': 'startAttnGetter',
+                                                         'time': (core.getTime() - self.absoluteStart)})
                                 self.attnGetter(trialType, self.playAttnGetter[trialType]['cutoff'],
                                                 self.playAttnGetter[trialType]['onmin'])  # plays the attention-getter
+                                self.trialTiming.append({'trialNum': trialNum,
+                                                         'trialType': self.actualTrialOrder[trialNum - 1].translate(
+                                                             {94: None, 42: None}),
+                                                         'event': 'endAttnGetter',
+                                                         'time': (core.getTime() - self.absoluteStart)})
                                 core.wait(.1)
                             irrel = self.dispTrial(0, disMovie)
                             core.wait(self.freezeFrame)
@@ -1221,7 +1242,6 @@ class PyHab:
                         self.dispCoderWindow(0)
             if not end or skip: #If Y has not been pressed, do the trial! Otherwise, end the experiment.
                 x = self.doTrial(trialNum, self.actualTrialOrder[trialNum - 1], disMovie)  # the actual trial, returning one of four status values at the end
-                AA = self.autoAdvance  # After the very first trial AA will always be just the autoadvance list.
             elif skip:
                 x = 0 # Simply proceed to next trial.
             else:
@@ -1331,6 +1351,7 @@ class PyHab:
         runTrial = True
         endFlag = False
         endNow = True  # A special case for auto-redo that overrides end on movie end. Also handy for overriding this for online.
+        self.trialTiming.append({'trialNum': number,'trialType':dataType, 'event': 'startTrial', 'time': (core.getTime() - self.absoluteStart)})
 
         def onDuration(adds=0, subs=0):  # A function for the duration switch, while leaving sumOn intact
             if localType in self.durationCriterion:
@@ -1497,8 +1518,12 @@ class PyHab:
                         if nowOff - startAG >= self.midAG[localType]['trigger']:
                             # TODO: Do something here to deal with recording data about mid-trial AG behavior?
                             startAG = core.getTime() - startTrial
+                            self.trialTiming.append({'trialNum': number, 'trialType': dataType, 'event': 'startAttnGetter',
+                                                     'time': (core.getTime() - self.absoluteStart)})
                             self.attnGetter(localType, cutoff=self.midAG[localType]['cutoff'], onmin=self.midAG[localType]['onmin'], midTrial=True)
                             endAG = core.getTime() - startTrial  # Keeping everything relative to start of trial
+                            self.trialTiming.append({'trialNum': number, 'trialType': dataType, 'event': 'endAttnGetter',
+                                                     'time': (core.getTime() - self.absoluteStart)})
                             durAG = endAG - startAG
                             maxDurAdd = maxDurAdd + durAG  # Increase max length of trial by duration that AG played.
 
@@ -1558,6 +1583,7 @@ class PyHab:
         # print offArray
         # print onArray2
         # print offArray2
+        self.trialTiming.append({'trialNum': number,'trialType':dataType, 'event': 'endTrial', 'time': (core.getTime() - self.absoluteStart)})
         if habTrial:
             habDataRec = self.habCount + 1
         else:
@@ -1731,6 +1757,29 @@ class PyHab:
                     # print('writing rows')
                     outputWriter.writerow(self.dataMatrix[r])
 
+        # If stimulus presentation, save timing file.
+        if self.stimPres:
+            nDupe = ''  # This infrastructure eliminates the risk of overwriting existing data
+            o = 1
+            filename = self.timingFolder + self.prefix + str(self.sNum) + '_' + str(
+                self.sID) + nDupe + '_' + str(
+                self.today.month) + str(
+                self.today.day) + str(self.today.year) + '_trialTiming.csv'
+            while os.path.exists(filename):
+                o += 1
+                nDupe = str(o)
+                filename = self.timingFolder + self.prefix + str(self.sNum) + '_' + str(
+                    self.sID) + nDupe + '_' + str(
+                    self.today.month) + str(
+                    self.today.day) + str(self.today.year) + '_trialTiming.csv'
+            timingHeaders = ['trialNum', 'trialType', 'event', 'time']
+            with open(filename, 'w') as f:
+                outputWriter = csv.DictWriter(f, fieldnames=timingHeaders, extrasaction='ignore',
+                                              lineterminator='\n')
+                outputWriter.writeheader()
+                for r in range(0, len(self.trialTiming)):
+                    # print('writing rows')
+                    outputWriter.writerow(self.trialTiming[r])
 
         #Verbose data saving.
         verboseMatrix = []

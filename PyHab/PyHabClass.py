@@ -1375,11 +1375,11 @@ class PyHab:
                     if trialType in self.playAttnGetter: #Shockingly, this will work.
                         # TODO: Data might want to record AG length, repeats. Add data columns? "AGreps" and "AGtime"? Also, duration
                         # needs to be here to record trial number and type safely.
-                        tempTiming = {'trialNum':trialNum, 'trialType':trialType, 'event':'startAttnGetter', 'time':(core.getTime() - self.absoluteStart)}
+                        tempTiming = {'trialNum':trialNum, 'trialType': self.actualTrialOrder[trialNum-1].translate({94:None, 42:None}), 'event':'startAttnGetter', 'time':(core.getTime() - self.absoluteStart)}
                         self.trialTiming.append(tempTiming)
                         # Pull relevant arguments out of the attngetter dictionary.
                         self.attnGetter(trialType, self.playAttnGetter[trialType]['cutoff'], self.playAttnGetter[trialType]['onmin'])  # plays the attention-getter
-                        tempTiming = {'trialNum':trialNum, 'trialType':trialType, 'event':'endAttnGetter', 'time':(core.getTime() - self.absoluteStart)}
+                        tempTiming = {'trialNum':trialNum, 'trialType': self.actualTrialOrder[trialNum-1].translate({94:None, 42:None}), 'event':'endAttnGetter', 'time':(core.getTime() - self.absoluteStart)}
                         self.trialTiming.append(tempTiming) # this is going to be exhaustive but worth it
                         core.wait(.1)  # this wait is important to make the attentiongetter not look like it is turning into the stimulus
                         self.frameCount = {k: 0 for k, v in self.frameCount.items()}
