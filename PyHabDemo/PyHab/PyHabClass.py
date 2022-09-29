@@ -37,7 +37,7 @@ class PyHab:
 
     """
 
-    def __init__(self, settingsDict):
+    def __init__(self, settingsDict, testMode = False):
         """
         Read all settings from settings file
 
@@ -67,6 +67,7 @@ class PyHab:
         self.verboseFolder = self.dataFolder + 'verbose' + self.dirMarker
         if not os.path.isdir(self.verboseFolder):
             os.makedirs(self.verboseFolder)
+        self.testMode = testMode
 
 
         # UNIVERSAL SETTINGS
@@ -112,6 +113,11 @@ class PyHab:
             self.hppStimScrOnly = eval(settingsDict['hppStimScrOnly'])
         except:
             self.hppStimScrOnly = []
+        # new settings for 0.10.2
+        try:
+            self.maxOn = eval(settingsDict['maxOn'])
+        except:
+            self.maxOn = {}
 
 
         # ORDER OF PRESENTATION
@@ -141,6 +147,8 @@ class PyHab:
         for [i,j] in self.stimList.items():
             try:
                 j['stimLoc'] = ''.join([self.dirMarker if x == otherOS else x for x in j['stimLoc']])
+                if 'audioLoc' in j.keys(): # For Movie + Audio pairs
+                    j['audioLoc'] = ''.join([self.dirMarker if x == otherOS else x for x in j['audioLoc']])
             except KeyError:  # For image/audio pairs
                 j['audioLoc'] = ''.join([self.dirMarker if x == otherOS else x for x in j['audioLoc']])
                 j['imageLoc'] = ''.join([self.dirMarker if x == otherOS else x for x in j['imageLoc']])
@@ -270,7 +278,9 @@ class PyHab:
         self.badVerboseOff = []  # same as above but for bad trials
         self.badVerboseOn2 = []  # as above for coder B
         self.badVerboseOff2 = []  # as above for coder B
-        if not self.stimPres:
+        self.trialTiming = []  # new in 0.10.3: Records all stimulus start and end times relative to start of experiment.
+        self.absoluteStart = 0  # A value for recording the start time of the experiment for trialTiming.
+        if not self.stimPres and not testMode:
             self.endTrialSound = sound.Sound('A', octave=4, sampleRate=44100, secs=0.2)
             self.endHabSound = sound.Sound('G', octave=4, sampleRate=44100, secs=0.2)
         if type(self.maxDur) is int:  # Secretly MaxDur will always be a dict, but if it's a constant we just create the dict here
@@ -535,7 +545,7 @@ class PyHab:
         # Now we separate out the set and met business.
         if self.habCount[blockName] == self.blockList[blockName]['maxHabTrials']:
             # end habituation and goto test
-            if not self.stimPres:
+            if not self.stimPres and not self.testMode:
                 for i in [0, 1, 2]:
                     core.wait(.25)  # an inadvertent side effect of playing the sound is a short pause before the test trial can begin
                     self.endHabSound.play()
@@ -963,9 +973,6 @@ class PyHab:
         """
         Lays the groundwork for redoTrial, including correcting the trial order, selecting the right stim, etc.
 
-        TODO: Block-level redo? At the level of the top-level block only.
-        TODO: Add an abort/redo toggle? The counting is a little different, specifically around habs.
-
         :param tn: Trial number (trialNum), to be redone (or in the process of being aborted)
         :type tn: int
         :param autoAdv: The current auto-advance trial type list (different on first trial for Reasons)
@@ -1278,14 +1285,10 @@ class PyHab:
             topBlockName = self.actualTrialOrder[trialNum - 1]
             if '*' in topBlockName: # if it's a hab block, it will always be the top-level block.
                 topBlockName = topBlockName[0:topBlockName.index('*')]  # problem: also includes hab number!
-                # Let's assume less than 100 for max hab.
                 for b, c in self.habCount.items():
-                    if c < 9:
-                        if eval(topBlockName[-1]) == c+1: # need to od it this way because otherwise risks an eval error
-                            topBlockName = topBlockName[0:-1]
-                    elif c > 8:
-                        if eval(topBlockName[-2:]) == c+1:
-                            topBlockName = topBlockName[0:-2]
+                    # Sharing a name is blocked by the builder so this solves that problem outright.
+                    if b == topBlockName[0:len(b)]:
+                        topBlockName = topBlockName[0:len(b)]
             elif '.' in topBlockName:
                 topBlockName = topBlockName[0:topBlockName.index('.')]
 
@@ -1324,12 +1327,8 @@ class PyHab:
                             lastBlockName = lastBlockName[0:lastBlockName.index('*')]  # problem: also includes hab number!
                             # Let's assume less than 100 for max hab.
                             for b, c in self.habCount.items():
-                                if c < 9:
-                                    if eval(lastBlockName[-1]) == c + 1:  # need to od it this way because otherwise risks an eval error
-                                        lastBlockName = lastBlockName[0:-1]
-                                elif c > 8:
-                                    if eval(lastBlockName[-2:]) == c + 1:
-                                        lastBlockName = lastBlockName[0:-2]
+                                if b == lastBlockName[0:len(b)]:
+                                    lastBlockName = lastBlockName[0:len(b)]
                     else:
                         lastBlockName = self.actualTrialOrder[trialNum-2]
                     blockRedo = False
@@ -1358,6 +1357,9 @@ class PyHab:
                 self.readyText.text = "No trial active" + self.rdyTextAppend
                 self.dispCoderWindow()
             AA = self.autoAdvance
+            # Record an absolute start time for the whole experiment.
+            if trialNum == 1:
+                self.absoluteStart = core.getTime()
             if not end: #This if statement checks if we're trying to quit.
                 self.frameCount = {k:0 for k,v in self.frameCount.items()}
                 # framerate = win.getActualFrameRate()
@@ -1369,8 +1371,13 @@ class PyHab:
                 if self.stimPres:
                     if trialType in self.playAttnGetter: #Shockingly, this will work.
                         # TODO: Data might want to record AG length, repeats. Add data columns? "AGreps" and "AGtime"? Also, duration
+                        # needs to be here to record trial number and type safely.
+                        tempTiming = {'trialNum':trialNum, 'trialType':trialType, 'event':'startAttnGetter', 'time':(core.getTime() - self.absoluteStart)}
+                        self.trialTiming.append(tempTiming)
                         # Pull relevant arguments out of the attngetter dictionary.
                         self.attnGetter(trialType, self.playAttnGetter[trialType]['cutoff'], self.playAttnGetter[trialType]['onmin'])  # plays the attention-getter
+                        tempTiming = {'trialNum':trialNum, 'trialType':trialType, 'event':'endAttnGetter', 'time':(core.getTime() - self.absoluteStart)}
+                        self.trialTiming.append(tempTiming) # this is going to be exhaustive but worth it
                         core.wait(.1)  # this wait is important to make the attentiongetter not look like it is turning into the stimulus
                         self.frameCount = {k: 0 for k, v in self.frameCount.items()}
                         irrel = self.dispTrial(0, disMovie)
@@ -1381,6 +1388,7 @@ class PyHab:
                         waitStart = True
                 else:
                     if trialType in self.playAttnGetter:
+                        # Trial timing is not recorded for non-presentation
                         simAG = True
                         startAG = core.getTime()
                         onCheck = 0
@@ -1404,9 +1412,16 @@ class PyHab:
                     elif self.keyboard[self.key.A]:
                         self.dispCoderWindow(0)
                         if self.stimPres:
+
                             if trialType in self.playAttnGetter:
+                                tempTiming = {'trialNum': trialNum, 'trialType': trialType, 'event': 'startAttnGetter',
+                                              'time': (core.getTime() - self.absoluteStart)}
+                                self.trialTiming.append(tempTiming)
                                 self.attnGetter(trialType, self.playAttnGetter[trialType]['cutoff'],
                                                 self.playAttnGetter[trialType]['onmin'])  # plays the attention-getter
+                                tempTiming = {'trialNum': trialNum, 'trialType': trialType, 'event': 'endAttnGetter',
+                                              'time': (core.getTime() - self.absoluteStart)}
+                                self.trialTiming.append(tempTiming)
                                 core.wait(.1)
                             irrel = self.dispTrial(0, disMovie)
                             core.wait(self.freezeFrame)
@@ -1430,7 +1445,7 @@ class PyHab:
                     elif self.lookKeysPressed():
                         waitStart = False
                         self.dispCoderWindow(trialType)
-                    elif self.keyboard[self.key.R] and not didRedo:  # Redo last trial, mark last trial as bad
+                    elif self.keyboard[self.key.R] and not didRedo and trialNum > 1:  # Redo last trial, mark last trial as bad
                         if self.counters[trialType] > 0:
                             self.counters[trialType] -= 1
                         # need to give the blockName of the previous trial, NOT the current one!
@@ -1441,12 +1456,8 @@ class PyHab:
                                 lastBlockName = lastBlockName[0:lastBlockName.index('*')]  # problem: also includes hab number!
                                 # Let's assume less than 100 for max hab.
                                 for b, c in self.habCount.items():
-                                    if c < 9:
-                                        if eval(lastBlockName[-1]) == c + 1:  # need to od it this way because otherwise risks an eval error
-                                            lastBlockName = lastBlockName[0:-1]
-                                    elif c > 8:
-                                        if eval(lastBlockName[-2:]) == c + 1:
-                                            lastBlockName = lastBlockName[0:-2]
+                                    if b == lastBlockName[0:len(b)]:
+                                        lastBlockName = lastBlockName[0:len(b)]
                         else:
                             lastBlockName = self.actualTrialOrder[trialNum - 2]
                         blockRedo = False
@@ -1500,19 +1511,33 @@ class PyHab:
 
             elif x == 1:  # end hab block!
                 # Find the end of this hab block and skip to there. JumpToTest does this!
-                # But JumpToTest can't be used except between two trials for complex reasons
+                # But JumpToTest can't be used except *between* two trials for complex reasons
                 # So instead, we partially replicate its code.
-                maxHab = deepcopy(trialNum)
-                for x in range(trialNum, len(self.actualTrialOrder)):
-                    if topBlockName in self.actualTrialOrder[x] and '^' in self.actualTrialOrder[x]:
-                        maxHab = x # Index, not hab number
-                tempNum = maxHab
-                del self.actualTrialOrder[(trialNum):(tempNum + 1)]
+                # But if maxhabtrials was reached, no trials should be deleted.
+                if self.habCount[topBlockName] < self.blockList[topBlockName]['maxHabTrials']:
+                    maxHab = deepcopy(trialNum)
+                    for x in range(trialNum, len(self.actualTrialOrder)):
+                        if topBlockName in self.actualTrialOrder[x] and '^' in self.actualTrialOrder[x]:
+                            maxHab = x # Index, not hab number
+                    tempNum = maxHab
+                    # Delete from the index after the current trial to the last hab trial index.
+                    # Del does not delete the final item in its range
+                    if tempNum == len(self.actualTrialOrder):
+                        # safety catch to prevent an IndexError if the last trial is a hab trial.
+                        del self.actualTrialOrder[(trialNum):]
+                    else:
+                        del self.actualTrialOrder[(trialNum):(tempNum + 1)]
                 trialNum += 1
-                trialType = self.actualTrialOrder[trialNum - 1]  # No need to check for hab sub-trials.
-                if self.blindPres == 0:
-                    self.rdyTextAppend = " NEXT: " + trialType + " TRIAL"
-                didRedo = False
+                # Edge case: experiment ended on a hab block.
+                if trialNum >= len(self.actualTrialOrder):
+                    runExp = False
+                    didRedo = False
+                    self.endExperiment()
+                else:
+                    trialType = self.actualTrialOrder[trialNum - 1]
+                    if self.blindPres == 0:
+                        self.rdyTextAppend = " NEXT: " + trialType + " TRIAL"
+                    didRedo = False
             elif x == 0:  # continue hab/proceed as normal
                 trialNum += 1
                 trialType = self.actualTrialOrder[trialNum - 1]
@@ -1617,6 +1642,8 @@ class PyHab:
         endFlag = False
         endNow = False  # A special case for auto-redo that overrides end on movie end
 
+        self.trialTiming.append({'trialNum':number, 'trialType':dataType, 'event':'startTrial', 'time':(startTrial - self.absoluteStart)})
+
         def onDuration(adds=0, subs=0):  # A function for the duration switch, while leaving sumOn intact
             if localType in self.durationCriterion:
                 return core.getTime() - startTrial - subs
@@ -1720,7 +1747,7 @@ class PyHab:
                 nowOff = core.getTime() - startTrial
                 # Compartmentalizing conditions to end trial here for new either/or functionality
                 endCondMet = False
-                if self.playThrough[localType] == 0:  # Standard gaze-on then gaze-off
+                if self.playThrough[localType] in [0, 4]:  # Standard gaze-on then gaze-off or maxoff/maxon
                     if onDuration(subs=nowOff-startOff) >= self.minOn[localType] and nowOff - startOff >= self.maxOff[localType] and not endFlag:
                         endCondMet = True
                     elif localType in self.autoRedo and deadlineChecked and nowOff - startOff >= self.maxOff[localType] and not endFlag:
@@ -1792,8 +1819,14 @@ class PyHab:
                                 elif disMovie['stimType'] == ['Image with audio'] and disMovie['stim']['Audio'].status == PLAYING:
                                     disMovie['stim']['Audio'].pause()
                             startAG = core.getTime() - startTrial
+                            tempTiming = {'trialNum': number, 'trialType': dataType, 'event': 'startAttnGetter',
+                                          'time': (core.getTime() - self.absoluteStart)}
+                            self.trialTiming.append(tempTiming)
                             self.attnGetter(localType, cutoff=self.midAG[localType]['cutoff'], onmin=self.midAG[localType]['onmin'], midTrial=True)
                             endAG = core.getTime() - startTrial  # Keeping everything relative to start of trial
+                            tempTiming = {'trialNum': number, 'trialType': dataType, 'event': 'endAttnGetter',
+                                          'time': (core.getTime() - self.absoluteStart)}
+                            self.trialTiming.append(tempTiming)
                             durAG = endAG - startAG
                             maxDurAdd = maxDurAdd + durAG  # Increase max length of trial by duration that AG played.
                             if localType not in self.dynamicPause:
@@ -1806,6 +1839,20 @@ class PyHab:
                 nowOn = core.getTime() - startTrial
                 # the argument for oncheck accounts for the current gaze-on, if we aren't using duration mode.
                 if self.playThrough[localType] in [1, 3] and onDuration(adds=nowOn-startOn) > self.minOn[localType] and not endFlag:  # For trial types where the only crit is min-on.
+                    if localType in self.movieEnd and not endNow:
+                        endFlag = True
+                    else:
+                        runTrial = False
+                        endTrial = core.getTime() - startTrial
+                        if not self.stimPres:
+                            self.endTrialSound.play()
+                            self.endTrialSound = sound.Sound('A', octave=4, sampleRate=44100, secs=0.2)
+                        endOn = core.getTime() - startTrial
+                        onDur = endOn - startOn
+                        tempGazeArray = {'trial':number, 'trialType':dataType, 'startTime':startOn, 'endTime':endOn, 'duration':onDur}
+                        onArray.append(tempGazeArray)
+                # New "max-on" criterion, which is only used in combination with the "normal" minon/maxoff criterion. Only needs testing here.
+                elif self.playThrough[localType] == 4 and onDuration(adds=nowOn-startOn) > self.maxOn[localType] and not endFlag:
                     if localType in self.movieEnd and not endNow:
                         endFlag = True
                     else:
@@ -1866,6 +1913,8 @@ class PyHab:
             offDur2 = endTrial - startOff2
             tempGazeArray2 = {'trial':number, 'trialType':dataType, 'startTime':startOff2, 'endTime':endTrial, 'duration':offDur2}
             offArray2.append(tempGazeArray2)
+        self.trialTiming.append({'trialNum': number, 'trialType': dataType, 'event': 'endTrial',
+                      'time': (core.getTime() - self.absoluteStart)})
         # print offArray
         # print onArray2
         # print offArray2
@@ -1905,7 +1954,6 @@ class PyHab:
             if self.stimPres and disMovie['stimType'] == 'Movie':
                 disMovie['stim'].seek(0.0)
                 disMovie['stim'].pause()
-            # Todo: Do a proper redo, including rewinding trials using redoSetup.
             self.abortTrial(onArray, offArray, number, dataType, onArray2, offArray2, self.stimName, habDataRec, habCrit)
             return 3
         else:
@@ -2046,8 +2094,29 @@ class PyHab:
                     # print('writing rows')
                     outputWriter.writerow(self.dataMatrix[r])
 
+        # If stimulus presentation, save timing file.
+        if self.stimPres:
+            # Todo: Separate folder for trial timings? Builder option? Both?
+            nDupe = ''  # This infrastructure eliminates the risk of overwriting existing data
+            o = 1
+            filename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(
+                self.today.month) + str(
+                self.today.day) + str(self.today.year) + '_trialTiming.csv'
+            while os.path.exists(filename):
+                o += 1
+                nDupe = str(o)
+                filename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(
+                    self.today.month) + str(
+                    self.today.day) + str(self.today.year) + '_trialTiming.csv'
+            timingHeaders = ['trialNum','trialType','event','time']
+            with open(filename, 'w') as f:
+                outputWriter = csv.DictWriter(f, fieldnames=timingHeaders, extrasaction='ignore', lineterminator='\n')
+                outputWriter.writeheader()
+                for r in range(0, len(self.trialTiming)):
+                    # print('writing rows')
+                    outputWriter.writerow(self.trialTiming[r])
 
-        #Verbose data saving.
+        #Verbose data saving. Non-optional.
         verboseMatrix = []
         # first, verbose data is not as well organized. However, we should be able to alternate back and forth between
         # on and off until we reach the end of a given trial, to reconstruct it.

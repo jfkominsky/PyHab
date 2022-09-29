@@ -1642,7 +1642,7 @@ class PyHab:
         endFlag = False
         endNow = False  # A special case for auto-redo that overrides end on movie end
 
-        self.trialTiming.append({'trialNum':number, 'trialType':ttype, 'event':'startTrial', 'time':(startTrial - self.absoluteStart)})
+        self.trialTiming.append({'trialNum':number, 'trialType':dataType, 'event':'startTrial', 'time':(startTrial - self.absoluteStart)})
 
         def onDuration(adds=0, subs=0):  # A function for the duration switch, while leaving sumOn intact
             if localType in self.durationCriterion:
@@ -1819,12 +1819,12 @@ class PyHab:
                                 elif disMovie['stimType'] == ['Image with audio'] and disMovie['stim']['Audio'].status == PLAYING:
                                     disMovie['stim']['Audio'].pause()
                             startAG = core.getTime() - startTrial
-                            tempTiming = {'trialNum': number, 'trialType': ttype, 'event': 'startAttnGetter',
+                            tempTiming = {'trialNum': number, 'trialType': dataType, 'event': 'startAttnGetter',
                                           'time': (core.getTime() - self.absoluteStart)}
                             self.trialTiming.append(tempTiming)
                             self.attnGetter(localType, cutoff=self.midAG[localType]['cutoff'], onmin=self.midAG[localType]['onmin'], midTrial=True)
                             endAG = core.getTime() - startTrial  # Keeping everything relative to start of trial
-                            tempTiming = {'trialNum': number, 'trialType': ttype, 'event': 'endAttnGetter',
+                            tempTiming = {'trialNum': number, 'trialType': dataType, 'event': 'endAttnGetter',
                                           'time': (core.getTime() - self.absoluteStart)}
                             self.trialTiming.append(tempTiming)
                             durAG = endAG - startAG
@@ -1913,8 +1913,8 @@ class PyHab:
             offDur2 = endTrial - startOff2
             tempGazeArray2 = {'trial':number, 'trialType':dataType, 'startTime':startOff2, 'endTime':endTrial, 'duration':offDur2}
             offArray2.append(tempGazeArray2)
-            self.trialTiming.append({'trialNum': number, 'trialType': ttype, 'event': 'endTrial',
-                          'time': (core.getTime() - self.absoluteStart)})
+        self.trialTiming.append({'trialNum': number, 'trialType': dataType, 'event': 'endTrial',
+                      'time': (core.getTime() - self.absoluteStart)})
         # print offArray
         # print onArray2
         # print offArray2
@@ -2006,8 +2006,6 @@ class PyHab:
         """
         End experiment, save all data, calculate reliability if needed, close up shop. Displays "saving data" and
         end-of-experiment screen.
-
-        TODO: 0.10.3: Save new timing recording file
 
         :return:
         :rtype:
@@ -2110,7 +2108,7 @@ class PyHab:
                 filename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(
                     self.today.month) + str(
                     self.today.day) + str(self.today.year) + '_trialTiming.csv'
-            timingHeaders = ['trialNumber','trialType','event','time']
+            timingHeaders = ['trialNum','trialType','event','time']
             with open(filename, 'w') as f:
                 outputWriter = csv.DictWriter(f, fieldnames=timingHeaders, extrasaction='ignore', lineterminator='\n')
                 outputWriter.writeheader()
