@@ -65,8 +65,11 @@ class PyHab:
             self.dataFolder = ''.join(self.dataFolder)
         # Create verbose data sub-folder. New in 0.8.
         self.verboseFolder = self.dataFolder + 'verbose' + self.dirMarker
+        self.timingFolder = self.dataFolder + 'timing' + self.dirMarker
         if not os.path.isdir(self.verboseFolder):
             os.makedirs(self.verboseFolder)
+        if not os.path.isdir(self.timingFolder):
+            os.makedirs(self.timingFolder)
         self.testMode = testMode
 
 
@@ -1412,14 +1415,14 @@ class PyHab:
                     elif self.keyboard[self.key.A]:
                         self.dispCoderWindow(0)
                         if self.stimPres:
-
                             if trialType in self.playAttnGetter:
-                                tempTiming = {'trialNum': trialNum, 'trialType': trialType, 'event': 'startAttnGetter',
+                                # TrialType here looks weird because it's cleaning up symbols for hab trials, but it should end up equivalent to dataType in doTrial.
+                                tempTiming = {'trialNum': trialNum, 'trialType': self.actualTrialOrder[trialNum-1].translate({94:None, 42:None}), 'event': 'startAttnGetter',
                                               'time': (core.getTime() - self.absoluteStart)}
                                 self.trialTiming.append(tempTiming)
                                 self.attnGetter(trialType, self.playAttnGetter[trialType]['cutoff'],
                                                 self.playAttnGetter[trialType]['onmin'])  # plays the attention-getter
-                                tempTiming = {'trialNum': trialNum, 'trialType': trialType, 'event': 'endAttnGetter',
+                                tempTiming = {'trialNum': trialNum, 'trialType': self.actualTrialOrder[trialNum-1].translate({94:None, 42:None}), 'event': 'endAttnGetter',
                                               'time': (core.getTime() - self.absoluteStart)}
                                 self.trialTiming.append(tempTiming)
                                 core.wait(.1)
@@ -2096,16 +2099,15 @@ class PyHab:
 
         # If stimulus presentation, save timing file.
         if self.stimPres:
-            # Todo: Separate folder for trial timings? Builder option? Both?
             nDupe = ''  # This infrastructure eliminates the risk of overwriting existing data
             o = 1
-            filename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(
+            filename = self.timingFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(
                 self.today.month) + str(
                 self.today.day) + str(self.today.year) + '_trialTiming.csv'
             while os.path.exists(filename):
                 o += 1
                 nDupe = str(o)
-                filename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(
+                filename = self.timingFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(
                     self.today.month) + str(
                     self.today.day) + str(self.today.year) + '_trialTiming.csv'
             timingHeaders = ['trialNum','trialType','event','time']

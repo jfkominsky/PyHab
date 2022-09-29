@@ -224,6 +224,9 @@ class PyHabPL(PyHab):
         endFlag = False
         endNow = False  # special case for autoredo
 
+        self.trialTiming.append({'trialNum': number, 'trialType': dataType, 'event': 'startTrial',
+                                 'time': (startTrial - self.absoluteStart)})
+
         def onDuration(adds=0, subs=0):  # A function for the duration switch, while leaving sumOn intact
             if localType in self.durationCriterion:
                 return core.getTime() - startTrial - subs
@@ -445,8 +448,14 @@ class PyHabPL(PyHab):
                                     disMovie['stim'].pause()
                                 elif disMovie['stimType'] == ['Image with audio'] and disMovie['stim']['Audio'].status == PLAYING:
                                     disMovie['stim']['Audio'].pause()
+                            tempTiming = {'trialNum': number, 'trialType': dataType, 'event': 'startAttnGetter',
+                                          'time': (core.getTime() - self.absoluteStart)}
+                            self.trialTiming.append(tempTiming)
                             startAG = core.getTime()
                             self.attnGetter(localType, self.midAG[localType]['cutoff'], self.midAG[localType]['onmin'])
+                            tempTiming = {'trialNum': number, 'trialType': dataType, 'event': 'endAttnGetter',
+                                          'time': (core.getTime() - self.absoluteStart)}
+                            self.trialTiming.append(tempTiming)
                             durAG = core.getTime() - startAG
                             maxDurAdd = maxDurAdd + durAG  # Increase max length of trial by duration that AG played.
                             if localType not in self.dynamicPause:
@@ -554,6 +563,8 @@ class PyHabPL(PyHab):
                     tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOff, 'endTime': endTrial,
                                      'duration':offDur}
                     offArray.append(tempGazeArray)
+        self.trialTiming.append({'trialNum': number, 'trialType': dataType, 'event': 'endTrial',
+                                 'time': (core.getTime() - self.absoluteStart)})
         if habTrial:
             habDataRec = self.habCount[habBlock] + 1
             habCrit = self.habCrit[habBlock]
@@ -655,7 +666,6 @@ class PyHabPL(PyHab):
     def endExperiment(self):
         """
         End experiment, save all data, calculate reliability if needed, close up shop
-        TODO: Save trial timing
         :return:
         :rtype:
         """
@@ -740,6 +750,26 @@ class PyHabPL(PyHab):
                 outputWriter.writeheader()
                 for r in range(0, len(self.dataMatrix)):
                     outputWriter.writerow(self.dataMatrix[r])
+
+        if self.stimPres:
+            nDupe = ''  # This infrastructure eliminates the risk of overwriting existing data
+            o = 1
+            filename = self.timingFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(
+                self.today.month) + str(
+                self.today.day) + str(self.today.year) + '_trialTiming.csv'
+            while os.path.exists(filename):
+                o += 1
+                nDupe = str(o)
+                filename = self.timingFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(
+                    self.today.month) + str(
+                    self.today.day) + str(self.today.year) + '_trialTiming.csv'
+            timingHeaders = ['trialNum', 'trialType', 'event', 'time']
+            with open(filename, 'w') as f:
+                outputWriter = csv.DictWriter(f, fieldnames=timingHeaders, extrasaction='ignore', lineterminator='\n')
+                outputWriter.writeheader()
+                for r in range(0, len(self.trialTiming)):
+                    # print('writing rows')
+                    outputWriter.writerow(self.trialTiming[r])
 
         # Now to construct and save verbose data
         verboseMatrix = []
