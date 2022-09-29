@@ -330,7 +330,7 @@ class PyHabHPP(PyHab):
         Returns a status value (int) that tells doExperiment what to do next
         HPP experiments works very differently from everything else, and this is where the bulk of that is happening.
 
-        TODO: Hab trial revamp.
+        TODO: Trial timing recording
 
         :param number: Trial number
         :type number: int
@@ -1126,6 +1126,7 @@ class PyHabHPP(PyHab):
     def endExperiment(self):
         """
         End experiment, save all data, calculate reliability if needed, close up shop
+        TODO: Save trial timing
         :return:
         :rtype:
         """

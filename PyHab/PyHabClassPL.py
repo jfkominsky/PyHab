@@ -173,7 +173,7 @@ class PyHabPL(PyHab):
         Control function for individual trials, to be called by doExperiment
         Returns a status value (int) that tells doExperiment what to do next
 
-        TODO: Hab trial revamp
+        TODO: trial timing recording
 
         :param number: Trial number
         :type number: int
@@ -655,6 +655,7 @@ class PyHabPL(PyHab):
     def endExperiment(self):
         """
         End experiment, save all data, calculate reliability if needed, close up shop
+        TODO: Save trial timing
         :return:
         :rtype:
         """
