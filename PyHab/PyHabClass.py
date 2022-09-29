@@ -1292,6 +1292,8 @@ class PyHab:
         didRedo = False
         self.dispCoderWindow() #Update coder window
         AA = []  # a localized autoadvance to allow for first trial
+        if self.eyetracker > 0:
+            self.tracker.start_recording(self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '_EyeTracking.tsv')
         while runExp:
             reviewed = False
             if len(self.badTrials) > 0:
@@ -1510,7 +1512,11 @@ class PyHab:
                     else:
                         self.dispCoderWindow(0)
             if not end or skip: #If Y has not been pressed, do the trial! Otherwise, end the experiment.
+                if self.eyetracker > 0:
+                    self.tracker.record_event('trial_'+str(trialNum)+'_'+self.actualTrialOrder[trialNum - 1]+'_start')
                 x = self.doTrial(trialNum, self.actualTrialOrder[trialNum - 1], disMovie)  # the actual trial, returning one of four status values at the end
+                if self.eyetracker > 0:
+                    self.tracker.record_event('trial_'+str(trialNum)+'_'+self.actualTrialOrder[trialNum - 1]+'_end')
                 AA = self.autoAdvance  # After the very first trial AA will always be just the autoadvance list.
             elif skip:
                 x = 0 # Simply proceed to next trial.
@@ -2050,6 +2056,9 @@ class PyHab:
             if self.endImageObject is not None:
                 self.endImageObject.draw()
             self.win.flip()
+            if self.eyetracker > 0:
+                self.tracker.stop_recording()
+                self.tracker.close()
 
         # Block-level summary data. Omits bad trials.
         if len(self.blockDataList) > 0 and self.blockSum:
