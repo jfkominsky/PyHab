@@ -1288,8 +1288,6 @@ class PyHab:
         didRedo = False
         self.dispCoderWindow() #Update coder window
         AA = []  # a localized autoadvance to allow for first trial
-        if self.eyetracker > 0:
-            self.tracker.start_recording(self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '_EyeTracking.tsv')
         while runExp:
             reviewed = False
             if len(self.badTrials) > 0:
@@ -1384,6 +1382,9 @@ class PyHab:
             # Record an absolute start time for the whole experiment.
             if trialNum == 1:
                 self.absoluteStart = core.getTime()
+                if self.eyetracker > 0: # Should align timing file w/eye-tracker timing.
+                    self.tracker.start_recording(self.et_filename)
+
             if not end: #This if statement checks if we're trying to quit.
                 self.frameCount = {k:0 for k,v in self.frameCount.items()}
                 # framerate = win.getActualFrameRate()
@@ -1398,10 +1399,14 @@ class PyHab:
                         # needs to be here to record trial number and type safely.
                         tempTiming = {'trialNum':trialNum, 'trialType': self.actualTrialOrder[trialNum-1].translate({94:None, 42:None}), 'event':'startAttnGetter', 'time':(core.getTime() - self.absoluteStart)}
                         self.trialTiming.append(tempTiming)
+                        if self.eyetracker > 0:
+                            self.tracker.record_event('trial_' + str(trialNum) + '_' + tempTiming['trialType'] + '_startAttnGetter')
                         # Pull relevant arguments out of the attngetter dictionary.
                         self.attnGetter(trialType, self.playAttnGetter[trialType]['cutoff'], self.playAttnGetter[trialType]['onmin'])  # plays the attention-getter
                         tempTiming = {'trialNum':trialNum, 'trialType': self.actualTrialOrder[trialNum-1].translate({94:None, 42:None}), 'event':'endAttnGetter', 'time':(core.getTime() - self.absoluteStart)}
                         self.trialTiming.append(tempTiming) # this is going to be exhaustive but worth it
+                        if self.eyetracker > 0:
+                            self.tracker.record_event('trial_' + str(trialNum) + '_' + tempTiming['trialType'] + '_endAttnGetter')
                         core.wait(.1)  # this wait is important to make the attentiongetter not look like it is turning into the stimulus
                         self.frameCount = {k: 0 for k, v in self.frameCount.items()}
                         irrel = self.dispTrial(0, disMovie)
@@ -1441,11 +1446,15 @@ class PyHab:
                                 tempTiming = {'trialNum': trialNum, 'trialType': self.actualTrialOrder[trialNum-1].translate({94:None, 42:None}), 'event': 'startAttnGetter',
                                               'time': (core.getTime() - self.absoluteStart)}
                                 self.trialTiming.append(tempTiming)
+                                if self.eyetracker > 0:
+                                    self.tracker.record_event('trial_' + str(trialNum) + '_' + tempTiming['trialType'] + '_startAttnGetter')
                                 self.attnGetter(trialType, self.playAttnGetter[trialType]['cutoff'],
                                                 self.playAttnGetter[trialType]['onmin'])  # plays the attention-getter
                                 tempTiming = {'trialNum': trialNum, 'trialType': self.actualTrialOrder[trialNum-1].translate({94:None, 42:None}), 'event': 'endAttnGetter',
                                               'time': (core.getTime() - self.absoluteStart)}
                                 self.trialTiming.append(tempTiming)
+                                if self.eyetracker > 0:
+                                    self.tracker.record_event('trial_' + str(trialNum) + '_' + tempTiming['trialType'] + '_endAttnGetter')
                                 core.wait(.1)
                             irrel = self.dispTrial(0, disMovie)
                             core.wait(self.freezeFrame)
@@ -1508,11 +1517,9 @@ class PyHab:
                     else:
                         self.dispCoderWindow(0)
             if not end or skip: #If Y has not been pressed, do the trial! Otherwise, end the experiment.
-                if self.eyetracker > 0:
-                    self.tracker.record_event('trial_'+str(trialNum)+'_'+self.actualTrialOrder[trialNum - 1]+'_start')
+
                 x = self.doTrial(trialNum, self.actualTrialOrder[trialNum - 1], disMovie)  # the actual trial, returning one of four status values at the end
-                if self.eyetracker > 0:
-                    self.tracker.record_event('trial_'+str(trialNum)+'_'+self.actualTrialOrder[trialNum - 1]+'_end')
+
                 AA = self.autoAdvance  # After the very first trial AA will always be just the autoadvance list.
             elif skip:
                 x = 0 # Simply proceed to next trial.
@@ -1677,6 +1684,8 @@ class PyHab:
         endNow = False  # A special case for auto-redo that overrides end on movie end
 
         self.trialTiming.append({'trialNum':number, 'trialType':dataType, 'event':'startTrial', 'time':(startTrial - self.absoluteStart)})
+        if self.eyetracker > 0:
+            self.tracker.record_event('trial_' + str(number) + '_' + dataType + '_startTrial')
 
         def onDuration(adds=0, subs=0):  # A function for the duration switch, while leaving sumOn intact
             if localType in self.durationCriterion:
@@ -1856,11 +1865,15 @@ class PyHab:
                             tempTiming = {'trialNum': number, 'trialType': dataType, 'event': 'startAttnGetter',
                                           'time': (core.getTime() - self.absoluteStart)}
                             self.trialTiming.append(tempTiming)
+                            if self.eyetracker > 0:
+                                self.tracker.record_event('trial_' + str(number) + '_' + tempTiming['trialType'] + '_startAttnGetter')
                             self.attnGetter(localType, cutoff=self.midAG[localType]['cutoff'], onmin=self.midAG[localType]['onmin'], midTrial=True)
                             endAG = core.getTime() - startTrial  # Keeping everything relative to start of trial
                             tempTiming = {'trialNum': number, 'trialType': dataType, 'event': 'endAttnGetter',
                                           'time': (core.getTime() - self.absoluteStart)}
                             self.trialTiming.append(tempTiming)
+                            if self.eyetracker > 0:
+                                self.tracker.record_event('trial_' + str(number) + '_' + tempTiming['trialType'] + '_endAttnGetter')
                             durAG = endAG - startAG
                             maxDurAdd = maxDurAdd + durAG  # Increase max length of trial by duration that AG played.
                             if localType not in self.dynamicPause:
@@ -1949,6 +1962,8 @@ class PyHab:
             offArray2.append(tempGazeArray2)
         self.trialTiming.append({'trialNum': number, 'trialType': dataType, 'event': 'endTrial',
                       'time': (core.getTime() - self.absoluteStart)})
+        if self.eyetracker > 0:
+            self.tracker.record_event('trial_' + str(number) + '_' + dataType + '_endTrial')
         # print offArray
         # print onArray2
         # print offArray2
@@ -2889,10 +2904,15 @@ class PyHab:
                 self.tracker.close()
                 self.eyetracker = 0
                 print("ERROR: Calibration failure! Experiment will run in manual mode.")
+                errDlg = gui.Dlg()
+                errDlg.addText("ERROR: Calibration failure! Experiment will run in manual mode.")
+                errDlg.show()
                 wellCalibrated = True
             else:
                 # validation loop. There is such a thing as a validation function but it requires addons and this is better.
                 endValidation = False
+                # Saves to a validation data dump, separate from the main data file. Should overwrite previous file.
+                self.tracker.start_recording(self.dataFolder+'validationDump.tsv')
                 while not endValidation:
                     for v in range(0, len(validTargs)):
                         validTargs[v].draw()
@@ -2906,7 +2926,9 @@ class PyHab:
                         wellCalibrated = True
                         endValidation = True
                     elif 'r' in keycheck:
-                        endValidation = True # Redo calibration.
+                        endValidation = True  # Redo calibration.
+                self.tracker.stop_recording()
+
 
 
     def SetupWindow(self):
@@ -2926,10 +2948,25 @@ class PyHab:
             if self.eyetracker > 0:
                 try:
                     self.tracker = TobiiInfantController(self.win)
+                    self.et_filename = ''
+                    newFile = False
+                    ndupe = ''
+                    ctr = 1
+                    while not newFile:
+                        self.et_filename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + ndupe + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '_EyeTracking.tsv'
+                        if os.path.exists(self.et_filename):
+                            ctr = ctr + 1
+                            ndupe = str(ctr)
+                        else:
+                            newFile = True
                     self.TrackerCalibrateValidate()
                 except:
                     self.eyetracker = 0
                     print("Failed to connect to eye-tracker, experiment will run in manual mode.")
+                    errDlg = gui.Dlg()
+                    errDlg.addText("Failed to connect to eye-tracker, experiment will run in manual mode.")
+                    errDlg.show()
+
         elif self.eyetracker > 0:
             self.eyetracker = 0 # eye-tracking only works with stimulus presentation mode on, this essentially deactivates it.
             print("eye-tracker mode deactivated (no stimulus presentation). Experiment will run in manual mode.")
