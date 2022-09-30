@@ -316,6 +316,8 @@ class PyHab:
             calnormp = [(-0.4, 0.4), (-0.4, -0.4), (0.0, 0.0), (0.4, 0.4), (0.4, -0.4)] # TODO: Make option for num calib points
             self.calibPoints = [(x * self.screenWidth['C'], y * self.screenHeight['C']) for x, y in calnormp]
             self.calibStim = ['stimuli'+self.dirMarker+'calib'+self.dirMarker+'{}'.format(x) for x in os.listdir('stimuli'+self.dirMarker+'calib') if x.endswith('.png') and not x.startswith('.')]
+            # Calibration audio (a different sound than the attngetter, borrowed from psychopy_tobii_infant's demos)
+            self.calibSound = sound.Sound('stimuli'+self.dirMarker+'calib'+self.dirMarker+'wawa.wav')
 
     '''
     FUNCTIONS
@@ -807,6 +809,9 @@ class PyHab:
             elif self.keyboard[self.key.B]:
                 self.statusSquareA.fillColor = 'green'
                 self.statusTextA.text = "ON"
+            elif self.eyetracker == 2 and self.lookKeysPressed():
+                self.statusSquareA.fillColor = 'green'
+                self.statusTextA.text = "ON"
             else:
                 self.statusSquareA.fillColor = 'red'
                 self.statusTextA.text = "OFF"
@@ -1266,9 +1271,6 @@ class PyHab:
     def doExperiment(self):
         """
         The primary control function and main trial loop.
-
-        TODO: eye-tracker start and end recording. Calib is done during setupwindow.
-        Todo: events for .tsv file in eye-tracking mode. Fortunately this lines up closely with the timing file.
 
         :return:
         :rtype:
@@ -2867,6 +2869,45 @@ class PyHab:
         tempAdd = {'stimType': tempStim['stimType'], 'stim': tempStimObj}
         return tempAdd
 
+    def TrackerCalibrateValidate(self):
+        """
+        Function that controls the eye-tracker calibration and validation in eye-tracking modes.
+        In principle this can be run mid-experiment, but it will be disruptive
+
+        :return:
+        :rtype:
+        """
+        marker = visual.Circle(self.win, radius=20, lineColor='red', fillColor='red')
+        validTargs = []
+        for i in range(0, len(self.calibPoints)):
+            validTargs.append(visual.Circle(self.win, radius=30, lineColor='white', fillColor='white', pos=self.calibPoints[i]))
+        wellCalibrated = False
+        while not wellCalibrated:
+            success = self.tracker.run_calibration(self.calibPoints, self.calibStim, audio=self.calibSound)
+            if not success:
+                # Failed to calibrate, de-activate eye-tracker and switch to manual mode.
+                self.tracker.close()
+                self.eyetracker = 0
+                print("ERROR: Calibration failure! Experiment will run in manual mode.")
+                wellCalibrated = True
+            else:
+                # validation loop. There is such a thing as a validation function but it requires addons and this is better.
+                endValidation = False
+                while not endValidation:
+                    for v in range(0, len(validTargs)):
+                        validTargs[v].draw()
+                    gpos = self.tracker.get_current_gaze_position()
+                    if not gpos == np.nan:
+                        marker.setPos(gpos)
+                        marker.draw()
+                    self.win.flip()
+                    keycheck = event.getKeys() # Can't use the normal keyboard stuff b/c it isn't loaded when this runs initially.
+                    if 'space' in keycheck:
+                        wellCalibrated = True
+                        endValidation = True
+                    elif 'r' in keycheck:
+                        endValidation = True # Redo calibration.
+
 
     def SetupWindow(self):
         """
@@ -2885,12 +2926,7 @@ class PyHab:
             if self.eyetracker > 0:
                 try:
                     self.tracker = TobiiInfantController(self.win)
-                    success = self.tracker.run_calibration(self.calibPoints, self.calibStim)
-                    if not success:
-                        # Failed to calibrate, quit.
-                        self.win.close()
-                        print("ERROR: Calibration failure!")
-                        core.quit()
+                    self.TrackerCalibrateValidate()
                 except:
                     self.eyetracker = 0
                     print("Failed to connect to eye-tracker, experiment will run in manual mode.")
