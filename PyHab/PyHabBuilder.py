@@ -3981,6 +3981,16 @@ class PyHabBuilder:
                 except:
                     success = False
                     print('Could not copy attention-getter file ' + j['stimLoc'] + ' to location ' +  targPath + '. Make sure both exist!')
+
+        # todo: Customizable calibration images, calibration process.
+        calibImgPath = 'calib'
+        calibImgTarg = stimPath+calibImgPath
+        if not os.path.exists(calibImgTarg):
+            try:
+                shutil.copytree(srcDir+calibImgPath, calibImgTarg)
+            except:
+                success = False
+                print('Could not copy calibration images folder')
         if not success:
             errDlg = gui.Dlg(title="Could not copy stimuli!")
             errDlg.addText("Some stimuli could not be copied successfully. See the output of the coder window for details.")
@@ -4018,6 +4028,7 @@ class PyHabBuilder:
 
         tobiiPath = 'psychopy_tobii_infant'
         tobiiTarg = codePath+tobiiPath
+
         try:
             if not os.path.exists(classTarg):
                 shutil.copyfile(srcDir+classPath, classTarg)
@@ -4031,6 +4042,7 @@ class PyHabBuilder:
                 shutil.copyfile(srcDir+initPath, initTarg)
             if not os.path.exists(tobiiTarg):
                 shutil.copytree(srcDir+tobiiPath, tobiiTarg)
+
         except:
             # error dialog
             errDlg = gui.Dlg(title="Could not copy PyHab and builder!")
