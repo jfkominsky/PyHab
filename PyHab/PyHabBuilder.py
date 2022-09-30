@@ -3901,7 +3901,7 @@ class PyHabBuilder:
         """
         Saves a PyHab project to a set of folders dictated by self.folderPath
 
-        todo: Add psychopy_tobii_infant to this? Do we just package PyHab with that?
+        todo: Add psychopy_tobii_infant to this. Saved in the code folder.
 
         :return:
         :rtype:
@@ -4015,6 +4015,9 @@ class PyHabBuilder:
         buildTarg = codePath+buildPath
         initPath = '__init__.py'
         initTarg = codePath+initPath
+
+        tobiiPath = 'psychopy_tobii_infant'
+        tobiiTarg = codePath+tobiiPath
         try:
             if not os.path.exists(classTarg):
                 shutil.copyfile(srcDir+classPath, classTarg)
@@ -4026,6 +4029,8 @@ class PyHabBuilder:
                 shutil.copyfile(srcDir+buildPath, buildTarg)
             if not os.path.exists(initTarg):
                 shutil.copyfile(srcDir+initPath, initTarg)
+            if not os.path.exists(tobiiTarg):
+                shutil.copytree(srcDir+tobiiPath, tobiiTarg)
         except:
             # error dialog
             errDlg = gui.Dlg(title="Could not copy PyHab and builder!")

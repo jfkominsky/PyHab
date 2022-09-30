@@ -13,7 +13,10 @@ from math import *
 from datetime import *
 from dateutil.relativedelta import *
 from copy import deepcopy # needed for exactly one usage in redotrial because it's the only reasonable way.
-
+try:
+    from PyHab.psychopy_tobii_infant import TobiiInfantController
+except:
+    print("Eye-tracking unavailable.")
 
 class PyHab:
     """
@@ -126,15 +129,6 @@ class PyHab:
             self.eyetracker = eval(settingsDict['eyetracker'])
         except:
             self.eyetracker = 0
-
-        # Eye-tracker preparation. This is bad form, but better than having this module be required every time.
-        if self.eyetracker > 0:
-            try:
-                from psychopy_tobii_infant import TobiiInfantController
-            except:
-                self.eyetracker = 0
-                print("Please install psychopy_tobii_infant to the PyHab folder and try again.")
-                print("Experiment will run in manual mode.")
 
 
         # ORDER OF PRESENTATION
@@ -2890,7 +2884,7 @@ class PyHab:
             self.dummyThing = visual.Circle(self.win, size=1, color=self.win.color) # This is for fixing a display glitch in PsychoPy3 involving multiple windows of different sizes.
             if self.eyetracker > 0:
                 try:
-                    self.tracker = TobiiInfantController(self.win) # Todo: This is only conditionally imported, so it may throw errors.
+                    self.tracker = TobiiInfantController(self.win)
                     success = self.tracker.run_calibration(self.calibPoints, self.calibStim)
                     if not success:
                         # Failed to calibrate, quit.
