@@ -315,7 +315,7 @@ class PyHab:
         if self.eyetracker > 0:
             calnormp = [(-0.4, 0.4), (-0.4, -0.4), (0.0, 0.0), (0.4, 0.4), (0.4, -0.4)] # TODO: Make option for num calib points
             self.calibPoints = [(x * self.screenWidth['C'], y * self.screenHeight['C']) for x, y in calnormp]
-            self.calibStim = ['calib/{}'.format(x) for x in os.listdir('calib') if x.endswith('.png') and not x.startswith('.')]
+            self.calibStim = ['stimuli'+self.dirMarker+'calib'+self.dirMarker+'{}'.format(x) for x in os.listdir('stimuli'+self.dirMarker+'calib') if x.endswith('.png') and not x.startswith('.')]
 
     '''
     FUNCTIONS
