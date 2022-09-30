@@ -1372,6 +1372,11 @@ class PyHab:
                                 [disMovie, trialType] = self.insertHab(trialNum, k)
                                 while '.' in trialType:
                                     trialType = trialType[trialType.index('.') + 1:]
+                # Eye-tracker only: Redo calibration. Can't be done before first trial because recording not started yet.
+                elif trialNum > 1 and self.eyetracker > 0 and self.keyboard[self.key.C]:
+                    self.tracker.stop_recording() # scary, but as long as "newfile" is false, then it should be possible to resume.
+                    self.TrackerCalibrateValidate()
+                    self.tracker.start_recording(self.et_filename, newfile=False)
                 elif trialNum > 1 and not self.stimPres and self.keyboard[self.key.P] and not reviewed:  # Print data so far, as xHab. Non-stimulus version only. Only between trials.
                     reviewed = True
                     self.printCurrentData()
@@ -1394,7 +1399,6 @@ class PyHab:
                     self.dispCoderWindow(0)
                 if self.stimPres:
                     if trialType in self.playAttnGetter: #Shockingly, this will work.
-                        # TODO: Data might want to record AG length, repeats. Add data columns? "AGreps" and "AGtime"? Also, duration
                         # needs to be here to record trial number and type safely.
                         tempTiming = {'trialNum':trialNum, 'trialType': self.actualTrialOrder[trialNum-1].translate({94:None, 42:None}), 'event':'startAttnGetter', 'time':(core.getTime() - self.absoluteStart)}
                         self.trialTiming.append(tempTiming)
@@ -1513,12 +1517,15 @@ class PyHab:
                                         trialType = trialType[trialType.index('.') + 1:]
                     elif self.keyboard[self.key.S] and '*' not in trialType:  # Skip trial. Doesn't work on things required for habituation.
                         skip = True
+                    # eye-tracker only: Redo calibration
+                    elif self.eyetracker > 0 and self.keyboard[self.key.C]:
+                        self.tracker.stop_recording()
+                        self.TrackerCalibrateValidate()
+                        self.tracker.start_recording(self.et_filename, newfile=False)
                     else:
                         self.dispCoderWindow(0)
             if not end or skip: #If Y has not been pressed, do the trial! Otherwise, end the experiment.
-
                 x = self.doTrial(trialNum, self.actualTrialOrder[trialNum - 1], disMovie)  # the actual trial, returning one of four status values at the end
-
                 AA = self.autoAdvance  # After the very first trial AA will always be just the autoadvance list.
             elif skip:
                 x = 0 # Simply proceed to next trial.
