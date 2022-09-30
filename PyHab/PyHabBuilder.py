@@ -1900,7 +1900,7 @@ class PyHabBuilder:
             instance of a trial, rather than trying to load one movie file and load it once. This setting controls
             whether that happens.
 
-        TODO: 5 = eyetracker: New in 0.10.4, Tobii integration (which is much more seamless than alternatives). Can be set
+        5 = eyetracker: New in 0.10.4, Tobii integration (which is much more seamless than alternatives). Can be set
             to simply record eye-tracking info OR to control the experiment as a replacement for a human coder. (0/1/2)
 
         :return:

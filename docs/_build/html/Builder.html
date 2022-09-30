@@ -89,6 +89,7 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Builder</a></li>
 <li class="toctree-l1"><a class="reference internal" href="BasePyHabClass.html">PyHab Class (base)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="PrefLook.html">Preferential Looking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="HPP.html">Head-turn Preference Procedure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Reliability.html">Standalone Reliability</a></li>
 </ul>
 
@@ -165,28 +166,13 @@ copies of all of the stimuli and attention-getters to a stimuli folder.</p>
 <dl class="class">
 <dt id="PyHab.PyHabBuilder.PyHabBuilder">
 <em class="property">class </em><code class="descclassname">PyHab.PyHabBuilder.</code><code class="descname">PyHabBuilder</code><span class="sig-paren">(</span><em>loadedSaved=False</em>, <em>settingsDict={}</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder" title="Permalink to this definition">¶</a></dt>
-<dd><p>Changelist from 0.4:</p>
-<p>MaxOff and minOn are now trial-type-specific</p>
-<p>Now supports dynamic peak habituation criteiron and moving vs. fixed-window habituation evaluation.</p>
-<p>Now supports different types of stimuli - Movies, images, audio, and images with audio.</p>
-<p>Changed how stimuli are added to experiment - you now create a “stim library” and separately associate items in it
-with different trial types.</p>
-<p>TODO: Option for habituation over whole meta-trials not just the “hab” portion</p>
+<dd><p>Graphical interface for constructing PyHab experiments. Runs mostly on a Pyglet window and qtGUI dialogs.
+Saves a settings file in .csv form which can then be read by PyHab Launcher, PyHabClass, PyHabClassPL, and PyHabClassHPP.</p>
 <dl class="method">
-<dt id="PyHab.PyHabBuilder.PyHabBuilder.addHabBlock">
-<code class="descname">addHabBlock</code><span class="sig-paren">(</span><em>makeNew=True</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.addHabBlock" title="Permalink to this definition">¶</a></dt>
-<dd><p>Creates a hab trial type, which consists of a hab trial plus, now, some other number of trials
-It essentially needs to create a sub-flow.</p>
-<p>0 = Maximum duration</p>
-<p>1 = Maximum continuous off-time</p>
-<p>2 = Minimum on-time</p>
-<p>[If stimulus files associated with type, these occupy 3-N]</p>
-<p>3/-5 = Auto-advance into trial</p>
-<p>4/-4 = Select attention-getter</p>
-<p>5/-3 = Inter-stimulus interval (ISI)</p>
-<p>6/-2 = Use sub-block structure?</p>
-<p>7/-1 = Number of trial types in sub-block, including hab</p>
-<p>TODO: Compute hab over whole thing versus just ‘hab’ trial.</p>
+<dt id="PyHab.PyHabBuilder.PyHabBuilder.HPP_stimSettingsDlg">
+<code class="descname">HPP_stimSettingsDlg</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.HPP_stimSettingsDlg" title="Permalink to this definition">¶</a></dt>
+<dd><p>A dialog box for the stimulus settings unique to head-turn preference procedures. Just selects the screen to
+then open the stimulus dialog window for.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -223,7 +209,51 @@ The image/audio pairs are complicated, but not worth splitting into their own fu
 <code class="descname">addStimToTypesDlg</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.addStimToTypesDlg" title="Permalink to this definition">¶</a></dt>
 <dd><p>A series dialog boxes, the first selecting a trial type and the number of stimuli to add to it,
 a second allowing you to add stimuli from the stimulus library that is stimList in the settings.
-Also used for adding beginning and end of experiment images (?)</p>
+Also used for adding beginning and end of experiment images</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabBuilder.PyHabBuilder.advTrialDlg">
+<code class="descname">advTrialDlg</code><span class="sig-paren">(</span><em>trialType</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.advTrialDlg" title="Permalink to this definition">¶</a></dt>
+<dd><p>A dialog for advanced trial settings mostly having to do with attention-getters and stimulus presentation</p>
+<p>0/-8 = cutoff attention-getter on gaze-on? T/F [if trial has an AG - not always present]</p>
+<p>1/-7 = cutoff on-time: How long do they have to look to cut off presentation? [if trial has an AG - not always present]</p>
+<p>2/-6 = Pause stimulus presentation when infant is not looking at screen?</p>
+<p>3/-5 = Mid-trial AG: Play an attention-getter if infant looks away mid-trial?</p>
+<p>4/-4 = mid-trial AG trigger: Minimum time to trigger mid-trial AG</p>
+<p>5/-3 = mid-trial AG cutoff: Stop mid-trial AG on gaze-on?</p>
+<p>6/-2 = mid-trial AG cutoff ontime</p>
+<p>7/-1 = HPP ONLY: Only count gaze-on to stimulus-presenting screen? T/F, casts to hppStimScrOnly</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>trialType</strong> (<em>str</em>) – The trial type being modified.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabBuilder.PyHabBuilder.advTrialSetup">
+<code class="descname">advTrialSetup</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.advTrialSetup" title="Permalink to this definition">¶</a></dt>
+<dd><p>A function for selecting the trials you want to access the advanced settings of.
+Spawns a panel with all the trial types. Reuses code from the block interface.
+Doesn’t need to check existence of trials because</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -271,6 +301,22 @@ Allows audio with PsychoPy-produced looming shape or just a video file.</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="PyHab.PyHabBuilder.PyHabBuilder.attnGetterMovieAudioDlg">
+<code class="descname">attnGetterMovieAudioDlg</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.attnGetterMovieAudioDlg" title="Permalink to this definition">¶</a></dt>
+<dd><p>A modular dialog for finding an audio file and a video file and titling them appropriately.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">A dictionary containing all the info required for a video/audio attngetter.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="PyHab.PyHabBuilder.PyHabBuilder.attnGetterVideoDlg">
 <code class="descname">attnGetterVideoDlg</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.attnGetterVideoDlg" title="Permalink to this definition">¶</a></dt>
 <dd><p>A modular dialog for setting the options for a video-based attention-getter</p>
@@ -287,8 +333,102 @@ Allows audio with PsychoPy-produced looming shape or just a video file.</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="PyHab.PyHabBuilder.PyHabBuilder.autoCond">
+<code class="descname">autoCond</code><span class="sig-paren">(</span><em>genTrials</em>, <em>genBlocks</em>, <em>counters</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.autoCond" title="Permalink to this definition">¶</a></dt>
+<dd><p>The function that actually creates conditions automatically, given what it is generating conditions for, and how
+many items from each trial/block it should have in each condition.
+Simply sets condDict and condList.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>genTrials</strong> (<em>bool</em>) – Are we generating conditions for movies within trial types?</li>
+<li><strong>genBlocks</strong> (<em>bool</em>) – Are we generating conditions for trials within blocks?</li>
+<li><strong>counters</strong> (<em>dict</em>) – A dictionary of each block or trial type that needs to be randomized and the number of items
+that thing should have in each condition</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabBuilder.PyHabBuilder.autoCondSetup">
+<code class="descname">autoCondSetup</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.autoCondSetup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function for getting the parameters for automatically generating conditions.
+A series of dialogs. The first one, whatGenDlg, determines whether we are doing stim within trials, trials
+within blocks, or both. It also determines whether we are keeping all items, which shortcuts the second dialog.
+whatGenDlg:
+0 (if blocks): Randomize order of stimuli in trials y/n
+1 (if blocks): Randomize order of trials in blocks y/n
+-1: Keep all items in all conditions y/n</p>
+<p>A second dialog then asks whether there are any trial/block types the user does not want to randomize.</p>
+<p>If not keeping all items in all conditions, another dialog is needed to determine size of subset for each
+trial/block. This produces a dictionary that tracks how many items will be in each condition.
+:return:
+:rtype:</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabBuilder.PyHabBuilder.blockDataDlg">
+<code class="descname">blockDataDlg</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.blockDataDlg" title="Permalink to this definition">¶</a></dt>
+<dd><p>A dialog for determining whether you save a block data file, and if so which blocks to compress.</p>
+<p>Procedurally constructs a set of options such that, for any nested blocks, they are mutually exclusive, but any
+blocks that are not part of other blocks and other blocks are not part of them are just check-boxes.</p>
+<p>Excludes hab because habituation data files are saved by default.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabBuilder.PyHabBuilder.blockMaker">
+<code class="descname">blockMaker</code><span class="sig-paren">(</span><em>blockName</em>, <em>new=True</em>, <em>hab=False</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.blockMaker" title="Permalink to this definition">¶</a></dt>
+<dd><p>For making multi-trial blocks. Or multi-block-blocks. Blocks are necessary for habituation.</p>
+<p>Creates a kind of sub-UI that overlays over the main UI. Because it’s just for blocks, we can ditch some things.
+We can actually completely overlay the regular UI. Problem is, if the regular UI continues to draw, the mouse
+detection will still work, even if a shape is behind another shape. So, like with conditions, we need a totally
+parallel UI</p>
+<p>Hab blocks cannot be embedded in other blocks.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>blockName</strong> (<em>str</em>) – Name of new block</li>
+<li><strong>new</strong> (<em>bool</em>) – Is this a new block or a modification of an existing one?</li>
+<li><strong>hab</strong> (<em>bool</em>) – Is this for a habituation meta-trial? # TODO: No longer needs to be an argument?</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="PyHab.PyHabBuilder.PyHabBuilder.condMaker">
-<code class="descname">condMaker</code><span class="sig-paren">(</span><em>rep=False</em>, <em>currPage=1</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.condMaker" title="Permalink to this definition">¶</a></dt>
+<code class="descname">condMaker</code><span class="sig-paren">(</span><em>rep=False</em>, <em>currPage=1</em>, <em>bc=False</em>, <em>trialMode=True</em>, <em>resetDict={}</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.condMaker" title="Permalink to this definition">¶</a></dt>
 <dd><p>A whole separate interface for managing condition creation.</p>
 <p>Outputs settings condList (labels of each condition), condFile (save conditions to this file)
 and makes new structure condDict (mapping of each label to actual condition it applies to)</p>
@@ -296,11 +436,19 @@ and makes new structure condDict (mapping of each label to actual condition it a
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>rep</strong> (<em>bool</em>) – Basically whether we are recursing while editing conditions</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>rep</strong> (<em>bool</em>) – Basically whether we are recursing while editing conditions</li>
+<li><strong>currPage</strong> (<em>int</em>) – The current page number</li>
+<li><strong>bc</strong> (<em>bool</em>) – Are we displaying the raw conditions, or the ‘base’ (pre-randomization) conditions?</li>
+<li><strong>trialMode</strong> (<em>bool</em>) – A toggle between ‘trial mode’ (use conditions for order of stimuli in trial types) and ‘block mode’ (use conditions to change order of trials within blocks)</li>
+</ul>
+</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"></td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"></p>
+</td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"></td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"></p>
+</td>
 </tr>
 </tbody>
 </table>
@@ -327,17 +475,20 @@ has each condition X times, and that becomes the new condition file/list/etc.</p
 
 <dl class="method">
 <dt id="PyHab.PyHabBuilder.PyHabBuilder.condSetter">
-<code class="descname">condSetter</code><span class="sig-paren">(</span><em>cond='NEW'</em>, <em>ex=False</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.condSetter" title="Permalink to this definition">¶</a></dt>
-<dd><p>One dialog per trial type. Each dialog has a list of all the movies in that type
-This is not intuitive under the hood. The output of this is a dict with a list of movies, in order, for each
-trial type. This makes it slightly more human-intelligible than the previous system, which had a list of indexes.</p>
+<code class="descname">condSetter</code><span class="sig-paren">(</span><em>shuffleList</em>, <em>cond='NEW'</em>, <em>ex=False</em>, <em>blockmode=False</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.condSetter" title="Permalink to this definition">¶</a></dt>
+<dd><p>A new interface for ordering stimuli within a trial type or trials within a block for a specific condition.
+Increases flexibility and usability. Uses an overlay like the block-constructor interface</p>
+<p>ST/PL output: {trialType:[stim1, stim2]}
+HPP output: {trialType:[{‘L’:0,’C’:stim1,’R’:0},{}]}</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>shuffleList</strong> (<em>dict</em>) – Either the stimNames dict or the blockList dict. Defines which one we are modifying.</li>
 <li><strong>cond</strong> (<em>str</em>) – Condition name</li>
 <li><strong>ex</strong> (<em>bool</em>) – Whether the condition already exists</li>
+<li><strong>blockmode</strong> (<em>bool</em>) – Are we reordering a block or a trial? Matters because even in HPP need to be blocks</li>
 </ul>
 </td>
 </tr>
@@ -410,27 +561,123 @@ Resets if the experiment type is switched to or from preferential looking.</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="PyHab.PyHabBuilder.PyHabBuilder.deleteType">
+<code class="descname">deleteType</code><span class="sig-paren">(</span><em>dType</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.deleteType" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs the actual deletion of a trial or block type.
+TODO: More sophisticated handling of conditions.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>dType</strong> (<em>str</em>) – String indicating the name of the trial or block to be deleted</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="PyHab.PyHabBuilder.PyHabBuilder.habSettingsDlg">
-<code class="descname">habSettingsDlg</code><span class="sig-paren">(</span><em>lastSet=[]</em>, <em>redo=False</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.habSettingsDlg" title="Permalink to this definition">¶</a></dt>
+<code class="descname">habSettingsDlg</code><span class="sig-paren">(</span><em>trialList</em>, <em>lastSet</em>, <em>redo=False</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.habSettingsDlg" title="Permalink to this definition">¶</a></dt>
 <dd><p>Dialog for settings relating to habituation criteria:</p>
-<p>0 = maxHabTrials (maximum possible hab trials if criterion not met)</p>
-<p>1 = setCritWindow (# trials summed over when creating criterion)</p>
+<p>0 = habituation (Active/not active)</p>
+<p>1 = maxHabTrials (maximum possible hab trials if criterion not met)</p>
+<p>2 = setCritWindow (# trials summed over when creating criterion)</p>
 <dl class="docutils">
-<dt>2 = setCritDivisor (denominator of criterion calculation . e.g., sum of first 3 trials</dt>
+<dt>3 = setCritDivisor (denominator of criterion calculation . e.g., sum of first 3 trials</dt>
 <dd>divided by 2 would have 3 for setCritWindow and 2 for this.)</dd>
 </dl>
-<p>3 = setCritType (peak window, max trials, first N, or first N above threshold)</p>
-<p>4 = habThresh (threshold for N above threshold)</p>
-<p>5 = metCritWindow (# trials summed over when evaluating whether criterion has been met)</p>
-<p>6 = metCritDivisor (denominator of sum calculated when determining if criterion has been met)</p>
-<p>7 = metCritStatic (static or moving window?)</p>
+<p>4 = setCritType (peak window, max trials, first N, last N, or first N above threshold)</p>
+<p>5 = habThresh (threshold for N above threshold)</p>
+<p>6 = metCritWindow (# trials summed over when evaluating whether criterion has been met)</p>
+<p>7 = metCritDivisor (denominator of sum calculated when determining if criterion has been met)</p>
+<p>8 = metCritStatic (static or moving window?)</p>
+<p>9 = habByDuration (habituation by duration or by on-time)</p>
+<p>10-N = Which trials to calculate hab over for multi-trial blocks.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>lastSet</strong> (<em>list</em>) – If information entered is invalid and the dialog needs to be shown again, this allows it to remember what was previously entered.</li>
+<li><strong>trialList</strong> (<em>list</em>) – List of available trials in the block, since this follows from block settings.</li>
+<li><strong>lastSet</strong> (<em>dict</em>) – If information entered is invalid and the dialog needs to be shown again, this allows it to remember what was previously entered. Also pulls from existing block settings.</li>
 <li><strong>redo</strong> (<em>boolean</em>) – Checking if redoing last setting</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A dictionary of settings fed back into the block-maker UI.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">dict</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabBuilder.PyHabBuilder.lastPalettePage">
+<code class="descname">lastPalettePage</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.lastPalettePage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simple function for moving to the previous page of the trial type palette
+:return:
+:rtype:</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabBuilder.PyHabBuilder.loadFlow">
+<code class="descname">loadFlow</code><span class="sig-paren">(</span><em>tOrd</em>, <em>space</em>, <em>locs</em>, <em>overflow</em>, <em>types</em>, <em>conlines=True</em>, <em>trials=True</em>, <em>specNumItems=0</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.loadFlow" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates the array of objects to be drawn for a study flow or block flow.</p>
+<p>Flow dictionary components:
+‘lines’: Lines that go between items in the flow, drawn first
+‘shapes’: visual.Rect objects
+‘text’: visual.textStim objects
+‘labels’: Strings that label each trial. Shapes and text are indexted to these, so you can do easy lookup.
+‘extras’: Special category for trial pips for blocks.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>tOrd</strong> (<em>list</em>) – Extant order of trials, either the overall trial order or the block order</li>
+<li><strong>space</strong> (<em>list</em>) – The dimensions of the flow part of the UI, typically self.flowArea</li>
+<li><strong>locs</strong> (<em>list</em>) – List of locations to draw the items in the flow, if less than 21 items to be drawn</li>
+<li><strong>overflow</strong> (<em>list</em>) – List of locations to use when there are more than 21 items, which compacts the rendering.</li>
+<li><strong>types</strong> (<em>list</em>) – List of items being put into this flow. Typically the list of trial types, except when making conditions.</li>
+<li><strong>conlines</strong> – A special boolean added for cases where we might not want connecting lines between items in the flow, e.g. conditions.</li>
+<li><strong>trials</strong> (<em>bool</em>) – A special bool added for cases where we might not be dealing with trial types, to avoid certain pitfalls in conditional logic.</li>
+<li><strong>specNumItems</strong> (<em>int</em>) – A special argument for cases where there are weird line overlaps that change the length of things. Defaults to 0, only used when calling recursively.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A dictionary of all of the entities to draw into the block or study flow</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">dict</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabBuilder.PyHabBuilder.loadTypes">
+<code class="descname">loadTypes</code><span class="sig-paren">(</span><em>typeLocations</em>, <em>typeList</em>, <em>page=1</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.loadTypes" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function creates the trial types palette.</p>
+<p>Type pallette dictionary components:
+‘shapes’: visual.Rect objects
+‘text’: visual.TextStim objects
+‘labels’: A sort of index for the other two, a plain string labeling the trial or block type.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>typeLocations</strong> (<em>list</em>) – The array of coordinates on which buttons can be placed. Usually self.typeLocs</li>
+<li><strong>typeList</strong> (<em>list</em>) – A list of what is being populated into the array. Usually self.settings[‘trialTypes’]</li>
+<li><strong>page</strong> (<em>int</em>) – Page number for when there are more types than fit on one page, in order to render the correct one.</li>
 </ul>
 </td>
 </tr>
@@ -439,38 +686,6 @@ Resets if the experiment type is switched to or from preferential looking.</p>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"></p>
 </td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="PyHab.PyHabBuilder.PyHabBuilder.loadFlow">
-<code class="descname">loadFlow</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.loadFlow" title="Permalink to this definition">¶</a></dt>
-<dd><p>This creates the array of objects in the study flow display</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="PyHab.PyHabBuilder.PyHabBuilder.loadTypes">
-<code class="descname">loadTypes</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.loadTypes" title="Permalink to this definition">¶</a></dt>
-<dd><p>This function creates the trial types palette</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -493,21 +708,64 @@ Resets if the experiment type is switched to or from preferential looking.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="PyHab.PyHabBuilder.PyHabBuilder.moveTrialInFlow">
-<code class="descname">moveTrialInFlow</code><span class="sig-paren">(</span><em>flowIndex</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.moveTrialInFlow" title="Permalink to this definition">¶</a></dt>
-<dd><p>A function for when a trial is clicked in the study flow, allowing you to either swap it or remove it.</p>
+<dt id="PyHab.PyHabBuilder.PyHabBuilder.makeBlockDlg">
+<code class="descname">makeBlockDlg</code><span class="sig-paren">(</span><em>name=''</em>, <em>new=True</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.makeBlockDlg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a new ‘block’ structure, which basically masquerades as a trial type in most regards, but consists of
+several sub-trials, much like how habituation blocks work.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>flowIndex</strong> (<em>int</em>) – The index in the flowArray of the trial being modified</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>name</strong> (<em>str</em>) – Name of existing trial type. ‘’ by default</li>
+<li><strong>new</strong> (<em>bool</em>) – Making a new block, or modifying an existing one?</li>
+</ul>
+</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"></td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"></p>
+</td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"></td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"></p>
+</td>
 </tr>
 </tbody>
 </table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabBuilder.PyHabBuilder.moveTrialInFlow">
+<code class="descname">moveTrialInFlow</code><span class="sig-paren">(</span><em>flowIndex</em>, <em>tOrd</em>, <em>flowSpace</em>, <em>UI</em>, <em>flow</em>, <em>types</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.moveTrialInFlow" title="Permalink to this definition">¶</a></dt>
+<dd><p>A function for when a trial is clicked in a trial flow, allowing you to either swap it or remove it.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>flowIndex</strong> (<em>int</em>) – The index in the flowArray of the trial being modified</li>
+<li><strong>tOrd</strong> (<em>list</em>) – The trial order being modified, either the main one or a block order</li>
+<li><strong>flowSpace</strong> (<em>visual.Rect object</em>) – The shape that makes up the flow UI, which varies from typical usage to block construction</li>
+<li><strong>UI</strong> (<em>dict</em>) – A dictionary containing the currently active UI</li>
+<li><strong>flow</strong> (<em>dict</em>) – A dictionary containing the currently active trial flow</li>
+<li><strong>types</strong> (<em>dict</em>) – A dictionary containing the currently active trial pallette (mostly for showMainUI)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The modified trial order</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">list</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabBuilder.PyHabBuilder.nextPalettePage">
+<code class="descname">nextPalettePage</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.nextPalettePage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simple function for moving to the next page of the trial type palette.
+:return:
+:rtype:</p>
 </dd></dl>
 
 <dl class="method">
@@ -580,6 +838,7 @@ Essentially sets self.folderPath</p>
 <dt id="PyHab.PyHabBuilder.PyHabBuilder.saveEverything">
 <code class="descname">saveEverything</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.saveEverything" title="Permalink to this definition">¶</a></dt>
 <dd><p>Saves a PyHab project to a set of folders dictated by self.folderPath</p>
+<p>todo: Add psychopy_tobii_infant to this. Saved in the code folder.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -587,26 +846,6 @@ Essentially sets self.folderPath</p>
 <tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
 </tr>
 <tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="PyHab.PyHabBuilder.PyHabBuilder.setHabSubTrials">
-<code class="descname">setHabSubTrials</code><span class="sig-paren">(</span><em>numHab</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.setHabSubTrials" title="Permalink to this definition">¶</a></dt>
-<dd><p>Groups trial types into hab blocks. Hab blocks can have multiple trial types, but one must always be Hab.
-This function doesn’t care if you’ve made a hab block before, it just overwrites whatever exists. This is under
-the assumption that hab blocks will have few trials.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>numHab</strong> (<em>int</em>) – Number of trials in a hab block</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"></td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -614,32 +853,39 @@ the assumption that hab blocks will have few trials.</p>
 
 <dl class="method">
 <dt id="PyHab.PyHabBuilder.PyHabBuilder.showMainUI">
-<code class="descname">showMainUI</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.showMainUI" title="Permalink to this definition">¶</a></dt>
-<dd><p>Main draw loop of the primary builder interface</p>
+<code class="descname">showMainUI</code><span class="sig-paren">(</span><em>UI</em>, <em>flow</em>, <em>types</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.showMainUI" title="Permalink to this definition">¶</a></dt>
+<dd><p>A simple function that draws everything and flips the display. Generalized to work for block mode and general mode.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"></td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>UI</strong> – a dictionary of everything to be drawn in the new UI. Contains a list, ‘bg’ (background), and a dict,</td>
 </tr>
 </tbody>
 </table>
+<p>‘buttons’, that has itself ‘shapes’ and ‘text’ (and usually ‘functions’ but this doesn’t need to know that)
+:type UI: dict
+:param flow: A dict of everything in the  block flow. Contains five lists, ‘lines’, ‘shapes’, ‘text’, ‘labels’, and ‘extra’
+:type flow: dict
+:param types: A dict of the trial type buttons for this block. Contains three lists: ‘shapes’, ‘text’, and ‘labels’
+:type types: dict
+:return:
+:rtype:</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="PyHab.PyHabBuilder.PyHabBuilder.stimSettingsDlg">
-<code class="descname">stimSettingsDlg</code><span class="sig-paren">(</span><em>lastSet=[]</em>, <em>redo=False</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.stimSettingsDlg" title="Permalink to this definition">¶</a></dt>
-<dd><p>Settings relating to stimulus presentation. Indexes from the dialog</p>
+<code class="descname">stimSettingsDlg</code><span class="sig-paren">(</span><em>lastSet=[]</em>, <em>redo=False</em>, <em>screen='all'</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.stimSettingsDlg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Settings relating to stimulus presentation. Indexes from the dialog (non-HPP version):</p>
 <p>0 = screenWidth: Width of stim window</p>
 <p>1 = screenHeight: Height of stim window</p>
 <p>2 = Background color of stim window</p>
 <p>3 = movieWidth: Width of movieStim3 object inside stim window. Future: Allows for movie default resolution?</p>
 <p>4 = movieWidth: Height of movieStim3 object inside stim window</p>
-<p>5 = screenIndex: Which screen to display the stim window on.</p>
-<p>6 = freezeFrame: If the attention-getter is used (for this trial type), this is the minimum time the first frame
+<p>5 = freezeFrame: If the attention-getter is used (for a given trial type), this is the minimum time the first frame
 of the movie will be displayed after the attention-getter finishes.</p>
+<p>6 = screenIndex: Which screen to display the stim window on.</p>
+<p>7 = expScreenIndex: Which screen to display the experimenter window on</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -647,6 +893,7 @@ of the movie will be displayed after the attention-getter finishes.</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>lastSet</strong> (<em>list</em>) – Optional. Last entered settings, in case dialog needs to be presented again to fix bad entries.</li>
 <li><strong>redo</strong> (<em>boolean</em>) – Are we doing this again to fix bad entries?</li>
+<li><strong>screen</strong> (<em>string</em>) – Optional. For HPP, lets you set for just the individual screen the settings apply to.</li>
 </ul>
 </td>
 </tr>
@@ -661,6 +908,46 @@ of the movie will be displayed after the attention-getter finishes.</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="PyHab.PyHabBuilder.PyHabBuilder.toHPP">
+<code class="descname">toHPP</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.toHPP" title="Permalink to this definition">¶</a></dt>
+<dd><p>A function that converts ST or PL experiments to HPP. Always a little complicated.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabBuilder.PyHabBuilder.toPL">
+<code class="descname">toPL</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.toPL" title="Permalink to this definition">¶</a></dt>
+<dd><p>A function that converts ST or HPP to preferential looking. ST to PL is NBD. HPP is more of a challenge.
+:return:
+:rtype:</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabBuilder.PyHabBuilder.toST">
+<code class="descname">toST</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.toST" title="Permalink to this definition">¶</a></dt>
+<dd><p>A function that converts PL or HPP to single-target. PL to ST is NBD. HPP is more of a challenge.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="PyHab.PyHabBuilder.PyHabBuilder.trialTypeDlg">
 <code class="descname">trialTypeDlg</code><span class="sig-paren">(</span><em>trialType='TrialTypeNew'</em>, <em>makeNew=True</em>, <em>prevInfo=[]</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabBuilder.PyHabBuilder.trialTypeDlg" title="Permalink to this definition">¶</a></dt>
 <dd><p>Dialog for creating OR modifying a trial type. Allows you to set
@@ -668,17 +955,21 @@ the maximum duration of that trial type as well as remove movies
 from it, and also set whether the trial type is gaze contingent.
 Now also sets whether the study should auto-advance into this
 trial and whether the built-in attention-getter should be used.</p>
-<p>The dialog by default outputs a list with 8 items in it.
+<p>The dialog by default outputs a list with 12 items in it.
 0 = trial type name</p>
 <p>1 = Maximum duration of trials of this type</p>
-<p>[if movies assigned to trial type already, they occupy 2 - N]</p>
-<p>2/-7 = Gaze-contingent trial type?</p>
-<p>3/-6 = Maximum continuous looking-away to end trial of type</p>
-<p>4/-5 = Minimum on-time to enable off-time criterion (not continuous)</p>
-<p>5/-4 = Auto-advance into trial?</p>
-<p>6/-3 = Attention-getter selection</p>
-<p>7/-2 = End trial on movie end or mid-movie</p>
-<p>8/-1 = inter-stimulus interveral (ISI) for this trial type</p>
+<p>2 = Gaze-contingent trial type?</p>
+<p>3 = Maximum continuous looking-away to end trial of type</p>
+<p>4 = Minimum on-time (cumulative)</p>
+<p>5 = auto-redo trial if minimum on-time not met?</p>
+<p>6 = on-time deadline</p>
+<p>7 = duration criterion rather than on-time</p>
+<p>8 = Auto-advance into trial?</p>
+<p>9 = Attention-getter selection</p>
+<p>10 = End trial on movie end or mid-movie</p>
+<p>11 = inter-stimulus interveral (ISI) for this trial type</p>
+<p>12 = Maximum on-time (single use case, for new gaze contingent trial type mode).</p>
+<p>[if movies assigned to trial type already, they occupy 13 - N]</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -708,11 +999,17 @@ trial and whether the built-in attention-getter should be used.</p>
 <dl class="docutils">
 <dt>1 = blindPres: Level of experimenter blinding, 0 (none), 1 (no trial type info), or</dt>
 <dd>2 (only info is whether a trial is currently active.</dd>
-</dl>
-<p>2 = prefLook: Whether the study is preferential-looking or single-target.</p>
-<dl class="docutils">
-<dt>3 = nextFlash: Whether to have the coder window flash to alert the experimenter they need to manually trigger</dt>
+<dt>2 = nextFlash: Whether to have the coder window flash to alert the experimenter they need to manually trigger</dt>
 <dd>the next trial</dd>
+</dl>
+<p>3 = durationInclude: Trial duration calculations include last gaze-off or not</p>
+<dl class="docutils">
+<dt>4 = loadSeparate: New setting in 0.9.4, movie playback issues have created a situation where some (but not all)</dt>
+<dd>experiments might benefit from going back to the old ways of loading one movie file for <em>each</em> individual
+instance of a trial, rather than trying to load one movie file and load it once. This setting controls
+whether that happens.</dd>
+<dt>5 = eyetracker: New in 0.10.4, Tobii integration (which is much more seamless than alternatives). Can be set</dt>
+<dd>to simply record eye-tracking info OR to control the experiment as a replacement for a human coder. (0/1/2)</dd>
 </dl>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />

@@ -574,7 +574,6 @@ class PyHab:
         elif self.habCount[blockName] > self.blockList[blockName]['setCritWindow'] and self.habSetWhen[blockName] > -1:  # if we're far enough in that we can plausibly meet the hab criterion
             # Problem: Fixed window, peak, and max as relates to habsetwhen....
             # Not problem per se. Essentially, trials that set the criterion are never included when evaluating it.
-            # TODO: Make that an option instead of a general behavior?
             # Fixed window is the only thing that ignores habsetwhen.
             # Last needs to ignore HabSetWhen, or rather, cannot wait MetCritWindow trials past when it is set.
             if self.habCount[blockName] < self.habSetWhen[blockName] + self.blockList[blockName]['metCritWindow'] and self.blockList[blockName]['metCritStatic'] == 'Moving' and self.blockList[blockName]['setCritType'] != 'Last': # Was the hab set "late" and are we too early as a result
@@ -2928,6 +2927,7 @@ class PyHab:
                     elif 'r' in keycheck:
                         endValidation = True  # Redo calibration.
                 self.tracker.stop_recording()
+        self.win.flip()  # blank the screen again.
 
 
 

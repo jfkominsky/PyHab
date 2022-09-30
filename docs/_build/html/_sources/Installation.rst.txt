@@ -3,9 +3,7 @@ Installation
 ============
 
 Prerequisites::
-    Install the most recent version of PsychoPy (https://github.com/psychopy/psychopy/releases/).
-
-    Download the .dmg installer for mac or the .exe installer for Windows.
+    Install the most recent version of PsychoPy (https://www.psychopy.org/download.html).
 
     You will also need VLC media player in order to play media. It is free. (https://www.videolan.org/vlc/index.html)
 

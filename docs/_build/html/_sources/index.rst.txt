@@ -17,6 +17,7 @@ This is documentation for the code of PyHab. Eventually this will contain all of
    Builder
    BasePyHabClass
    PrefLook
+   HPP
    Reliability
 
 
