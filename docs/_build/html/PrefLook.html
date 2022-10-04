@@ -28,7 +28,7 @@
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Standalone Reliability" href="Reliability.html" />
+    <link rel="next" title="Head-turn Preference Procedure" href="HPP.html" />
     <link rel="prev" title="PyHab Class (base)" href="BasePyHabClass.html" /> 
 
   
@@ -89,6 +89,7 @@
 <li class="toctree-l1"><a class="reference internal" href="Builder.html">Builder</a></li>
 <li class="toctree-l1"><a class="reference internal" href="BasePyHabClass.html">PyHab Class (base)</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Preferential Looking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="HPP.html">Head-turn Preference Procedure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Reliability.html">Standalone Reliability</a></li>
 </ul>
 
@@ -159,12 +160,12 @@
 <p>This class is an extension of the <a class="reference internal" href="BasePyHabClass.html"><span class="doc">PyHab Class (base)</span></a> base class.</p>
 <dl class="class">
 <dt id="PyHab.PyHabClassPL.PyHabPL">
-<em class="property">class </em><code class="descclassname">PyHab.PyHabClassPL.</code><code class="descname">PyHabPL</code><span class="sig-paren">(</span><em>settingsDict</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClassPL.PyHabPL" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">PyHab.PyHabClassPL.</code><code class="descname">PyHabPL</code><span class="sig-paren">(</span><em>settingsDict</em>, <em>testMode=False</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClassPL.PyHabPL" title="Permalink to this definition">¶</a></dt>
 <dd><p>A new preferential-looking version of PyHab that extends the base class rather than being a wholly separate class.
 There’s still a lot of redundant code here, which will require significant restructuring of the base class to fix.</p>
 <dl class="method">
 <dt id="PyHab.PyHabClassPL.PyHabPL.abortTrial">
-<code class="descname">abortTrial</code><span class="sig-paren">(</span><em>onArray</em>, <em>offArray</em>, <em>trial</em>, <em>ttype</em>, <em>onArray2</em>, <em>stimName=''</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClassPL.PyHabPL.abortTrial" title="Permalink to this definition">¶</a></dt>
+<code class="descname">abortTrial</code><span class="sig-paren">(</span><em>onArray</em>, <em>offArray</em>, <em>trial</em>, <em>ttype</em>, <em>onArray2</em>, <em>stimName=''</em>, <em>habTrialNo=0</em>, <em>habCrit=0.0</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClassPL.PyHabPL.abortTrial" title="Permalink to this definition">¶</a></dt>
 <dd><p>Aborts a trial in progress, saves any data recorded thus far to the bad-data structures</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -177,6 +178,8 @@ There’s still a lot of redundant code here, which will require significant res
 <li><strong>ttype</strong> (<em>string</em>) – Trial type</li>
 <li><strong>onArray2</strong> (<em>list of dicts {trial</em><em>, </em><em>trialType</em><em>, </em><em>startTime</em><em>, </em><em>endTime</em><em>, </em><em>duration}</em>) – Gaze-on Right events</li>
 <li><strong>stimName</strong> (<em>string</em>) – If presenting stimuli, name of the stim file</li>
+<li><strong>habTrialNo</strong> (<em>int</em>) – Tracking if this is a habituation trial and if so what number</li>
+<li><strong>habCrit</strong> (<em>float</em>) – Habituation criterion, if it’s been set</li>
 </ul>
 </td>
 </tr>
@@ -191,27 +194,8 @@ There’s still a lot of redundant code here, which will require significant res
 </dd></dl>
 
 <dl class="method">
-<dt id="PyHab.PyHabClassPL.PyHabPL.checkStop">
-<code class="descname">checkStop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClassPL.PyHabPL.checkStop" title="Permalink to this definition">¶</a></dt>
-<dd><p>After a hab trial, checks the habitution criteria and returns ‘true’ if any of them are met.
-Needs its own version because it has to get both timeOnL and timeOnR</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>trial</strong> (<em>int</em>) – Trial number</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">True if hab criteria have been met, False otherwise</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
 <dt id="PyHab.PyHabClassPL.PyHabPL.dataRec">
-<code class="descname">dataRec</code><span class="sig-paren">(</span><em>onArray</em>, <em>offArray</em>, <em>trial</em>, <em>type</em>, <em>onArray2</em>, <em>stimName=''</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClassPL.PyHabPL.dataRec" title="Permalink to this definition">¶</a></dt>
+<code class="descname">dataRec</code><span class="sig-paren">(</span><em>onArray</em>, <em>offArray</em>, <em>trial</em>, <em>type</em>, <em>onArray2</em>, <em>stimName=''</em>, <em>habTrialNo=0</em>, <em>habCrit=0.0</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClassPL.PyHabPL.dataRec" title="Permalink to this definition">¶</a></dt>
 <dd><p>Records the data for a trial that ended normally.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -224,6 +208,8 @@ Needs its own version because it has to get both timeOnL and timeOnR</p>
 <li><strong>ttype</strong> (<em>string</em>) – Trial type</li>
 <li><strong>onArray2</strong> (<em>list of dicts {trial</em><em>, </em><em>trialType</em><em>, </em><em>startTime</em><em>, </em><em>endTime</em><em>, </em><em>duration}</em>) – Gaze-on Right events</li>
 <li><strong>stimName</strong> (<em>string</em>) – If presenting stimuli, name of the stim file</li>
+<li><strong>habTrialNo</strong> (<em>int</em>) – Tracking if this is a habituation trial and if so what number</li>
+<li><strong>habCrit</strong> (<em>float</em>) – Habituation criterion, if it’s been set</li>
 </ul>
 </td>
 </tr>
@@ -239,17 +225,18 @@ Needs its own version because it has to get both timeOnL and timeOnR</p>
 
 <dl class="method">
 <dt id="PyHab.PyHabClassPL.PyHabPL.doTrial">
-<code class="descname">doTrial</code><span class="sig-paren">(</span><em>number</em>, <em>type</em>, <em>disMovie</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClassPL.PyHabPL.doTrial" title="Permalink to this definition">¶</a></dt>
+<code class="descname">doTrial</code><span class="sig-paren">(</span><em>number</em>, <em>ttype</em>, <em>disMovie</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClassPL.PyHabPL.doTrial" title="Permalink to this definition">¶</a></dt>
 <dd><p>Control function for individual trials, to be called by doExperiment
 Returns a status value (int) that tells doExperiment what to do next</p>
+<p>TODO: trial timing recording</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>number</strong> (<em>int</em>) – Trial number</li>
-<li><strong>type</strong> (<em>string</em>) – Trial type</li>
-<li><strong>disMovie</strong> (<em>movieStim3 object</em>) – Movie object for stimulus presentation</li>
+<li><strong>ttype</strong> (<em>string</em>) – Trial type</li>
+<li><strong>disMovie</strong> (<em>dictionary</em>) – A dictionary as follows {‘stim’:[psychopy object for stimulus presentation], ‘stimType’:[movie,image,audio, pair]}</li>
 </ul>
 </td>
 </tr>
@@ -289,6 +276,14 @@ In this case, only B or M are sufficient.</p>
 </table>
 </dd></dl>
 
+<dl class="method">
+<dt id="PyHab.PyHabClassPL.PyHabPL.printCurrentData">
+<code class="descname">printCurrentData</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClassPL.PyHabPL.printCurrentData" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prints the current data, preferential looking variant. Only called when stimulus presentation is off
+:return:
+:rtype:</p>
+</dd></dl>
+
 </dd></dl>
 
 </div>
@@ -301,7 +296,7 @@ In this case, only B or M are sufficient.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="Reliability.html" class="btn btn-neutral float-right" title="Standalone Reliability" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="HPP.html" class="btn btn-neutral float-right" title="Head-turn Preference Procedure" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="BasePyHabClass.html" class="btn btn-neutral" title="PyHab Class (base)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>

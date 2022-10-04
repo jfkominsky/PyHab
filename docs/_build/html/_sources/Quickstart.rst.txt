@@ -3,6 +3,10 @@ Quickstart guide
 ================
 
 
+ManyBabies 4 setup
+------------------
+
+If you are helping out with the ManyBabies 4 project, there is a `video guide to setting up the PyHab version of the ManyBabies 4 experiment <https://youtu.be/4GOnU2f1wks>`_, as well as a `ManyBabies 4-specific text setup guide <https://bit.ly/2RyUzLo>`_.
 
 Creating a new PyHab project from scratch
 -----------
@@ -52,7 +56,3 @@ Running the demo or a pre-made PyHab experiment
 6. The experiment will notify you when it is saving data and then prompt you to press "return" to close the stimuli and experimenter windows and return to the launcher menu.
 
 
-ManyBabies 4 setup
-------------------
-
-If you are helping out with the ManyBabies 4 project, there is a `video guide to setting up the PyHab version of the ManyBabies 4 experiment <https://youtu.be/4GOnU2f1wks>`_, as well as a `ManyBabies 4-specific text setup guide <https://bit.ly/2RyUzLo>`_.

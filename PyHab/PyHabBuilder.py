@@ -84,7 +84,8 @@ class PyHabBuilder:
                                                         'startImage': '',
                                                         'endImage': '',
                                                         'nextFlash': '0',
-                                                        'loadSep': '0'}
+                                                        'loadSep': '0',
+                                                        'eyetracker': '0'}
             self.condDict = {}
             self.baseCondDict = {}
         else:
@@ -115,12 +116,14 @@ class PyHabBuilder:
                 self.settings['hppStimScrOnly'] = '[]'
             if 'maxOn' not in self.settings.keys():
                 self.settings['maxOn'] = '{}'
+            if 'eyetracker' not in self.settings.keys():
+                self.settings['eyetracker'] = '0'
             # Settings requiring evaluation to get sensible values. Mostly dicts.
             evalList = ['dataColumns','blockSum','trialSum','maxDur','condList','baseCondList','movieEnd','playThrough',
                         'trialOrder','stimNames', 'stimList', 'ISI', 'maxOff','minOn', 'maxOn','durationCriterion','autoRedo',
                         'onTimeDeadline','autoAdvance','playAttnGetter','attnGetterList','trialTypes', 'nextFlash',
                         'blockList', 'dynamicPause','midAG','screenWidth','screenHeight','screenIndex','movieWidth',
-                        'movieHeight', 'durationInclude', 'loadSep', 'hppStimScrOnly']  # in 0.9, this becomes necessary.
+                        'movieHeight', 'durationInclude', 'loadSep', 'hppStimScrOnly', 'eyetracker']  # in 0.9, this becomes necessary.
             for i in evalList:
                 self.settings[i] = eval(self.settings[i])
                 if i in ['stimList','attnGetterList']:
@@ -1897,6 +1900,9 @@ class PyHabBuilder:
             instance of a trial, rather than trying to load one movie file and load it once. This setting controls
             whether that happens.
 
+        5 = eyetracker: New in 0.10.4, Tobii integration (which is much more seamless than alternatives). Can be set
+            to simply record eye-tracking info OR to control the experiment as a replacement for a human coder. (0/1/2)
+
         :return:
         :rtype:
         """
@@ -1932,6 +1938,15 @@ class PyHabBuilder:
             ch5 = ["No", "Yes"]
         uDlg.addField("Load each stimulus file multiple times to prevent rewind glitches? SEE 'Troubleshooting' IN MANUAL", choices=ch5)
 
+        ch6 = []
+        if self.settings['eyetracker'] in ['1',1]:
+            ch6 = ["Record only", "Off", "Control advancement"]
+        elif self.settings['eyetracker'] in ['2',2]:
+            ch6 = ["Control advancement", "Off", "Record only"]
+        else:
+            ch6 = ["Off", "Record only", "Control advancement"]
+        uDlg.addField("Tobii eye-tracker integration", choices=ch6)
+
         uInfo = uDlg.show()
         if uDlg.OK:
             tryAgain = False
@@ -1954,6 +1969,24 @@ class PyHabBuilder:
                 self.settings['loadSep'] = 1
             else:
                 self.settings['loadSep'] = 0
+            if uInfo[5] == "Off":
+                self.settings['eyetracker'] = 0
+            elif self.settings['prefLook'] == 2:
+                self.settings['eyetracker'] = 0
+                errDlg = gui.Dlg()
+                errDlg.addText("Cannot use eye-tracker in HPP experiments!")
+                errDlg.addText("Set eye-tracker mode to 'Off'")
+                errDlg.show()
+            elif uInfo[5] == "Record only":
+                self.settings['eyetracker'] = 1
+            elif self.settings['prefLook'] == 1:
+                self.settings['eyetracker'] = 1
+                errDlg = gui.Dlg()
+                errDlg.addText("Cannot use 'control advancement' with Preferential Looking designs at this time.")
+                errDlg.addText("Set eye-tracker mode to 'Record only'")
+                errDlg.show()
+            else:
+                self.settings['eyetracker'] = 2
             if tryAgain:
                 self.univSettingsDlg()
         
@@ -2113,6 +2146,8 @@ class PyHabBuilder:
                 self.buttonList['shapes'][hpIndex].fillColor = 'black'
                 self.settings['prefLook'] = 1
                 self.settings['dataColumns'] = self.allDataColumnsPL
+                if self.settings['eyetracker'] == 2:
+                    self.settings['eyetracker'] = 1  # Because it can't be used for control purposes.
             while 1 in self.mouse.getPressed():
                 pass # Just a little thing so it doesn't get called for every frame the mouse is down on the button.
 
@@ -2158,6 +2193,8 @@ class PyHabBuilder:
                 self.settings['condList'] = []
                 self.condDict = {}
                 self.settings['randPres'] = 0
+
+                self.settings['eyetracker'] = 0
 
             if os.name != 'posix':
                 self.win.winHandle.set_visible(visible=True)
@@ -3880,6 +3917,8 @@ class PyHabBuilder:
         """
         Saves a PyHab project to a set of folders dictated by self.folderPath
 
+        todo: Add psychopy_tobii_infant to this. Saved in the code folder.
+
         :return:
         :rtype:
         """
@@ -3958,6 +3997,16 @@ class PyHabBuilder:
                 except:
                     success = False
                     print('Could not copy attention-getter file ' + j['stimLoc'] + ' to location ' +  targPath + '. Make sure both exist!')
+
+        # todo: Customizable calibration images, calibration process.
+        calibImgPath = 'calib'
+        calibImgTarg = stimPath+calibImgPath
+        if not os.path.exists(calibImgTarg):
+            try:
+                shutil.copytree(srcDir+calibImgPath, calibImgTarg)
+            except:
+                success = False
+                print('Could not copy calibration images folder')
         if not success:
             errDlg = gui.Dlg(title="Could not copy stimuli!")
             errDlg.addText("Some stimuli could not be copied successfully. See the output of the coder window for details.")
@@ -3992,6 +4041,10 @@ class PyHabBuilder:
         buildTarg = codePath+buildPath
         initPath = '__init__.py'
         initTarg = codePath+initPath
+
+        tobiiPath = 'psychopy_tobii_infant'
+        tobiiTarg = codePath+tobiiPath
+
         try:
             if not os.path.exists(classTarg):
                 shutil.copyfile(srcDir+classPath, classTarg)
@@ -4003,6 +4056,9 @@ class PyHabBuilder:
                 shutil.copyfile(srcDir+buildPath, buildTarg)
             if not os.path.exists(initTarg):
                 shutil.copyfile(srcDir+initPath, initTarg)
+            if not os.path.exists(tobiiTarg):
+                shutil.copytree(srcDir+tobiiPath, tobiiTarg)
+
         except:
             # error dialog
             errDlg = gui.Dlg(title="Could not copy PyHab and builder!")

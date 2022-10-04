@@ -89,6 +89,7 @@
 <li class="toctree-l1"><a class="reference internal" href="Builder.html">Builder</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">PyHab Class (base)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="PrefLook.html">Preferential Looking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="HPP.html">Head-turn Preference Procedure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Reliability.html">Standalone Reliability</a></li>
 </ul>
 
@@ -160,7 +161,7 @@
 preferential looking paradigms, see <a class="reference internal" href="PrefLook.html"><span class="doc">Preferential Looking</span></a></p>
 <dl class="class">
 <dt id="PyHab.PyHabClass.PyHab">
-<em class="property">class </em><code class="descclassname">PyHab.PyHabClass.</code><code class="descname">PyHab</code><span class="sig-paren">(</span><em>settingsDict</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">PyHab.PyHabClass.</code><code class="descname">PyHab</code><span class="sig-paren">(</span><em>settingsDict</em>, <em>testMode=False</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab" title="Permalink to this definition">¶</a></dt>
 <dd><p>PyHab looking time coding + stimulus control system</p>
 <p>Jonathan Kominsky, 2016-2018</p>
 <p>Keyboard coding: A = ready, B = coder 1 on, L = coder 2 on, R = abort trial, Y = end experiment (for fussouts)</p>
@@ -173,7 +174,6 @@ On (for gaze-on events)
 Off (for gaze-off events)
 On2 and Off2 (for the optional secondary coder)
 Each coder’s on and off are recorded in a separate dict with trial, gaze on/off, start, end, and duration.</p>
-<p>TODO: Habituation calculated over whole meta-trial rather than just “Hab”</p>
 <dl class="method">
 <dt id="PyHab.PyHabClass.PyHab.SetupWindow">
 <code class="descname">SetupWindow</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab.SetupWindow" title="Permalink to this definition">¶</a></dt>
@@ -192,8 +192,25 @@ with doExperiment()</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="PyHab.PyHabClass.PyHab.TrackerCalibrateValidate">
+<code class="descname">TrackerCalibrateValidate</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab.TrackerCalibrateValidate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function that controls the eye-tracker calibration and validation in eye-tracking modes.
+In principle this can be run mid-experiment, but it will be disruptive</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="PyHab.PyHabClass.PyHab.abortTrial">
-<code class="descname">abortTrial</code><span class="sig-paren">(</span><em>onArray</em>, <em>offArray</em>, <em>trial</em>, <em>ttype</em>, <em>onArray2</em>, <em>offArray2</em>, <em>stimName=''</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab.abortTrial" title="Permalink to this definition">¶</a></dt>
+<code class="descname">abortTrial</code><span class="sig-paren">(</span><em>onArray</em>, <em>offArray</em>, <em>trial</em>, <em>ttype</em>, <em>onArray2</em>, <em>offArray2</em>, <em>stimName=''</em>, <em>habTrialNo=0</em>, <em>habCrit=0.0</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab.abortTrial" title="Permalink to this definition">¶</a></dt>
 <dd><p>Only happens when the ‘abort’ button is pressed during a trial. Creates a “bad trial” entry
 out of any data recorded for the trial so far, to be saved later.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -208,6 +225,8 @@ out of any data recorded for the trial so far, to be saved later.</p>
 <li><strong>onArray2</strong> (<em>list of dicts</em>) – Gaze-on events for (optional) coder 2</li>
 <li><strong>offArray2</strong> (<em>list of dicts</em>) – Gaze-off events for (optional) coder 2</li>
 <li><strong>stimName</strong> (<em>string</em>) – If presenting stimuli, name of the stim file</li>
+<li><strong>habTrialNo</strong> (<em>int</em>) – Tracking if this is a habituation trial and if so what number</li>
+<li><strong>habCrit</strong> (<em>float</em>) – Habituation criterion, if it’s been set</li>
 </ul>
 </td>
 </tr>
@@ -223,16 +242,26 @@ out of any data recorded for the trial so far, to be saved later.</p>
 
 <dl class="method">
 <dt id="PyHab.PyHabClass.PyHab.attnGetter">
-<code class="descname">attnGetter</code><span class="sig-paren">(</span><em>trialType</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab.attnGetter" title="Permalink to this definition">¶</a></dt>
+<code class="descname">attnGetter</code><span class="sig-paren">(</span><em>trialType</em>, <em>cutoff=False</em>, <em>onmin=0.0</em>, <em>midTrial=False</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab.attnGetter" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plays either a default attention-getter animation or a user-defined one.
 Separate settings for audio w/shape and video file attention-getters.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>trialType</strong> (<em>string</em>) – Current trial type</li>
+<li><strong>cutoff</strong> (<em>bool</em>) – Cut off AG immediately on gaze-on? Defaut False</li>
+<li><strong>onmin</strong> (<em>float</em>) – Delay in listening for gaze-on to immediately end AG. Default 0</li>
+<li><strong>midTrial</strong> (<em>bool</em>) – Is this a mid-trial attention-getter? Default False</li>
+</ul>
+</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"></td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"></p>
+</td>
 </tr>
 </tbody>
 </table>
@@ -263,19 +292,59 @@ Separate settings for audio w/shape and video file attention-getters.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="PyHab.PyHabClass.PyHab.checkStop">
-<code class="descname">checkStop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab.checkStop" title="Permalink to this definition">¶</a></dt>
-<dd><p>After a hab trial, checks the habitution criteria and returns ‘true’ if any of them are met.
-Also responsible for setting the habituation criteria according to settings.
-Prior to any criteria being set, self.HabCrit is 0. We can use this as a check whether it has been set.</p>
-<p>TODO: Hab over sub-trials versus just the ‘Hab’ trial type. This requires some kind of tagging for hab sub-trials.</p>
+<dt id="PyHab.PyHabClass.PyHab.blockExpander">
+<code class="descname">blockExpander</code><span class="sig-paren">(</span><em>blockInfo</em>, <em>prefixes</em>, <em>hab=False</em>, <em>habNum=0</em>, <em>insert=-1</em>, <em>baseStart=-1</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab.blockExpander" title="Permalink to this definition">¶</a></dt>
+<dd><p>A method for constructing actualTrialOrder while dealing with recursive blocks. Can create incredibly long trial
+codes, but ensures that all information is accurately preserved. Works for both hab blocks and other things.</p>
+<p>For hab blocks, we can take advantage of the fact that hab cannot appear inside any other block. It will always
+be the top-level block, and so we can adjust the prefix once and it will carry through.</p>
+<p>The trial naming preserves hierarchy in a block.trial or block.subblock.trial form.
+Hab blocks are designated by a ‘*’ before the first ‘.’, and the last trial in a hab block
+is marked with ‘^’, which is needed to trip checkStop.</p>
+<p>Because hab blocks cannot be embedded in other blocks, the top-level block is always the one with the hab settings.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">True if hab criteria have been met, False otherwise</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>blockInfo</strong> (<em>dict</em>) – The data of the block object, including trialList and hab info.</li>
+<li><strong>prefixes</strong> (<em>str</em>) – A recursively growing stack of prefixes. If block A has B and block B has C, then an instance of A will be A.B.C in self.actualTrialOrder. This keeps track of the A.B. part.</li>
+<li><strong>hab</strong> (<em>bool</em>) – Are we dealing with a habituation trial expansion?</li>
+<li><strong>habNum</strong> (<em>int</em>) – If we are dealing with a habituation trial expansion, what hab iteration of it are we on?</li>
+<li><strong>insert</strong> (<em>int</em>) – An int specifying where in actualTrialOrder to put a trial. Needed to generalize this function for insertHab</li>
+<li><strong>baseStart</strong> (<em>int</em>) – Marks the index where the top-level block started in actualTrialOrder.</li>
+</ul>
+</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"></td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabClass.PyHab.checkStop">
+<code class="descname">checkStop</code><span class="sig-paren">(</span><em>blockName</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab.checkStop" title="Permalink to this definition">¶</a></dt>
+<dd><p>After a hab trial, checks the habitution criteria and returns ‘true’ if any of them are met.
+Also responsible for setting the habituation criteria according to settings.
+Prior to any criteria being set, self.HabCrit is 0, and self.habSetWhen is -1.</p>
+<p>Uses a sort of parallel data structure that just tracks hab-relevant gaze totals. As a bonus, this means it now
+works for both single-target and preferential looking designs (and HPP designs) with no modification.</p>
+<p>To support multiple hab blocks, this needs to take the block name as an argument, to only look at that block’s hab settings.
+That means each block with habituation turned on can only be used once, but you can have more than one block</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>blockName</strong> (<em>str</em>) – The name of the block associated with the hab trial, required to look up its particular settings.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">True if hab criteria have been met, False otherwise</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">bool</td>
 </tr>
 </tbody>
 </table>
@@ -307,7 +376,7 @@ Prior to any criteria being set, self.HabCrit is 0. We can use this as a check w
 
 <dl class="method">
 <dt id="PyHab.PyHabClass.PyHab.dataRec">
-<code class="descname">dataRec</code><span class="sig-paren">(</span><em>onArray</em>, <em>offArray</em>, <em>trial</em>, <em>type</em>, <em>onArray2</em>, <em>offArray2</em>, <em>stimName=''</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab.dataRec" title="Permalink to this definition">¶</a></dt>
+<code class="descname">dataRec</code><span class="sig-paren">(</span><em>onArray</em>, <em>offArray</em>, <em>trial</em>, <em>type</em>, <em>onArray2</em>, <em>offArray2</em>, <em>stimName=''</em>, <em>habTrialNo=0</em>, <em>habCrit=0.0</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab.dataRec" title="Permalink to this definition">¶</a></dt>
 <dd><p>Records the data for a trial that ended normally.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -321,6 +390,8 @@ Prior to any criteria being set, self.HabCrit is 0. We can use this as a check w
 <li><strong>onArray2</strong> (<em>list</em>) – Gaze-on events for (optional) coder 2</li>
 <li><strong>offArray2</strong> (<em>list</em>) – Gaze-off events for (optional) coder 2</li>
 <li><strong>stimName</strong> (<em>string</em>) – If presenting stimuli, name of the stim file</li>
+<li><strong>habTrialNo</strong> (<em>int</em>) – If part of a hab block, what hab trial it was part of.</li>
+<li><strong>habCrit</strong> (<em>double</em>) – If part of a hab block, the current habituation criterion.</li>
 </ul>
 </td>
 </tr>
@@ -374,17 +445,23 @@ or the audio is looping (2)</td>
 
 <dl class="method">
 <dt id="PyHab.PyHabClass.PyHab.dispImageStim">
-<code class="descname">dispImageStim</code><span class="sig-paren">(</span><em>dispImage</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab.dispImageStim" title="Permalink to this definition">¶</a></dt>
+<code class="descname">dispImageStim</code><span class="sig-paren">(</span><em>dispImage</em>, <em>screen='C'</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab.dispImageStim" title="Permalink to this definition">¶</a></dt>
 <dd><p>Very simple. Draws still-image stimuli and flips window</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>dispImage</strong> (<em>visual.ImageStim object</em>) – the visual.ImageStim object</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>dispImage</strong> (<em>visual.ImageStim object</em>) – the visual.ImageStim object</li>
+<li><strong>screen</strong> (<em>str</em>) – For HPP, which screen the image is to appear on</li>
+</ul>
+</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">constant, 1</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">constant, 1</p>
+</td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">int</td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">int</p>
+</td>
 </tr>
 </tbody>
 </table>
@@ -392,7 +469,7 @@ or the audio is looping (2)</td>
 
 <dl class="method">
 <dt id="PyHab.PyHabClass.PyHab.dispMovieStim">
-<code class="descname">dispMovieStim</code><span class="sig-paren">(</span><em>trialType</em>, <em>dispMovie</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab.dispMovieStim" title="Permalink to this definition">¶</a></dt>
+<code class="descname">dispMovieStim</code><span class="sig-paren">(</span><em>trialType</em>, <em>dispMovie</em>, <em>screen='C'</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab.dispMovieStim" title="Permalink to this definition">¶</a></dt>
 <dd><p>Draws movie stimuli to the stimulus display, including movie-based attention-getters.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -401,6 +478,7 @@ or the audio is looping (2)</td>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>trialType</strong> (<em>int</em><em> or </em><em>str</em>) – 0 for paused, otherwise a string</li>
 <li><strong>dispMovie</strong> (<em>moviestim3 object</em>) – The moviestim3 object for the stimuli</li>
+<li><strong>screen</strong> (<em>str</em>) – The screen on which the movie should display. Only relevant for HPP.</li>
 </ul>
 </td>
 </tr>
@@ -457,16 +535,21 @@ ended</p>
 
 <dl class="method">
 <dt id="PyHab.PyHabClass.PyHab.doTrial">
-<code class="descname">doTrial</code><span class="sig-paren">(</span><em>number</em>, <em>type</em>, <em>disMovie</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab.doTrial" title="Permalink to this definition">¶</a></dt>
+<code class="descname">doTrial</code><span class="sig-paren">(</span><em>number</em>, <em>ttype</em>, <em>disMovie</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab.doTrial" title="Permalink to this definition">¶</a></dt>
 <dd><p>Control function for individual trials, to be called by doExperiment
 Returns a status value (int) that tells doExperiment what to do next</p>
+<p>self.playThrough registers the end-trial crieria
+0 = standard “cumulative on-time &gt;= MinOn and consecutive off-time &gt;= MaxOff”
+1 = “OnOnly”, only requires that cumulative on-time &gt; MinOn
+2 = “None”, plays to max duration no matter what.
+3 = “Either/or”, as standard but with “or” instead of “and”. Whichever comes first.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>number</strong> (<em>int</em>) – Trial number</li>
-<li><strong>type</strong> (<em>string</em>) – Trial type</li>
+<li><strong>ttype</strong> (<em>string</em>) – Trial type - the full expanded one with block hierarchy and hab trial info included.</li>
 <li><strong>disMovie</strong> (<em>dictionary</em>) – A dictionary as follows {‘stim’:[psychopy object for stimulus presentation], ‘stimType’:[movie,image,audio, pair]}</li>
 </ul>
 </td>
@@ -517,20 +600,26 @@ end-of-experiment screen.</p>
 
 <dl class="method">
 <dt id="PyHab.PyHabClass.PyHab.insertHab">
-<code class="descname">insertHab</code><span class="sig-paren">(</span><em>tn</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab.insertHab" title="Permalink to this definition">¶</a></dt>
+<code class="descname">insertHab</code><span class="sig-paren">(</span><em>tn</em>, <em>block</em>, <em>hn=-1</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab.insertHab" title="Permalink to this definition">¶</a></dt>
 <dd><p>Literally insert a new hab trial or meta-trial into actualTrialOrder, get the right movie, etc.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>tn</strong> (<em>int</em>) – trialNum</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">[disMovie, trialType], the former being the movie file to play if relevant, and the latter being the new trial type</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">list</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>tn</strong> (<em>int</em>) – trial number to insert the trial</li>
+<li><strong>hn</strong> – HabCount number to insert the hab trial. By default, whatever the current habcount is. However, there</li>
+</ul>
+</td>
 </tr>
 </tbody>
 </table>
+<p>are edge cases when recovering from “redo” trials when we want to throw in a hab trial further down the line.
+:type hn: int
+:param block: The habituation block the trial is being added to
+:type block: str
+:return: [disMovie, trialType], the former being the movie file to play if relevant, and the latter being the new trial type
+:rtype: list</p>
 </dd></dl>
 
 <dl class="method">
@@ -551,12 +640,52 @@ end-of-experiment screen.</p>
 
 <dl class="method">
 <dt id="PyHab.PyHabClass.PyHab.jumpToTest">
-<code class="descname">jumpToTest</code><span class="sig-paren">(</span><em>tn</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab.jumpToTest" title="Permalink to this definition">¶</a></dt>
-<dd><p>Jumps out of a hab block into whatever the first trial is that is not a hab trial or in a hab meta-trial-type
-:param tn: trial number
-:type tn: int
-:return: [disMovie, trialType] as insertHab, the former being the movie file to play if relevant, and the latter being the new trial type
-:rtype: list</p>
+<code class="descname">jumpToTest</code><span class="sig-paren">(</span><em>tn</em>, <em>block</em>, <em>met=False</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab.jumpToTest" title="Permalink to this definition">¶</a></dt>
+<dd><p>Jumps out of a hab block into whatever the first trial after the current hab block.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>tn</strong> (<em>int</em>) – current trial number when the function is called</li>
+<li><strong>block</strong> (<em>str</em>) – Block the habituation belongs to. Find end of block, done, because hab blocks can’t be embedded and each one can only occur in the flow once.</li>
+<li><strong>met</strong> (<em>bool</em>) – A boolean for whether this is because of J (False) or whether this is a genuine hab-criterion-met</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">[disMovie, trialType] as insertHab, the former being the movie file to play if relevant, and the latter being the new trial type</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">list</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabClass.PyHab.loadStim">
+<code class="descname">loadStim</code><span class="sig-paren">(</span><em>stim</em>, <em>screen='C'</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab.loadStim" title="Permalink to this definition">¶</a></dt>
+<dd><p>A general function for loading stimuli that can be called repeatedly.</p>
+<p>TODO: Windows audio bug when loading an audio file before a movie file means that we should change load order for everything to movie first.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>stim</strong> (<em>str</em>) – stimulus name, key for stimList dict</li>
+<li><strong>screen</strong> (<em>str</em>) – Screen to load stimuli to, doesn’t matter except for HPP, defaults to center</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">a dictionary with type and stimulus object</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">dict</p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
@@ -565,13 +694,34 @@ end-of-experiment screen.</p>
 <dd><p>A simple boolean function to allow for more modularity with preferential looking
 Basically, allows you to set an arbitrary set of keys to start a trial once the attngetter has played.
 In this case, only B (coder A on) is sufficient.</p>
+<p>This function can become the eye-tracker interface, basically. It will listen for the eye-tracker input.</p>
+<p>Todo: Can we implement a debug mode that simulates key-presses for some amount of time?</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">True if the B key is pressed, False otherwise.</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"></td>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">bool</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabClass.PyHab.lookScreenKeyPressed">
+<code class="descname">lookScreenKeyPressed</code><span class="sig-paren">(</span><em>screen=['C']</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab.lookScreenKeyPressed" title="Permalink to this definition">¶</a></dt>
+<dd><p>A function that primarily exists for HPP, because of the need to distinguish between any key
+being pressed and the key corresponding to the HPP screen in question being pressed</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>screen</strong> (<em>list of strings</em>) – List of screens for next stim.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">for non-HPP versions, the value of lookKeysPressed.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">bool</td>
 </tr>
 </tbody>
 </table>
@@ -602,16 +752,36 @@ In this case, only B (coder A on) is sufficient.</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="PyHab.PyHabClass.PyHab.printCurrentData">
+<code class="descname">printCurrentData</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab.printCurrentData" title="Permalink to this definition">¶</a></dt>
+<dd><p>A function which prints the current data to the output window, made into its own function to facilitate having
+working versions for PL and HPP studies as well. Only called when stimulus presentation is off.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="PyHab.PyHabClass.PyHab.redoSetup">
-<code class="descname">redoSetup</code><span class="sig-paren">(</span><em>tn</em>, <em>autoAdv</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab.redoSetup" title="Permalink to this definition">¶</a></dt>
+<code class="descname">redoSetup</code><span class="sig-paren">(</span><em>tn</em>, <em>autoAdv</em>, <em>blockName</em>, <em>blockRedo=False</em>, <em>fromAbort=False</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab.redoSetup" title="Permalink to this definition">¶</a></dt>
 <dd><p>Lays the groundwork for redoTrial, including correcting the trial order, selecting the right stim, etc.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>tn</strong> (<em>int</em>) – Trial number (trialNum)</li>
+<li><strong>tn</strong> (<em>int</em>) – Trial number (trialNum), to be redone (or in the process of being aborted)</li>
 <li><strong>autoAdv</strong> (<em>list</em>) – The current auto-advance trial type list (different on first trial for Reasons)</li>
+<li><strong>blockName</strong> (<em>str</em>) – Pulls topBlockName from doExperiment to deal with redoing block and habituations.</li>
+<li><strong>blockRedo</strong> (<em>bool</em>) – A special type of redo reserved for blocks, that rewinds to the start of the top-level block.</li>
+<li><strong>fromAbort</strong> (<em>bool</em>) – A bool for blockRedos, to see if this is coming off a redo, which requires an extra check.</li>
 </ul>
 </td>
 </tr>
@@ -629,9 +799,9 @@ In this case, only B (coder A on) is sufficient.</p>
 <dt id="PyHab.PyHabClass.PyHab.redoTrial">
 <code class="descname">redoTrial</code><span class="sig-paren">(</span><em>trialNum</em><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab.redoTrial" title="Permalink to this definition">¶</a></dt>
 <dd><p>Allows you to redo a trial after it has ended. Similar to abort trial, but under
-the assumption that the data has already been recorded and needs to be replaced.
-Decrementing of trial numbers is handled in doExperiment when the relevant key is
-pressed.</p>
+the assumption that the data has already been recorded and needs to be replaced.</p>
+<p>This function only handles the data part. The actual re-assignment of the trial
+is done elsewhere.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -677,6 +847,8 @@ modified by Jonathan Kominsky.</p>
 <dd><p>Startup function. Presents subject information dialog to researcher, reads and follows settings and condition
 files. Now with a testing mode to allow us to skip the dialog and ensure the actualTrialOrder structure is being
 put together properly in unit testing.</p>
+<p>Also expands habituation blocks appropriately and tags trials with habituation iteration number as well as
+the symbol for the end of a hab block (^)</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -686,6 +858,41 @@ put together properly in unit testing.</p>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"></td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabClass.PyHab.saveBlockFile">
+<code class="descname">saveBlockFile</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab.saveBlockFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>A function that create a block-level summary file and saves it. Copies the primary data matrix (only good trials)
+and loops over it, compressing all blocks. Does not work for habs, which follow their own rules.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">A condensed copy of dataMatrix with all blocks of the relevant types condensed to one line.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">list</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyHab.PyHabClass.PyHab.saveHabFile">
+<code class="descname">saveHabFile</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyHab.PyHabClass.PyHab.saveHabFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a habituation summary data file, which has one line per hab trial, and only looks at parts of the hab
+trial that were included in calcHabOver. This is notably easier in some ways because the hab trials are already
+tagged in dataMatrix</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">A condensed copy of dataMatrix with all hab trials condensed only to those that were used to compute habituation.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">list</td>
 </tr>
 </tbody>
 </table>

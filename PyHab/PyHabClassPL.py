@@ -7,6 +7,7 @@ if os.name == 'posix':
 from psychopy import sound
 import pyglet
 from pyglet import input as pyglet_input
+import numpy as np
 import wx, random, csv
 from math import *
 from datetime import *
@@ -147,6 +148,7 @@ class PyHabPL(PyHab):
         :return: True if the B or M key is pressed, False otherwise.
         :rtype:
         """
+
         if self.keyboard[self.key.B] or self.keyboard[self.key.M]:
             return True
         else:
@@ -172,8 +174,6 @@ class PyHabPL(PyHab):
         """
         Control function for individual trials, to be called by doExperiment
         Returns a status value (int) that tells doExperiment what to do next
-
-        TODO: trial timing recording
 
         :param number: Trial number
         :type number: int
@@ -226,6 +226,8 @@ class PyHabPL(PyHab):
 
         self.trialTiming.append({'trialNum': number, 'trialType': dataType, 'event': 'startTrial',
                                  'time': (startTrial - self.absoluteStart)})
+        if self.eyetracker > 0:
+            self.tracker.record_event('trial_' + str(number) + '_' + dataType + '_startTrial')
 
         def onDuration(adds=0, subs=0):  # A function for the duration switch, while leaving sumOn intact
             if localType in self.durationCriterion:
@@ -451,11 +453,15 @@ class PyHabPL(PyHab):
                             tempTiming = {'trialNum': number, 'trialType': dataType, 'event': 'startAttnGetter',
                                           'time': (core.getTime() - self.absoluteStart)}
                             self.trialTiming.append(tempTiming)
+                            if self.eyetracker > 0:
+                                self.tracker.record_event('trial_' + str(number) + '_' + tempTiming['trialType'] + '_startAttnGetter')
                             startAG = core.getTime()
                             self.attnGetter(localType, self.midAG[localType]['cutoff'], self.midAG[localType]['onmin'])
                             tempTiming = {'trialNum': number, 'trialType': dataType, 'event': 'endAttnGetter',
                                           'time': (core.getTime() - self.absoluteStart)}
                             self.trialTiming.append(tempTiming)
+                            if self.eyetracker > 0:
+                                self.tracker.record_event('trial_' + str(number) + '_' + tempTiming['trialType'] + '_endAttnGetter')
                             durAG = core.getTime() - startAG
                             maxDurAdd = maxDurAdd + durAG  # Increase max length of trial by duration that AG played.
                             if localType not in self.dynamicPause:
@@ -565,6 +571,8 @@ class PyHabPL(PyHab):
                     offArray.append(tempGazeArray)
         self.trialTiming.append({'trialNum': number, 'trialType': dataType, 'event': 'endTrial',
                                  'time': (core.getTime() - self.absoluteStart)})
+        if self.eyetracker > 0:
+            self.tracker.record_event('trial_' + str(number) + '_' + dataType + '_endTrial')
         if habTrial:
             habDataRec = self.habCount[habBlock] + 1
             habCrit = self.habCrit[habBlock]
@@ -677,6 +685,9 @@ class PyHabPL(PyHab):
             if self.endImageObject is not None:
                 self.endImageObject.draw()
             self.win.flip()
+            if self.eyetracker > 0:
+                self.tracker.stop_recording()
+                self.tracker.close()
 
         # Block-level summary data. Omits bad trials.
         if len(self.blockDataList) > 0 and self.blockSum:
