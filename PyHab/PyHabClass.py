@@ -317,7 +317,7 @@ class PyHab:
             self.calibPoints = [(x * self.screenWidth['C'], y * self.screenHeight['C']) for x, y in calnormp]
             self.calibStim = ['stimuli'+self.dirMarker+'calib'+self.dirMarker+'{}'.format(x) for x in os.listdir('stimuli'+self.dirMarker+'calib') if x.endswith('.png') and not x.startswith('.')]
             # Calibration audio (a different sound than the attngetter, borrowed from psychopy_tobii_infant's demos)
-            self.calibSound = sound.Sound('stimuli'+self.dirMarker+'calib'+self.dirMarker+'wawa.wav')
+            self.calibSound = sound.Sound('stimuli'+self.dirMarker+'calib'+self.dirMarker+'upchime1.wav')
 
     '''
     FUNCTIONS
