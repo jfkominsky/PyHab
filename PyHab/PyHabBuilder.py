@@ -1971,8 +1971,20 @@ class PyHabBuilder:
                 self.settings['loadSep'] = 0
             if uInfo[5] == "Off":
                 self.settings['eyetracker'] = 0
+            elif self.settings['prefLook'] == 2:
+                self.settings['eyetracker'] = 0
+                errDlg = gui.Dlg()
+                errDlg.addText("Cannot use eye-tracker in HPP experiments!")
+                errDlg.addText("Set eye-tracker mode to 'Off'")
+                errDlg.show()
             elif uInfo[5] == "Record only":
                 self.settings['eyetracker'] = 1
+            elif self.settings['prefLook'] == 1:
+                self.settings['eyetracker'] = 1
+                errDlg = gui.Dlg()
+                errDlg.addText("Cannot use 'control advancement' with Preferential Looking designs at this time.")
+                errDlg.addText("Set eye-tracker mode to 'Record only'")
+                errDlg.show()
             else:
                 self.settings['eyetracker'] = 2
             if tryAgain:
@@ -2134,6 +2146,8 @@ class PyHabBuilder:
                 self.buttonList['shapes'][hpIndex].fillColor = 'black'
                 self.settings['prefLook'] = 1
                 self.settings['dataColumns'] = self.allDataColumnsPL
+                if self.settings['eyetracker'] == 2:
+                    self.settings['eyetracker'] = 1  # Because it can't be used for control purposes.
             while 1 in self.mouse.getPressed():
                 pass # Just a little thing so it doesn't get called for every frame the mouse is down on the button.
 
@@ -2179,6 +2193,8 @@ class PyHabBuilder:
                 self.settings['condList'] = []
                 self.condDict = {}
                 self.settings['randPres'] = 0
+
+                self.settings['eyetracker'] = 0
 
             if os.name != 'posix':
                 self.win.winHandle.set_visible(visible=True)
