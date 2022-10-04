@@ -1385,10 +1385,9 @@ class PyHab:
             AA = self.autoAdvance
             # Record an absolute start time for the whole experiment.
             if trialNum == 1:
-                self.absoluteStart = core.getTime()
                 if self.eyetracker > 0: # Should align timing file w/eye-tracker timing.
                     self.tracker.start_recording(self.et_filename)
-
+                self.absoluteStart = core.getTime()
             if not end: #This if statement checks if we're trying to quit.
                 self.frameCount = {k:0 for k,v in self.frameCount.items()}
                 # framerate = win.getActualFrameRate()
