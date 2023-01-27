@@ -3093,7 +3093,7 @@ class PyHabBuilder:
                         while 1 in self.mouse.getPressed():
                             pass
                         self.win.winHandle.set_visible(visible=False)
-                    self.condRandomizer()
+                    self.condRandomizer(bcReset=bc)
                     if os.name != 'posix':
                         self.win.winHandle.set_visible(visible=True)
                     while len(self.mouse.getPressed()) < 0:
@@ -3633,12 +3633,15 @@ class PyHabBuilder:
         self.settings['condList'] = list(outputDict.keys())
 
 
-    def condRandomizer(self):
+    def condRandomizer(self, bcReset=False):
         """
         This is based on other scripts I've made. Basically, say you have four conditions, and you want four participants
         to be assigned to each one, but you want to be totally blind to which condition a given participant is in. Here,
         once you have made your four conditions, you can tell it to create a condition list that it never shows you that
         has each condition X times, and that becomes the new condition file/list/etc.
+
+        :param bcReset: For the edge case where someone re-loads the base conditions and wants to re-randomize them.
+        :type bcReset: bool
 
         :return:
         :rtype:
@@ -3651,8 +3654,15 @@ class PyHabBuilder:
         if rCondDlg.OK and isinstance(randCond[0],int):
             totalN = len(self.condDict.keys())*randCond[0]
             # First, save the old, un-randomized thing for later reference.
-            self.baseCondDict = deepcopy(self.condDict)
-            self.settings['baseCondList'] = deepcopy(self.settings['condList'])
+            # However, we need a safety in case the cond list has been randomized once, so we only randomize the
+            # base conditions and not re-randomize the old list. In that case, we essentially force revert the
+            # old randomized conditions to the base conditions.
+            if not bcReset:
+                self.baseCondDict = deepcopy(self.condDict)
+                self.settings['baseCondList'] = deepcopy(self.settings['condList'])
+            else:
+                self.condDict = deepcopy(self.baseCondDict)  # because this is what the randomizer will pull from
+                self.settings['condList'] = deepcopy(self.settings['baseCondList']) # as above.
             newCondList = [] # Will replace condlist.
             for i in range (1, totalN+1):
                 if i < 10:
