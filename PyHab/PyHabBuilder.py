@@ -1449,10 +1449,10 @@ class PyHabBuilder:
             blockName = tempBlockList[iteration]
             delIndex = []
             forbid = []
-            for q in range(0, len(self.settings['blockList'][blockName])):
-                if self.settings['blockList'][blockName][q] in self.settings['blockList'].keys():
-                    # Identifies any nested blocks
-                    forbid.append(self.settings['blockList'][blockName][q])
+            for q in range(0, len(self.settings['blockList'][blockName]['trialList'])):
+                if self.settings['blockList'][blockName]['trialList'][q] in self.settings['blockList'].keys():
+                    # Identifies any nested blocks, adds them to the 'forbid' list.
+                    forbid.append(self.settings['blockList'][blockName]['trialList'][q])
 
             for r,l in self.settings['blockList'].items(): # hab blocks cannot be added to other blocks.
                 if l['habituation'] in [1, '1', True, 'True']:
