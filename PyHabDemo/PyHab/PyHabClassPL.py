@@ -2,11 +2,12 @@ import os, sys
 from psychopy import visual, event, core, data, gui, monitors, tools, prefs, logging
 from psychopy.constants import (STARTED, PLAYING)  # Added for new stimulus types
 prefs.hardware['audioLib'] = ['PTB']
-if os.name is 'posix':
+if os.name == 'posix':
     prefs.general['audioDevice'] = ['Built-in Output']
 from psychopy import sound
 import pyglet
 from pyglet import input as pyglet_input
+import numpy as np
 import wx, random, csv
 from math import *
 from datetime import *
@@ -19,8 +20,8 @@ class PyHabPL(PyHab):
     A new preferential-looking version of PyHab that extends the base class rather than being a wholly separate class.
     There's still a lot of redundant code here, which will require significant restructuring of the base class to fix.
     """
-    def __init__(self, settingsDict):
-        PyHab.__init__(self, settingsDict)
+    def __init__(self, settingsDict, testMode=False):
+        PyHab.__init__(self, settingsDict, testMode)
         self.secondKey = self.key.M #Variable that determines what the second key is. Overwrites what is set in the default init
         self.verbDatList = {'verboseOn': [], 'verboseOn2': [], 'verboseOff': []}  # a dict of the verbose data arrays
         self.verbBadList = {'verboseOn': [], 'verboseOn2': [],  'verboseOff': []}  # Corresponding for bad data
@@ -147,6 +148,7 @@ class PyHabPL(PyHab):
         :return: True if the B or M key is pressed, False otherwise.
         :rtype:
         """
+
         if self.keyboard[self.key.B] or self.keyboard[self.key.M]:
             return True
         else:
@@ -172,8 +174,6 @@ class PyHabPL(PyHab):
         """
         Control function for individual trials, to be called by doExperiment
         Returns a status value (int) that tells doExperiment what to do next
-
-        TODO: Hab trial revamp
 
         :param number: Trial number
         :type number: int
@@ -223,6 +223,11 @@ class PyHabPL(PyHab):
         runTrial = True
         endFlag = False
         endNow = False  # special case for autoredo
+
+        self.trialTiming.append({'trialNum': number, 'trialType': dataType, 'event': 'startTrial',
+                                 'time': (startTrial - self.absoluteStart)})
+        if self.eyetracker > 0:
+            self.tracker.record_event('trial_' + str(number) + '_' + dataType + '_startTrial')
 
         def onDuration(adds=0, subs=0):  # A function for the duration switch, while leaving sumOn intact
             if localType in self.durationCriterion:
@@ -364,7 +369,7 @@ class PyHabPL(PyHab):
             elif not gazeOn and not gazeOn2: #if they are not looking as of the previous refresh, check if they have been looking away for too long
                 nowOff = core.getTime() - startTrial
                 endCondMet = False
-                if self.playThrough[localType] == 0:  # Standard gaze-on then gaze-off
+                if self.playThrough[localType] in [0,4]:  # Standard gaze-on then gaze-off
                     if onDuration(subs=nowOff-startOff) >= self.minOn[localType] and nowOff - startOff >= self.maxOff[localType] and not endFlag:
                         endCondMet = True
                     elif localType in self.autoRedo and deadlineChecked and nowOff - startOff >= self.maxOff[localType] and not endFlag:
@@ -445,8 +450,18 @@ class PyHabPL(PyHab):
                                     disMovie['stim'].pause()
                                 elif disMovie['stimType'] == ['Image with audio'] and disMovie['stim']['Audio'].status == PLAYING:
                                     disMovie['stim']['Audio'].pause()
+                            tempTiming = {'trialNum': number, 'trialType': dataType, 'event': 'startAttnGetter',
+                                          'time': (core.getTime() - self.absoluteStart)}
+                            self.trialTiming.append(tempTiming)
+                            if self.eyetracker > 0:
+                                self.tracker.record_event('trial_' + str(number) + '_' + tempTiming['trialType'] + '_startAttnGetter')
                             startAG = core.getTime()
                             self.attnGetter(localType, self.midAG[localType]['cutoff'], self.midAG[localType]['onmin'])
+                            tempTiming = {'trialNum': number, 'trialType': dataType, 'event': 'endAttnGetter',
+                                          'time': (core.getTime() - self.absoluteStart)}
+                            self.trialTiming.append(tempTiming)
+                            if self.eyetracker > 0:
+                                self.tracker.record_event('trial_' + str(number) + '_' + tempTiming['trialType'] + '_endAttnGetter')
                             durAG = core.getTime() - startAG
                             maxDurAdd = maxDurAdd + durAG  # Increase max length of trial by duration that AG played.
                             if localType not in self.dynamicPause:
@@ -478,6 +493,27 @@ class PyHabPL(PyHab):
                         if gazeOn2:
                             onDur = endTrial - startOn2
                             tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOn2, 'endTime': endTrial,
+                                             'duration': onDur}
+                            onArray2.append(tempGazeArray)
+                elif self.playThrough[localType] == 4 and onDuration(adds=nowOn - tempOn) >= self.maxOn[localType] and not endFlag:
+                    if localType in self.movieEnd and not endNow:
+                        endFlag = True
+                    else:
+                        runTrial = False
+                        endTrial = core.getTime() - startTrial
+                        if not self.stimPres:
+                            self.endTrialSound.play()
+                            self.endTrialSound = sound.Sound('A', octave=4, sampleRate=44100, secs=0.2)
+                        if gazeOn:
+                            onDur = endTrial - startOn
+                            tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOn,
+                                             'endTime': endTrial,
+                                             'duration': onDur}
+                            onArray.append(tempGazeArray)
+                        if gazeOn2:
+                            onDur = endTrial - startOn2
+                            tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOn2,
+                                             'endTime': endTrial,
                                              'duration': onDur}
                             onArray2.append(tempGazeArray)
                 if gazeOn and not self.keyboard[self.key.B]: #if they were looking and have looked away.
@@ -533,6 +569,10 @@ class PyHabPL(PyHab):
                     tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOff, 'endTime': endTrial,
                                      'duration':offDur}
                     offArray.append(tempGazeArray)
+        self.trialTiming.append({'trialNum': number, 'trialType': dataType, 'event': 'endTrial',
+                                 'time': (core.getTime() - self.absoluteStart)})
+        if self.eyetracker > 0:
+            self.tracker.record_event('trial_' + str(number) + '_' + dataType + '_endTrial')
         if habTrial:
             habDataRec = self.habCount[habBlock] + 1
             habCrit = self.habCrit[habBlock]
@@ -645,6 +685,9 @@ class PyHabPL(PyHab):
             if self.endImageObject is not None:
                 self.endImageObject.draw()
             self.win.flip()
+            if self.eyetracker > 0:
+                self.tracker.stop_recording()
+                self.tracker.close()
 
         # Block-level summary data. Omits bad trials.
         if len(self.blockDataList) > 0 and self.blockSum:
@@ -718,6 +761,26 @@ class PyHabPL(PyHab):
                 outputWriter.writeheader()
                 for r in range(0, len(self.dataMatrix)):
                     outputWriter.writerow(self.dataMatrix[r])
+
+        if self.stimPres:
+            nDupe = ''  # This infrastructure eliminates the risk of overwriting existing data
+            o = 1
+            filename = self.timingFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(
+                self.today.month) + str(
+                self.today.day) + str(self.today.year) + '_trialTiming.csv'
+            while os.path.exists(filename):
+                o += 1
+                nDupe = str(o)
+                filename = self.timingFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(
+                    self.today.month) + str(
+                    self.today.day) + str(self.today.year) + '_trialTiming.csv'
+            timingHeaders = ['trialNum', 'trialType', 'event', 'time']
+            with open(filename, 'w') as f:
+                outputWriter = csv.DictWriter(f, fieldnames=timingHeaders, extrasaction='ignore', lineterminator='\n')
+                outputWriter.writeheader()
+                for r in range(0, len(self.trialTiming)):
+                    # print('writing rows')
+                    outputWriter.writerow(self.trialTiming[r])
 
         # Now to construct and save verbose data
         verboseMatrix = []
