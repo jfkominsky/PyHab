@@ -1206,7 +1206,7 @@ class PyHab:
             self.endExperiment()
             return[0,'4']
 
-    def insertHab(self, tn, block, hn=0):
+    def insertHab(self, tn, block, hn=-1):
         """
         Literally insert a new hab trial or meta-trial into actualTrialOrder, get the right movie, etc.
 
@@ -1221,10 +1221,10 @@ class PyHab:
         :rtype: list
         """
         trialNum = tn
-        if hn == 0:
+        if hn == -1:
             hn = self.habCount[block]
         if len(self.blockList[block]['trialList']) > 0:
-            self.blockExpander(self.blockList[block], block, hab=True, habNum=hn+1, insert=trialNum-1)
+            self.blockExpander(self.blockList[block], block, hab=True, habNum=hn+1, insert=trialNum) # insert being one index before was a problem
         trialType = self.actualTrialOrder[trialNum - 1]
         while '.' in trialType:
             trialType = trialType[trialType.index('.') + 1:]
