@@ -1538,8 +1538,8 @@ class TestMultiHabBlock(object):
 
         assert x == 'Movie12'
         assert y == 'X'
-        assert len(self.habInst.actualTrialOrder) == 53 # Up one from before.
-        assert self.habInst.actualTrialOrder[8] == 'E7*^.X'
+        assert len(self.habInst.actualTrialOrder) == 53  # Up one from before.
+        assert self.habInst.actualTrialOrder[8] == 'E7*^.X'  # Test that this is the right trial.
 
 
     def test_second_checkstop(self):

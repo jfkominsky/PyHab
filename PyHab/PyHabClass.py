@@ -1223,13 +1223,12 @@ class PyHab:
         trialNum = tn
         if hn == -1:
             hn = self.habCount[block]
-        habNum = hn
         if len(self.blockList[block]['trialList']) > 0:
-            self.blockExpander(self.blockList[block], block, hab=True, habNum=habNum+1, insert=trialNum-1)
+            self.blockExpander(self.blockList[block], block, hab=True, habNum=hn+1, insert=trialNum-1)
         trialType = self.actualTrialOrder[trialNum - 1]
         while '.' in trialType:
             trialType = trialType[trialType.index('.') + 1:]
-        if self.stimPres and habNum == self.habCount[block]:  # If we're inserting something way down the line, don't mess with it yet.
+        if self.stimPres and hn == self.habCount[block]:  # If we're inserting something way down the line, don't mess with it yet.
             if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
                 self.stimName = self.stimNames[trialType][self.counters[trialType] % len(self.stimNames[trialType])]
             else:
