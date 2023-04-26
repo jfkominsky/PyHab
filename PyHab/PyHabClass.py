@@ -1206,7 +1206,7 @@ class PyHab:
             self.endExperiment()
             return[0,'4']
 
-    def insertHab(self, tn, block, hn=-1):
+    def insertHab(self, tn, block, hn=0):
         """
         Literally insert a new hab trial or meta-trial into actualTrialOrder, get the right movie, etc.
 
@@ -1221,7 +1221,7 @@ class PyHab:
         :rtype: list
         """
         trialNum = tn
-        if hn == -1:
+        if hn == 0:
             hn = self.habCount[block]
         if len(self.blockList[block]['trialList']) > 0:
             self.blockExpander(self.blockList[block], block, hab=True, habNum=hn+1, insert=trialNum-1)
@@ -1245,7 +1245,7 @@ class PyHab:
                 self.counters[trialType] = 0
         else:
             disMovie = 0
-        if self.blindPres < 1: # TODO: This is returning something odd.
+        if self.blindPres < 1:
             self.rdyTextAppend = " NEXT: " + self.actualTrialOrder[trialNum - 1] + " TRIAL"
         return [disMovie,trialType]
 

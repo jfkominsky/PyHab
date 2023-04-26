@@ -1531,6 +1531,7 @@ class TestMultiHabBlock(object):
         assert x == 'Movie5'
         assert y == 'B'
         assert self.habInst.actualTrialOrder[7] == 'E6*^.X'
+        assert self.habInst.actualTrialOrder[8] == 'B'
         assert len(self.habInst.actualTrialOrder) == 52
 
     def test_insert_first(self):
@@ -1539,7 +1540,10 @@ class TestMultiHabBlock(object):
         assert x == 'Movie12'
         assert y == 'X'
         assert len(self.habInst.actualTrialOrder) == 53  # Up one from before.
+        assert self.habInst.habCount['E'] == 6  # Something off in the hab counter?
+        assert self.habInst.actualTrialOrder[7] == 'E6*^.X'  # Reconfirm previous trial.
         assert self.habInst.actualTrialOrder[8] == 'E7*^.X'  # Test that this is the right trial.
+        assert self.habInst.actualTrialOrder[9] == 'B'  # Confirm the test trial hasn't moved.
 
 
     def test_second_checkstop(self):
