@@ -1224,7 +1224,7 @@ class PyHab:
         if hn == -1:
             hn = self.habCount[block]
         if len(self.blockList[block]['trialList']) > 0:
-            self.blockExpander(self.blockList[block], block, hab=True, habNum=hn+1, insert=trialNum) # insert being one index before was a problem
+            self.blockExpander(self.blockList[block], block, hab=True, habNum=hn+1, insert=trialNum-1) # insert being one index before was a problem
         trialType = self.actualTrialOrder[trialNum - 1]
         while '.' in trialType:
             trialType = trialType[trialType.index('.') + 1:]

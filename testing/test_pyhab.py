@@ -1536,7 +1536,7 @@ class TestMultiHabBlock(object):
 
     def test_insert_first(self):
         [x, y] = self.habInst.insertHab(8,'E')
-
+        print(self.habInst.actualTrialOrder)
         assert x == 'Movie12'
         assert y == 'X'
         assert len(self.habInst.actualTrialOrder) == 53  # Up one from before.
