@@ -1539,6 +1539,8 @@ class TestMultiHabBlock(object):
         assert x == 'Movie12'
         assert y == 'X'
         assert len(self.habInst.actualTrialOrder) == 53 # Up one from before.
+        assert self.habInst.actualTrialOrder[8] == 'E7*^.X'
+
 
     def test_second_checkstop(self):
         self.habInst.dataMatrix.append(self.firstTestTrialMatrix[0])

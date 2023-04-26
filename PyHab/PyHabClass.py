@@ -1237,18 +1237,16 @@ class PyHab:
 
             if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
                 self.stimName = self.stimNames[trialType][self.counters[trialType] % len(self.stimNames[trialType])]
-                disMovie = self.stimDict[trialType][
-                    self.counters[trialType] % len(self.stimNames[trialType])]
+                disMovie = self.stimDict[trialType][self.counters[trialType] % len(self.stimNames[trialType])]
             else:
                 self.stimName = self.stimNames[trialType][self.counters[trialType]]
-                disMovie = self.stimDict[trialType][
-                    self.counters[trialType]]
+                disMovie = self.stimDict[trialType][self.counters[trialType]]
             self.counters[trialType] += 1
             if self.counters[trialType] < 0:
                 self.counters[trialType] = 0
         else:
             disMovie = 0
-        if self.blindPres < 1:
+        if self.blindPres < 1: # TODO: This is returning something odd.
             self.rdyTextAppend = " NEXT: " + self.actualTrialOrder[trialNum - 1] + " TRIAL"
         return [disMovie,trialType]
 
@@ -1334,6 +1332,7 @@ class PyHab:
                 self.rdyTextAppend = " NEXT: " + self.actualTrialOrder[trialNum - 1] + " TRIAL"
             end = False
             skip = False
+            habInsert = False # Adding this to track whether a hab trial has been inserted already
             if trialType not in AA and self.nextFlash in [1,'1',True,'True']: # The 'flasher' to alert the experimenter they need to start the next trial
                 self.flashCoderWindow()
             while not self.keyboard[self.key.A] and trialType not in AA and not end:  # wait for 'ready' key, check at frame intervals
@@ -1367,14 +1366,17 @@ class PyHab:
                         if self.habMetWhen[topBlockName] == -1:  # jump to test in a hab design
                             [disMovie, trialType] = self.jumpToTest(trialNum, topBlockName)
                 # Insert add'l hab trial. Problem: this can only be invoked outside of a hab block, but needs to refer back to the hab block!
-                elif self.keyboard[self.key.I] and len(self.habMetWhen.keys()) > 0: # insert additional hab trial
+                elif self.keyboard[self.key.I] and len(self.habMetWhen.keys()) > 0 and not habInsert: # insert ONE additional hab trial
                     # Find the most recent hab block. It should be the most recent trial, in fact.
                     if '*' in self.actualTrialOrder[trialNum-2]:
                         for k, t in self.habMetWhen.items():
                             if self.actualTrialOrder[trialNum-2][0:len(k)] == k and t > 0:
                                 [disMovie, trialType] = self.insertHab(trialNum, k)
+                                habInsert = True
                                 while '.' in trialType:
                                     trialType = trialType[trialType.index('.') + 1:]
+                                while self.keyboard[self.key.I]:  # Wait until 'I' is released.
+                                    pass
                 # Eye-tracker only: Redo calibration. Can't be done before first trial because recording not started yet.
                 elif trialNum > 1 and self.eyetracker > 0 and self.keyboard[self.key.C]:
                     self.tracker.stop_recording() # scary, but as long as "newfile" is false, then it should be possible to resume.
@@ -1509,14 +1511,17 @@ class PyHab:
                     elif self.keyboard[self.key.J] and topBlockName in self.habMetWhen.keys():
                         if self.habMetWhen[topBlockName] == -1:  # jump to test in a hab design
                             [disMovie, trialType] = self.jumpToTest(trialNum)
-                    elif self.keyboard[self.key.I] and len(self.habMetWhen.keys()) > 0:  # insert additional hab trial
+                    elif self.keyboard[self.key.I] and len(self.habMetWhen.keys()) > 0 and not habInsert:  # insert additional hab trial
                         # Only works if trial before this one was a hab block trial.
                         if '*' in self.actualTrialOrder[trialNum - 2]:
                             for k, t in self.habMetWhen.items():
                                 if self.actualTrialOrder[trialNum - 2][0:len(k)] == k and t > 0:
                                     [disMovie, trialType] = self.insertHab(trialNum, k)
+                                    habInsert = True
                                     while '.' in trialType:
                                         trialType = trialType[trialType.index('.') + 1:]
+                                    while self.keyboard[self.key.I]: # Stops it from repeating this once per frame.
+                                        pass
                     elif self.keyboard[self.key.S] and '*' not in trialType:  # Skip trial. Doesn't work on things required for habituation.
                         skip = True
                     # eye-tracker only: Redo calibration
