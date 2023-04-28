@@ -581,9 +581,6 @@ class PyHab:
             # Last needs to ignore HabSetWhen, or rather, cannot wait MetCritWindow trials past when it is set.
             if self.habCount[blockName] < self.habSetWhen[blockName] + self.blockList[blockName]['metCritWindow'] and self.blockList[blockName]['metCritStatic'] == 'Moving' and self.blockList[blockName]['setCritType'] != 'Last': # Was the hab set "late" and are we too early as a result
                 return False
-            elif self.habMetWhen[blockName] > -1:
-                # Edge case, typically when the condition has been met and another hab trial inserted afteward.
-                return False
             else:
                 sumOnTimes = 0
                 index = self.habCount[blockName] - self.blockList[blockName]['metCritWindow']
