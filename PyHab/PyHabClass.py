@@ -581,6 +581,9 @@ class PyHab:
             # Last needs to ignore HabSetWhen, or rather, cannot wait MetCritWindow trials past when it is set.
             if self.habCount[blockName] < self.habSetWhen[blockName] + self.blockList[blockName]['metCritWindow'] and self.blockList[blockName]['metCritStatic'] == 'Moving' and self.blockList[blockName]['setCritType'] != 'Last': # Was the hab set "late" and are we too early as a result
                 return False
+            elif self.habMetWhen[blockName] > -1:
+                # Edge case, typically when the condition has been met and another hab trial inserted afteward.
+                return False
             else:
                 sumOnTimes = 0
                 index = self.habCount[blockName] - self.blockList[blockName]['metCritWindow']
@@ -2017,7 +2020,7 @@ class PyHab:
             self.dataRec(onArray, offArray, number, dataType, onArray2, offArray2, self.stimName, habDataRec, habCrit)
         # If this is a habituation block
         if habTrial:
-            if self.habMetWhen[habBlock] == -1 and not abort:   # if still during habituation
+            if self.habMetWhen[habBlock] == -1:   # if still during habituation
                 if localType in self.blockList[habBlock]['calcHabOver']:
                     tempSum = 0
                     # Check if computing habituation by duration or on-time
@@ -2052,6 +2055,8 @@ class PyHab:
                         return 0
                 else:
                     return 0
+            else:
+                return 0 # edge case of inserted hab trial.
         elif number >= len(self.actualTrialOrder) or ttype == 4:
             # End experiment
             return 2
