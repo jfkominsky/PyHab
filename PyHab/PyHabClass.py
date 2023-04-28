@@ -1374,8 +1374,6 @@ class PyHab:
                                 habInsert = True
                                 while '.' in trialType:
                                     trialType = trialType[trialType.index('.') + 1:]
-                                while self.keyboard[self.key.I]:  # Wait until 'I' is released.
-                                    pass
                 # Eye-tracker only: Redo calibration. Can't be done before first trial because recording not started yet.
                 elif trialNum > 1 and self.eyetracker > 0 and self.keyboard[self.key.C]:
                     self.tracker.stop_recording() # scary, but as long as "newfile" is false, then it should be possible to resume.
@@ -1519,8 +1517,6 @@ class PyHab:
                                     habInsert = True
                                     while '.' in trialType:
                                         trialType = trialType[trialType.index('.') + 1:]
-                                    while self.keyboard[self.key.I]: # Stops it from repeating this once per frame.
-                                        pass
                     elif self.keyboard[self.key.S] and '*' not in trialType:  # Skip trial. Doesn't work on things required for habituation.
                         skip = True
                     # eye-tracker only: Redo calibration
