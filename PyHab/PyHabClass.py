@@ -1426,7 +1426,8 @@ class PyHab:
                         startAG = core.getTime()
                         onCheck = 0
                         while simAG:
-                            if core.getTime() - startAG >= self.attnGetterList[self.playAttnGetter[trialType]['attnGetter']]['stimDur']:
+                            # 150ms shortening to account for RT delay. This is a conservative number.
+                            if core.getTime() - startAG - .15 >= self.attnGetterList[self.playAttnGetter[trialType]['attnGetter']]['stimDur']:
                                 simAG = False
                             elif self.playAttnGetter[trialType]['cutoff'] and self.lookKeysPressed():
                                 if onCheck == 0 and self.playAttnGetter[trialType]['onmin'] > 0:
@@ -1435,6 +1436,7 @@ class PyHab:
                                     simAG = False
                                 elif onCheck > 0:  # A clever little way to say "if they aren't looking but were earlier"
                                     onCheck = 0
+                            self.dispCoderWindow(0)
                         core.wait(self.freezeFrame)  # an attempt to match the delay caused by the attention-getter playing.
                         waitStart = True
                     else:
@@ -1469,7 +1471,8 @@ class PyHab:
                                 startAG = core.getTime()
                                 onCheck = 0
                                 while simAG:
-                                    if core.getTime() - startAG >= self.attnGetterList[self.playAttnGetter[trialType]['attnGetter']]['stimDur']:
+                                    # 150ms shortening to account for RT delay. This is a conservative number.
+                                    if core.getTime() - startAG - .15 >= self.attnGetterList[self.playAttnGetter[trialType]['attnGetter']]['stimDur']:
                                         simAG = False
                                     elif self.playAttnGetter[trialType]['cutoff'] and self.lookKeysPressed():
                                         if onCheck == 0 and self.playAttnGetter[trialType]['onmin'] > 0:
@@ -1478,6 +1481,7 @@ class PyHab:
                                             simAG = False
                                         elif onCheck > 0:  # A clever little way to say "if they aren't looking but were earlier"
                                             onCheck = 0
+                                    self.dispCoderWindow(0)
                                 core.wait(self.freezeFrame)
                     elif self.lookKeysPressed():
                         waitStart = False
