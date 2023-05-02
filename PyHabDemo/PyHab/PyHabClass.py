@@ -1,7 +1,10 @@
 import os, sys
-from psychopy import gui, visual, event, core, data, monitors, tools, prefs, logging
+from psychopy import gui, visual, event, core, data, monitors, tools, prefs, logging, __version__
 from psychopy.constants import (STARTED, PLAYING)  # Added for new stimulus types
-prefs.hardware['audioLib'] = ['PTB']
+if eval(__version__[0:4]) < 2023: # PTB has proven itself unreliable on too many systems, but sounddevice isn't included in 2023.
+    prefs.hardware['audioLib'] = ['sounddevice'] # change to 'PTB' if you get audio errors
+else:
+    prefs.hardware['audioLib'] = ['PTB']
 if os.name == 'posix':
     prefs.general['audioDevice'] = ['Built-in Output']
 from psychopy import sound
@@ -1220,13 +1223,12 @@ class PyHab:
         trialNum = tn
         if hn == -1:
             hn = self.habCount[block]
-        habNum = hn
         if len(self.blockList[block]['trialList']) > 0:
-            self.blockExpander(self.blockList[block], block, hab=True, habNum=habNum+1, insert=trialNum-1)
+            self.blockExpander(self.blockList[block], block, hab=True, habNum=hn+1, insert=trialNum-1) # insert being one index before was a problem
         trialType = self.actualTrialOrder[trialNum - 1]
         while '.' in trialType:
             trialType = trialType[trialType.index('.') + 1:]
-        if self.stimPres and habNum == self.habCount[block]:  # If we're inserting something way down the line, don't mess with it yet.
+        if self.stimPres and hn == self.habCount[block]:  # If we're inserting something way down the line, don't mess with it yet.
             if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
                 self.stimName = self.stimNames[trialType][self.counters[trialType] % len(self.stimNames[trialType])]
             else:
@@ -1234,12 +1236,10 @@ class PyHab:
 
             if self.counters[trialType] >= len(self.stimNames[trialType]):  # Comes up with multiple repetitions of few movies
                 self.stimName = self.stimNames[trialType][self.counters[trialType] % len(self.stimNames[trialType])]
-                disMovie = self.stimDict[trialType][
-                    self.counters[trialType] % len(self.stimNames[trialType])]
+                disMovie = self.stimDict[trialType][self.counters[trialType] % len(self.stimNames[trialType])]
             else:
                 self.stimName = self.stimNames[trialType][self.counters[trialType]]
-                disMovie = self.stimDict[trialType][
-                    self.counters[trialType]]
+                disMovie = self.stimDict[trialType][self.counters[trialType]]
             self.counters[trialType] += 1
             if self.counters[trialType] < 0:
                 self.counters[trialType] = 0
@@ -1331,6 +1331,7 @@ class PyHab:
                 self.rdyTextAppend = " NEXT: " + self.actualTrialOrder[trialNum - 1] + " TRIAL"
             end = False
             skip = False
+            habInsert = False # Adding this to track whether a hab trial has been inserted already
             if trialType not in AA and self.nextFlash in [1,'1',True,'True']: # The 'flasher' to alert the experimenter they need to start the next trial
                 self.flashCoderWindow()
             while not self.keyboard[self.key.A] and trialType not in AA and not end:  # wait for 'ready' key, check at frame intervals
@@ -1364,12 +1365,13 @@ class PyHab:
                         if self.habMetWhen[topBlockName] == -1:  # jump to test in a hab design
                             [disMovie, trialType] = self.jumpToTest(trialNum, topBlockName)
                 # Insert add'l hab trial. Problem: this can only be invoked outside of a hab block, but needs to refer back to the hab block!
-                elif self.keyboard[self.key.I] and len(self.habMetWhen.keys()) > 0: # insert additional hab trial
+                elif self.keyboard[self.key.I] and len(self.habMetWhen.keys()) > 0 and not habInsert: # insert ONE additional hab trial
                     # Find the most recent hab block. It should be the most recent trial, in fact.
                     if '*' in self.actualTrialOrder[trialNum-2]:
                         for k, t in self.habMetWhen.items():
                             if self.actualTrialOrder[trialNum-2][0:len(k)] == k and t > 0:
                                 [disMovie, trialType] = self.insertHab(trialNum, k)
+                                habInsert = True
                                 while '.' in trialType:
                                     trialType = trialType[trialType.index('.') + 1:]
                 # Eye-tracker only: Redo calibration. Can't be done before first trial because recording not started yet.
@@ -1424,7 +1426,8 @@ class PyHab:
                         startAG = core.getTime()
                         onCheck = 0
                         while simAG:
-                            if core.getTime() - startAG >= self.attnGetterList[self.playAttnGetter[trialType]['attnGetter']]['stimDur']:
+                            # 150ms shortening to account for RT delay. This is a conservative number.
+                            if core.getTime() - startAG - .15 >= self.attnGetterList[self.playAttnGetter[trialType]['attnGetter']]['stimDur']:
                                 simAG = False
                             elif self.playAttnGetter[trialType]['cutoff'] and self.lookKeysPressed():
                                 if onCheck == 0 and self.playAttnGetter[trialType]['onmin'] > 0:
@@ -1433,6 +1436,7 @@ class PyHab:
                                     simAG = False
                                 elif onCheck > 0:  # A clever little way to say "if they aren't looking but were earlier"
                                     onCheck = 0
+                            self.dispCoderWindow(0)
                         core.wait(self.freezeFrame)  # an attempt to match the delay caused by the attention-getter playing.
                         waitStart = True
                     else:
@@ -1467,7 +1471,8 @@ class PyHab:
                                 startAG = core.getTime()
                                 onCheck = 0
                                 while simAG:
-                                    if core.getTime() - startAG >= self.attnGetterList[self.playAttnGetter[trialType]['attnGetter']]['stimDur']:
+                                    # 150ms shortening to account for RT delay. This is a conservative number.
+                                    if core.getTime() - startAG - .15 >= self.attnGetterList[self.playAttnGetter[trialType]['attnGetter']]['stimDur']:
                                         simAG = False
                                     elif self.playAttnGetter[trialType]['cutoff'] and self.lookKeysPressed():
                                         if onCheck == 0 and self.playAttnGetter[trialType]['onmin'] > 0:
@@ -1476,6 +1481,7 @@ class PyHab:
                                             simAG = False
                                         elif onCheck > 0:  # A clever little way to say "if they aren't looking but were earlier"
                                             onCheck = 0
+                                    self.dispCoderWindow(0)
                                 core.wait(self.freezeFrame)
                     elif self.lookKeysPressed():
                         waitStart = False
@@ -1506,12 +1512,13 @@ class PyHab:
                     elif self.keyboard[self.key.J] and topBlockName in self.habMetWhen.keys():
                         if self.habMetWhen[topBlockName] == -1:  # jump to test in a hab design
                             [disMovie, trialType] = self.jumpToTest(trialNum)
-                    elif self.keyboard[self.key.I] and len(self.habMetWhen.keys()) > 0:  # insert additional hab trial
+                    elif self.keyboard[self.key.I] and len(self.habMetWhen.keys()) > 0 and not habInsert:  # insert additional hab trial
                         # Only works if trial before this one was a hab block trial.
                         if '*' in self.actualTrialOrder[trialNum - 2]:
                             for k, t in self.habMetWhen.items():
                                 if self.actualTrialOrder[trialNum - 2][0:len(k)] == k and t > 0:
                                     [disMovie, trialType] = self.insertHab(trialNum, k)
+                                    habInsert = True
                                     while '.' in trialType:
                                         trialType = trialType[trialType.index('.') + 1:]
                     elif self.keyboard[self.key.S] and '*' not in trialType:  # Skip trial. Doesn't work on things required for habituation.
@@ -2014,7 +2021,7 @@ class PyHab:
             self.dataRec(onArray, offArray, number, dataType, onArray2, offArray2, self.stimName, habDataRec, habCrit)
         # If this is a habituation block
         if habTrial:
-            if self.habMetWhen[habBlock] == -1 and not abort:   # if still during habituation
+            if self.habMetWhen[habBlock] == -1:   # if still during habituation
                 if localType in self.blockList[habBlock]['calcHabOver']:
                     tempSum = 0
                     # Check if computing habituation by duration or on-time
@@ -2049,6 +2056,8 @@ class PyHab:
                         return 0
                 else:
                     return 0
+            else:
+                return 0 # edge case of inserted hab trial.
         elif number >= len(self.actualTrialOrder) or ttype == 4:
             # End experiment
             return 2

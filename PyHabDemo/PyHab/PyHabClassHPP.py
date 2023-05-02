@@ -1,8 +1,11 @@
 import os, sys
-from psychopy import visual, event, core, data, gui, monitors, tools, prefs, logging
+from psychopy import visual, event, core, data, gui, monitors, tools, prefs, logging, __version__
 from psychopy.constants import (STARTED, PLAYING)  # Added for new stimulus types
-prefs.hardware['audioLib'] = ['PTB']
-if os.name is 'posix':
+if eval(__version__[0:4]) < 2023: # PTB has proven itself unreliable on too many systems, but sounddevice isn't included in 2023.
+    prefs.hardware['audioLib'] = ['sounddevice'] # change to 'PTB' if you get audio errors
+else:
+    prefs.hardware['audioLib'] = ['PTB']
+if os.name == 'posix':
     prefs.general['audioDevice'] = ['Built-in Output']
 from psychopy import sound
 import pyglet
@@ -20,8 +23,8 @@ class PyHabHPP(PyHab):
     to juggle which screen things are presented on, simultaneous presentation on multiple screens, and more.
     """
 
-    def __init__(self, settingsDict):
-        PyHab.__init__(self, settingsDict)
+    def __init__(self, settingsDict, testMode=False):
+        PyHab.__init__(self, settingsDict, testMode)
         self.centerKey = self.key.B
         self.secondKey = self.key.V  # Variable that determines what the second key is. Overwrites what is set in the default init
         self.rightKey = self.key.N
@@ -330,8 +333,6 @@ class PyHabHPP(PyHab):
         Returns a status value (int) that tells doExperiment what to do next
         HPP experiments works very differently from everything else, and this is where the bulk of that is happening.
 
-        TODO: Hab trial revamp.
-
         :param number: Trial number
         :type number: int
         :param ttype: Trial type
@@ -403,6 +404,8 @@ class PyHabHPP(PyHab):
         gazeOnR = False
         endNow = False
 
+        self.trialTiming.append({'trialNum': number, 'trialType': dataType, 'event': 'startTrial',
+                                 'time': (startTrial - self.absoluteStart)})
 
         def onDuration(adds=0, subs=0):  # A function for the duration switch, while leaving sumOn intact
             if localType in self.durationCriterion:
@@ -587,7 +590,7 @@ class PyHabHPP(PyHab):
                 # dataStartOff exists to make sure the data file is still fully accurate to what actually happened.
                 nowOff = core.getTime() - startTrial
                 endCondMet = False
-                if self.playThrough[localType] == 0:  # Standard gaze-on then gaze-off
+                if self.playThrough[localType] in [0,4]:  # Standard gaze-on then gaze-off
                     if onDuration(subs=nowOff-startOff) >= self.minOn[localType] and nowOff - startOff >= self.maxOff[localType] and not endFlag:
                         endCondMet = True
                     elif localType in self.autoRedo and deadlineChecked and nowOff - startOff >= self.maxOff[localType] and not endFlag:
@@ -689,8 +692,14 @@ class PyHabHPP(PyHab):
                                         elif j['stimType'] == ['Image with audio'] and j['stim']['Audio'].status == PLAYING:
                                             j['stim']['Audio'].pause()
                             startAG = core.getTime()
+                            tempTiming = {'trialNum': number, 'trialType': dataType, 'event': 'startAttnGetter',
+                                          'time': (core.getTime() - self.absoluteStart)}
+                            self.trialTiming.append(tempTiming)
                             self.attnGetter(localType, self.midAG[localType]['cutoff'], self.midAG[localType]['onmin'])
                             durAG = core.getTime() - startAG
+                            tempTiming = {'trialNum': number, 'trialType': dataType, 'event': 'endAttnGetter',
+                                          'time': (core.getTime() - self.absoluteStart)}
+                            self.trialTiming.append(tempTiming)
                             maxDurAdd = maxDurAdd + durAG  # Increase max length of trial by duration that AG played.
                             if localType not in self.dynamicPause:
                                 for i,j in disMovie.items():
@@ -722,6 +731,31 @@ class PyHabHPP(PyHab):
 
                 if self.playThrough[localType] in [1,3] and onDuration(adds=tmpAdd) >= self.minOn[localType] and not endFlag:
                     # If the "on-only" condition has been met
+                    if localType in self.movieEnd and not endNow:
+                        endFlag = True
+                    else:
+                        runTrial = False
+                        endTrial = core.getTime() - startTrial
+                        if not self.stimPres:
+                            self.endTrialSound.play()
+                            self.endTrialSound = sound.Sound('A', octave=4, sampleRate=44100, secs=0.2)
+                        if gazeOnC:
+                            onDur = endTrial - startOnC
+                            tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOnC,
+                                             'endTime': endTrial, 'duration': onDur}
+                            onArrayC.append(tempGazeArray)
+                        if gazeOnL:
+                            onDur = endTrial - startOnL
+                            tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOnL,
+                                             'endTime': endTrial, 'duration': onDur}
+                            onArrayL.append(tempGazeArray)
+                        if gazeOnR:
+                            onDur = endTrial - startOnR
+                            tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOnR,
+                                             'endTime': endTrial, 'duration': onDur}
+                            onArrayR.append(tempGazeArray)
+                elif self.playThrough[localType] == 4 and onDuration(adds=tmpAdd) >= self.maxOn[localType] and not endFlag:
+                    # If the "maxOn" condition has been met
                     if localType in self.movieEnd and not endNow:
                         endFlag = True
                     else:
@@ -956,6 +990,8 @@ class PyHabHPP(PyHab):
                     tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOff,
                                      'endTime': endTrial, 'duration': offDur}
                     offArray.append(tempGazeArray)
+        self.trialTiming.append({'trialNum': number, 'trialType': dataType, 'event': 'endTrial',
+                                 'time': (core.getTime() - self.absoluteStart)})
         if habTrial:
             habDataRec = self.habCount[habBlock] + 1
             habCrit = self.habCrit[habBlock]
@@ -1188,6 +1224,26 @@ class PyHabHPP(PyHab):
                     # print('writing rows')
                     outputWriter.writerow(self.dataMatrix[r])
 
+        if self.stimPres:
+            nDupe = ''  # This infrastructure eliminates the risk of overwriting existing data
+            o = 1
+            filename = self.timingFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(
+                self.today.month) + str(
+                self.today.day) + str(self.today.year) + '_trialTiming.csv'
+            while os.path.exists(filename):
+                o += 1
+                nDupe = str(o)
+                filename = self.timingFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(
+                    self.today.month) + str(
+                    self.today.day) + str(self.today.year) + '_trialTiming.csv'
+            timingHeaders = ['trialNum', 'trialType', 'event', 'time']
+            with open(filename, 'w') as f:
+                outputWriter = csv.DictWriter(f, fieldnames=timingHeaders, extrasaction='ignore', lineterminator='\n')
+                outputWriter.writeheader()
+                for r in range(0, len(self.trialTiming)):
+                    # print('writing rows')
+                    outputWriter.writerow(self.trialTiming[r])
+
         # Verbose data saving.
         verboseMatrix = []
         # first, verbose data is not as well organized. However, we should be able to alternate back and forth between
@@ -1369,7 +1425,7 @@ class PyHabHPP(PyHab):
             tempText.draw()
             self.win2.flip()
             # Step 1: Load and present "startImage"
-            if self.startImage is not '':  #TODO: For now start/end is restricted to center screen.
+            if self.startImage != '':  #TODO: For now start/end is restricted to center screen.
                 self.dummyThing.draw()
                 tempStim = self.stimList[self.startImage]
                 tempStimObj = visual.ImageStim(self.win, tempStim['stimLoc'], size=[self.movieWidth['C'], self.movieHeight['C']])
@@ -1411,7 +1467,7 @@ class PyHabHPP(PyHab):
                                                                            flipHoriz=False, flipVert=False, loop=False)
                         if self.attnGetterList[i]['stimType'] == 'Movie + Audio':
                             self.attnGetterList[i]['audioFile'] = sound.Sound(self.attnGetterList[i]['audioLoc'])
-            if self.endImage is not '': # Load image for end of experiment, if needed.
+            if self.endImage != '': # Load image for end of experiment, if needed.
                 tempStim = self.stimList[self.endImage]
                 self.endImageObject = visual.ImageStim(self.win, tempStim['stimLoc'], size=[self.movieWidth['C'], self.movieHeight['C']])
             else:
