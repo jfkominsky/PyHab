@@ -1427,7 +1427,7 @@ class PyHab:
                         onCheck = 0
                         while simAG:
                             # 150ms shortening to account for RT delay. This is a conservative number.
-                            if core.getTime() - startAG - .15 >= self.attnGetterList[self.playAttnGetter[trialType]['attnGetter']]['stimDur']:
+                            if core.getTime() - startAG + .5 >= self.attnGetterList[self.playAttnGetter[trialType]['attnGetter']]['stimDur']:
                                 simAG = False
                             elif self.playAttnGetter[trialType]['cutoff'] and self.lookKeysPressed():
                                 if onCheck == 0 and self.playAttnGetter[trialType]['onmin'] > 0:
@@ -1472,7 +1472,7 @@ class PyHab:
                                 onCheck = 0
                                 while simAG:
                                     # 150ms shortening to account for RT delay. This is a conservative number.
-                                    if core.getTime() - startAG - .15 >= self.attnGetterList[self.playAttnGetter[trialType]['attnGetter']]['stimDur']:
+                                    if core.getTime() - startAG  + .5 >= self.attnGetterList[self.playAttnGetter[trialType]['attnGetter']]['stimDur']:
                                         simAG = False
                                     elif self.playAttnGetter[trialType]['cutoff'] and self.lookKeysPressed():
                                         if onCheck == 0 and self.playAttnGetter[trialType]['onmin'] > 0:

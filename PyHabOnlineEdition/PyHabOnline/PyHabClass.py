@@ -1171,7 +1171,8 @@ class PyHab:
                         startAG = core.getTime()
                         onCheck = 0
                         while simAG:
-                            if core.getTime() - startAG >= eval(self.attnGetterList[self.playAttnGetter[trialType]['attnGetter']]['duration']):
+                            # TODO: Make simulated AG offset a setting.
+                            if core.getTime() - startAG + .5 >= eval(self.attnGetterList[self.playAttnGetter[trialType]['attnGetter']]['duration']):
                                 simAG = False
                             elif self.playAttnGetter[trialType]['cutoff'] and self.lookKeysPressed():
                                 if onCheck == 0 and self.playAttnGetter[trialType]['onmin'] > 0:
@@ -1214,7 +1215,7 @@ class PyHab:
                                 startAG = core.getTime()
                                 onCheck = 0
                                 while simAG:
-                                    if core.getTime() - startAG >= eval(self.attnGetterList[self.playAttnGetter[trialType]['attnGetter']]['duration']):
+                                    if core.getTime() - startAG + .5 >= eval(self.attnGetterList[self.playAttnGetter[trialType]['attnGetter']]['duration']):
                                         simAG = False
                                     elif self.playAttnGetter[trialType]['cutoff'] and self.lookKeysPressed():
                                         if onCheck == 0 and self.playAttnGetter[trialType]['onmin'] > 0:
