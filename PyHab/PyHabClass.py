@@ -3094,6 +3094,8 @@ class PyHab:
             Add any custom objects for animation stimuli here. 
             """
             self.demoAnimationObject = visual.Rect(self.win, height=100, width=100, fillColor='red')
+
+            self.win.flip()  # Clears "checking framerate" text from display window.
         self.keyboard = self.key.KeyStateHandler()
         self.win2.winHandle.push_handlers(self.keyboard)
         if self.stimPres:
