@@ -1417,6 +1417,17 @@ class PyHabHPP(PyHab):
             self.winR = visual.Window((self.screenWidth['R'], self.screenHeight['R']), fullscr=False, screen=self.screenIndex['R'], allowGUI=False,
                                      units='pix', color=self.screenColor['R'])
             self.dummyThing = visual.Circle(self.win, size=1, color=self.win.color)  # This is for fixing a display glitch in PsychoPy3 involving multiple windows of different sizes.
+
+            """
+            Put any objects for animation stimuli here
+            """
+
+
+            # Clearing "checking framerate"
+            self.win.flip()
+            self.winL.flip()
+            self.winR.flip()
+
         # Coder window
         self.win2 = visual.Window((400, 400), fullscr=False, screen=self.expScreenIndex, allowGUI=True, units='pix', waitBlanking=False,
                                   rgb=[-1, -1, -1])

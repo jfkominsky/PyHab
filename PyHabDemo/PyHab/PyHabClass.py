@@ -958,6 +958,56 @@ class PyHab:
             else:
                 return 0
 
+    def dispAnimationStim(self, trialType, dispAnim, screen='C'):
+        """
+        Placeholder function for displaying an animation. Requires some code customization to use. Create an experiment
+        then go into its copy of PyHabClass and modify it to have different animation routines based on dispAnim. Note
+        that the objects for the animations need to be created in SetupWindow.
+
+        You can feel free to use self.frameCount[screen] to regulate your animations and reset is as needed.
+        A demo animation is written below but never referenced.
+
+        :param trialType: the current trial type
+        :type trialType: str
+        :param dispAnim: Name of the animation to display
+        :type dispAnim: str
+        :param screen: Which screen to display on (matters for HPP)
+        :type screen: str
+        :return: int specifying animation in progress (0), paused on last frame (1), or ending and looping (2)
+        :rtype: int
+        """
+
+        if dispAnim == 'demoAnim':
+            if self.frameCount[screen] == 0:
+                self.demoAnimationObject.draw()
+                self.frameCount[screen] += 1
+                self.win.flip()
+                return 0
+            elif self.frameCount[screen] < 60:
+                self.frameCount[screen] += 1
+                self.demoAnimationObject.pos[0] += 1
+                self.demoAnimationObject.draw()
+                self.win.flip()
+                return 0
+            elif self.frameCount[screen] < 120:
+                self.frameCount[screen] += 1
+                self.demoAnimationObject.pos[0] -= 1
+                self.demoAnimationObject.draw()
+                self.win.flip()
+                return 0
+            elif self.frameCount[screen] < 120 + self.pauseCount[screen]:
+                self.frameCount[screen] += 1
+                self.demoAnimationObject.draw()
+                self.win.flip()
+                return 1
+            else:
+                self.frameCount[screen] = 0
+                self.win.flip()
+                return 0
+
+
+        return 1
+
 
     def dispTrial(self, trialType, dispMovie = False): #If no stim, dispMovie defaults to false.
         """
@@ -976,6 +1026,8 @@ class PyHab:
         if self.stimPres:
             if dispMovie['stimType'] == 'Movie':
                 t = self.dispMovieStim(trialType, dispMovie['stim'])
+            elif dispMovie['stimType'] == 'Animation':
+                t = self.dispAnimationStim(trialType, dispMovie['stim'])
             elif dispMovie['stimType'] == 'Image':
                 t = self.dispImageStim(dispMovie['stim'])
             elif dispMovie['stimType'] == 'Audio' and trialType != 0:  # No still-frame equivalent
@@ -1427,7 +1479,7 @@ class PyHab:
                         onCheck = 0
                         while simAG:
                             # 150ms shortening to account for RT delay. This is a conservative number.
-                            if core.getTime() - startAG - .15 >= self.attnGetterList[self.playAttnGetter[trialType]['attnGetter']]['stimDur']:
+                            if core.getTime() - startAG + .5 >= self.attnGetterList[self.playAttnGetter[trialType]['attnGetter']]['stimDur']:
                                 simAG = False
                             elif self.playAttnGetter[trialType]['cutoff'] and self.lookKeysPressed():
                                 if onCheck == 0 and self.playAttnGetter[trialType]['onmin'] > 0:
@@ -1472,7 +1524,7 @@ class PyHab:
                                 onCheck = 0
                                 while simAG:
                                     # 150ms shortening to account for RT delay. This is a conservative number.
-                                    if core.getTime() - startAG - .15 >= self.attnGetterList[self.playAttnGetter[trialType]['attnGetter']]['stimDur']:
+                                    if core.getTime() - startAG  + .5 >= self.attnGetterList[self.playAttnGetter[trialType]['attnGetter']]['stimDur']:
                                         simAG = False
                                     elif self.playAttnGetter[trialType]['cutoff'] and self.lookKeysPressed():
                                         if onCheck == 0 and self.playAttnGetter[trialType]['onmin'] > 0:
@@ -2885,6 +2937,8 @@ class PyHab:
             tempStimObj = visual.MovieStim3(w, tempStim['stimLoc'],
                                             size=[self.movieWidth[screen], self.movieHeight[screen]], flipHoriz=False,
                                             flipVert=False, loop=False)
+        elif tempStim['stimType'] == 'Animation':
+            tempStimObj = tempStim['stimLoc']  # in this case it's just a string referencing a custom function
         elif tempStim['stimType'] == 'Image':
             tempStimObj = visual.ImageStim(w, tempStim['stimLoc'],
                                            size=[self.movieWidth[screen], self.movieHeight[screen]])
@@ -3035,6 +3089,13 @@ class PyHab:
                 self.endImageObject = visual.ImageStim(self.win, tempStim['stimLoc'], size=[self.movieWidth['C'], self.movieHeight['C']])
             else:
                 self.endImageObject = None
+
+            """
+            Add any custom objects for animation stimuli here. 
+            """
+            self.demoAnimationObject = visual.Rect(self.win, height=100, width=100, fillColor='red')
+
+            self.win.flip()  # Clears "checking framerate" text from display window.
         self.keyboard = self.key.KeyStateHandler()
         self.win2.winHandle.push_handlers(self.keyboard)
         if self.stimPres:
@@ -3067,4 +3128,5 @@ class PyHab:
                                            color='white', bold=True, height=30)
         self.trialText = visual.TextStim(self.win2, text="Trial no: ", pos=[-100, 150], color='white')
         self.readyText = visual.TextStim(self.win2, text="Trial not active", pos=[-25, 100], color='white')
+
         self.doExperiment()  # Get this show on the road!
