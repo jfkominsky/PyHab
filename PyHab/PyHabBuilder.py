@@ -2370,7 +2370,7 @@ class PyHabBuilder:
             else:
                 add = 0
         if add == 1:
-            cz = ['Movie', 'Image', 'Audio', 'Image with audio']
+            cz = ['Movie', 'Image', 'Audio', 'Image with audio', 'Animation']
             sDlg1 = gui.Dlg(title="Add stimuli to library, step 1")
             sDlg1.addField("What kind of stimuli would you like to add? (Please add each type separately)", choices=cz)
             sDlg1.addField("How many? (For image with audio, how many pairs?) You will select them one at a time.", 1)
@@ -2382,13 +2382,23 @@ class PyHabBuilder:
                 stType = sd1[0]  # Type of stimuli (from drop-down).
                 stNum = sd1[1]  # Number to add.
                 NoneType = type(None)
-                if stType != 'Image with audio':  # Image w/ audio is complicated, so we will take care of that separately.
+                if stType in ['Movie', 'Image', 'Audio']:  # Image w/ audio is complicated, so we will take care of that separately.
                     for i in range(0, stNum):
                         stimDlg = gui.fileOpenDlg(prompt="Select stimulus file (only one!)")
                         if type(stimDlg) is not NoneType:
                             fileName = os.path.split(stimDlg[0])[1] # Gets the file name in isolation.
                             self.stimSource[fileName] = stimDlg[0]  # Creates a "Find this file" path for the save function.
                             self.settings['stimList'][fileName] = {'stimType': stType, 'stimLoc': stimDlg[0]}
+                elif stType == 'Animation':  #Animations don't require files, just names
+                    sDlg2 = gui.Dlg(title="Name of animations (no spaces)")
+                    sDlg2.addText("Put the names of the different animation functions you will create here")
+                    for i in range(0, stNum):
+                        sDlg2.addField("Animation name:")
+                    animInfo = sDlg2.show()
+                    if sDlg2.OK:
+                        for j in range(0, len(animInfo)):
+                            # As long as nothing is added to stimSource it won't fail because stimLoc isn't a path
+                            self.settings['stimList'][animInfo[j]] = {'stimType':stType, 'stimLoc':animInfo[j]}
                 else:  # Creating image/audio pairs is more complicated.
                     for i in range(0, stNum):
                         stimDlg1 = gui.Dlg(title="Pair number " + str(i+1))
@@ -2465,14 +2475,14 @@ class PyHabBuilder:
                 if not remList[j]:
                     toRemove = orderList[j]
                     #Things to remove it from: stimlist, stimsource, stimNames(if assigned to trial types). Doesn't apply to attngetter, has its own system.
-                    if self.settings['stimList'][toRemove]['stimType'] != 'Image with audio':
+                    if self.settings['stimList'][toRemove]['stimType'] != 'Image with audio' and self.settings['stimList'][toRemove]['stimType'] != 'Animation':
                         self.delList.append(toRemove)
                         if toRemove in self.stimSource.keys():
                             try:
                                 del self.stimSource[toRemove]
                             except:
                                 print("Could not remove from stimSource!")
-                    else:
+                    elif self.settings['stimList'][toRemove]['stimType'] == 'Image with audio':
                         #If it's an image/audio pair, need to append both files.
                         tempAname = os.path.split(self.settings['stimList'][toRemove]['audioLoc'])[1]
                         tempIname = os.path.split(self.settings['stimList'][toRemove]['imageLoc'])[1]
@@ -3980,7 +3990,7 @@ class PyHabBuilder:
                         if r['stimType'] != 'Image with audio':
                             if q == i:  # For movies, images, or audio in isolation, the keys match.
                                 r['stimLoc'] = 'stimuli' + self.dirMarker + q
-                        else:  # Here we have to look at the file paths themselves
+                        elif r['stimType'] == 'Image with audio':  # Here we have to look at the file paths themselves
                             if os.path.split(r['audioLoc'])[1] == i:
                                 r['audioLoc'] = 'stimuli' + self.dirMarker + os.path.split(j)[1]
                             elif os.path.split(r['imageLoc'])[1] == i:
