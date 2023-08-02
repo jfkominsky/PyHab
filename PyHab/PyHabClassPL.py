@@ -1,7 +1,10 @@
 import os, sys
-from psychopy import visual, event, core, data, gui, monitors, tools, prefs, logging
+from psychopy import visual, event, core, data, gui, monitors, tools, prefs, logging, __version__
 from psychopy.constants import (STARTED, PLAYING)  # Added for new stimulus types
-prefs.hardware['audioLib'] = ['PTB']
+if eval(__version__[0:4]) < 2023: # PTB has proven itself unreliable on too many systems, but sounddevice isn't included in 2023.
+    prefs.hardware['audioLib'] = ['sounddevice'] # change to 'PTB' if you get audio errors
+else:
+    prefs.hardware['audioLib'] = ['PTB']
 if os.name == 'posix':
     prefs.general['audioDevice'] = ['Built-in Output']
 from psychopy import sound

@@ -1,7 +1,10 @@
 import os, sys
-from psychopy import gui, visual, event, core, data, monitors, tools, prefs, logging
+from psychopy import gui, visual, event, core, data, monitors, tools, prefs, logging, __version__
 from psychopy.constants import (STARTED, PLAYING)  # Added for new stimulus types
-prefs.hardware['audioLib'] = ['sounddevice']
+if eval(__version__[0:4]) < 2023: # PTB has proven itself unreliable on too many systems, but sounddevice isn't included in 2023.
+    prefs.hardware['audioLib'] = ['sounddevice'] # change to 'PTB' if you get audio errors
+else:
+    prefs.hardware['audioLib'] = ['PTB']
 if os.name is 'posix':
     prefs.general['audioDevice'] = ['Built-in Output']
 from psychopy import sound
@@ -1107,6 +1110,7 @@ class PyHab:
                 self.rdyTextAppend = " NEXT: " + self.actualTrialOrder[trialNum - 1] + " TRIAL"
             end = False
             skip = False
+            habInserted = False
             if trialType not in AA and self.nextFlash in [1,'1',True,'True']: # The 'flasher' to alert the experimenter they need to start the next trial
                 self.flashCoderWindow()
             while not self.keyboard[self.key.A] and trialType not in AA and not end:  # wait for 'ready' key, check at frame intervals
@@ -1123,8 +1127,9 @@ class PyHab:
                     didRedo = True
                 elif self.keyboard[self.key.J] and self.habMetWhen == -1 and 'Hab' in self.trialOrder:  # jump to test in a hab design
                     [disMovie, trialType] = self.jumpToTest(trialNum)
-                elif self.actualTrialOrder[trialNum-1][0:3] not in ['Hab', 'hab'] and self.keyboard[self.key.I] and 'Hab' in self.trialOrder and self.habMetWhen > 0: # insert additional hab trial
+                elif self.actualTrialOrder[trialNum-1][0:3] not in ['Hab', 'hab'] and self.keyboard[self.key.I] and 'Hab' in self.trialOrder and self.habMetWhen > 0 and not habInserted: # insert additional hab trial
                     [disMovie, trialType] = self.insertHab(trialNum)
+                    habInserted = True
                     while '.' in trialType:
                         trialType = trialType[trialType.index('.') + 1:]
                 elif trialNum > 1 and not self.stimPres and self.keyboard[self.key.P] and not reviewed:  # Print data so far, as xHab. Non-stimulus version only. Only between trials.
@@ -1166,7 +1171,8 @@ class PyHab:
                         startAG = core.getTime()
                         onCheck = 0
                         while simAG:
-                            if core.getTime() - startAG >= eval(self.attnGetterList[self.playAttnGetter[trialType]['attnGetter']]['duration']):
+                            # TODO: Make simulated AG offset a setting.
+                            if core.getTime() - startAG + .5 >= eval(self.attnGetterList[self.playAttnGetter[trialType]['attnGetter']]['duration']):
                                 simAG = False
                             elif self.playAttnGetter[trialType]['cutoff'] and self.lookKeysPressed():
                                 if onCheck == 0 and self.playAttnGetter[trialType]['onmin'] > 0:
@@ -1175,6 +1181,7 @@ class PyHab:
                                     simAG = False
                                 elif onCheck > 0:  # A clever little way to say "if they aren't looking but were earlier"
                                     onCheck = 0
+                            self.dispCoderWindow(0)
                         core.wait(self.freezeFrame)  # an attempt to match the delay caused by the attention-getter playing.
                         waitStart = True
                     else:
@@ -1208,7 +1215,7 @@ class PyHab:
                                 startAG = core.getTime()
                                 onCheck = 0
                                 while simAG:
-                                    if core.getTime() - startAG >= eval(self.attnGetterList[self.playAttnGetter[trialType]['attnGetter']]['duration']):
+                                    if core.getTime() - startAG + .5 >= eval(self.attnGetterList[self.playAttnGetter[trialType]['attnGetter']]['duration']):
                                         simAG = False
                                     elif self.playAttnGetter[trialType]['cutoff'] and self.lookKeysPressed():
                                         if onCheck == 0 and self.playAttnGetter[trialType]['onmin'] > 0:
@@ -1217,6 +1224,7 @@ class PyHab:
                                             simAG = False
                                         elif onCheck > 0:  # A clever little way to say "if they aren't looking but were earlier"
                                             onCheck = 0
+                                    self.dispCoderWindow(0)
                                 core.wait(self.freezeFrame)
                     elif self.lookKeysPressed():
                         waitStart = False
@@ -1232,8 +1240,9 @@ class PyHab:
                         didRedo = True
                     elif self.keyboard[self.key.J] and 'Hab' in self.trialOrder and self.habMetWhen == -1:  # jump to test in a hab design.
                         [disMovie,trialType] = self.jumpToTest(trialNum)
-                    elif self.keyboard[self.key.I] and self.habMetWhen > 0:  # insert additional hab trial
+                    elif self.keyboard[self.key.I] and self.habMetWhen > 0 and not habInserted:  # insert additional hab trial
                         [disMovie,trialType] = self.insertHab(trialNum)
+                        habInserted = True
                         while '.' in trialType:
                             trialType = trialType[trialType.index('.') + 1:]
                     elif self.keyboard[self.key.S] and trialType != 'Hab' and '^' not in trialType:  #  Skip trial. Doesn't work on things required for habituation.

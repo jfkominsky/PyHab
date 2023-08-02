@@ -1,7 +1,10 @@
 import os, sys
-from psychopy import visual, event, core, data, gui, monitors, tools, prefs, logging
+from psychopy import visual, event, core, data, gui, monitors, tools, prefs, logging, __version__
 from psychopy.constants import (STARTED, PLAYING)  # Added for new stimulus types
-prefs.hardware['audioLib'] = ['PTB']
+if eval(__version__[0:4]) < 2023: # PTB has proven itself unreliable on too many systems, but sounddevice isn't included in 2023.
+    prefs.hardware['audioLib'] = ['sounddevice'] # change to 'PTB' if you get audio errors
+else:
+    prefs.hardware['audioLib'] = ['PTB']
 if os.name == 'posix':
     prefs.general['audioDevice'] = ['Built-in Output']
 from psychopy import sound
@@ -1414,6 +1417,17 @@ class PyHabHPP(PyHab):
             self.winR = visual.Window((self.screenWidth['R'], self.screenHeight['R']), fullscr=False, screen=self.screenIndex['R'], allowGUI=False,
                                      units='pix', color=self.screenColor['R'])
             self.dummyThing = visual.Circle(self.win, size=1, color=self.win.color)  # This is for fixing a display glitch in PsychoPy3 involving multiple windows of different sizes.
+
+            """
+            Put any objects for animation stimuli here
+            """
+
+
+            # Clearing "checking framerate"
+            self.win.flip()
+            self.winL.flip()
+            self.winR.flip()
+
         # Coder window
         self.win2 = visual.Window((400, 400), fullscr=False, screen=self.expScreenIndex, allowGUI=True, units='pix', waitBlanking=False,
                                   rgb=[-1, -1, -1])
