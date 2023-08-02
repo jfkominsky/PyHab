@@ -2373,6 +2373,7 @@ class PyHabBuilder:
             cz = ['Movie', 'Image', 'Audio', 'Image with audio', 'Animation']
             sDlg1 = gui.Dlg(title="Add stimuli to library, step 1")
             sDlg1.addField("What kind of stimuli would you like to add? (Please add each type separately)", choices=cz)
+            sDlg1.addText("NOTE: 'Animation' is for custom-programmed animations. Don't select unless you plan to modify the PyHab code itself.")
             sDlg1.addField("How many? (For image with audio, how many pairs?) You will select them one at a time.", 1)
             sd1 = sDlg1.show()
             allowedStrings = {'Audio': "Audio (*.aac, *.aiff, *.flac, *.m4a, *.mp3, *.ogg, *.raw, *.wav, *.m4b, *.m4p)",
