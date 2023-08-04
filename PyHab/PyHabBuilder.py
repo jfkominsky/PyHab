@@ -1334,7 +1334,7 @@ class PyHabBuilder:
                 habSettingsText.text = 'Habituation (ON)'
                 habSettingsButton.fillColor = "DarkGreen"
                 # Copy over existing habituation settings.
-                for i,j in ['blockList'][blockName].items():
+                for i,j in self.settings['blockList'][blockName].items():
                     if i in habFields.keys():
                         habFields[i] = j
             if self.settings['blockList'][blockName]['blockRedo'] in [1, '1', True, 'True']:
@@ -1395,6 +1395,7 @@ class PyHabBuilder:
                     elif blockUI['buttons']['text'][i].text[0] == 'H': # Since hab can have two text values.
                         if len(blockFlow['labels']) > 0:
                             habFields = self.habSettingsDlg(trialList=blockOrder, lastSet=deepcopy(habFields))
+
                             if habFields['habituation'] in [1, '1', True, 'True']:
                                 habSettingsText.text = 'Habituation (ON)'
                                 habSettingsButton.fillColor = "DarkGreen"
@@ -3882,6 +3883,8 @@ class PyHabBuilder:
 
                 return self.habSettingsDlg(trialList, lastSetDat, redo=True)
 
+        else:
+            return lastSet
 
 
     def saveDlg(self):
