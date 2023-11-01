@@ -3905,7 +3905,7 @@ class PyHabBuilder:
         codePath = self.folderPath+'PyHab'+self.dirMarker
         if not os.path.exists(codePath):
             os.makedirs(codePath)
-        srcDir = 'PyHab'+self.dirMarker
+        srcDir = 'PyHabOnline'+self.dirMarker
         # Condition file! Save if there are any conditions created.
         # Convoluted mess because the dict won't necessarily be in order and we want the file to be.
         if len(self.condDict) > 0:
