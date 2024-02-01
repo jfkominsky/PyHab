@@ -869,6 +869,15 @@ class PyHab:
         elif screen == 'R':
             w = self.winR
 
+        # Need to do a little safety thing here for MovieStim
+        if eval(__version__[0:4]) < 2023:
+            playTime = dispMovie.getCurrentFrameTime()
+            fps = dispMovie._frameInterval
+        else:
+            playTime = dispMovie.pts
+            fps = 1/dispMovie.frameRate
+
+
         if self.frameCount[screen] == 0:  # initial setup
             self.dummyThing.draw()
             self.frameCount[screen] += 1
@@ -886,7 +895,7 @@ class PyHab:
             self.frameCount[screen] += 1
             w.flip()
             return 0
-        elif dispMovie.getCurrentFrameTime() >= dispMovie.duration - dispMovie._frameInterval*2 and self.pauseCount[screen] < self.ISI[trialType] * 60:  # pause, check for ISI.
+        elif playTime >= dispMovie.duration - fps*2 and self.pauseCount[screen] < self.ISI[trialType] * 60:  # pause, check for ISI.
             self.dummyThing.draw()
             dispMovie.pause()
             dispMovie.draw()  # might want to have it vanish rather than leave it on the screen for the ISI, in which case comment out this line.
@@ -894,7 +903,7 @@ class PyHab:
             self.pauseCount[screen] += 1
             w.flip() # TODO: Goes blank if ISI is long enough. Pyglet problem.
             return 1
-        elif dispMovie.getCurrentFrameTime() >= dispMovie.duration - dispMovie._frameInterval*2 and self.pauseCount[screen] >= self.ISI[trialType] * 60:  # MovieStim's Loop functionality can't do an ISI
+        elif playTime >= dispMovie.duration - fps*2 and self.pauseCount[screen] >= self.ISI[trialType] * 60:  # MovieStim's Loop functionality can't do an ISI
             self.dummyThing.draw()
             # print('repeating at ' + str(dispMovie.getCurrentFrameTime()))
             self.frameCount[screen] = 0  # changed to 0 to better enable studies that want to blank between trials
