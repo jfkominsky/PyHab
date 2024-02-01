@@ -2448,8 +2448,8 @@ class TestHPP(object):
                           {'trial': 1, 'trialType': 'A', 'startTime': 9.0, 'endTime': 10.5, 'duration': 1.5}]  # VerboseOnC
         self.testMatrixHPP = [{'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
                             'condLabel': 'dataTest', 'trial': 1, 'GNG': 1, 'trialType': 'A', 'stimName': 'movie1.mov',
-                            'habCrit': 0, 'habTrialNo':'', 'sumOnL': 3.0, 'numOnL': 2, 'sumOnC': 2.0, 'numOnC': 2,
-                            'sumOnR': 2.0, 'numOnR': 2, 'sumOff': 3.5, 'numOff': 2, 'trialDuration': 10.5, 'firstLookC':1.5, 'firstLookL':1.5,'firstLookR':1.5},
+                            'habCrit': 0.0, 'habTrialNo':'', 'sumOnL': 3.0, 'numOnL': 2, 'sumOnC': 2.0, 'numOnC': 2,
+                            'sumOnR': 2.0, 'numOnR': 2, 'sumOff': 3.5, 'numOff': 2, 'trialDuration': 10.5, 'firstLookC':0.5, 'firstLookL':1.5,'firstLookR':1.5},
                                 {'sNum': 99, 'sID': 'TEST',
                                 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest', 'condLabel': 'dataTest',
                                 'trial': 2, 'GNG': 1, 'trialType': 'B', 'stimName': 'movie2.mov',

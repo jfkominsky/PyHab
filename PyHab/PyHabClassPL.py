@@ -62,7 +62,7 @@ class PyHabPL(PyHab):
         if len(onArray) > 0:
             firstLookL = onArray[0]['duration']
         if len(onArray2) > 0:
-            firstLookR = onArray[0]['duration']
+            firstLookR = onArray2[0]['duration']
         for i in range(0, len(onArray)):
             sumOn = sumOn + onArray[i]['duration']
         for k in range(0, len(onArray2)):
@@ -121,6 +121,10 @@ class PyHabPL(PyHab):
         firstLookR = 0
         if habTrialNo <= 0:
             habTrialNo = ''
+        if len(onArray) > 0:
+            firstLookL = onArray[0]['duration']
+        if len(onArray2) > 0:
+            firstLookR = onArray2[0]['duration']
         #loop through each array adding up gaze duration (on and off).
         for i in range(0,len(onArray)):
             sumOn = sumOn + onArray[i]['duration']
