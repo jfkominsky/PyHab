@@ -2934,7 +2934,14 @@ class PyHab:
             w = self.winR
 
         if tempStim['stimType'] == 'Movie':
-            tempStimObj = visual.MovieStim3(w, tempStim['stimLoc'],
+            # It's finally time to switch to the new MovieStim, if we're on a sufficient version of PsychoPy.
+            if eval(__version__[0:4]) < 2023:
+                tempStimObj = visual.MovieStim3(w, tempStim['stimLoc'],
+                                               size=[self.movieWidth[screen], self.movieHeight[screen]],
+                                               flipHoriz=False,
+                                               flipVert=False, loop=False)
+            else:
+                tempStimObj = visual.MovieStim(w, tempStim['stimLoc'],
                                             size=[self.movieWidth[screen], self.movieHeight[screen]], flipHoriz=False,
                                             flipVert=False, loop=False)
         elif tempStim['stimType'] == 'Animation':
@@ -3013,6 +3020,7 @@ class PyHab:
             # Stimulus presentation window
             self.win = visual.Window((self.screenWidth['C'], self.screenHeight['C']), fullscr=False, screen=self.screenIndex['C'], allowGUI=False,
                                      units='pix', color=self.screenColor['C'])
+            self.win.flip() # To deal with PsychoPy's new feature of putting "Attempting to measure framerate" up on the screen.
             self.dummyThing = visual.Circle(self.win, size=1, color=self.win.color) # This is for fixing a display glitch in PsychoPy3 involving multiple windows of different sizes.
             if self.eyetracker > 0:
                 try:
