@@ -355,8 +355,11 @@ class PyHab:
 
         sumOn = 0
         sumOff = 0
+        firstLook = 0
         if habTrialNo <= 0:
             habTrialNo = ''
+        if len(onArray) > 0:
+            firstLook = onArray[0]['duration']
         for i in range(0, len(onArray)):
             sumOn = sumOn + onArray[i]['duration']
         for j in range(0, len(offArray)):
@@ -383,7 +386,7 @@ class PyHab:
                     'condLabel': self.condLabel,'trial': trial, 'GNG': 0, 'trialType': ttype, 'stimName': stimName,
                     'habCrit': habCrit, 'habTrialNo': habTrialNo, 'sumOnA': sumOn, 'numOnA': len(onArray), 'sumOffA': sumOff,
                     'numOffA': len(offArray), 'sumOnB': sumOn2, 'numOnB': len(onArray2), 'sumOffB': sumOff2,
-                    'numOffB': len(offArray2), 'trialDuration': totalduration}
+                    'numOffB': len(offArray2), 'trialDuration': totalduration, 'firstLook': firstLook}
         self.badTrials.append(tempData)
 
     def dataRec(self, onArray, offArray, trial, type, onArray2, offArray2, stimName = '', habTrialNo = 0, habCrit = 0.0):
@@ -413,8 +416,11 @@ class PyHab:
         """
         sumOn = 0
         sumOff = 0
+        firstLook = 0
         if habTrialNo <= 0:
             habTrialNo = ''
+        if len(onArray) > 0:
+            firstLook = onArray[0]['duration']
         # loop through each array adding up gaze duration (on and off).
         for i in range(0, len(onArray)):
             sumOn = sumOn + onArray[i]['duration']
@@ -442,7 +448,7 @@ class PyHab:
                     'condLabel': self.condLabel, 'trial': trial, 'GNG': 1, 'trialType': type, 'stimName': stimName,
                     'habCrit': habCrit, 'habTrialNo': habTrialNo, 'sumOnA': sumOn, 'numOnA': len(onArray), 'sumOffA': sumOff,
                     'numOffA': len(offArray), 'sumOnB': sumOn2, 'numOnB': len(onArray2), 'sumOffB': sumOff2,
-                    'numOffB': len(offArray2), 'trialDuration': totalduration}
+                    'numOffB': len(offArray2), 'trialDuration': totalduration, 'firstLook':firstLook}
         self.dataMatrix.append(tempData)
 
     def redoTrial(self, trialNum):
