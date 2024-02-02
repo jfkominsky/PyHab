@@ -459,7 +459,7 @@ class PyHabBuilder:
                 self.buttonList['shapes'].pop(advTrialIndex)
                 self.buttonList['text'].pop(advTrialIndex)
                 self.buttonList['functions'].pop(advTrialIndex)
-            if self.blockDataDlg in self.buttonList['functions'] and len(list(self.settings['blockList'].keys())) == 0: # TODO: This might be able to survive as is
+            if self.blockDataDlg in self.buttonList['functions'] and len(list(self.settings['blockList'].keys())) == 0:
                 blockDataIndex = self.buttonList['functions'].index(self.blockDataDlg)
                 self.buttonList['shapes'].pop(blockDataIndex)
                 self.buttonList['text'].pop(blockDataIndex)
@@ -1237,7 +1237,7 @@ class PyHabBuilder:
         :type blockName: str
         :param new: Is this a new block or a modification of an existing one?
         :type new: bool
-        :param hab: Is this for a habituation meta-trial? # TODO: No longer needs to be an argument?
+        :param hab: Is this for a habituation meta-trial?
         :type hab: bool
         :return:
         :rtype:
@@ -1854,7 +1854,7 @@ class PyHabBuilder:
             outputDict['shapes'].append(tempObj)
             outputDict['text'].append(tempTxt)
             outputDict['labels'].append(tTypes[i])
-        x = self.buttonList['functions'].index(self.nextPalettePage)  # TODO: This is inelegant. Find a better fix later.
+        x = self.buttonList['functions'].index(self.nextPalettePage)
         self.buttonList['text'][x].text = str(self.trialPalettePage) + '/' + str(self.totalPalettePages)
         return(outputDict)
     
@@ -3940,8 +3940,6 @@ class PyHabBuilder:
     def saveEverything(self):
         """
         Saves a PyHab project to a set of folders dictated by self.folderPath
-
-        todo: Add psychopy_tobii_infant to this. Saved in the code folder.
 
         :return:
         :rtype:
