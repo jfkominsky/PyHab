@@ -4027,8 +4027,12 @@ class PyHabBuilder:
             try:
                 shutil.copytree(srcDir+calibImgPath, calibImgTarg)
             except:
-                success = False
-                print('Could not copy calibration images folder')
+                try:
+                    calibImgPath = 'stimuli' + self.dirMarker + 'calib' # If this is an existing experiment, the calib folder is not in the pyhab folder.
+                    shutil.copytree(calibImgPath, calibImgTarg)
+                except:
+                    success = False
+                    print('Could not copy calibration images folder')
         if not success:
             errDlg = gui.Dlg(title="Could not copy stimuli!")
             errDlg.addText("Some stimuli could not be copied successfully. See the output of the coder window for details.")
