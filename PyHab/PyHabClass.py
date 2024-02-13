@@ -142,12 +142,16 @@ class PyHab:
         if 'blockList' in settingsDict.keys():
             self.blockList = eval(settingsDict['blockList'])
             self.blockDataList = eval(settingsDict['blockDataList'])
-            for i,j in self.blockList.items(): # Back compat for 0.10.1
+            for i,j in self.blockList.items(): # Back compat for 0.10.1 and 0.10.6
                 if 'blockRedo' not in j.keys():
                     self.blockList[i]['blockRedo'] = False
+                if 'maxHabSet' not in j.keys():
+                    self.blockList[i]['maxHabSet'] = -1 # Default value
         else:
             self.blockList = {}
             self.blockDataList = []
+
+
 
 
         # STIMULUS PRESENTATION SETTINGS
@@ -579,6 +583,9 @@ class PyHab:
                     self.endHabSound.play()
                     self.endHabSound = sound.Sound('G', octave=4, sampleRate=44100, secs=0.2)
             self.habMetWhen[blockName] = self.habCount[blockName]
+            return True
+        elif self.blockList[blockName]['maxHabSet'] > -1 and self.habSetWhen == -1 and self.blockList[blockName]['setCritType'] == 'Threshold' and self.habCount[blockName] >= self.blockList[blockName]['maxHabSet']:
+            # Added in 0.10.6, this checks if habituation criterion has not been set by a certain deadline and if so ends habituation immediately (essentially an exclusion crit)
             return True
         elif self.habCount[blockName] > self.blockList[blockName]['setCritWindow'] and self.habSetWhen[blockName] > -1:  # if we're far enough in that we can plausibly meet the hab criterion
             # Problem: Fixed window, peak, and max as relates to habsetwhen....
