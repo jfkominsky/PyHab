@@ -832,6 +832,7 @@ class TestDataFunc(object):
                                         'setCritDivisor': 2.0,
                                         'setCritType': 'First',
                                         'habThresh': 5.0,
+                                        'maxHabSet': -1,
                                         'metCritWindow': 3,
                                         'metCritDivisor': 1.0,
                                         'metCritStatic': 'Moving',
