@@ -1647,7 +1647,7 @@ class PyHab:
                         del self.actualTrialOrder[(trialNum):(tempNum + 1)]
                 trialNum += 1
                 # Edge case: experiment ended on a hab block.
-                if trialNum >= len(self.actualTrialOrder):
+                if trialNum > len(self.actualTrialOrder):
                     runExp = False
                     didRedo = False
                     self.endExperiment()
