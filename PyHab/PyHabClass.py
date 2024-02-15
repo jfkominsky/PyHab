@@ -251,10 +251,6 @@ class PyHab:
             self.startImage = ''
             self.endImage = ''
             self.nextFlash = 0
-        try:
-            self.habThresh = eval(settingsDict['habThresh'])
-        except:
-            self.habThresh = 1.0
 
         if len(self.stimPath) > 0 and self.stimPath[-1] is not self.dirMarker:  # If it was made in one OS and running in another
             self.stimPath = [self.dirMarker if x == otherOS else x for x in self.stimPath]
@@ -570,7 +566,7 @@ class PyHab:
             index = self.habCount[blockName] - self.blockList[blockName]['setCritWindow']  # How far back should we look?
             for j in range(index, self.habCount[blockName]):
                 sumOnTimes = sumOnTimes + self.habDataCompiled[blockName][j]
-            if sumOnTimes > self.habThresh[blockName]:
+            if sumOnTimes > self.blockList[blockName]['habThresh']: # The setting checks against the TOTAL for these three trials
                 self.habCrit[blockName] = sumOnTimes / self.blockList[blockName]['setCritDivisor']
                 self.habSetWhen[blockName] = deepcopy(self.habCount[blockName])
 
@@ -584,7 +580,7 @@ class PyHab:
                     self.endHabSound = sound.Sound('G', octave=4, sampleRate=44100, secs=0.2)
             self.habMetWhen[blockName] = self.habCount[blockName]
             return True
-        elif self.blockList[blockName]['maxHabSet'] > -1 and self.habSetWhen == -1 and self.blockList[blockName]['setCritType'] == 'Threshold' and self.habCount[blockName] >= self.blockList[blockName]['maxHabSet']:
+        elif self.blockList[blockName]['maxHabSet'] > 0 and self.habSetWhen == -1 and self.blockList[blockName]['setCritType'] == 'Threshold' and self.habCount[blockName] >= self.blockList[blockName]['maxHabSet']:
             # Added in 0.10.6, this checks if habituation criterion has not been set by a certain deadline and if so ends habituation immediately (essentially an exclusion crit)
             return True
         elif self.habCount[blockName] > self.blockList[blockName]['setCritWindow'] and self.habSetWhen[blockName] > -1:  # if we're far enough in that we can plausibly meet the hab criterion
