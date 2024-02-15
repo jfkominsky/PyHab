@@ -3761,7 +3761,7 @@ class PyHabBuilder:
         hDlg.addField("Max number of habituation trials (if criterion not met)", lastSet['maxHabTrials'])
         hDlg.addField("Number of trials to sum looking time over when making hab criterion", lastSet['setCritWindow'])
         hDlg.addField("Number to divide sum of looking time by when computing criterion", lastSet['setCritDivisor'])
-        hDlg.addField("Criterion window First trials, first trials above Threshold, dynamic Peak contiguous window, or the set of hab trials with Max looking time?", choices=winchz)
+        hDlg.addField("Criterion window First trials, first trials w/total above Threshold, dynamic Peak contiguous window, or the set of hab trials with Max looking time?", choices=winchz)
         hDlg.addField("Threshold value to use if 'Threshold' selected above (ignored otherwise)", lastSet['habThresh'])
         hDlg.addField("Maximum number of trials to SET habituation criterion if 'Threshold' selected (ignored otherwise)", lastSet['maxHabSet'])
         hDlg.addField("Number of trials to sum looking time over when determining whether criterion has been met", lastSet['metCritWindow'])

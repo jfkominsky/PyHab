@@ -1037,6 +1037,118 @@ class TestDataFunc(object):
         # Hab sub-trial tracking does not need its own tests here because data from habituation trials are recorded in
         # their own data structure, which is compiled during doTrial.
 
+    def test_habthresh(self):
+        """
+        A further set of tests for CheckStop focusing on setting the criterion using HabThresh
+
+        :return:
+        :rtype:
+        """
+        # Create an appropriate hab setting.
+        self.dataInst.blockList = {'D': {'trialList': ['C'],
+                                        'habituation': 1,
+                                        'habByDuration': 0,
+                                        'maxHabTrials': 14,
+                                        'setCritWindow': 3,
+                                        'setCritDivisor': 2.0,
+                                        'setCritType': 'Threshold',
+                                        'habThresh': 20.0, # Sum of 20s over 3 trials
+                                        'maxHabSet': 5, # If not set by trial 6, end hab
+                                        'metCritWindow': 3,
+                                        'metCritDivisor': 1.0,
+                                        'metCritStatic': 'Moving',
+                                        'calcHabOver': ['C']}}
+
+        i='D'
+        # These are settings which would normally happen during init, but we are doing here b/c hab is added late.
+        self.dataInst.habCount[i] = 0
+        self.dataInst.habCrit[i] = 0
+        self.dataInst.habSetWhen[i] = -1
+        self.dataInst.habMetWhen[i] = -1
+        self.dataInst.maxHabIndex[i] = 0
+        self.dataInst.habDataCompiled[i] = [0] * self.dataInst.blockList['D']['maxHabTrials']
+
+        habMatrix = copy.deepcopy(self.testMatrix)
+        habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                          'condLabel': 'dataTest', 'trial': 3, 'GNG': 1, 'trialType': 'D.C', 'stimName': 'movie1.mov',
+                          'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
+                          'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
+                          'numOffB': 2})
+        self.dataInst.dataMatrix = habMatrix  # We can actually use python's pointer thing to our advantage here: dataMatrix will update with habMatrix
+        self.dataInst.badTrials = []
+        self.dataInst.habDataCompiled['D'] = [0] * 14
+        self.dataInst.stimPres = True  # Temporary, so it doesn't try to play the end-hab sound.
+        self.dataInst.habDataCompiled['D'][self.dataInst.habCount['D']] += habMatrix[-1]['sumOnA']  # 0, 5
+        self.dataInst.habCount['D'] = 1
+
+        habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                          'condLabel': 'dataTest', 'trial': 4, 'GNG': 1, 'trialType': 'D.C', 'stimName': 'movie1.mov',
+                          'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
+                          'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
+                          'numOffB': 2})
+
+        self.dataInst.habDataCompiled['D'][self.dataInst.habCount['D']] += habMatrix[-1]['sumOnA']  # 1, 5
+        self.dataInst.habCount['D'] = 2
+        habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                          'condLabel': 'dataTest', 'trial': 5, 'GNG': 1, 'trialType': 'D.C', 'stimName': 'movie1.mov',
+                          'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
+                          'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
+                          'numOffB': 2})
+
+        self.dataInst.habDataCompiled['D'][self.dataInst.habCount['D']] += habMatrix[-1]['sumOnA']  # 2, 5
+        self.dataInst.habCount['D'] = 3
+
+        assert self.dataInst.checkStop('D') == False
+        assert self.dataInst.habCrit['D'] == 0 # B/c thresh not met
+        assert self.dataInst.habSetWhen['D'] == -1 # b/c thresh not met
+
+        habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                          'condLabel': 'dataTest', 'trial': 6, 'GNG': 1, 'trialType': 'D.C', 'stimName': 'movie1.mov',
+                          'habCrit': 0, 'sumOnA': 12.0, 'numOnA': 2, 'sumOffA': 3.5,
+                          'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
+                          'numOffB': 2})
+
+        self.dataInst.habDataCompiled['D'][self.dataInst.habCount['D']] += habMatrix[-1]['sumOnA']  # 3, 12
+        self.dataInst.habCount['D'] = 4
+
+        # Now meets threshold with 22, crit should be 11
+        assert self.dataInst.checkStop('D') == False
+        assert self.dataInst.habCrit['D'] == 11.0
+        assert self.dataInst.habSetWhen['D'] == 4
+
+        # Now revert so it fails again.
+        habMatrix[-1]['sumOnA'] = 5.0
+        self.dataInst.habDataCompiled['D'][self.dataInst.habCount['D']-1] -= 7 # Reduce
+        self.dataInst.habCrit = 0
+        self.dataInst.habSetWhen = -1
+        assert self.dataInst.checkStop('D') == False
+        assert self.dataInst.habCrit['D'] == 0  # B/c thresh not met
+        assert self.dataInst.habSetWhen['D'] == -1  # b/c thresh not met
+
+        # now add two more trials and show it ends on 6.
+        habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                          'condLabel': 'dataTest', 'trial': 7, 'GNG': 1, 'trialType': 'D.C', 'stimName': 'movie1.mov',
+                          'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
+                          'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
+                          'numOffB': 2})
+
+        self.dataInst.habDataCompiled['D'][self.dataInst.habCount['D']] += habMatrix[-1]['sumOnA']  # 4, 5
+        self.dataInst.habCount['D'] = 5
+        assert self.dataInst.checkStop('D') == False
+        assert self.dataInst.habCrit['D'] == 0  # B/c thresh not met
+        assert self.dataInst.habSetWhen['D'] == -1  # b/c thresh not met
+
+        habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
+                          'condLabel': 'dataTest', 'trial': 7, 'GNG': 1, 'trialType': 'D.C', 'stimName': 'movie1.mov',
+                          'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
+                          'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
+                          'numOffB': 2})
+
+        self.dataInst.habDataCompiled['D'][self.dataInst.habCount['D']] += habMatrix[-1]['sumOnA']  # 5, 5
+        self.dataInst.habCount['D'] = 6
+        assert self.dataInst.checkStop('D') == True # Now that it has done the 'maxHabSet' number of trials it should end like it hit the max hab count
+        assert self.dataInst.habCrit['D'] == 0  # B/c thresh not met
+        assert self.dataInst.habSetWhen['D'] == -1  # b/c thresh not met
 
 class TestRunSetup(object):
     """
