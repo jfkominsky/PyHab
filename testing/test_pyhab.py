@@ -1119,8 +1119,8 @@ class TestDataFunc(object):
         # Now revert so it fails again.
         habMatrix[-1]['sumOnA'] = 5.0
         self.dataInst.habDataCompiled['D'][self.dataInst.habCount['D']-1] -= 7 # Reduce
-        self.dataInst.habCrit = 0
-        self.dataInst.habSetWhen = -1
+        self.dataInst.habCrit['D'] = 0
+        self.dataInst.habSetWhen['D'] = -1
         assert self.dataInst.checkStop('D') == False
         assert self.dataInst.habCrit['D'] == 0  # B/c thresh not met
         assert self.dataInst.habSetWhen['D'] == -1  # b/c thresh not met

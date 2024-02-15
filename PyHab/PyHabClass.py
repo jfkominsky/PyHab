@@ -1248,9 +1248,10 @@ class PyHab:
             currType = self.actualTrialOrder[trialNum - 1]
             while '.' in currType:  # Dealing with blocks and recursions
                 currType = currType[currType.index('.') + 1:]
-            self.counters[currType] -= 1
-            if self.counters[currType] < 0:
-                self.counters[currType] = 0
+            if self.stimPres: # Counters only applies when there are stimuli
+                self.counters[currType] -= 1
+                if self.counters[currType] < 0:
+                    self.counters[currType] = 0
         # trialNum is in fact the index after the current trial at this point
         # so we can just erase everything between that and the first non-hab trial.
         # del does not erase the last index in its range.
