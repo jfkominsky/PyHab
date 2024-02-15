@@ -142,12 +142,16 @@ class PyHab:
         if 'blockList' in settingsDict.keys():
             self.blockList = eval(settingsDict['blockList'])
             self.blockDataList = eval(settingsDict['blockDataList'])
-            for i,j in self.blockList.items(): # Back compat for 0.10.1
+            for i,j in self.blockList.items(): # Back compat for 0.10.1 and 0.10.6
                 if 'blockRedo' not in j.keys():
                     self.blockList[i]['blockRedo'] = False
+                if 'maxHabSet' not in j.keys():
+                    self.blockList[i]['maxHabSet'] = -1 # Default value
         else:
             self.blockList = {}
             self.blockDataList = []
+
+
 
 
         # STIMULUS PRESENTATION SETTINGS
@@ -247,10 +251,6 @@ class PyHab:
             self.startImage = ''
             self.endImage = ''
             self.nextFlash = 0
-        try:
-            self.habThresh = eval(settingsDict['habThresh'])
-        except:
-            self.habThresh = 1.0
 
         if len(self.stimPath) > 0 and self.stimPath[-1] is not self.dirMarker:  # If it was made in one OS and running in another
             self.stimPath = [self.dirMarker if x == otherOS else x for x in self.stimPath]
@@ -355,8 +355,11 @@ class PyHab:
 
         sumOn = 0
         sumOff = 0
+        firstLook = 0
         if habTrialNo <= 0:
             habTrialNo = ''
+        if len(onArray) > 0:
+            firstLook = onArray[0]['duration']
         for i in range(0, len(onArray)):
             sumOn = sumOn + onArray[i]['duration']
         for j in range(0, len(offArray)):
@@ -383,7 +386,7 @@ class PyHab:
                     'condLabel': self.condLabel,'trial': trial, 'GNG': 0, 'trialType': ttype, 'stimName': stimName,
                     'habCrit': habCrit, 'habTrialNo': habTrialNo, 'sumOnA': sumOn, 'numOnA': len(onArray), 'sumOffA': sumOff,
                     'numOffA': len(offArray), 'sumOnB': sumOn2, 'numOnB': len(onArray2), 'sumOffB': sumOff2,
-                    'numOffB': len(offArray2), 'trialDuration': totalduration}
+                    'numOffB': len(offArray2), 'trialDuration': totalduration, 'firstLook': firstLook}
         self.badTrials.append(tempData)
 
     def dataRec(self, onArray, offArray, trial, type, onArray2, offArray2, stimName = '', habTrialNo = 0, habCrit = 0.0):
@@ -413,8 +416,11 @@ class PyHab:
         """
         sumOn = 0
         sumOff = 0
+        firstLook = 0
         if habTrialNo <= 0:
             habTrialNo = ''
+        if len(onArray) > 0:
+            firstLook = onArray[0]['duration']
         # loop through each array adding up gaze duration (on and off).
         for i in range(0, len(onArray)):
             sumOn = sumOn + onArray[i]['duration']
@@ -442,7 +448,7 @@ class PyHab:
                     'condLabel': self.condLabel, 'trial': trial, 'GNG': 1, 'trialType': type, 'stimName': stimName,
                     'habCrit': habCrit, 'habTrialNo': habTrialNo, 'sumOnA': sumOn, 'numOnA': len(onArray), 'sumOffA': sumOff,
                     'numOffA': len(offArray), 'sumOnB': sumOn2, 'numOnB': len(onArray2), 'sumOffB': sumOff2,
-                    'numOffB': len(offArray2), 'trialDuration': totalduration}
+                    'numOffB': len(offArray2), 'trialDuration': totalduration, 'firstLook':firstLook}
         self.dataMatrix.append(tempData)
 
     def redoTrial(self, trialNum):
@@ -560,7 +566,7 @@ class PyHab:
             index = self.habCount[blockName] - self.blockList[blockName]['setCritWindow']  # How far back should we look?
             for j in range(index, self.habCount[blockName]):
                 sumOnTimes = sumOnTimes + self.habDataCompiled[blockName][j]
-            if sumOnTimes > self.habThresh[blockName]:
+            if sumOnTimes > self.blockList[blockName]['habThresh']: # The setting checks against the TOTAL for these three trials
                 self.habCrit[blockName] = sumOnTimes / self.blockList[blockName]['setCritDivisor']
                 self.habSetWhen[blockName] = deepcopy(self.habCount[blockName])
 
@@ -573,6 +579,9 @@ class PyHab:
                     self.endHabSound.play()
                     self.endHabSound = sound.Sound('G', octave=4, sampleRate=44100, secs=0.2)
             self.habMetWhen[blockName] = self.habCount[blockName]
+            return True
+        elif self.blockList[blockName]['setCritType'] == 'Threshold' and self.blockList[blockName]['maxHabSet'] > 0 and self.habSetWhen[blockName] == -1 and self.habCount[blockName] >= self.blockList[blockName]['maxHabSet']:
+            # Added in 0.10.6, this checks if habituation criterion has not been set by a certain deadline and if so ends habituation immediately (essentially an exclusion crit)
             return True
         elif self.habCount[blockName] > self.blockList[blockName]['setCritWindow'] and self.habSetWhen[blockName] > -1:  # if we're far enough in that we can plausibly meet the hab criterion
             # Problem: Fixed window, peak, and max as relates to habsetwhen....
@@ -1239,9 +1248,10 @@ class PyHab:
             currType = self.actualTrialOrder[trialNum - 1]
             while '.' in currType:  # Dealing with blocks and recursions
                 currType = currType[currType.index('.') + 1:]
-            self.counters[currType] -= 1
-            if self.counters[currType] < 0:
-                self.counters[currType] = 0
+            if self.stimPres: # Counters only applies when there are stimuli
+                self.counters[currType] -= 1
+                if self.counters[currType] < 0:
+                    self.counters[currType] = 0
         # trialNum is in fact the index after the current trial at this point
         # so we can just erase everything between that and the first non-hab trial.
         # del does not erase the last index in its range.
@@ -1637,7 +1647,7 @@ class PyHab:
                         del self.actualTrialOrder[(trialNum):(tempNum + 1)]
                 trialNum += 1
                 # Edge case: experiment ended on a hab block.
-                if trialNum >= len(self.actualTrialOrder):
+                if trialNum > len(self.actualTrialOrder):
                     runExp = False
                     didRedo = False
                     self.endExperiment()
