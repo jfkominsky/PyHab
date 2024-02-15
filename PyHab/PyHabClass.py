@@ -580,9 +580,10 @@ class PyHab:
                     self.endHabSound = sound.Sound('G', octave=4, sampleRate=44100, secs=0.2)
             self.habMetWhen[blockName] = self.habCount[blockName]
             return True
-        elif self.blockList[blockName]['maxHabSet'] > 0 and self.habSetWhen == -1 and self.blockList[blockName]['setCritType'] == 'Threshold' and self.habCount[blockName] >= self.blockList[blockName]['maxHabSet']:
-            # Added in 0.10.6, this checks if habituation criterion has not been set by a certain deadline and if so ends habituation immediately (essentially an exclusion crit)
-            return True
+        elif self.blockList[blockName]['setCritType'] == 'Threshold' and self.blockList[blockName]['maxHabSet'] > 0 and self.habSetWhen[blockName] == -1:
+            if self.habCount[blockName] >= self.blockList[blockName]['maxHabSet']:
+                # Added in 0.10.6, this checks if habituation criterion has not been set by a certain deadline and if so ends habituation immediately (essentially an exclusion crit)
+                return True
         elif self.habCount[blockName] > self.blockList[blockName]['setCritWindow'] and self.habSetWhen[blockName] > -1:  # if we're far enough in that we can plausibly meet the hab criterion
             # Problem: Fixed window, peak, and max as relates to habsetwhen....
             # Not problem per se. Essentially, trials that set the criterion are never included when evaluating it.

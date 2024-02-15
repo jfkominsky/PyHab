@@ -1053,7 +1053,7 @@ class TestDataFunc(object):
                                         'setCritDivisor': 2.0,
                                         'setCritType': 'Threshold',
                                         'habThresh': 20.0, # Sum of 20s over 3 trials
-                                        'maxHabSet': 5, # If not set by trial 6, end hab
+                                        'maxHabSet': 6, # If not set by trial 6, end hab
                                         'metCritWindow': 3,
                                         'metCritDivisor': 1.0,
                                         'metCritStatic': 'Moving',
@@ -1139,7 +1139,7 @@ class TestDataFunc(object):
         assert self.dataInst.habSetWhen['D'] == -1  # b/c thresh not met
 
         habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-                          'condLabel': 'dataTest', 'trial': 7, 'GNG': 1, 'trialType': 'D.C', 'stimName': 'movie1.mov',
+                          'condLabel': 'dataTest', 'trial': 8, 'GNG': 1, 'trialType': 'D.C', 'stimName': 'movie1.mov',
                           'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
                           'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
                           'numOffB': 2})
