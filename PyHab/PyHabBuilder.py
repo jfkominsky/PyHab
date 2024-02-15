@@ -203,9 +203,9 @@ class PyHabBuilder:
                 self.condDict = {}
                 self.baseCondDict = {}
         self.folderPath = self.settings['folderPath']  # The location where all the pieces are saved.
-        self.allDataColumns = ['sNum', 'sID', 'months', 'days', 'sex', 'cond','condLabel', 'trial','GNG','trialType','stimName','habCrit','habTrialNo','sumOnA','numOnA','sumOffA','numOffA','sumOnB','numOnB','sumOffB','numOffB', 'trialDuration']
-        self.allDataColumnsPL = ['sNum', 'sID', 'months', 'days', 'sex', 'cond','condLabel', 'trial','GNG','trialType','stimName','habCrit','habTrialNo', 'sumOnL','numOnL','sumOnR','numOnR','sumOff','numOff', 'trialDuration']
-        self.allDataColumnsHPP = ['sNum', 'sID', 'months', 'days', 'sex', 'cond','condLabel', 'trial','GNG','trialType','stimName','habCrit','habTrialNo', 'sumOnL','numOnL','sumOnC','numOnC','sumOnR','numOnR','sumOff','numOff', 'trialDuration']
+        self.allDataColumns = ['sNum', 'sID', 'months', 'days', 'sex', 'cond','condLabel', 'trial','GNG','trialType','stimName','habCrit','habTrialNo','sumOnA','numOnA','sumOffA','numOffA','sumOnB','numOnB','sumOffB','numOffB', 'trialDuration', 'firstLook']
+        self.allDataColumnsPL = ['sNum', 'sID', 'months', 'days', 'sex', 'cond','condLabel', 'trial','GNG','trialType','stimName','habCrit','habTrialNo', 'sumOnL','numOnL','sumOnR','numOnR','sumOff','numOff', 'trialDuration','firstLookL','firstLookR']
+        self.allDataColumnsHPP = ['sNum', 'sID', 'months', 'days', 'sex', 'cond','condLabel', 'trial','GNG','trialType','stimName','habCrit','habTrialNo', 'sumOnL','numOnL','sumOnC','numOnC','sumOnR','numOnR','sumOff','numOff', 'trialDuration','firstLookC','firstLookL','firstLookR']
         self.stimSource={}  # A list of the source folder(s) for each stimulus file, a dict where each key is the filename in stimNames?
         self.delList=[] # A list of stimuli to delete if they are removed from the experiment library.
         self.allDone=False
@@ -459,7 +459,7 @@ class PyHabBuilder:
                 self.buttonList['shapes'].pop(advTrialIndex)
                 self.buttonList['text'].pop(advTrialIndex)
                 self.buttonList['functions'].pop(advTrialIndex)
-            if self.blockDataDlg in self.buttonList['functions'] and len(list(self.settings['blockList'].keys())) == 0: # TODO: This might be able to survive as is
+            if self.blockDataDlg in self.buttonList['functions'] and len(list(self.settings['blockList'].keys())) == 0:
                 blockDataIndex = self.buttonList['functions'].index(self.blockDataDlg)
                 self.buttonList['shapes'].pop(blockDataIndex)
                 self.buttonList['text'].pop(blockDataIndex)
@@ -1237,7 +1237,7 @@ class PyHabBuilder:
         :type blockName: str
         :param new: Is this a new block or a modification of an existing one?
         :type new: bool
-        :param hab: Is this for a habituation meta-trial? # TODO: No longer needs to be an argument?
+        :param hab: Is this for a habituation meta-trial?
         :type hab: bool
         :return:
         :rtype:
@@ -1254,6 +1254,7 @@ class PyHabBuilder:
                     'setCritDivisor': 2.0,
                     'setCritType': 'First',
                     'habThresh': 5.0,
+                    'maxHabSet': -1,
                     'metCritWindow': 3,
                     'metCritDivisor': 1.0,
                     'metCritStatic': 'Moving',
@@ -1854,7 +1855,7 @@ class PyHabBuilder:
             outputDict['shapes'].append(tempObj)
             outputDict['text'].append(tempTxt)
             outputDict['labels'].append(tTypes[i])
-        x = self.buttonList['functions'].index(self.nextPalettePage)  # TODO: This is inelegant. Find a better fix later.
+        x = self.buttonList['functions'].index(self.nextPalettePage)
         self.buttonList['text'][x].text = str(self.trialPalettePage) + '/' + str(self.totalPalettePages)
         return(outputDict)
     
@@ -3720,15 +3721,17 @@ class PyHabBuilder:
 
         5 = habThresh (threshold for N above threshold)
 
-        6 = metCritWindow (# trials summed over when evaluating whether criterion has been met)
+        6 = maxHabSet (if habituation is not SET by this trial number, then habituation immediately ends)
 
-        7 = metCritDivisor (denominator of sum calculated when determining if criterion has been met)
+        7 = metCritWindow (# trials summed over when evaluating whether criterion has been met)
 
-        8 = metCritStatic (static or moving window?)
+        8 = metCritDivisor (denominator of sum calculated when determining if criterion has been met)
 
-        9 = habByDuration (habituation by duration or by on-time)
+        9 = metCritStatic (static or moving window?)
 
-        10-N = Which trials to calculate hab over for multi-trial blocks.
+        10 = habByDuration (habituation by duration or by on-time)
+
+        11-N = Which trials to calculate hab over for multi-trial blocks.
 
         :param trialList: List of available trials in the block, since this follows from block settings.
         :type trialList: list
@@ -3758,8 +3761,9 @@ class PyHabBuilder:
         hDlg.addField("Max number of habituation trials (if criterion not met)", lastSet['maxHabTrials'])
         hDlg.addField("Number of trials to sum looking time over when making hab criterion", lastSet['setCritWindow'])
         hDlg.addField("Number to divide sum of looking time by when computing criterion", lastSet['setCritDivisor'])
-        hDlg.addField("Criterion window First trials, first trials above Threshold, dynamic Peak contiguous window, or the set of hab trials with Max looking time?", choices=winchz)
+        hDlg.addField("Criterion window First trials, first trials w/total above Threshold, dynamic Peak contiguous window, or the set of hab trials with Max looking time?", choices=winchz)
         hDlg.addField("Threshold value to use if 'Threshold' selected above (ignored otherwise)", lastSet['habThresh'])
+        hDlg.addField("Maximum number of trials to SET habituation criterion if 'Threshold' selected (ignored otherwise)", lastSet['maxHabSet'])
         hDlg.addField("Number of trials to sum looking time over when determining whether criterion has been met", lastSet['metCritWindow'])
         hDlg.addField("Number to divide sum of looking time by when determining whether criterion has been met", lastSet['metCritDivisor'])
         hDlg.addField("Evaluate criterion over moving window or fixed windows?", choices=evalChz)
@@ -3802,8 +3806,8 @@ class PyHabBuilder:
         habDat=hDlg.show()
         if hDlg.OK:
             skip = False
-            intevals = [1,2,6]
-            fevals = [3,5,7] # These can be floats
+            intevals = [1,2,6,7]
+            fevals = [3,5,8] # These can be floats
             for i in intevals:
                 if not isinstance(habDat[i], int):
                     if isinstance(habDat[i], str):
@@ -3830,10 +3834,11 @@ class PyHabBuilder:
                 newHabSettings['setCritDivisor'] = habDat[3]
                 newHabSettings['setCritType'] = habDat[4]
                 newHabSettings['habThresh'] = habDat[5]
-                newHabSettings['metCritWindow'] = habDat[6]
-                newHabSettings['metCritDivisor'] = habDat[7]
-                newHabSettings['metCritStatic'] = habDat[8]
-                if habDat[9] in [1, '1', True, 'True']:
+                newHabSettings['maxHabSet'] = habDat[6]
+                newHabSettings['metCritWindow'] = habDat[7]
+                newHabSettings['metCritDivisor'] = habDat[8]
+                newHabSettings['metCritStatic'] = habDat[9]
+                if habDat[10] in [1, '1', True, 'True']:
                     newHabSettings['habByDuration'] = 1
                 else:
                     newHabSettings['habByDuration'] = 0
@@ -3841,7 +3846,7 @@ class PyHabBuilder:
                 if len(trialList) > 1:
                     tempArr = []
                     for i in range(0, len(expandedHabList)):
-                        if habDat[i+10]:
+                        if habDat[i+11]:
                            tempArr.append(expandedHabList[i])
                     if len(tempArr) > 0:
                         newHabSettings['calcHabOver'] = tempArr
@@ -3865,10 +3870,11 @@ class PyHabBuilder:
                 lastSetDat['setCritDivisor'] = habDat[3]
                 lastSetDat['setCritType'] = habDat[4]
                 lastSetDat['habThresh'] = habDat[5]
-                lastSetDat['metCritWindow'] = habDat[6]
-                lastSetDat['metCritDivisor'] = habDat[7]
-                lastSetDat['metCritStatic'] = habDat[8]
-                if habDat[9] in [1, '1', True, 'True']:
+                lastSetDat['maxHabSet'] = habDat[6]
+                lastSetDat['metCritWindow'] = habDat[7]
+                lastSetDat['metCritDivisor'] = habDat[8]
+                lastSetDat['metCritStatic'] = habDat[9]
+                if habDat[10] in [1, '1', True, 'True']:
                     lastSetDat['habByDuration'] = 1
                 else:
                     lastSetDat['habByDuration'] = 0
@@ -3876,7 +3882,7 @@ class PyHabBuilder:
                 if len(trialList) > 1:
                     tempArr = []
                     for i in range(0, len(expandedHabList)):
-                        if habDat[i+10]:
+                        if habDat[i+11]:
                            tempArr.append(expandedHabList[i])
                     if len(tempArr) > 0:
                         lastSetDat['calcHabOver'] = tempArr
@@ -3940,8 +3946,6 @@ class PyHabBuilder:
     def saveEverything(self):
         """
         Saves a PyHab project to a set of folders dictated by self.folderPath
-
-        todo: Add psychopy_tobii_infant to this. Saved in the code folder.
 
         :return:
         :rtype:
@@ -4029,8 +4033,12 @@ class PyHabBuilder:
             try:
                 shutil.copytree(srcDir+calibImgPath, calibImgTarg)
             except:
-                success = False
-                print('Could not copy calibration images folder')
+                try:
+                    calibImgPath = 'stimuli' + self.dirMarker + 'calib' # If this is an existing experiment, the calib folder is not in the pyhab folder.
+                    shutil.copytree(calibImgPath, calibImgTarg)
+                except:
+                    success = False
+                    print('Could not copy calibration images folder')
         if not success:
             errDlg = gui.Dlg(title="Could not copy stimuli!")
             errDlg.addText("Some stimuli could not be copied successfully. See the output of the coder window for details.")

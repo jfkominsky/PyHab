@@ -63,8 +63,17 @@ class PyHabHPP(PyHab):
         sumOff = 0
         sumOnL = 0
         sumOnR = 0
+        firstLookC = 0
+        firstLookL = 0
+        firstLookR = 0
         if habTrialNo <= 0:
             habTrialNo = ''
+        if len(onArray) > 0:
+            firstLookC = onArray[0]['duration']
+        if len(onArrayL) > 0:
+            firstLookL = onArrayL[0]['duration']
+        if len(onArrayR) > 0:
+            firstLookR = onArrayR[0]['duration']
         for i in range(0, len(onArray)):
             sumOn = sumOn + onArray[i]['duration']
         for j in range(0, len(offArray)):
@@ -94,7 +103,7 @@ class PyHabHPP(PyHab):
                     'sumOnC': sumOn, 'numOnC': len(onArray),
                     'sumOnL': sumOnL, 'numOnL': len(onArrayL),
                     'sumOnR': sumOnR, 'numOnR': len(onArrayR), 'sumOff': sumOff, 'numOff': len(offArray),
-                    'trialDuration': totalduration}
+                    'trialDuration': totalduration, 'firstLookC':firstLookC, 'firstLookL':firstLookL, 'firstLookR':firstLookR}
         self.badTrials.append(tempData)
 
     def dataRec(self, onArray, offArray, trial, type, onArrayL, onArrayR, stimName = '', habTrialNo = 0, habCrit = 0.0):
@@ -126,8 +135,17 @@ class PyHabHPP(PyHab):
         sumOff = 0
         sumOnL = 0
         sumOnR = 0
+        firstLookC = 0
+        firstLookL = 0
+        firstLookR = 0
         if habTrialNo <= 0:
             habTrialNo = ''
+        if len(onArray) > 0:
+            firstLookC = onArray[0]['duration']
+        if len(onArrayL) > 0:
+            firstLookL = onArrayL[0]['duration']
+        if len(onArrayR) > 0:
+            firstLookR = onArrayR[0]['duration']
         #loop through each array adding up gaze duration (on and off).
         for i in range(0,len(onArray)):
             sumOn = sumOn + onArray[i]['duration']
@@ -157,7 +175,7 @@ class PyHabHPP(PyHab):
                                 'sumOnC':sumOn, 'numOnC':len(onArray),
                                 'sumOnL':sumOnL,'numOnL':len(onArrayL),
                                 'sumOnR':sumOnR,'numOnR':len(onArrayR),'sumOff':sumOff, 'numOff':len(offArray),
-                                'trialDuration': totalduration}
+                                'trialDuration': totalduration, 'firstLookC':firstLookC, 'firstLookL':firstLookL, 'firstLookR':firstLookR}
         self.dataMatrix.append(tempData)
 
     def lookKeysPressed(self):

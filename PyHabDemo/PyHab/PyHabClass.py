@@ -142,12 +142,16 @@ class PyHab:
         if 'blockList' in settingsDict.keys():
             self.blockList = eval(settingsDict['blockList'])
             self.blockDataList = eval(settingsDict['blockDataList'])
-            for i,j in self.blockList.items(): # Back compat for 0.10.1
+            for i,j in self.blockList.items(): # Back compat for 0.10.1 and 0.10.6
                 if 'blockRedo' not in j.keys():
                     self.blockList[i]['blockRedo'] = False
+                if 'maxHabSet' not in j.keys():
+                    self.blockList[i]['maxHabSet'] = -1 # Default value
         else:
             self.blockList = {}
             self.blockDataList = []
+
+
 
 
         # STIMULUS PRESENTATION SETTINGS
@@ -247,10 +251,6 @@ class PyHab:
             self.startImage = ''
             self.endImage = ''
             self.nextFlash = 0
-        try:
-            self.habThresh = eval(settingsDict['habThresh'])
-        except:
-            self.habThresh = 1.0
 
         if len(self.stimPath) > 0 and self.stimPath[-1] is not self.dirMarker:  # If it was made in one OS and running in another
             self.stimPath = [self.dirMarker if x == otherOS else x for x in self.stimPath]
@@ -355,8 +355,11 @@ class PyHab:
 
         sumOn = 0
         sumOff = 0
+        firstLook = 0
         if habTrialNo <= 0:
             habTrialNo = ''
+        if len(onArray) > 0:
+            firstLook = onArray[0]['duration']
         for i in range(0, len(onArray)):
             sumOn = sumOn + onArray[i]['duration']
         for j in range(0, len(offArray)):
@@ -383,7 +386,7 @@ class PyHab:
                     'condLabel': self.condLabel,'trial': trial, 'GNG': 0, 'trialType': ttype, 'stimName': stimName,
                     'habCrit': habCrit, 'habTrialNo': habTrialNo, 'sumOnA': sumOn, 'numOnA': len(onArray), 'sumOffA': sumOff,
                     'numOffA': len(offArray), 'sumOnB': sumOn2, 'numOnB': len(onArray2), 'sumOffB': sumOff2,
-                    'numOffB': len(offArray2), 'trialDuration': totalduration}
+                    'numOffB': len(offArray2), 'trialDuration': totalduration, 'firstLook': firstLook}
         self.badTrials.append(tempData)
 
     def dataRec(self, onArray, offArray, trial, type, onArray2, offArray2, stimName = '', habTrialNo = 0, habCrit = 0.0):
@@ -413,8 +416,11 @@ class PyHab:
         """
         sumOn = 0
         sumOff = 0
+        firstLook = 0
         if habTrialNo <= 0:
             habTrialNo = ''
+        if len(onArray) > 0:
+            firstLook = onArray[0]['duration']
         # loop through each array adding up gaze duration (on and off).
         for i in range(0, len(onArray)):
             sumOn = sumOn + onArray[i]['duration']
@@ -442,7 +448,7 @@ class PyHab:
                     'condLabel': self.condLabel, 'trial': trial, 'GNG': 1, 'trialType': type, 'stimName': stimName,
                     'habCrit': habCrit, 'habTrialNo': habTrialNo, 'sumOnA': sumOn, 'numOnA': len(onArray), 'sumOffA': sumOff,
                     'numOffA': len(offArray), 'sumOnB': sumOn2, 'numOnB': len(onArray2), 'sumOffB': sumOff2,
-                    'numOffB': len(offArray2), 'trialDuration': totalduration}
+                    'numOffB': len(offArray2), 'trialDuration': totalduration, 'firstLook':firstLook}
         self.dataMatrix.append(tempData)
 
     def redoTrial(self, trialNum):
@@ -560,7 +566,7 @@ class PyHab:
             index = self.habCount[blockName] - self.blockList[blockName]['setCritWindow']  # How far back should we look?
             for j in range(index, self.habCount[blockName]):
                 sumOnTimes = sumOnTimes + self.habDataCompiled[blockName][j]
-            if sumOnTimes > self.habThresh[blockName]:
+            if sumOnTimes > self.blockList[blockName]['habThresh']: # The setting checks against the TOTAL for these three trials
                 self.habCrit[blockName] = sumOnTimes / self.blockList[blockName]['setCritDivisor']
                 self.habSetWhen[blockName] = deepcopy(self.habCount[blockName])
 
@@ -573,6 +579,9 @@ class PyHab:
                     self.endHabSound.play()
                     self.endHabSound = sound.Sound('G', octave=4, sampleRate=44100, secs=0.2)
             self.habMetWhen[blockName] = self.habCount[blockName]
+            return True
+        elif self.blockList[blockName]['setCritType'] == 'Threshold' and self.blockList[blockName]['maxHabSet'] > 0 and self.habSetWhen[blockName] == -1 and self.habCount[blockName] >= self.blockList[blockName]['maxHabSet']:
+            # Added in 0.10.6, this checks if habituation criterion has not been set by a certain deadline and if so ends habituation immediately (essentially an exclusion crit)
             return True
         elif self.habCount[blockName] > self.blockList[blockName]['setCritWindow'] and self.habSetWhen[blockName] > -1:  # if we're far enough in that we can plausibly meet the hab criterion
             # Problem: Fixed window, peak, and max as relates to habsetwhen....
@@ -869,6 +878,15 @@ class PyHab:
         elif screen == 'R':
             w = self.winR
 
+        # Need to do a little safety thing here for MovieStim
+        if eval(__version__[0:4]) < 2023:
+            playTime = dispMovie.getCurrentFrameTime()
+            fps = dispMovie._frameInterval
+        else:
+            playTime = dispMovie.pts
+            fps = 1/dispMovie.frameRate
+
+
         if self.frameCount[screen] == 0:  # initial setup
             self.dummyThing.draw()
             self.frameCount[screen] += 1
@@ -886,7 +904,7 @@ class PyHab:
             self.frameCount[screen] += 1
             w.flip()
             return 0
-        elif dispMovie.getCurrentFrameTime() >= dispMovie.duration - dispMovie._frameInterval*2 and self.pauseCount[screen] < self.ISI[trialType] * 60:  # pause, check for ISI.
+        elif playTime >= dispMovie.duration - fps*2 and self.pauseCount[screen] < self.ISI[trialType] * 60:  # pause, check for ISI.
             self.dummyThing.draw()
             dispMovie.pause()
             dispMovie.draw()  # might want to have it vanish rather than leave it on the screen for the ISI, in which case comment out this line.
@@ -894,7 +912,7 @@ class PyHab:
             self.pauseCount[screen] += 1
             w.flip() # TODO: Goes blank if ISI is long enough. Pyglet problem.
             return 1
-        elif dispMovie.getCurrentFrameTime() >= dispMovie.duration - dispMovie._frameInterval*2 and self.pauseCount[screen] >= self.ISI[trialType] * 60:  # MovieStim's Loop functionality can't do an ISI
+        elif playTime >= dispMovie.duration - fps*2 and self.pauseCount[screen] >= self.ISI[trialType] * 60:  # MovieStim's Loop functionality can't do an ISI
             self.dummyThing.draw()
             # print('repeating at ' + str(dispMovie.getCurrentFrameTime()))
             self.frameCount[screen] = 0  # changed to 0 to better enable studies that want to blank between trials
@@ -1230,9 +1248,10 @@ class PyHab:
             currType = self.actualTrialOrder[trialNum - 1]
             while '.' in currType:  # Dealing with blocks and recursions
                 currType = currType[currType.index('.') + 1:]
-            self.counters[currType] -= 1
-            if self.counters[currType] < 0:
-                self.counters[currType] = 0
+            if self.stimPres: # Counters only applies when there are stimuli
+                self.counters[currType] -= 1
+                if self.counters[currType] < 0:
+                    self.counters[currType] = 0
         # trialNum is in fact the index after the current trial at this point
         # so we can just erase everything between that and the first non-hab trial.
         # del does not erase the last index in its range.
@@ -1628,7 +1647,7 @@ class PyHab:
                         del self.actualTrialOrder[(trialNum):(tempNum + 1)]
                 trialNum += 1
                 # Edge case: experiment ended on a hab block.
-                if trialNum >= len(self.actualTrialOrder):
+                if trialNum > len(self.actualTrialOrder):
                     runExp = False
                     didRedo = False
                     self.endExperiment()
@@ -2934,7 +2953,14 @@ class PyHab:
             w = self.winR
 
         if tempStim['stimType'] == 'Movie':
-            tempStimObj = visual.MovieStim3(w, tempStim['stimLoc'],
+            # It's finally time to switch to the new MovieStim, if we're on a sufficient version of PsychoPy.
+            if eval(__version__[0:4]) < 2023:
+                tempStimObj = visual.MovieStim3(w, tempStim['stimLoc'],
+                                               size=[self.movieWidth[screen], self.movieHeight[screen]],
+                                               flipHoriz=False,
+                                               flipVert=False, loop=False)
+            else:
+                tempStimObj = visual.MovieStim(w, tempStim['stimLoc'],
                                             size=[self.movieWidth[screen], self.movieHeight[screen]], flipHoriz=False,
                                             flipVert=False, loop=False)
         elif tempStim['stimType'] == 'Animation':
@@ -3013,6 +3039,7 @@ class PyHab:
             # Stimulus presentation window
             self.win = visual.Window((self.screenWidth['C'], self.screenHeight['C']), fullscr=False, screen=self.screenIndex['C'], allowGUI=False,
                                      units='pix', color=self.screenColor['C'])
+            self.win.flip() # To deal with PsychoPy's new feature of putting "Attempting to measure framerate" up on the screen.
             self.dummyThing = visual.Circle(self.win, size=1, color=self.win.color) # This is for fixing a display glitch in PsychoPy3 involving multiple windows of different sizes.
             if self.eyetracker > 0:
                 try:

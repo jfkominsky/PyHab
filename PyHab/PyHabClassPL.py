@@ -55,8 +55,14 @@ class PyHabPL(PyHab):
         sumOn = 0
         sumOff = 0
         sumOn2 = 0
+        firstLookL = 0
+        firstLookR = 0
         if habTrialNo <= 0:
             habTrialNo = ''
+        if len(onArray) > 0:
+            firstLookL = onArray[0]['duration']
+        if len(onArray2) > 0:
+            firstLookR = onArray2[0]['duration']
         for i in range(0, len(onArray)):
             sumOn = sumOn + onArray[i]['duration']
         for k in range(0, len(onArray2)):
@@ -82,7 +88,7 @@ class PyHabPL(PyHab):
                     'trial': trial, 'GNG': 0, 'trialType': ttype, 'stimName': stimName, 'habCrit': habCrit, 'habTrialNo': habTrialNo,
                     'sumOnL': sumOn, 'numOnL': len(onArray),
                     'sumOnR': sumOn2, 'numOnR': len(onArray2), 'sumOff': sumOff, 'numOff': len(offArray),
-                    'trialDuration': totalduration}
+                    'trialDuration': totalduration, 'firstLookL': firstLookL, 'firstLookR': firstLookR}
         self.badTrials.append(tempData)
 
     def dataRec(self, onArray, offArray, trial, type, onArray2, stimName = '', habTrialNo = 0, habCrit = 0.0):
@@ -111,8 +117,14 @@ class PyHabPL(PyHab):
         sumOn = 0
         sumOff = 0
         sumOn2 = 0
+        firstLookL = 0
+        firstLookR = 0
         if habTrialNo <= 0:
             habTrialNo = ''
+        if len(onArray) > 0:
+            firstLookL = onArray[0]['duration']
+        if len(onArray2) > 0:
+            firstLookR = onArray2[0]['duration']
         #loop through each array adding up gaze duration (on and off).
         for i in range(0,len(onArray)):
             sumOn = sumOn + onArray[i]['duration']
@@ -138,7 +150,7 @@ class PyHabPL(PyHab):
                                 'trial':trial, 'GNG':1, 'trialType':type, 'stimName':stimName, 'habCrit':habCrit, 'habTrialNo': habTrialNo,
                                 'sumOnL':sumOn, 'numOnL':len(onArray),
                                 'sumOnR':sumOn2,'numOnR':len(onArray2),'sumOff':sumOff, 'numOff':len(offArray),
-                                'trialDuration': totalduration}
+                                'trialDuration': totalduration, 'firstLookL': firstLookL, 'firstLookR': firstLookR}
         self.dataMatrix.append(tempData)
 
 
