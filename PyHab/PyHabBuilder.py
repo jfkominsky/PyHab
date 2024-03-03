@@ -904,6 +904,8 @@ class PyHabBuilder:
         """
         A dialog for advanced trial settings mostly having to do with attention-getters and stimulus presentation
 
+        TODO: Minimum trial duration independent of looking time.
+
         0/-8 = cutoff attention-getter on gaze-on? T/F [if trial has an AG - not always present]
 
         1/-7 = cutoff on-time: How long do they have to look to cut off presentation? [if trial has an AG - not always present]

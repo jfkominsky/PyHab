@@ -440,8 +440,10 @@ class PyHab:
         """
         Allows you to redo a trial after it has ended. Similar to abort trial, but under
         the assumption that the data has already been recorded and needs to be replaced.
-        Decrementing of trial numbers is handled in doExperiment when the relevant key is
-        pressed.
+
+        This function only handles the data part. The actual re-assignment of the trial
+        is done elsewhere.
+
 
         :param trialNum: Trial number to redo
         :type trialNum: int
@@ -451,6 +453,7 @@ class PyHab:
 
         newTempData = {}
         i = 0
+        trialIndex = -1
         while i < len(self.dataMatrix):
             if self.dataMatrix[i]['trial'] == trialNum and self.dataMatrix[i]['GNG'] == 1:
                 trialIndex = i
@@ -458,37 +461,44 @@ class PyHab:
                 break
             else:
                 i += 1
-        # add the new 'bad' trial to badTrials
-        newTempData['GNG'] = 0
-        if self.dataMatrix[trialIndex]['trialType'][0:4] == 'hab.':  # Redoing a habituation trial
-            tempName = deepcopy(self.dataMatrix[trialIndex]['trialType'])
-            tempName = tempName[4:] # Just removing 'hab.'
-            # Subtract data from self.habDataCompiled before checking whether we reduce the hab count, do make indexing
-            # the correct part of habDataCompiled easier. Notably, reduces but does not inherently zero out.
-            if tempName in self.calcHabOver:  # Make sure it's part of the hab calc
-                self.habDataCompiled[self.habCount-1] = self.habDataCompiled[self.habCount-1] - self.dataMatrix[trialIndex]['sumOnA']
-                if self.habDataCompiled[self.habCount-1] < 0:  # For rounding errors
-                    self.habDataCompiled[self.habCount-1] = 0
-            # If it's the end of the hab iteration, then reduce the hab count.
-            if '^' in self.actualTrialOrder[trialNum-1]:  # This is kind of a dangerous kludge that hopefully won't come up that often.
-                self.habCount -= 1
-        elif newTempData['trialType'] == 'Hab':
-            self.habCount -= 1
-            self.habDataCompiled[self.habCount] = 0 # Resets the appropriate instance of the hab data structure
-        self.badTrials.append(newTempData)
-        # remove it from dataMatrix
-        self.dataMatrix.remove(self.dataMatrix[trialIndex])
-        # basically need to read through the verbose matrices, add everything that references that trial to the 'bad'
-        # verbose data matrices, and mark the relevant lines for later deletion
-        for q,z in self.verbDatList.items():
-            if len(z) > 0: # Avoid any blank arrays (e.g. if there is no coder 2)
-                for i in range(0, len(self.verbDatList[q])):
-                    if self.verbDatList[q][i]['trial'] == trialNum:
-                        # Deepcopy needed to stop it from tying the badlist entries to the regular entries and removing them.
-                        self.verbBadList[q].append(deepcopy(self.verbDatList[q][i]))
-                        self.verbDatList[q][i]['trial'] = 99
-                # Elegantly removes all tagged lines of verbose data
-                self.verbDatList[q] = [vo for vo in self.verbDatList[q] if vo['trial'] != 99]
+        # New safety valve: If trialIndex is not set, just back off, it means something went bad in the redo setup.
+        if trialIndex > -1:
+            # add the new 'bad' trial to badTrials
+            newTempData['GNG'] = 0
+            if '*' in self.actualTrialOrder[trialNum - 1]:  # Redoing a habituation trial
+                trialName = deepcopy(self.dataMatrix[trialIndex]['trialType'])
+                habBlock = ''
+                for n, q in self.habMetWhen.items():  # Cycle through all the hab blocks to find the right one.
+                    if self.actualTrialOrder[trialNum - 1][0:len(n)] == n:
+                        habBlock = n
+                while '.' in trialName:
+                    trialName = trialName[trialName.index('.') + 1:]
+                # Subtract data from self.habDataCompiled before checking whether we reduce the hab count, do make indexing
+                # the correct part of habDataCompiled easier. Notably, reduces but does not inherently zero out.
+                if trialName in self.blockList[habBlock]['calcHabOver']:  # Make sure it's part of the hab calc
+                    self.habDataCompiled[habBlock][self.habCount[habBlock] - 1] = self.habDataCompiled[habBlock][
+                                                                                      self.habCount[habBlock] - 1] - \
+                                                                                  self.dataMatrix[trialIndex]['sumOnA']
+                    if self.habDataCompiled[habBlock][self.habCount[habBlock] - 1] < 0:  # For rounding errors
+                        self.habDataCompiled[habBlock][self.habCount[habBlock] - 1] = 0
+                # If it's from the end of the hab iteration, then reduce the hab count.
+                if '^' in self.actualTrialOrder[
+                    trialNum - 1]:  # This is kind of a dangerous kludge that hopefully won't come up that often.
+                    self.habCount[habBlock] -= 1
+            self.badTrials.append(newTempData)
+            # remove it from dataMatrix
+            self.dataMatrix.remove(self.dataMatrix[trialIndex])
+            # basically need to read through the verbose matrices, add everything that references that trial to the 'bad'
+            # verbose data matrices, and mark the relevant lines for later deletion
+            for q, z in self.verbDatList.items():
+                if len(z) > 0:  # Avoid any blank arrays (e.g. if there is no coder 2)
+                    for i in range(0, len(self.verbDatList[q])):
+                        if self.verbDatList[q][i]['trial'] == trialNum:
+                            # Deepcopy needed to stop it from tying the badlist entries to the regular entries and removing them.
+                            self.verbBadList[q].append(deepcopy(self.verbDatList[q][i]))
+                            self.verbDatList[q][i]['trial'] = 99
+                    # Elegantly removes all tagged lines of verbose data
+                    self.verbDatList[q] = [vo for vo in self.verbDatList[q] if vo['trial'] != 99]
 
 
 
@@ -746,117 +756,6 @@ class PyHab:
             if self.blindPres < 1:
                 self.readyText.draw()
         self.win2.flip()  # flips the status screen without delaying the stimulus onset.
-
-    def dispMovieStim(self, trialType, dispMovie, screen='C'):
-        """
-        Draws movie stimuli to the stimulus display, including movie-based attention-getters.
-
-        :param trialType: 0 for paused, otherwise a string
-        :type trialType: int or str
-        :param dispMovie: The moviestim3 object for the stimuli
-        :type dispMovie: moviestim3 object
-        :param screen: The screen on which the movie should display. Only relevant for HPP.
-        :type screen: str
-        :return: an int specifying whether the movie is in progress (0), paused on its last frame (1), or ending and looping (2)
-        :rtype: int
-        """
-
-        if screen == 'C':
-            w = self.win
-        elif screen == 'L':
-            w = self.winL
-        elif screen == 'R':
-            w = self.winR
-
-        if self.frameCount[screen] == 0:  # initial setup
-            self.dummyThing.draw()
-            self.frameCount[screen] += 1
-            dispMovie.draw()
-            if trialType == 0:
-                self.frameCount[screen] = 0  # for post-attn-getter pause
-                dispMovie.pause()
-            else:
-                dispMovie.seek(0.0)  # Moved up here from below so that it CAN loop at all
-            w.flip()
-            return 0
-        elif self.frameCount[screen] == 1:
-            # print('playing')
-            dispMovie.play()
-            dispMovie.draw()
-            self.frameCount[screen] += 1
-            w.flip()
-            return 0
-        elif dispMovie.getCurrentFrameTime() >= dispMovie.duration - dispMovie._frameInterval*2 and self.pauseCount[screen] < self.ISI[trialType] * 60:  # pause, check for ISI.
-            self.dummyThing.draw()
-            dispMovie.pause()
-            dispMovie.draw()  # might want to have it vanish rather than leave it on the screen for the ISI, in which case comment out this line.
-            self.frameCount[screen] += 1
-            self.pauseCount[screen] += 1
-            w.flip() # TODO: Goes blank if ISI is long enough. Pyglet problem.
-            return 1
-        elif dispMovie.getCurrentFrameTime() >= dispMovie.duration - dispMovie._frameInterval*2 and self.pauseCount[screen] >= self.ISI[trialType] * 60:  # MovieStim's Loop functionality can't do an ISI
-            self.dummyThing.draw()
-            # print('repeating at ' + str(dispMovie.getCurrentFrameTime()))
-            self.frameCount[screen] = 0  # changed to 0 to better enable studies that want to blank between trials
-            self.pauseCount[screen] = 0
-            dispMovie.draw()  # Comment this out as well to blank between loops.
-            w.flip()
-            dispMovie.pause()
-            #dispMovie.seek(0.0) #This seek seems to cause the replays.
-            return 2
-        else:
-            dispMovie.draw()
-            self.frameCount[screen] += 1
-            w.flip()
-            return 0
-
-    def dispImageStim(self, dispImage, screen='C'):
-        """
-        Very simple. Draws still-image stimuli and flips window
-
-        :param dispImage: the visual.ImageStim object
-        :type dispImage: visual.ImageStim object
-        :param screen: For HPP, which screen the image is to appear on
-        :type screen: str
-        :return: constant, 1
-        :rtype: int
-        """
-        if screen == 'C':
-            w = self.win
-        elif screen == 'L':
-            w = self.winL
-        elif screen == 'R':
-            w = self.winR
-
-        dispImage.draw()
-        w.flip()
-        return 1  # This essentially allows it to end at any time if this is set to "movieend"
-
-    def dispAudioStim(self, trialType, dispAudio):
-        """
-        For playing audio stimuli. A little more complicated than most because it needs to track whether the audio
-        is playing or not. Audio plays separately from main thread.
-
-        :param dispAudio: the stimuli as a sound.Sound object
-        :type dispAudio: sound.Sound object
-        :return: an int specifying whether the audio is in progress (0), we are in an ISI (1),
-            or the audio is looping (2)
-        :rtype: int
-        """
-        if self.frameCount['C'] == 0:  # We're going to use this as a mask for the status of the audio file
-            dispAudio.play()
-            self.frameCount['C'] = 1
-            return 0
-        elif self.frameCount['C'] == 1:
-            if dispAudio.status not in [STARTED, PLAYING] and self.pauseCount['C'] < self.ISI[trialType] * 60:
-                self.pauseCount['C'] += 1
-                return 1
-            elif dispAudio.status not in [STARTED, PLAYING] and self.pauseCount['C'] >= self.ISI[trialType] * 60:
-                self.frameCount['C'] = 0
-                return 2
-            else:
-                return 0
-
 
     def dispTrial(self, trialType, dispMovie = False): #If no stim, dispMovie defaults to false.
         """

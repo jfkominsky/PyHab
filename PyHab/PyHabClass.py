@@ -1714,6 +1714,8 @@ class PyHab:
         2 = "None", plays to max duration no matter what.
         3 = "Either/or", as standard but with "or" instead of "and". Whichever comes first.
 
+        TODO: Minimum duration independent of on-time.
+
         :param number: Trial number
         :type number: int
         :param ttype: Trial type - the full expanded one with block hierarchy and hab trial info included.
