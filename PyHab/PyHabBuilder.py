@@ -1061,7 +1061,7 @@ class PyHabBuilder:
         """
         A function for selecting the trials you want to access the advanced settings of.
         Spawns a panel with all the trial types. Reuses code from the block interface.
-        Doesn't need to check existence of trials because
+        Doesn't need to check existence of trials b/c it's called in such a way that the trials must exist.
 
         :return:
         :rtype:
