@@ -1881,9 +1881,10 @@ class PyHabBuilder:
                     self.saveEverything()
             if not self.loadSave and len(self.folderPath)>0: #If this is the first time saving a new experiment, relaunch from launcher!
                 self.win.close()
-                launcherPath = self.folderPath+self.settings['prefix']+'Launcher.py'
-                launcher = coder.ScriptThread(target=self._runLauncher(launcherPath), gui=self)
-                launcher.start()
+                #This is no longer functional
+                #launcherPath = self.folderPath+self.settings['prefix']+'Launcher.py'
+                #launcher = coder.ScriptThread(target=self._runLauncher(launcherPath), gui=self)
+                #launcher.start()
     
     def univSettingsDlg(self): #The universal settings button.
         """
