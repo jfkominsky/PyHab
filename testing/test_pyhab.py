@@ -1230,8 +1230,8 @@ class TestDataFunc(object):
         self.dataInst.habDataCompiled['D'][self.dataInst.habCount['D']] += habMatrix[-1]['sumOnA']  # 0, 5
         self.dataInst.habCount['D'] = 1
 
-        assert self.dataInst.habCrit['D'] == 3.0
         assert self.dataInst.checkStop('D') == False
+        assert self.dataInst.habCrit['D'] == 3.0
 
 
         self.dataInst.dataRec(habOn1_2, habOff1_2, 4, 'D3.C', habOn2_2, habOff2_2, 'movie1.mov')
