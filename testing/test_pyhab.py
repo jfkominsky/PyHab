@@ -1260,7 +1260,7 @@ class TestDataFunc(object):
         self.dataInst.dataRec(habOn1_3, habOff1_3, 5, 'D3.C', habOn2_3, habOff2_3, 'movie1.mov')
 
         blockName = 'D'
-        assert self.dataInst.habCount[blockName] >= self.dataInst.habSetWhen['blockName'] + self.dataInst.blockList[blockName]['metCritWindow'] - 1
+        assert self.dataInst.habCount[blockName] >= self.dataInst.habSetWhen[blockName] + self.dataInst.blockList[blockName]['metCritWindow'] - 1
 
         targetTrials = []
         for j in range(1, self.dataInst.habCount[blockName] + 1):
