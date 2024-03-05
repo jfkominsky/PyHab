@@ -1233,6 +1233,7 @@ class TestDataFunc(object):
 
         assert self.dataInst.checkStop('D') == False
         assert self.dataInst.habCrit['D'] == 2.5
+        assert self.dataInst.habSetWhen['D'] == 1
 
 
         self.dataInst.dataRec(habOn1_2, habOff1_2, 4, 'D3.C', habOn2_2, habOff2_2, 'movie1.mov')
@@ -1257,6 +1258,19 @@ class TestDataFunc(object):
         self.dataInst.habDataCompiled['D'][self.dataInst.habCount['D']] += habMatrix[-1]['sumOnA']  # 2, 5
         self.dataInst.habCount['D'] = 3
         self.dataInst.dataRec(habOn1_3, habOff1_3, 5, 'D3.C', habOn2_3, habOff2_3, 'movie1.mov')
+
+        blockName = 'D'
+        assert self.dataInst.habCount[blockName] >= self.dataInst.habSetWhen['blockName'] + self.dataInst.blockList[blockName]['metCritWindow'] - 1
+
+        targetTrials = []
+        for j in range(1, self.dataInst.habCount[blockName] + 1):
+            for q in range(0, len(self.dataInst.blockList[blockName]['calcHabOver'])):
+                matchName = blockName + str(j) + '.' + self.dataInst.blockList[blockName]['calcHabOver'][q]
+                # find all indexes in ActualTrialOrder with that name. Use i+1 to get the trial NUMBER
+                for i in range(0, len(self.dataInst.dataMatrix)):
+                    if self.dataInst.dataMatrix[i]['trialType'] == matchName:
+                        targetTrials.append(self.dataInst.dataMatrix[i]['trial'])
+        assert targetTrials == [3,4,5]
 
         assert self.dataInst.checkStop('D') == True
 
