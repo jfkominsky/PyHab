@@ -664,7 +664,7 @@ class PyHab:
             duration = eval(self.attnGetterList[self.midAG[trialType]['attnGetter']]['duration'])
 
         self.browser.get(self.presentationURL + '#/' + attnGetter) # Navigates to the attention-getter, now just need to
-        # listen for for end of AG or start of trial or w/e.
+        # listen for end of AG or start of trial or w/e.
         startAG = core.getTime()
         endAG = False
         startOn = 0

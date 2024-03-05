@@ -95,11 +95,6 @@ class PyHabBuilder:
                 self.settings['baseCondFile'] = ''
             if 'blockList' not in self.settings.keys():
                 self.settings['blockList'] = '{}'
-            if 'calcHabOver' not in self.settings.keys():
-                if len(self.settings['habTrialList']) > 0:
-                    self.settings['calcHabOver'] = "['Hab']"  # Default to old behavior.
-                else:
-                    self.settings['calcHabOver'] = "[]"
             if 'blockDataList' not in self.settings.keys():
                 self.settings['blockDataList'] = "[]"
             if 'blockSum' not in self.settings.keys():
