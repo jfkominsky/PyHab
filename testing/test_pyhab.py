@@ -1162,7 +1162,7 @@ class TestDataFunc(object):
                                          'setCritWindow': 0, # From start of experiment
                                          'setCritDivisor': 2.0,
                                          'setCritType': 'FixedTrialLength',
-                                         'habThresh': 3.0, # 3 consec seconds look away
+                                         'habThresh': 2.5, # 2.5 consec seconds look away
                                          'maxHabSet': -1,
                                          'metCritWindow': 3, # over 3 trials
                                          'metCritDivisor': 1.0,
@@ -1177,6 +1177,7 @@ class TestDataFunc(object):
         self.dataInst.habMetWhen[i] = -1
         self.dataInst.maxHabIndex[i] = 0
         self.dataInst.habDataCompiled[i] = [0] * self.dataInst.blockList['D']['maxHabTrials']
+        #self.dataInst.actualTrialOrder = ['A','B','D1.C','D2.C','D3.C','D4.C','D5.C','D6.C'] # Creating a fake actualTrialOrder to test new hab mode
 
         habMatrix = copy.deepcopy(self.testMatrix)
         # The main problem is that the relevant data are not from the hab matrix but from the verbose data in this case.
@@ -1231,7 +1232,7 @@ class TestDataFunc(object):
         self.dataInst.habCount['D'] = 1
 
         assert self.dataInst.checkStop('D') == False
-        assert self.dataInst.habCrit['D'] == 3.0
+        assert self.dataInst.habCrit['D'] == 2.5
 
 
         self.dataInst.dataRec(habOn1_2, habOff1_2, 4, 'D3.C', habOn2_2, habOff2_2, 'movie1.mov')

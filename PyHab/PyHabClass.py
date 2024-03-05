@@ -609,8 +609,9 @@ class PyHab:
                     for q in range(0, len(self.blockList[blockName]['calcHabOver'])):
                         matchName = blockName + str(j) + '.' + self.blockList[blockName]['calcHabOver'][q]
                         # find all indexes in ActualTrialOrder with that name. Use i+1 to get the trial NUMBER
-                        g = [i+1 for i, n in enumerate(self.actualTrialOrder) if n == matchName]
-                        targetTrials.extend(g)
+                        for i in range(0, len(self.dataMatrix)):
+                            if self.dataMatrix[i]['trialType'] == matchName:
+                                targetTrials.append(self.dataMatrix[i]['trial'])
                 consecPostThreshold = []
                 for k in range(0, habIndex):
                     consecPostThreshold.append(0) # make as long as the number of trials we need to check?
