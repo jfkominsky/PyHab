@@ -2451,36 +2451,35 @@ class PyHab:
                             else:
                                 newTempTrials.append(j[q])
                         if i in self.blockList.keys():
-                            finalBlock[i] = newTempTrials
+                            finalBlock[i] = deepcopy(self.blockList[i])
+                            finalBlock[i]['trialList'] = newTempTrials
                         finalDict[i] = newTempTrials
                     self.stimNames = finalDict
                     self.blockList = finalBlock
-                    if 'Hab' in self.blockList.keys():
-                        self.habTrialList = self.blockList['Hab']
                 else:
                     self.cond = thisInfo[6]
                     self.condLabel = self.cond
                 # Set actual order of trials
                 self.actualTrialOrder = []  # in this version, mostly a key for the hab trials and blocks.
                 for i in range(0, len(self.trialOrder)):
-                    if self.trialOrder[i] == 'Hab':
-                        for j in range(0, self.maxHabTrials):
-                            if len(self.habTrialList) > 0:
-                                self.blockExpander(self.habTrialList, 'hab', hab=True, habNum=j + 1)
-                            else:
-                                self.actualTrialOrder.append('Hab')
-                        self.maxHabIndex = len(self.actualTrialOrder) - 1  # Tracks the very last hab trial.
-                    elif self.trialOrder[i] in self.blockList.keys():
+                    if self.trialOrder[i] in self.blockList.keys():
                         if self.trialOrder[i] in self.blockDataList:
                             start = len(self.actualTrialOrder)
-                        self.blockExpander(self.blockList[self.trialOrder[i]], self.trialOrder[i])
+                        if self.blockList[self.trialOrder[i]]['habituation'] in [1, '1', True, 'True']:
+                            # hab block!
+                            for k in range(0, self.blockList[self.trialOrder[i]]['maxHabTrials']):
+                                self.blockExpander(self.blockList[self.trialOrder[i]], self.trialOrder[i], habNum=k + 1)
+                            self.maxHabIndex[self.trialOrder[i]] = len(
+                                self.actualTrialOrder) - 1  # The last trial of this hab block.
+                        else:
+                            self.blockExpander(self.blockList[self.trialOrder[i]], self.trialOrder[i])
                         if self.trialOrder[i] in self.blockDataList:
                             end = len(self.actualTrialOrder)
-                            tempList = list(range(start+1,end+1))
+                            tempList = list(range(start + 1, end + 1))
                             self.blockDataTags[self.trialOrder[i]].append(tempList)
                     else:
                         self.actualTrialOrder.append(self.trialOrder[i])
-                if len(testMode) == 0: # If we're in test mode, skip setting up the window and launching the experiment.
+                if len(testMode) == 0:  # If we're in test mode, skip setting up the window and launching the experiment.
                     if len(self.actualTrialOrder) == 0:
                         errWindow = gui.Dlg("Warning: No trials!")
                         errWindow.addText(
@@ -2543,8 +2542,7 @@ class PyHab:
                     baseStart = len(self.actualTrialOrder)
                 if tempName in self.blockDataList:
                     start = len(self.actualTrialOrder)
-                self.blockExpander(self.blockList[tempName], prefixes + '.' + tempName, hab=hab, insert=insert,
-                                   baseStart=baseStart)
+                self.blockExpander(self.blockList[tempName], prefixes + '.' + tempName, hab=hab, insert=insert, baseStart=baseStart)
                 if tempName in self.blockDataList:
                     end = len(self.actualTrialOrder)
                     tempList = list(range(start + 1, end + 1))
