@@ -19,6 +19,8 @@ from copy import deepcopy # needed for exactly one usage in redotrial because it
 # For web-based studies, to interact with the browser.
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.by import By
+
 
 
 
@@ -1438,9 +1440,6 @@ class PyHab:
         self.frameCount['C'] = 0  # reset display
         self.pauseCount['C'] = 0  # needed for ISI
         # returns 0 if do next trial, 1 if end hab, 2 if end experiment, 3 if abort/abort
-        if self.stimPres and disMovie['stimType'] == 'Movie':
-            disMovie['stim'].seek(0.0)
-            disMovie['stim'].pause()
         startTrial = core.getTime()
         startTrial2 = core.getTime()
         onArray = []
@@ -2380,8 +2379,8 @@ class PyHab:
                     self.browser = webdriver.Edge()
 
                 self.browser.get("https://slides.com/users/sign_in")
-                email_field = self.browser.find_element_by_id("user_email")
-                pw_field = self.browser.find_element_by_id("user_password")
+                email_field = self.browser.find_element(By.ID,"user_email")
+                pw_field = self.browser.find_element(By.ID, "user_password")
 
                 email_field.send_keys(self.slidesEmail)
                 pw_field.send_keys(self.slidesPW)
@@ -2638,7 +2637,7 @@ class PyHab:
             # Navigate to blank slide
             self.browser.get(self.presentationURL + '#/' + self.blankSlide)
             webdriver.ActionChains(self.browser).key_down(Keys.COMMAND).send_keys("p").perform()  # Begin presentation mode
-            self.nextArrow = self.browser.find_element_by_css_selector("button.navigate-right")
+            self.nextArrow = self.browser.find_element(By.CSS_SELECTOR, "button.navigate-right")
 
         # Coder window
         self.win2 = visual.Window((400, 400), fullscr=False, screen=self.expScreenIndex, allowGUI=True, units='pix', waitBlanking=False,
