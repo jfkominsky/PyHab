@@ -523,6 +523,8 @@ class PyHab:
         Uses a sort of parallel data structure that just tracks hab-relevant gaze totals. As a bonus, this means it now
         works for both single-target and preferential looking designs (and HPP designs) with no modification.
 
+        TODO: New mode, FixedTrialLength, which looks for N trials with consecutive look-away times of X seconds, assuming non-gaze-contingent individual trials
+
         To support multiple hab blocks, this needs to take the block name as an argument, to only look at that block's hab settings.
         That means each block with habituation turned on can only be used once, but you can have more than one block
 
@@ -532,7 +534,12 @@ class PyHab:
         :rtype: bool
         """
 
-        if self.habCount[blockName] == self.blockList[blockName]['setCritWindow'] and self.blockList[blockName]['setCritType'] != 'Threshold':  # time to set the hab criterion.
+        if self.blockList[blockName]['setCritType'] == 'FixedTrialLength' and self.habSetWhen[blockName] == -1:
+            # A slightly special case, so it gets an internal condition
+            if self.habCount[blockName] >= self.blockList[blockName]['setCritWindow']: #>= b/c it can be 0. Using this to set the minimum trials essentially.
+                self.habCrit[blockName] = self.blockList[blockName]['habThresh'] # Consecutive look-away time.
+                self.habSetWhen[blockName] = self.habCount[blockName]
+        elif self.habCount[blockName] == self.blockList[blockName]['setCritWindow'] and self.blockList[blockName]['setCritType'] != 'Threshold':  # time to set the hab criterion.
             # This condition sets the initial criterion for peak/max, first, and last. Threshold needs more.
             sumOnTimes = 0
             for j in range(0,self.habCount[blockName]):
@@ -590,6 +597,41 @@ class PyHab:
             # Last needs to ignore HabSetWhen, or rather, cannot wait MetCritWindow trials past when it is set.
             if self.habCount[blockName] < self.habSetWhen[blockName] + self.blockList[blockName]['metCritWindow'] and self.blockList[blockName]['metCritStatic'] == 'Moving' and self.blockList[blockName]['setCritType'] != 'Last': # Was the hab set "late" and are we too early as a result
                 return False
+            elif self.blockList[blockName]['setCritType'] == 'FixedTrialLength' and self.habCount[blockName] >= self.habSetWhen['blockName'] + self.blockList[blockName]['metCritWindow'] - 1: # The -1 is necessary
+                # Check for consecutive trials with consecutive off-time greater than the criterion.
+                habIndex = self.habCount[blockName] - self.blockList[blockName]['metCritWindow']
+                # Problem, this requires us to dig into the verbose data, which uses the actual trial number, not the hab counter!
+                # Means we need to pull just the trials that are of the right type and figure out their actual trial names,
+                # and make a list of those. Needs to be trial nos, not just names, b/c multiple repetitions w/in a block
+                # are possible.
+                targetTrials = []
+                for j in range(1, self.habCount[blockName]+1):
+                    for q in range(0, len(self.blockList[blockName]['calcHabOver'])):
+                        matchName = blockName + str(j) + '.' + self.blockList[blockName]['calcHabOver'][q]
+                        # find all indexes in ActualTrialOrder with that name. Use i+1 to get the trial NUMBER
+                        g = [i+1 for i, n in enumerate(self.actualTrialOrder) if n == matchName]
+                        targetTrials.extend(g)
+                consecPostThreshold = []
+                for k in range(0, habIndex):
+                    consecPostThreshold.append(0) # make as long as the number of trials we need to check?
+                # There is a complication here because of the fact that this cares about whether there is an off-time of
+                # sufficient length within a given iteration of the whole hab block, not just each individual trial.
+                # However the number of trials that need to be considered per block is always going to be the same.
+                trialPerIter = len(targetTrials)/habIndex # Typically this will be 1
+                currIter = 0
+                for n in range(0, len(targetTrials)):
+                    for i in range(0, len(self.verbDatList['verboseOff'])):
+                        if self.verbDatList['verboseOff'][i]['trial'] == targetTrials[n]:
+                            if self.verbDatList['verboseOff'][i]['duration'] >= self.habCrit[blockName]:
+                                consecPostThreshold[currIter] = 1
+                    if n % trialPerIter == 0 and n > 0:
+                        currIter += 1
+
+                if 0 in consecPostThreshold: # It's a slightly weird way to do this but I think it will work.
+                    return False
+                else:
+                    return True
+
             else:
                 sumOnTimes = 0
                 index = self.habCount[blockName] - self.blockList[blockName]['metCritWindow']
@@ -1737,7 +1779,7 @@ class PyHab:
             # datatype should be the full block-trial name minus *^
             dataType = ttype.translate({94:None, 42:None})
             habBlock = ttype[:ttype.index('*')]
-            # Now we need to trim out the hab number. Assume maxHab < 100
+            # Now we need to trim out the hab number.
             for b, c in self.habCount.items():
                 if habBlock[0:len(b)] == b and habBlock[len(b):] == str(c+1):
                     habBlock = habBlock[0:len(b)]
