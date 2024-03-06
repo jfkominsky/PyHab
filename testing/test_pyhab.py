@@ -756,6 +756,7 @@ class TestDataFunc(object):
                                         'metCritDivisor': 1.0,
                                         'metCritStatic': 'Moving',
                                         'calcHabOver': ['A']}
+        self.dataInst.habCount = {'Hab':3, 'secondHab':0}
 
         habSaveData = self.dataInst.saveHabFile()
         assert len(habSaveData) == 5  # 5 because it includes non-hab trials, of which there are 2 at the start
@@ -800,6 +801,7 @@ class TestDataFunc(object):
                           'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
                           'numOffB': 2})
 
+        self.dataInst.habCount['secondHab'] = 3
         habSaveData = self.dataInst.saveHabFile()
         assert len(habSaveData) == 8  # 5 because it includes non-hab trials, of which there are 2 at the start
         assert habSaveData[6]['trialType'] == 'secondHab'
@@ -1180,6 +1182,7 @@ class TestDataFunc(object):
         #self.dataInst.actualTrialOrder = ['A','B','D1.C','D2.C','D3.C','D4.C','D5.C','D6.C'] # Creating a fake actualTrialOrder to test new hab mode
 
         habMatrix = copy.deepcopy(self.testMatrix)
+        self.dataInst.dataMatrix = habMatrix  # We can actually use python's pointer thing to our advantage here: dataMatrix will update with habMatrix
         # The main problem is that the relevant data are not from the hab matrix but from the verbose data in this case.
         habOn1_1= [{'trial': 3, 'trialType': 'D1.C', 'startTime': 0, 'endTime': 1.5, 'duration': 1.5},
                           {'trial': 3, 'trialType': 'D1.C', 'startTime': 3.0, 'endTime': 4.5,
@@ -1219,12 +1222,6 @@ class TestDataFunc(object):
                     'duration': 3.0}]
 
         self.dataInst.dataRec(habOn1_1, habOff1_1, 3, 'D1.C', habOn2_1, habOff2_1, 'movie1.mov')
-        # habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-        #                   'condLabel': 'dataTest', 'trial': 3, 'GNG': 1, 'trialType': 'D1.C', 'stimName': 'movie1.mov',
-        #                   'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
-        #                   'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
-        #                   'numOffB': 2})
-        self.dataInst.dataMatrix = habMatrix  # We can actually use python's pointer thing to our advantage here: dataMatrix will update with habMatrix
         self.dataInst.badTrials = []
         self.dataInst.habDataCompiled['D'] = [0] * 14
         self.dataInst.stimPres = True  # Temporary, so it doesn't try to play the end-hab sound.
@@ -1237,23 +1234,10 @@ class TestDataFunc(object):
 
 
         self.dataInst.dataRec(habOn1_2, habOff1_2, 4, 'D2.C', habOn2_2, habOff2_2, 'movie1.mov')
-        # habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-        #                   'condLabel': 'dataTest', 'trial': 4, 'GNG': 1, 'trialType': 'D2.C', 'stimName': 'movie1.mov',
-        #                   'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
-        #                   'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
-        #                   'numOffB': 2})
-
         self.dataInst.habDataCompiled['D'][self.dataInst.habCount['D']] += habMatrix[-1]['sumOnA']  # 1, 5
         self.dataInst.habCount['D'] = 2
 
         assert self.dataInst.checkStop('D') == False
-
-
-        # habMatrix.append({'sNum': 99, 'sID': 'TEST', 'months': 5, 'days': 15, 'sex': 'm', 'cond': 'dataTest',
-        #                   'condLabel': 'dataTest', 'trial': 5, 'GNG': 1, 'trialType': 'D3.C', 'stimName': 'movie1.mov',
-        #                   'habCrit': 0, 'sumOnA': 5.0, 'numOnA': 2, 'sumOffA': 3.5,
-        #                   'numOffA': 2, 'sumOnB': 3.0, 'numOnB': 2, 'sumOffB': 3.5,
-        #                   'numOffB': 2})
 
         self.dataInst.habDataCompiled['D'][self.dataInst.habCount['D']] += habMatrix[-1]['sumOnA']  # 2, 5
         self.dataInst.habCount['D'] = 3
@@ -1263,9 +1247,9 @@ class TestDataFunc(object):
         assert self.dataInst.habCount[blockName] >= self.dataInst.habSetWhen[blockName] + self.dataInst.blockList[blockName]['metCritWindow'] - 1
 
         targetTrials = []
-        for j in range(1, self.dataInst.habCount[blockName] + 1):
+        for j in range(0, self.dataInst.habCount[blockName]):
             for q in range(0, len(self.dataInst.blockList[blockName]['calcHabOver'])):
-                matchName = blockName + str(j) + '.' + self.dataInst.blockList[blockName]['calcHabOver'][q]
+                matchName = blockName + str(j+1) + '.' + self.dataInst.blockList[blockName]['calcHabOver'][q]
                 for i in range(0, len(self.dataInst.dataMatrix)):
                     if self.dataInst.dataMatrix[i]['trialType'] == matchName:
                         targetTrials.append(self.dataInst.dataMatrix[i]['trial'])
