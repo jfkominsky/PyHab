@@ -1740,19 +1740,20 @@ class PyHab:
                 onArray2.append(tempGazeArray2)
                 sumOn2 = sumOn2 + onDur2
             movieStatus = self.dispTrial(localType, disMovie) # Normally there would be something for "end on movie end" here but that's not an option
-            if endFlag and self.minDur[localType] <= core.getTime() - startTrial: # However, minimum duration still applies.
-                runTrial = False
-                endTrial = core.getTime() - startTrial
-                if gazeOn:
-                    onDur = endTrial - startOn
-                    tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOn,
-                                     'endTime': endTrial, 'duration': onDur}
-                    onArray.append(tempGazeArray)
-                else:
-                    offDur = endTrial - startOff
-                    tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOff,
-                                     'endTime': endTrial, 'duration': offDur}
-                    offArray.append(tempGazeArray)
+            if endFlag:
+                if self.minDur[localType] <= core.getTime() - startTrial: # However, minimum duration still applies.
+                    runTrial = False
+                    endTrial = core.getTime() - startTrial
+                    if gazeOn:
+                        onDur = endTrial - startOn
+                        tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOn,
+                                         'endTime': endTrial, 'duration': onDur}
+                        onArray.append(tempGazeArray)
+                    else:
+                        offDur = endTrial - startOff
+                        tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOff,
+                                         'endTime': endTrial, 'duration': offDur}
+                        offArray.append(tempGazeArray)
         if gazeOn2:
             onDur2 = endTrial - startOn2
             tempGazeArray2 = {'trial':number, 'trialType':dataType, 'startTime':startOn2, 'endTime':endTrial, 'duration':onDur2}
