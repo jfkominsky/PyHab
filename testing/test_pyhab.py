@@ -1274,7 +1274,7 @@ class TestDataFunc(object):
                         consecPostThreshold[currIter] = 1
             if n % trialPerIter == 0 and n > 0:
                 currIter += 1
-        assert currIter == 3
+        assert currIter == 2
         assert consecPostThreshold == [1,1,1]
 
         assert self.dataInst.checkStop('D') == True

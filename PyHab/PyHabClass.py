@@ -610,7 +610,7 @@ class PyHab:
                     for q in range(0, len(self.blockList[blockName]['calcHabOver'])):
                         matchName = blockName + str(j) + '.' + self.blockList[blockName]['calcHabOver'][q]
                         targetTrialNames.append(matchName)
-                        # find all indexes in ActualTrialOrder with that name. Use i+1 to get the trial NUMBER
+                # find all indexes in dataMatrix with that name, and extract trial numbers for matching w/ verbose.
                 for i in range(0, len(self.dataMatrix)):
                     if self.dataMatrix[i]['trialType'] in targetTrialNames:
                         targetTrials.append(self.dataMatrix[i]['trial'])
