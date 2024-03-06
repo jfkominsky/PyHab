@@ -125,6 +125,11 @@ class PyHab:
             self.maxOn = eval(settingsDict['maxOn'])
         except:
             self.maxOn = {}
+        # new setting for 0.10.7
+        try:
+            self.minDur = eval(settingsDict['minDur'])
+        except:
+            self.minDur = {}
 
         # ORDER OF PRESENTATION
         # Recommend you make sure repetitions of each trial type is a multiple of the list length, if you want even presentation
@@ -1456,8 +1461,6 @@ class PyHab:
         2 = "None", plays to max duration no matter what.
         3 = "Either/or", as standard but with "or" instead of "and". Whichever comes first.
 
-        TODO: Minimum duration independent of on-time.
-
         :param number: Trial number
         :type number: int
         :param ttype: Trial type - the full expanded one with block hierarchy and hab trial info included.
@@ -1554,7 +1557,7 @@ class PyHab:
             elif core.getTime() - startTrial >= .5 and self.keyboard[self.key.S] and '*' not in ttype:
                 # New feature: End trial and go forward manually. Disabled for hab trials and meta-trials.
                 # Disabled for the first half-second to stop you from skipping through multiple auto-advancing trials
-                if localType in self.movieEnd:
+                if localType in self.minDur.keys(): # Since "movieEnd" does nothing here, better to just use this always.
                     endFlag = True
                 else:
                     runTrial = False
@@ -1591,7 +1594,7 @@ class PyHab:
                 ttype = 4  # to force an immediate quit.
             # Now for the non-abort states.
             elif core.getTime() - startTrial >= self.maxDur[localType] + maxDurAdd and not endFlag:  # reached max trial duration
-                if localType in self.movieEnd:
+                if localType in self.minDur.keys():
                     endFlag = True
                 else:
                     runTrial = False
@@ -1636,7 +1639,7 @@ class PyHab:
 
                 if endCondMet:
                     # if they have previously looked for at least minOn and now looked away for maxOff continuous sec
-                    if localType in self.movieEnd and not endNow:
+                    if localType in self.minDur.keys() and not endNow:
                         endFlag = True
                     else:
                         runTrial = False
@@ -1682,7 +1685,7 @@ class PyHab:
                 nowOn = core.getTime() - startTrial
                 # the argument for oncheck accounts for the current gaze-on, if we aren't using duration mode.
                 if self.playThrough[localType] in [1, 3] and onDuration(adds=nowOn-startOn) > self.minOn[localType] and not endFlag:  # For trial types where the only crit is min-on.
-                    if localType in self.movieEnd and not endNow:
+                    if localType in self.minDur.keys() and not endNow:
                         endFlag = True
                     else:
                         runTrial = False
@@ -1696,7 +1699,7 @@ class PyHab:
                         onArray.append(tempGazeArray)
                 # New "max-on" criterion, which is only used in combination with the "normal" minon/maxoff criterion. Only needs testing here.
                 elif self.playThrough[localType] == 4 and onDuration(adds=nowOn - startOn) > self.maxOn[localType] and not endFlag:
-                    if localType in self.movieEnd and not endNow:
+                    if localType in self.minDur.keys() and not endNow:
                         endFlag = True
                     else:
                         runTrial = False
@@ -1737,6 +1740,19 @@ class PyHab:
                 onArray2.append(tempGazeArray2)
                 sumOn2 = sumOn2 + onDur2
             movieStatus = self.dispTrial(localType, disMovie) # Normally there would be something for "end on movie end" here but that's not an option
+            if endFlag and self.minDur[localType] <= core.getTime() - startTrial: # However, minimum duration still applies.
+                runTrial = False
+                endTrial = core.getTime() - startTrial
+                if gazeOn:
+                    onDur = endTrial - startOn
+                    tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOn,
+                                     'endTime': endTrial, 'duration': onDur}
+                    onArray.append(tempGazeArray)
+                else:
+                    offDur = endTrial - startOff
+                    tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOff,
+                                     'endTime': endTrial, 'duration': offDur}
+                    offArray.append(tempGazeArray)
         if gazeOn2:
             onDur2 = endTrial - startOn2
             tempGazeArray2 = {'trial':number, 'trialType':dataType, 'startTime':startOn2, 'endTime':endTrial, 'duration':onDur2}

@@ -35,6 +35,7 @@ class PyHabBuilder:
                                                         'prefix': 'PyHabExperiment',
                                                         'dataloc':'data'+self.dirMarker,
                                                         'maxDur': {},
+                                                        'minDur': {}, # Added in 0.10.7
                                                         'playThrough': {},
                                                         'movieEnd': [],
                                                         'maxOff': {},
@@ -100,19 +101,22 @@ class PyHabBuilder:
             if 'blockSum' not in self.settings.keys():
                 self.settings['blockSum'] = '1'
                 self.settings['trialSum'] = '1'
-            if 'midAG' not in self.settings:
+            if 'midAG' not in self.settings.keys():
                 self.settings['midAG'] = '{}'
                 self.settings['dynamicPause'] = '[]'
-            if 'autoRedo' not in self.settings:
+            if 'autoRedo' not in self.settings.keys():
                 self.settings['durationCriterion'] = '[]'
                 self.settings['autoRedo'] = '[]'
                 self.settings['onTimeDeadline'] = '{}'
                 self.settings['durationInclude'] = '1'
+            if 'minDur' not in self.settings.keys():
+                self.settings['minDur'] = '{}'
+
             # Settings requiring evaluation to get sensible values. Mostly dicts.
             evalList = ['dataColumns','blockSum','trialSum','maxDur','condList','baseCondList','movieEnd','playThrough',
                         'trialOrder','stimNames', 'stimList', 'ISI', 'maxOff','minOn','durationCriterion','autoRedo',
                         'onTimeDeadline','autoAdvance','playAttnGetter','attnGetterList','trialTypes', 'nextFlash',
-                        'blockList', 'dynamicPause','midAG','screenWidth','screenHeight', 'maxOn',
+                        'blockList', 'dynamicPause','midAG','screenWidth','screenHeight', 'maxOn', 'minDur',
                         'screenIndex','movieWidth','movieHeight', 'durationInclude']  # in 0.9, this becomes necessary.
             for i in evalList:
                 self.settings[i] = eval(self.settings[i])
@@ -881,7 +885,7 @@ class PyHabBuilder:
                                 warnDlg.show()
                             if self.advTrialSetup not in self.buttonList['functions']:
                                 advTrialButton = visual.Rect(self.win, width=.3, height=.5 * (.2 / self.aspect),
-                                                             pos=[0, -.65], fillColor="white")
+                                                             pos=[.8, -.65], fillColor="white")
                                 advTrialText = visual.TextStim(self.win, text="Advanced trial \nsettings",
                                                                color="black",
                                                                height=advTrialButton.height * .3, alignHoriz='center',
@@ -897,19 +901,21 @@ class PyHabBuilder:
         """
         A dialog for advanced trial settings mostly having to do with attention-getters and stimulus presentation
 
-        0/-7 = cutoff attention-getter on gaze-on? T/F [if trial has an AG - not always present]
+        0/-8 = minimum duration regardless of gaze behavior
 
-        1/-6 = cutoff on-time: How long do they have to look to cut off presentation? [if trial has an AG - not always present]
+        1/-7 = cutoff attention-getter on gaze-on? T/F [if trial has an AG - not always present]
 
-        2/-5 = Pause stimulus presentation when infant is not looking at screen?
+        2/-6 = cutoff on-time: How long do they have to look to cut off presentation? [if trial has an AG - not always present]
 
-        3/-4 = Mid-trial AG: Play an attention-getter if infant looks away mid-trial?
+        3/-5 = Pause stimulus presentation when infant is not looking at screen?
 
-        4/-3 = mid-trial AG trigger: Minimum time to trigger mid-trial AG
+        4/-4 = Mid-trial AG: Play an attention-getter if infant looks away mid-trial?
 
-        5/-2 = mid-trial AG cutoff: Stop mid-trial AG on gaze-on?
+        5/-3 = mid-trial AG trigger: Minimum time to trigger mid-trial AG
 
-        6/-1 = mid-trial AG cutoff ontime
+        6/-2 = mid-trial AG cutoff: Stop mid-trial AG on gaze-on?
+
+        7/-1 = mid-trial AG cutoff ontime
 
 
 
@@ -925,6 +931,11 @@ class PyHabBuilder:
 
         adTypeDlg = gui.Dlg("Advanced trial settings")
         adTypeDlg.addText("Advanced trial settings for trial type " + trialType)
+        if trialType in self.settings['minDur'].keys():
+            val1 = self.settings['minDur'][trialType]
+        else:
+            val1 = 0.0
+        adTypeDlg.addField("Minimum trial duration (independent of gaze behavior)", val1)
         if trialType in self.settings['playAttnGetter']:
             if self.settings['playAttnGetter'][trialType]['cutoff'] in [1, '1', True, 'True']:
                 chz1 = True
@@ -977,6 +988,16 @@ class PyHabBuilder:
         adTypeInfo = adTypeDlg.show()
         if adTypeDlg.OK:
             fail = [] # amass invalid inputs, save the rest
+            if not isinstance(adTypeInfo[0], float) and not isinstance(adTypeInfo[0], int):
+                try:
+                    eval(adTypeInfo[0])
+                except:
+                    fail.append("Number expected for minimum duration, got text instead!")
+            else:
+                if adTypeInfo[0] > 0.0:
+                    self.settings['minDur'][trialType] = adTypeInfo[0]
+                elif trialType in self.settings['minDur'].keys() and adTypeInfo[0] <= 0.0:
+                    self.settings['minDur'].pop(trialType, None)
             if trialType in self.settings['playAttnGetter']:
                 if adTypeInfo[len(adTypeInfo)-7] in [True, 1, 'True', '1']:
                     self.settings['playAttnGetter'][trialType]['cutoff'] = 1

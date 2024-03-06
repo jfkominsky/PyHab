@@ -35,6 +35,7 @@ class PyHabBuilder:
                                                         'prefix': 'PyHabExperiment',
                                                         'dataloc':'data'+self.dirMarker,
                                                         'maxDur': {},
+                                                        'minDur': {},  # Added in 0.10.7
                                                         'playThrough': {},
                                                         'movieEnd': [],
                                                         'maxOff': {},
@@ -102,15 +103,15 @@ class PyHabBuilder:
             if 'blockSum' not in self.settings.keys():
                 self.settings['blockSum'] = '1'
                 self.settings['trialSum'] = '1'
-            if 'midAG' not in self.settings:
+            if 'midAG' not in self.settings.keys():
                 self.settings['midAG'] = '{}'
                 self.settings['dynamicPause'] = '[]'
-            if 'autoRedo' not in self.settings:
+            if 'autoRedo' not in self.settings.keys():
                 self.settings['durationCriterion'] = '[]'
                 self.settings['autoRedo'] = '[]'
                 self.settings['onTimeDeadline'] = '{}'
                 self.settings['durationInclude'] = '1'
-            if 'loadSep' not in self.settings:
+            if 'loadSep' not in self.settings.keys():
                 self.settings['loadSep'] = '0'
             if 'hppStimScrOnly' not in self.settings.keys():
                 self.settings['hppStimScrOnly'] = '[]'
@@ -118,8 +119,10 @@ class PyHabBuilder:
                 self.settings['maxOn'] = '{}'
             if 'eyetracker' not in self.settings.keys():
                 self.settings['eyetracker'] = '0'
+            if 'minDur' not in self.settings.keys():
+                self.settings['minDur'] = '{}'
             # Settings requiring evaluation to get sensible values. Mostly dicts.
-            evalList = ['dataColumns','blockSum','trialSum','maxDur','condList','baseCondList','movieEnd','playThrough',
+            evalList = ['dataColumns','blockSum','trialSum','maxDur','minDur','condList','baseCondList','movieEnd','playThrough',
                         'trialOrder','stimNames', 'stimList', 'ISI', 'maxOff','minOn', 'maxOn','durationCriterion','autoRedo',
                         'onTimeDeadline','autoAdvance','playAttnGetter','attnGetterList','trialTypes', 'nextFlash',
                         'blockList', 'dynamicPause','midAG','screenWidth','screenHeight','screenIndex','movieWidth',
@@ -906,21 +909,24 @@ class PyHabBuilder:
 
         TODO: Minimum trial duration independent of looking time.
 
-        0/-8 = cutoff attention-getter on gaze-on? T/F [if trial has an AG - not always present]
 
-        1/-7 = cutoff on-time: How long do they have to look to cut off presentation? [if trial has an AG - not always present]
+        0/-9 = Minimum duration independent of anything else.
 
-        2/-6 = Pause stimulus presentation when infant is not looking at screen?
+        1/-8 = cutoff attention-getter on gaze-on? T/F [if trial has an AG - not always present]
 
-        3/-5 = Mid-trial AG: Play an attention-getter if infant looks away mid-trial?
+        2/-7 = cutoff on-time: How long do they have to look to cut off presentation? [if trial has an AG - not always present]
 
-        4/-4 = mid-trial AG trigger: Minimum time to trigger mid-trial AG
+        3/-6 = Pause stimulus presentation when infant is not looking at screen?
 
-        5/-3 = mid-trial AG cutoff: Stop mid-trial AG on gaze-on?
+        4/-5 = Mid-trial AG: Play an attention-getter if infant looks away mid-trial?
 
-        6/-2 = mid-trial AG cutoff ontime
+        5/-4 = mid-trial AG trigger: Minimum time to trigger mid-trial AG
 
-        7/-1 = HPP ONLY: Only count gaze-on to stimulus-presenting screen? T/F, casts to hppStimScrOnly
+        6/-3 = mid-trial AG cutoff: Stop mid-trial AG on gaze-on?
+
+        7/-2 = mid-trial AG cutoff ontime
+
+        8/-1 = HPP ONLY: Only count gaze-on to stimulus-presenting screen? T/F, casts to hppStimScrOnly
 
 
 
@@ -936,6 +942,12 @@ class PyHabBuilder:
 
         adTypeDlg = gui.Dlg("Advanced trial settings")
         adTypeDlg.addText("Advanced trial settings for trial type " + trialType)
+        if trialType in self.settings['minDur'].keys():
+            val1 = self.settings['minDur'][trialType]
+        else:
+            val1 = 0.0
+        adTypeDlg.addField("Minimum trial duration (independent of gaze behavior)", val1)
+
         if trialType in self.settings['playAttnGetter']:
             if self.settings['playAttnGetter'][trialType]['cutoff'] in [1, '1', True, 'True']:
                 chz1 = True
@@ -994,12 +1006,23 @@ class PyHabBuilder:
         adTypeInfo = adTypeDlg.show()
         if adTypeDlg.OK:
             fail = [] # amass invalid inputs, save the rest
+
+            if not isinstance(adTypeInfo[0], float) and not isinstance(adTypeInfo[0], int):
+                try:
+                    eval(adTypeInfo[0])
+                except:
+                    fail.append("Number expected for minimum duration, got text instead!")
+            else:
+                if adTypeInfo[0] > 0.0:
+                    self.settings['minDur'][trialType] = adTypeInfo[0]
+                elif trialType in self.settings['minDur'].keys() and adTypeInfo[0] <= 0.0:
+                    self.settings['minDur'].pop(trialType, None)
             if trialType in self.settings['playAttnGetter']:
                 if adTypeInfo[len(adTypeInfo)-8] in [True, 1, 'True', '1']:
                     self.settings['playAttnGetter'][trialType]['cutoff'] = 1
                 else:
                     self.settings['playAttnGetter'][trialType]['cutoff'] = 0
-                if not isinstance(adTypeInfo[len(adTypeInfo)-7], float) and not isinstance(adTypeInfo[len(adTypeInfo)-6], int):
+                if not isinstance(adTypeInfo[len(adTypeInfo)-7], float) and not isinstance(adTypeInfo[len(adTypeInfo)-7], int):
                     try:
                         eval(adTypeInfo[len(adTypeInfo)-7])
                     except:
