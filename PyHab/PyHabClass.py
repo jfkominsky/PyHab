@@ -606,7 +606,7 @@ class PyHab:
                 # are possible.
                 targetTrials = []
                 targetTrialNames = [] # Done to reduce number of iterations through whole data matrix.
-                for j in range(1, self.habCount[blockName]+1):
+                for j in range(habIndex, self.habCount[blockName]+1):
                     for q in range(0, len(self.blockList[blockName]['calcHabOver'])):
                         matchName = blockName + str(j) + '.' + self.blockList[blockName]['calcHabOver'][q]
                         targetTrialNames.append(matchName)
@@ -615,13 +615,11 @@ class PyHab:
                     if self.dataMatrix[i]['trialType'] in targetTrialNames:
                         targetTrials.append(self.dataMatrix[i]['trial'])
 
-                consecPostThreshold = []
-                for k in range(0, habIndex):
-                    consecPostThreshold.append(0) # make as long as the number of trials we need to check?
+                consecPostThreshold = [0 for x in range(self.blockList[blockName]['metCritWindow'])]
                 # There is a complication here because of the fact that this cares about whether there is an off-time of
                 # sufficient length within a given iteration of the whole hab block, not just each individual trial.
                 # However the number of trials that need to be considered per block is always going to be the same.
-                trialPerIter = len(targetTrials)/habIndex # Typically this will be 1
+                trialPerIter = len(targetTrials)/self.blockList[blockName]['metCritWindow'] # Typically this will be 1
                 currIter = 0
                 for n in range(0, len(targetTrials)):
                     for i in range(0, len(self.verbDatList['verboseOff'])):
