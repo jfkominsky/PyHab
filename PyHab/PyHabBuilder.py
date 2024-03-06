@@ -3746,7 +3746,7 @@ class PyHabBuilder:
         """
 
         hDlg = gui.Dlg(title="Habituation block settings")
-        windowtypes = ['First', 'Peak', 'Max', 'Last', 'Threshold']
+        windowtypes = ['First', 'Peak', 'Max', 'Last', 'Threshold', 'FixedTrialLength']
         winchz = [x for x in windowtypes if x != lastSet['setCritType']]
         winchz.insert(0, lastSet['setCritType'])
         if lastSet['metCritStatic'] == 'Fixed':
@@ -3761,13 +3761,13 @@ class PyHabBuilder:
 
         hDlg.addField("Habituation on/off (uncheck to turn off)", True) # Always defaults to true if you open this menu.
         hDlg.addField("Max number of habituation trials (if criterion not met)", lastSet['maxHabTrials'])
-        hDlg.addField("Number of trials to sum looking time over when making hab criterion", lastSet['setCritWindow'])
-        hDlg.addField("Number to divide sum of looking time by when computing criterion", lastSet['setCritDivisor'])
-        hDlg.addField("Criterion window First trials, first trials w/total above Threshold, dynamic Peak contiguous window, or the set of hab trials with Max looking time?", choices=winchz)
-        hDlg.addField("Threshold value to use if 'Threshold' selected above (ignored otherwise)", lastSet['habThresh'])
+        hDlg.addField("Number of trials to sum looking time over when making hab criterion (for FixedTrialLength, ignore this # of trials", lastSet['setCritWindow'])
+        hDlg.addField("Number to divide sum of looking time by when computing criterion (ignored for FixedTrialLength)", lastSet['setCritDivisor'])
+        hDlg.addField("Criterion window First trials, first trials w/total above Threshold, dynamic Peak contiguous window, or the set of hab trials with Max looking time? Or alternate mode for fixed trial lengths?", choices=winchz)
+        hDlg.addField("Threshold value to use if 'Threshold' selected above, or the consecutive off-time for 'FixedTrialLength' mode", lastSet['habThresh'])
         hDlg.addField("Maximum number of trials to SET habituation criterion if 'Threshold' selected (ignored otherwise)", lastSet['maxHabSet'])
         hDlg.addField("Number of trials to sum looking time over when determining whether criterion has been met", lastSet['metCritWindow'])
-        hDlg.addField("Number to divide sum of looking time by when determining whether criterion has been met", lastSet['metCritDivisor'])
+        hDlg.addField("Number to divide sum of looking time by when determining whether criterion has been met (ignored for FixedTrialLength)", lastSet['metCritDivisor'])
         hDlg.addField("Evaluate criterion over moving window or fixed windows?", choices=evalChz)
         hDlg.addField("Compute habituation over total trial duration instead of on-time?", byDur)
         if len(trialList) > 1: # If there's only one trial, then it's automatically that trial!

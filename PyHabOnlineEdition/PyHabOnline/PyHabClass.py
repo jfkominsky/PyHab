@@ -530,8 +530,12 @@ class PyHab:
         :return: True if hab criteria have been met, False otherwise
         :rtype: bool
         """
-
-        if self.habCount[blockName] == self.blockList[blockName]['setCritWindow'] and self.blockList[blockName]['setCritType'] != 'Threshold':  # time to set the hab criterion.
+        if self.blockList[blockName]['setCritType'] == 'FixedTrialLength' and self.habSetWhen[blockName] == -1:
+            # A slightly special case, so it gets an internal condition
+            if self.habCount[blockName] >= self.blockList[blockName]['setCritWindow']: #>= b/c it can be 0. Using this to set the minimum trials essentially.
+                self.habCrit[blockName] = self.blockList[blockName]['habThresh'] # Consecutive look-away time.
+                self.habSetWhen[blockName] = self.habCount[blockName]
+        elif self.habCount[blockName] == self.blockList[blockName]['setCritWindow'] and self.blockList[blockName]['setCritType'] != 'Threshold':  # time to set the hab criterion.
             # This condition sets the initial criterion for peak/max, first, and last. Threshold needs more.
             sumOnTimes = 0
             for j in range(0,self.habCount[blockName]):
@@ -587,7 +591,52 @@ class PyHab:
             # Not problem per se. Essentially, trials that set the criterion are never included when evaluating it.
             # Fixed window is the only thing that ignores habsetwhen.
             # Last needs to ignore HabSetWhen, or rather, cannot wait MetCritWindow trials past when it is set.
-            if self.habCount[blockName] < self.habSetWhen[blockName] + self.blockList[blockName]['metCritWindow'] and self.blockList[blockName]['metCritStatic'] == 'Moving' and self.blockList[blockName]['setCritType'] != 'Last': # Was the hab set "late" and are we too early as a result
+            # Problem: Fixed window, peak, and max as relates to habsetwhen....
+            # Not problem per se. Essentially, trials that set the criterion are never included when evaluating it.
+            # Fixed window is the only thing that ignores habsetwhen.
+            # Last needs to ignore HabSetWhen, or rather, cannot wait MetCritWindow trials past when it is set.
+            if self.blockList[blockName]['setCritType'] == 'FixedTrialLength' and self.habCount[blockName] >= \
+                    self.habSetWhen[blockName] + self.blockList[blockName]['metCritWindow'] - 1:  # The -1 is necessary
+                # Check for consecutive trials with consecutive off-time greater than the criterion.
+                if (self.blockList[blockName]['metCritStatic'] == 'Moving') or (
+                        self.habCount[blockName] - self.blockList[blockName]['setCritWindow']) % \
+                        self.blockList[blockName]['metCritWindow'] == 0:
+                    habIndex = self.habCount[blockName] - self.blockList[blockName]['metCritWindow']
+                    # Problem, this requires us to dig into the verbose data, which uses the actual trial number, not the hab counter!
+                    # Means we need to pull just the trials that are of the right type and figure out their actual trial names,
+                    # and make a list of those. Needs to be trial nos, not just names, b/c multiple repetitions w/in a block
+                    # are possible.
+                    targetTrials = []
+                    targetTrialNames = []  # Done to reduce number of iterations through whole data matrix.
+                    for j in range(habIndex, self.habCount[blockName] + 1):
+                        for q in range(0, len(self.blockList[blockName]['calcHabOver'])):
+                            matchName = blockName + str(j) + '.' + self.blockList[blockName]['calcHabOver'][q]
+                            targetTrialNames.append(matchName)
+                    # find all indexes in dataMatrix with that name, and extract trial numbers for matching w/ verbose.
+                    for i in range(0, len(self.dataMatrix)):
+                        if self.dataMatrix[i]['trialType'] in targetTrialNames:
+                            targetTrials.append(self.dataMatrix[i]['trial'])
+
+                    consecPostThreshold = [0 for x in range(self.blockList[blockName]['metCritWindow'])]
+                    # There is a complication here because of the fact that this cares about whether there is an off-time of
+                    # sufficient length within a given iteration of the whole hab block, not just each individual trial.
+                    # However the number of trials that need to be considered per block is always going to be the same.
+                    trialPerIter = len(targetTrials) / self.blockList[blockName][
+                        'metCritWindow']  # Typically this will be 1
+                    currIter = 0
+                    for n in range(0, len(targetTrials)):
+                        if n % trialPerIter == 0 and n > 0:  # must be updated first to hit the correct trial.
+                            currIter += 1
+                        for i in range(0, len(self.verbDatList['verboseOff'])):
+                            if self.verbDatList['verboseOff'][i]['trial'] == targetTrials[n]:
+                                if self.verbDatList['verboseOff'][i]['duration'] >= self.habCrit[blockName]:
+                                    consecPostThreshold[currIter] = 1  # Doesn't matter if it's set redundantly.
+
+                    if 0 in consecPostThreshold:  # Works
+                        return False
+                    else:
+                        return True
+            elif self.habCount[blockName] < self.habSetWhen[blockName] + self.blockList[blockName]['metCritWindow'] and self.blockList[blockName]['metCritStatic'] == 'Moving' and self.blockList[blockName]['setCritType'] != 'Last': # Was the hab set "late" and are we too early as a result
                 return False
             else:
                 sumOnTimes = 0
