@@ -637,6 +637,7 @@ class PyHab:
                     if 0 in consecPostThreshold: # Works
                         return False
                     else:
+                        self.habMetWhen[blockName] = self.habCount[blockName]
                         return True
             elif self.habCount[blockName] < self.habSetWhen[blockName] + self.blockList[blockName]['metCritWindow'] and self.blockList[blockName]['metCritStatic'] == 'Moving' and self.blockList[blockName]['setCritType'] != 'Last': # Was the hab set "late" and are we too early as a result
                 return False

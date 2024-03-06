@@ -600,12 +600,9 @@ class PyHab:
             # Not problem per se. Essentially, trials that set the criterion are never included when evaluating it.
             # Fixed window is the only thing that ignores habsetwhen.
             # Last needs to ignore HabSetWhen, or rather, cannot wait MetCritWindow trials past when it is set.
-            if self.blockList[blockName]['setCritType'] == 'FixedTrialLength' and self.habCount[blockName] >= \
-                    self.habSetWhen[blockName] + self.blockList[blockName]['metCritWindow'] - 1:  # The -1 is necessary
+            if self.blockList[blockName]['setCritType'] == 'FixedTrialLength' and self.habCount[blockName] >= self.habSetWhen[blockName] + self.blockList[blockName]['metCritWindow'] - 1:  # The -1 is necessary
                 # Check for consecutive trials with consecutive off-time greater than the criterion.
-                if (self.blockList[blockName]['metCritStatic'] == 'Moving') or (
-                        self.habCount[blockName] - self.blockList[blockName]['setCritWindow']) % \
-                        self.blockList[blockName]['metCritWindow'] == 0:
+                if (self.blockList[blockName]['metCritStatic'] == 'Moving') or (self.habCount[blockName] - self.blockList[blockName]['setCritWindow']) % self.blockList[blockName]['metCritWindow'] == 0:
                     habIndex = self.habCount[blockName] - self.blockList[blockName]['metCritWindow']
                     # Problem, this requires us to dig into the verbose data, which uses the actual trial number, not the hab counter!
                     # Means we need to pull just the trials that are of the right type and figure out their actual trial names,
@@ -640,6 +637,7 @@ class PyHab:
                     if 0 in consecPostThreshold:  # Works
                         return False
                     else:
+                        self.habMetWhen[blockName] = self.habCount[blockName]
                         return True
             elif self.habCount[blockName] < self.habSetWhen[blockName] + self.blockList[blockName]['metCritWindow'] and self.blockList[blockName]['metCritStatic'] == 'Moving' and self.blockList[blockName]['setCritType'] != 'Last': # Was the hab set "late" and are we too early as a result
                 return False
