@@ -3596,7 +3596,7 @@ class PyHabBuilder:
 
         hDlg.addField("Habituation on/off (uncheck to turn off)", True) # Always defaults to true if you open this menu.
         hDlg.addField("Max number of habituation trials (if criterion not met)", lastSet['maxHabTrials'])
-        hDlg.addField("Number of trials to sum looking time over when making hab criterion (for FixedTrialLength, ignore this # of trials", lastSet['setCritWindow'])
+        hDlg.addField("Number of trials to sum looking time over when making hab criterion (for FixedTrialLength, ignores first N trials)", lastSet['setCritWindow'])
         hDlg.addField("Number to divide sum of looking time by when computing criterion (ignored for FixedTrialLength)", lastSet['setCritDivisor'])
         hDlg.addField("Criterion window First trials, first trials w/total above Threshold, dynamic Peak contiguous window, or the set of hab trials with Max looking time? Or alternate mode for fixed trial lengths?", choices=winchz)
         hDlg.addField("Threshold value to use if 'Threshold' selected above, or the consecutive off-time for 'FixedTrialLength' mode", lastSet['habThresh'])
