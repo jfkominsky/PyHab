@@ -1247,13 +1247,35 @@ class TestDataFunc(object):
         assert self.dataInst.habCount[blockName] >= self.dataInst.habSetWhen[blockName] + self.dataInst.blockList[blockName]['metCritWindow'] - 1
 
         targetTrials = []
+        targetTrialNames = []
         for j in range(0, self.dataInst.habCount[blockName]):
             for q in range(0, len(self.dataInst.blockList[blockName]['calcHabOver'])):
                 matchName = blockName + str(j+1) + '.' + self.dataInst.blockList[blockName]['calcHabOver'][q]
-                for i in range(0, len(self.dataInst.dataMatrix)):
-                    if self.dataInst.dataMatrix[i]['trialType'] == matchName:
-                        targetTrials.append(self.dataInst.dataMatrix[i]['trial'])
-        assert targetTrials == [3,4,5]
+                targetTrialNames.append(matchName)
+        for i in range(0, len(self.dataInst.dataMatrix)):
+            if self.dataInst.dataMatrix[i]['trialType'] in targetTrialNames:
+                targetTrials.append(self.dataInst.dataMatrix[i]['trial'])
+
+        assert targetTrials == [3,4,5] # This now works
+
+        habIndex = self.dataInst.habCount[blockName] - self.dataInst.blockList[blockName]['metCritWindow']
+        consecPostThreshold = []
+        for k in range(0, habIndex):
+            consecPostThreshold.append(0)
+        assert len(consecPostThreshold) == 3
+        trialPerIter = len(targetTrials) / habIndex  # Typically this will be 1
+        assert trialPerIter == 1
+        currIter = 0
+
+        for n in range(0, len(targetTrials)):
+            for i in range(0, len(self.dataInst.verbDatList['verboseOff'])):
+                if self.dataInst.verbDatList['verboseOff'][i]['trial'] == targetTrials[n]:
+                    if self.dataInst.verbDatList['verboseOff'][i]['duration'] >= self.dataInst.habCrit[blockName]:
+                        consecPostThreshold[currIter] = 1
+            if n % trialPerIter == 0 and n > 0:
+                currIter += 1
+        assert currIter == 3
+        assert consecPostThreshold == [1,1,1] 
 
         assert self.dataInst.checkStop('D') == True
 

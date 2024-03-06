@@ -605,13 +605,16 @@ class PyHab:
                 # and make a list of those. Needs to be trial nos, not just names, b/c multiple repetitions w/in a block
                 # are possible.
                 targetTrials = []
+                targetTrialNames = [] # Done to reduce number of iterations through whole data matrix.
                 for j in range(1, self.habCount[blockName]+1):
                     for q in range(0, len(self.blockList[blockName]['calcHabOver'])):
                         matchName = blockName + str(j) + '.' + self.blockList[blockName]['calcHabOver'][q]
+                        targetTrialNames.append(matchName)
                         # find all indexes in ActualTrialOrder with that name. Use i+1 to get the trial NUMBER
-                        for i in range(0, len(self.dataMatrix)):
-                            if self.dataMatrix[i]['trialType'] == matchName:
-                                targetTrials.append(self.dataMatrix[i]['trial'])
+                for i in range(0, len(self.dataMatrix)):
+                    if self.dataMatrix[i]['trialType'] in targetTrialNames:
+                        targetTrials.append(self.dataMatrix[i]['trial'])
+
                 consecPostThreshold = []
                 for k in range(0, habIndex):
                     consecPostThreshold.append(0) # make as long as the number of trials we need to check?
