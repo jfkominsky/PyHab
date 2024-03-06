@@ -1268,12 +1268,12 @@ class TestDataFunc(object):
         currIter = 0
 
         for n in range(0, len(targetTrials)):
+            if n % trialPerIter == 0 and n > 0:
+                currIter += 1
             for i in range(0, len(self.dataInst.verbDatList['verboseOff'])):
                 if self.dataInst.verbDatList['verboseOff'][i]['trial'] == targetTrials[n]:
                     if self.dataInst.verbDatList['verboseOff'][i]['duration'] >= self.dataInst.habCrit[blockName]:
                         consecPostThreshold[currIter] = 1
-            if n % trialPerIter == 0 and n > 0:
-                currIter += 1
         assert currIter == 2
         assert consecPostThreshold == [1,1,1]
 

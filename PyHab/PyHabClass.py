@@ -622,12 +622,13 @@ class PyHab:
                 trialPerIter = len(targetTrials)/self.blockList[blockName]['metCritWindow'] # Typically this will be 1
                 currIter = 0
                 for n in range(0, len(targetTrials)):
+                    if n % trialPerIter == 0 and n > 0:
+                        currIter += 1
                     for i in range(0, len(self.verbDatList['verboseOff'])):
                         if self.verbDatList['verboseOff'][i]['trial'] == targetTrials[n]:
                             if self.verbDatList['verboseOff'][i]['duration'] >= self.habCrit[blockName]:
                                 consecPostThreshold[currIter] = 1
-                    if n % trialPerIter == 0 and n > 0:
-                        currIter += 1
+
 
                 if 0 in consecPostThreshold: # It's a slightly weird way to do this but I think it will work.
                     return False
