@@ -595,8 +595,6 @@ class PyHab:
             # Not problem per se. Essentially, trials that set the criterion are never included when evaluating it.
             # Fixed window is the only thing that ignores habsetwhen.
             # Last needs to ignore HabSetWhen, or rather, cannot wait MetCritWindow trials past when it is set.
-            if self.habCount[blockName] < self.habSetWhen[blockName] + self.blockList[blockName]['metCritWindow'] and self.blockList[blockName]['metCritStatic'] == 'Moving' and self.blockList[blockName]['setCritType'] != 'Last': # Was the hab set "late" and are we too early as a result
-                return False
             if self.blockList[blockName]['setCritType'] == 'FixedTrialLength' and self.habCount[blockName] >= self.habSetWhen[blockName] + self.blockList[blockName]['metCritWindow'] - 1: # The -1 is necessary
                 # Check for consecutive trials with consecutive off-time greater than the criterion.
                 habIndex = self.habCount[blockName] - self.blockList[blockName]['metCritWindow']
@@ -634,7 +632,9 @@ class PyHab:
                     return False
                 else:
                     return True
-
+            elif self.habCount[blockName] < self.habSetWhen[blockName] + self.blockList[blockName]['metCritWindow'] and self.blockList[blockName]['metCritStatic'] == 'Moving' and self.blockList[blockName]['setCritType'] != 'Last': # Was the hab set "late" and are we too early as a result
+                return False
+            
             else:
                 sumOnTimes = 0
                 index = self.habCount[blockName] - self.blockList[blockName]['metCritWindow']
