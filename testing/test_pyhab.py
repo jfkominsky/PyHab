@@ -1179,7 +1179,6 @@ class TestDataFunc(object):
         self.dataInst.habMetWhen[i] = -1
         self.dataInst.maxHabIndex[i] = 0
         self.dataInst.habDataCompiled[i] = [0] * self.dataInst.blockList['D']['maxHabTrials']
-        #self.dataInst.actualTrialOrder = ['A','B','D1.C','D2.C','D3.C','D4.C','D5.C','D6.C'] # Creating a fake actualTrialOrder to test new hab mode
 
         habMatrix = copy.deepcopy(self.testMatrix)
         self.dataInst.dataMatrix = habMatrix  # We can actually use python's pointer thing to our advantage here: dataMatrix will update with habMatrix
@@ -1279,7 +1278,157 @@ class TestDataFunc(object):
 
         assert self.dataInst.checkStop('D') == True
 
+    def test_fixedlength_complicated(self):
+        """
+        Testing the fixed trial length mode with a complex block that has three trials, two of which are
+        counted for the purpose of habituation.
 
+        :return:
+        :rtype:
+        """
+        self.dataInst.blockList = {'D': {'trialList': ['C','A','B'],
+                                         'habituation': 1,
+                                         'habByDuration': 0,
+                                         'maxHabTrials': 14,
+                                         'setCritWindow': 0, # From start of experiment
+                                         'setCritDivisor': 2.0,
+                                         'setCritType': 'FixedTrialLength',
+                                         'habThresh': 2.5, # 2.5 consec seconds look away
+                                         'maxHabSet': -1,
+                                         'metCritWindow': 3, # over 3 trials
+                                         'metCritDivisor': 1.0,
+                                         'metCritStatic': 'Moving',
+                                         'calcHabOver': ['C','B']}} # I can't imagine a real study like this but it's a strong test.
+
+        i = 'D'
+        # These are settings which would normally happen during init, but we are doing here b/c hab is added late.
+        self.dataInst.habCount[i] = 0
+        self.dataInst.habCrit[i] = 0
+        self.dataInst.habSetWhen[i] = -1
+        self.dataInst.habMetWhen[i] = -1
+        self.dataInst.maxHabIndex[i] = 0
+        self.dataInst.habDataCompiled[i] = [0] * self.dataInst.blockList['D']['maxHabTrials']
+
+        habMatrix = copy.deepcopy(self.testMatrix)
+        self.dataInst.dataMatrix = habMatrix  # We can actually use python's pointer thing to our advantage here: dataMatrix will update with habMatrix
+        # The main problem is that the relevant data are not from the hab matrix but from the verbose data in this case.
+        habOn1_1 = [{'trial': 3, 'trialType': 'D1.C', 'startTime': 0, 'endTime': 1.5, 'duration': 1.5},
+                    {'trial': 3, 'trialType': 'D1.C', 'startTime': 3.0, 'endTime': 4.5,
+                     'duration': 1.5}]
+        habOff1_1 = [{'trial': 3, 'trialType': 'D1.C', 'startTime': 1.5, 'endTime': 3.0, 'duration': 1.5},
+                           {'trial': 3, 'trialType': 'D1.C', 'startTime': 4.5, 'endTime': 5.5,
+                            'duration': 1.0}]
+        habOn1_2 = [{'trial': 4, 'trialType': 'D1.A', 'startTime': 0, 'endTime': 1.5, 'duration': 1.5},
+                    {'trial': 4, 'trialType': 'D1.A', 'startTime': 3.0, 'endTime': 4.5,
+                     'duration': 1.5}]
+        habOff1_2 = [{'trial': 4, 'trialType': 'D1.A', 'startTime': 1.5, 'endTime': 3.0, 'duration': 1.5},
+                     {'trial': 4, 'trialType': 'D1.A', 'startTime': 4.5, 'endTime': 7.5,
+                      'duration': 3.0}]
+        habOn1_3 = [{'trial': 5, 'trialType': 'D1.B', 'startTime': 0, 'endTime': 1.5, 'duration': 1.5},
+                    {'trial': 5, 'trialType': 'D1.B', 'startTime': 3.0, 'endTime': 4.5,
+                     'duration': 1.5}]
+        habOff1_3 = [{'trial': 5, 'trialType': 'D1.B', 'startTime': 1.5, 'endTime': 3.0, 'duration': 1.5},
+                     {'trial': 5, 'trialType': 'D1.B', 'startTime': 4.5, 'endTime': 5.5,
+                      'duration': 1.0}]
+        #No after this.
+        self.dataInst.dataRec(habOn1_1, habOff1_1, 3, 'D1.C', habOn1_1, habOff1_1, 'movie1.mov')
+        self.dataInst.habDataCompiled['D'][self.dataInst.habCount['D']] += habMatrix[-1]['sumOnA']  # 0, 5
+        self.dataInst.dataRec(habOn1_2, habOff1_2, 4, 'D1.A', habOn1_2, habOff1_2, 'movie1.mov')
+        self.dataInst.dataRec(habOn1_3, habOff1_3, 5, 'D1.B', habOn1_3, habOff1_3, 'movie1.mov')
+        self.dataInst.habDataCompiled['D'][self.dataInst.habCount['D']] += habMatrix[-1]['sumOnA']  # 0, 5
+
+        self.dataInst.badTrials = []
+        self.dataInst.habDataCompiled['D'] = [0] * 14
+        self.dataInst.stimPres = True  # Temporary, so it doesn't try to play the end-hab sound.
+        self.dataInst.habCount['D'] = 1
+
+        assert self.dataInst.checkStop('D') == False
+        assert self.dataInst.habCrit['D'] == 2.5
+        assert self.dataInst.habSetWhen['D'] == 1
+
+        habOn2_1 = [{'trial': 6, 'trialType': 'D1.C', 'startTime': 0, 'endTime': 1.5, 'duration': 1.5},
+                    {'trial': 6, 'trialType': 'D1.C', 'startTime': 3.0, 'endTime': 4.5,
+                     'duration': 1.5}]
+        habOff2_1 = [{'trial': 6, 'trialType': 'D1.C', 'startTime': 1.5, 'endTime': 3.0, 'duration': 1.5},
+                           {'trial': 6, 'trialType': 'D1.C', 'startTime': 4.5, 'endTime': 5.5,
+                            'duration': 1.0}]
+        habOn2_2 = [{'trial': 7, 'trialType': 'D1.A', 'startTime': 0, 'endTime': 1.5, 'duration': 1.5},
+                    {'trial': 7, 'trialType': 'D1.A', 'startTime': 3.0, 'endTime': 4.5,
+                     'duration': 1.5}]
+        habOff2_2 = [{'trial': 7, 'trialType': 'D1.A', 'startTime': 1.5, 'endTime': 3.0, 'duration': 1.5},
+                     {'trial': 7, 'trialType': 'D1.A', 'startTime': 4.5, 'endTime': 7.5,
+                      'duration': 3.0}]
+        habOn2_3 = [{'trial': 8, 'trialType': 'D1.B', 'startTime': 0, 'endTime': 1.5, 'duration': 1.5},
+                    {'trial': 8, 'trialType': 'D1.B', 'startTime': 3.0, 'endTime': 4.5,
+                     'duration': 1.5}]
+        habOff2_3 = [{'trial': 8, 'trialType': 'D1.B', 'startTime': 1.5, 'endTime': 3.0, 'duration': 1.5},
+                     {'trial': 8, 'trialType': 'D1.B', 'startTime': 4.5, 'endTime': 6.5,
+                      'duration': 2.0}]
+
+        self.dataInst.dataRec(habOn2_1, habOff2_1, 6, 'D1.C', habOn2_1, habOff2_1, 'movie1.mov')
+        self.dataInst.habDataCompiled['D'][self.dataInst.habCount['D']] += habMatrix[-1]['sumOnA']  # 0, 5
+        self.dataInst.dataRec(habOn2_2, habOff2_2, 7, 'D1.A', habOn2_2, habOff2_2, 'movie1.mov')
+        self.dataInst.dataRec(habOn2_3, habOff2_3, 8, 'D1.B', habOn2_3, habOff2_3, 'movie1.mov')
+        self.dataInst.habDataCompiled['D'][self.dataInst.habCount['D']] += habMatrix[-1]['sumOnA']  # 0, 5
+        self.dataInst.habCount['D'] += 1
+
+        assert self.dataInst.checkStop('D') == False
+
+        habOn3_1 = [{'trial': 9, 'trialType': 'D1.C', 'startTime': 0, 'endTime': 1.5, 'duration': 1.5},
+                    {'trial': 9, 'trialType': 'D1.C', 'startTime': 3.0, 'endTime': 4.5,
+                     'duration': 1.5}]
+        habOff3_1 = [{'trial': 9, 'trialType': 'D1.C', 'startTime': 1.5, 'endTime': 3.0, 'duration': 1.5},
+                     {'trial': 9, 'trialType': 'D1.C', 'startTime': 4.5, 'endTime': 5.5,
+                      'duration': 1.0}]
+        habOn3_2 = [{'trial': 10, 'trialType': 'D1.A', 'startTime': 0, 'endTime': 1.5, 'duration': 1.5},
+                    {'trial': 10, 'trialType': 'D1.A', 'startTime': 3.0, 'endTime': 4.5,
+                     'duration': 1.5}]
+        habOff3_2 = [{'trial': 10, 'trialType': 'D1.A', 'startTime': 1.5, 'endTime': 3.0, 'duration': 1.5},
+                     {'trial': 10, 'trialType': 'D1.A', 'startTime': 4.5, 'endTime': 7.5,
+                      'duration': 3.0}]
+        habOn3_3 = [{'trial': 11, 'trialType': 'D1.B', 'startTime': 0, 'endTime': 1.5, 'duration': 1.5},
+                    {'trial': 11, 'trialType': 'D1.B', 'startTime': 3.0, 'endTime': 4.5,
+                     'duration': 1.5}]
+        habOff3_3 = [{'trial': 11, 'trialType': 'D1.B', 'startTime': 1.5, 'endTime': 3.0, 'duration': 1.5},
+                     {'trial': 11, 'trialType': 'D1.B', 'startTime': 4.5, 'endTime': 6.5,
+                      'duration': 2.0}]
+
+        self.dataInst.dataRec(habOn3_1, habOff3_1, 9, 'D1.C', habOn3_1, habOff3_1, 'movie1.mov')
+        self.dataInst.habDataCompiled['D'][self.dataInst.habCount['D']] += habMatrix[-1]['sumOnA']  # 0, 5
+        self.dataInst.dataRec(habOn3_2, habOff3_2, 10, 'D1.A', habOn3_2, habOff3_2, 'movie1.mov')
+        self.dataInst.dataRec(habOn3_3, habOff3_3, 11, 'D1.B', habOn3_3, habOff3_3, 'movie1.mov')
+        self.dataInst.habDataCompiled['D'][self.dataInst.habCount['D']] += habMatrix[-1]['sumOnA']  # 0, 5
+        self.dataInst.habCount['D'] += 1
+
+        assert self.dataInst.checkStop('D') == False
+
+        habOn4_1 = [{'trial': 12, 'trialType': 'D1.C', 'startTime': 0, 'endTime': 1.5, 'duration': 1.5},
+                    {'trial': 12, 'trialType': 'D1.C', 'startTime': 3.0, 'endTime': 4.5,
+                     'duration': 1.5}]
+        habOff4_1 = [{'trial': 12, 'trialType': 'D1.C', 'startTime': 1.5, 'endTime': 3.0, 'duration': 1.5},
+                     {'trial': 12, 'trialType': 'D1.C', 'startTime': 4.5, 'endTime': 5.5,
+                      'duration': 1.0}]
+        habOn4_2 = [{'trial': 13, 'trialType': 'D1.A', 'startTime': 0, 'endTime': 1.5, 'duration': 1.5},
+                    {'trial': 13, 'trialType': 'D1.A', 'startTime': 3.0, 'endTime': 4.5,
+                     'duration': 1.5}]
+        habOff4_2 = [{'trial': 13, 'trialType': 'D1.A', 'startTime': 1.5, 'endTime': 3.0, 'duration': 1.5},
+                     {'trial': 13, 'trialType': 'D1.A', 'startTime': 4.5, 'endTime': 7.5,
+                      'duration': 3.0}]
+        habOn4_3 = [{'trial': 14, 'trialType': 'D1.B', 'startTime': 0, 'endTime': 1.5, 'duration': 1.5},
+                    {'trial': 14, 'trialType': 'D1.B', 'startTime': 3.0, 'endTime': 4.5,
+                     'duration': 1.5}]
+        habOff4_3 = [{'trial': 14, 'trialType': 'D1.B', 'startTime': 1.5, 'endTime': 3.0, 'duration': 1.5},
+                     {'trial': 14, 'trialType': 'D1.B', 'startTime': 4.5, 'endTime': 6.5,
+                      'duration': 2.0}]
+
+        self.dataInst.dataRec(habOn4_1, habOff3_1, 12, 'D1.C', habOn4_1, habOff3_1, 'movie1.mov')
+        self.dataInst.habDataCompiled['D'][self.dataInst.habCount['D']] += habMatrix[-1]['sumOnA']  # 0, 5
+        self.dataInst.dataRec(habOn4_2, habOff3_2, 13, 'D1.A', habOn4_2, habOff3_2, 'movie1.mov')
+        self.dataInst.dataRec(habOn4_3, habOff3_3, 14, 'D1.B', habOn4_3, habOff3_3, 'movie1.mov')
+        self.dataInst.habDataCompiled['D'][self.dataInst.habCount['D']] += habMatrix[-1]['sumOnA']  # 0, 5
+        self.dataInst.habCount['D'] += 1
+
+        assert self.dataInst.checkStop('D') == True
 
 
 
