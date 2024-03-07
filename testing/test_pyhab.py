@@ -1311,6 +1311,8 @@ class TestDataFunc(object):
 
         habMatrix = copy.deepcopy(self.testMatrix)
         self.dataInst.dataMatrix = habMatrix  # We can actually use python's pointer thing to our advantage here: dataMatrix will update with habMatrix
+        # Clear verbose data
+        self.dataInst.verbDatList = copy.deepcopy(self.testDatList)
         # The main problem is that the relevant data are not from the hab matrix but from the verbose data in this case.
         habOn1_1 = [{'trial': 3, 'trialType': 'D1.C', 'startTime': 0, 'endTime': 1.5, 'duration': 1.5},
                     {'trial': 3, 'trialType': 'D1.C', 'startTime': 3.0, 'endTime': 4.5,
@@ -1430,12 +1432,8 @@ class TestDataFunc(object):
                 if self.dataInst.verbDatList['verboseOff'][i]['trial'] == targetTrials[n]:
                     if self.dataInst.verbDatList['verboseOff'][i]['duration'] >= self.dataInst.habCrit[blockName]:
                         consecPostThreshold[currIter] = 1
-                        print("trial "  + str(targetTrials[n]) + " above threshold")
         assert currIter == 2
         assert consecPostThreshold == [0,1,1]
-
-
-
 
         assert self.dataInst.checkStop('D') == False
 
