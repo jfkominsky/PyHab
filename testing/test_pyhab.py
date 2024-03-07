@@ -1338,7 +1338,6 @@ class TestDataFunc(object):
         self.dataInst.habDataCompiled['D'][self.dataInst.habCount['D']] += habMatrix[-1]['sumOnA']  # 0, 5
 
         self.dataInst.badTrials = []
-        self.dataInst.habDataCompiled['D'] = [0] * 14
         self.dataInst.stimPres = True  # Temporary, so it doesn't try to play the end-hab sound.
         self.dataInst.habCount['D'] = 1
 
@@ -1431,6 +1430,7 @@ class TestDataFunc(object):
                 if self.dataInst.verbDatList['verboseOff'][i]['trial'] == targetTrials[n]:
                     if self.dataInst.verbDatList['verboseOff'][i]['duration'] >= self.dataInst.habCrit[blockName]:
                         consecPostThreshold[currIter] = 1
+                        print("trial "  + targetTrials[n] + " above threshold")
         assert currIter == 2
         assert consecPostThreshold == [0,1,1]
 
