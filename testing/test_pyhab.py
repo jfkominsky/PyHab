@@ -1362,8 +1362,8 @@ class TestDataFunc(object):
                     {'trial': 8, 'trialType': 'D1.B', 'startTime': 3.0, 'endTime': 4.5,
                      'duration': 1.5}]
         habOff2_3 = [{'trial': 8, 'trialType': 'D1.B', 'startTime': 1.5, 'endTime': 3.0, 'duration': 1.5},
-                     {'trial': 8, 'trialType': 'D1.B', 'startTime': 4.5, 'endTime': 6.5,
-                      'duration': 2.0}]
+                     {'trial': 8, 'trialType': 'D1.B', 'startTime': 4.5, 'endTime': 7.5,
+                      'duration': 3.0}]
 
         self.dataInst.dataRec(habOn2_1, habOff2_1, 6, 'D1.C', habOn2_1, habOff2_1, 'movie1.mov')
         self.dataInst.habDataCompiled['D'][self.dataInst.habCount['D']] += habMatrix[-1]['sumOnA']  # 0, 5
@@ -1378,8 +1378,8 @@ class TestDataFunc(object):
                     {'trial': 9, 'trialType': 'D1.C', 'startTime': 3.0, 'endTime': 4.5,
                      'duration': 1.5}]
         habOff3_1 = [{'trial': 9, 'trialType': 'D1.C', 'startTime': 1.5, 'endTime': 3.0, 'duration': 1.5},
-                     {'trial': 9, 'trialType': 'D1.C', 'startTime': 4.5, 'endTime': 5.5,
-                      'duration': 1.0}]
+                     {'trial': 9, 'trialType': 'D1.C', 'startTime': 4.5, 'endTime': 7.5,
+                      'duration': 3.0}]
         habOn3_2 = [{'trial': 10, 'trialType': 'D1.A', 'startTime': 0, 'endTime': 1.5, 'duration': 1.5},
                     {'trial': 10, 'trialType': 'D1.A', 'startTime': 3.0, 'endTime': 4.5,
                      'duration': 1.5}]
@@ -1418,8 +1418,8 @@ class TestDataFunc(object):
                     {'trial': 14, 'trialType': 'D1.B', 'startTime': 3.0, 'endTime': 4.5,
                      'duration': 1.5}]
         habOff4_3 = [{'trial': 14, 'trialType': 'D1.B', 'startTime': 1.5, 'endTime': 3.0, 'duration': 1.5},
-                     {'trial': 14, 'trialType': 'D1.B', 'startTime': 4.5, 'endTime': 6.5,
-                      'duration': 2.0}]
+                     {'trial': 14, 'trialType': 'D1.B', 'startTime': 4.5, 'endTime': 7.5,
+                      'duration': 3.0}]
 
         self.dataInst.dataRec(habOn4_1, habOff3_1, 12, 'D1.C', habOn4_1, habOff3_1, 'movie1.mov')
         self.dataInst.habDataCompiled['D'][self.dataInst.habCount['D']] += habMatrix[-1]['sumOnA']  # 0, 5
