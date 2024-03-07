@@ -1430,7 +1430,7 @@ class TestDataFunc(object):
                 if self.dataInst.verbDatList['verboseOff'][i]['trial'] == targetTrials[n]:
                     if self.dataInst.verbDatList['verboseOff'][i]['duration'] >= self.dataInst.habCrit[blockName]:
                         consecPostThreshold[currIter] = 1
-                        print("trial "  + targetTrials[n] + " above threshold")
+                        print("trial "  + str(targetTrials[n]) + " above threshold")
         assert currIter == 2
         assert consecPostThreshold == [0,1,1]
 
