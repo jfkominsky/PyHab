@@ -610,9 +610,9 @@ class PyHab:
                     # are possible.
                     targetTrials = []
                     targetTrialNames = []  # Done to reduce number of iterations through whole data matrix.
-                    for j in range(habIndex, self.habCount[blockName] + 1):
+                    for j in range(habIndex, self.habCount[blockName]):
                         for q in range(0, len(self.blockList[blockName]['calcHabOver'])):
-                            matchName = blockName + str(j) + '.' + self.blockList[blockName]['calcHabOver'][q]
+                            matchName = blockName + str(j + 1) + '.' + self.blockList[blockName]['calcHabOver'][q]
                             targetTrialNames.append(matchName)
                     # find all indexes in dataMatrix with that name, and extract trial numbers for matching w/ verbose.
                     for i in range(0, len(self.dataMatrix)):

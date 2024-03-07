@@ -600,9 +600,9 @@ class PyHab:
             # Not problem per se. Essentially, trials that set the criterion are never included when evaluating it.
             # Fixed window is the only thing that ignores habsetwhen.
             # Last needs to ignore HabSetWhen, or rather, cannot wait MetCritWindow trials past when it is set.
-            if self.blockList[blockName]['setCritType'] == 'FixedTrialLength' and self.habCount[blockName] >= self.habSetWhen[blockName] + self.blockList[blockName]['metCritWindow'] - 1: # The -1 is necessary
+            if self.blockList[blockName]['setCritType'] == 'FixedTrialLength' and self.habCount[blockName] >= self.habSetWhen[blockName] + self.blockList[blockName]['metCritWindow'] - 1: # The -1 is necessary for when the hab crit is set on trial 0
                 # Check for consecutive trials with consecutive off-time greater than the criterion.
-                if (self.blockList[blockName]['metCritStatic'] == 'Moving') or (self.habCount[blockName]-self.blockList[blockName]['setCritWindow']) % self.blockList[blockName]['metCritWindow'] == 0:
+                if self.blockList[blockName]['metCritStatic'] == 'Moving' or (self.habCount[blockName]-self.blockList[blockName]['setCritWindow']) % self.blockList[blockName]['metCritWindow'] == 0:
                     habIndex = self.habCount[blockName] - self.blockList[blockName]['metCritWindow']
                     # Problem, this requires us to dig into the verbose data, which uses the actual trial number, not the hab counter!
                     # Means we need to pull just the trials that are of the right type and figure out their actual trial names,
@@ -610,9 +610,9 @@ class PyHab:
                     # are possible.
                     targetTrials = []
                     targetTrialNames = [] # Done to reduce number of iterations through whole data matrix.
-                    for j in range(habIndex, self.habCount[blockName]+1):
+                    for j in range(habIndex, self.habCount[blockName]):
                         for q in range(0, len(self.blockList[blockName]['calcHabOver'])):
-                            matchName = blockName + str(j) + '.' + self.blockList[blockName]['calcHabOver'][q]
+                            matchName = blockName + str(j+1) + '.' + self.blockList[blockName]['calcHabOver'][q]
                             targetTrialNames.append(matchName)
                     # find all indexes in dataMatrix with that name, and extract trial numbers for matching w/ verbose.
                     for i in range(0, len(self.dataMatrix)):

@@ -1463,8 +1463,7 @@ class TestDataFunc(object):
         self.dataInst.habDataCompiled['D'][self.dataInst.habCount['D']] += habMatrix[-1]['sumOnA']  # 0, 5
         self.dataInst.habCount['D'] += 1
 
-        assert self.dataInst.habCount[blockName] >= self.dataInst.habSetWhen[blockName] + \
-               self.dataInst.blockList[blockName]['metCritWindow'] - 1
+        assert self.dataInst.habCount[blockName] >= self.dataInst.habSetWhen[blockName] + self.dataInst.blockList[blockName]['metCritWindow'] - 1
         habIndex = self.dataInst.habCount[blockName] - self.dataInst.blockList[blockName]['metCritWindow']
 
         targetTrials = []
@@ -1493,7 +1492,6 @@ class TestDataFunc(object):
                 if self.dataInst.verbDatList['verboseOff'][i]['trial'] == targetTrials[n]:
                     if self.dataInst.verbDatList['verboseOff'][i]['duration'] >= self.dataInst.habCrit[blockName]:
                         consecPostThreshold[currIter] = 1
-                        print("trial " + str(targetTrials[n]) + " above threshold")
         assert currIter == 2
         assert consecPostThreshold == [1, 1, 1]
 
