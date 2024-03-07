@@ -1400,6 +1400,43 @@ class TestDataFunc(object):
         self.dataInst.habDataCompiled['D'][self.dataInst.habCount['D']] += habMatrix[-1]['sumOnA']  # 0, 5
         self.dataInst.habCount['D'] += 1
 
+        blockName = 'D'
+        assert self.dataInst.habCount[blockName] >= self.dataInst.habSetWhen[blockName] + self.dataInst.blockList[blockName]['metCritWindow'] - 1
+        habIndex = self.dataInst.habCount[blockName] - self.dataInst.blockList[blockName]['metCritWindow']
+
+        targetTrials = []
+        targetTrialNames = []
+        for j in range(habIndex, self.dataInst.habCount[blockName]):
+            for q in range(0, len(self.dataInst.blockList[blockName]['calcHabOver'])):
+                matchName = blockName + str(j+1) + '.' + self.dataInst.blockList[blockName]['calcHabOver'][q]
+                targetTrialNames.append(matchName)
+        for i in range(0, len(self.dataInst.dataMatrix)):
+            if self.dataInst.dataMatrix[i]['trialType'] in targetTrialNames:
+                targetTrials.append(self.dataInst.dataMatrix[i]['trial'])
+
+        assert targetTrials == [3,5,6,8,9,11]
+
+
+        consecPostThreshold = [0 for x in range(self.dataInst.blockList[blockName]['metCritWindow'])]
+        assert len(consecPostThreshold) == 3
+
+        trialPerIter = len(targetTrials) / self.dataInst.blockList[blockName]['metCritWindow']  # Typically this will be 1
+        assert trialPerIter == 2
+        currIter = 0
+
+        for n in range(0, len(targetTrials)):
+            if n % trialPerIter == 0 and n > 0:
+                currIter += 1
+            for i in range(0, len(self.dataInst.verbDatList['verboseOff'])):
+                if self.dataInst.verbDatList['verboseOff'][i]['trial'] == targetTrials[n]:
+                    if self.dataInst.verbDatList['verboseOff'][i]['duration'] >= self.dataInst.habCrit[blockName]:
+                        consecPostThreshold[currIter] = 1
+        assert currIter == 2
+        assert consecPostThreshold == [0,1,1]
+
+
+
+
         assert self.dataInst.checkStop('D') == False
 
         habOn4_1 = [{'trial': 12, 'trialType': 'D4.C', 'startTime': 0, 'endTime': 1.5, 'duration': 1.5},
@@ -1421,10 +1458,10 @@ class TestDataFunc(object):
                      {'trial': 14, 'trialType': 'D4.B', 'startTime': 4.5, 'endTime': 7.5,
                       'duration': 3.0}]
 
-        self.dataInst.dataRec(habOn4_1, habOff3_1, 12, 'D4.C', habOn4_1, habOff3_1, 'movie1.mov')
+        self.dataInst.dataRec(habOn4_1, habOff4_1, 12, 'D4.C', habOn4_1, habOff4_1, 'movie1.mov')
         self.dataInst.habDataCompiled['D'][self.dataInst.habCount['D']] += habMatrix[-1]['sumOnA']  # 0, 5
-        self.dataInst.dataRec(habOn4_2, habOff3_2, 13, 'D4.A', habOn4_2, habOff3_2, 'movie1.mov')
-        self.dataInst.dataRec(habOn4_3, habOff3_3, 14, 'D4.B', habOn4_3, habOff3_3, 'movie1.mov')
+        self.dataInst.dataRec(habOn4_2, habOff4_2, 13, 'D4.A', habOn4_2, habOff4_2, 'movie1.mov')
+        self.dataInst.dataRec(habOn4_3, habOff4_3, 14, 'D4.B', habOn4_3, habOff4_3, 'movie1.mov')
         self.dataInst.habDataCompiled['D'][self.dataInst.habCount['D']] += habMatrix[-1]['sumOnA']  # 0, 5
         self.dataInst.habCount['D'] += 1
 
