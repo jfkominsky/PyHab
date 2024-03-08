@@ -132,6 +132,13 @@ class PyHab:
             self.eyetracker = eval(settingsDict['eyetracker'])
         except:
             self.eyetracker = 0
+        # new setting for 0.10.7
+        try:
+            self.minDur = eval(settingsDict['minDur'])
+        except:
+            self.minDur = {}
+
+
 
 
         # ORDER OF PRESENTATION
@@ -532,7 +539,12 @@ class PyHab:
         :rtype: bool
         """
 
-        if self.habCount[blockName] == self.blockList[blockName]['setCritWindow'] and self.blockList[blockName]['setCritType'] != 'Threshold':  # time to set the hab criterion.
+        if self.blockList[blockName]['setCritType'] == 'FixedTrialLength' and self.habSetWhen[blockName] == -1:
+            # A slightly special case, so it gets an internal condition
+            if self.habCount[blockName] >= self.blockList[blockName]['setCritWindow']: #>= b/c it can be 0. Using this to set the minimum trials essentially.
+                self.habCrit[blockName] = self.blockList[blockName]['habThresh'] # Consecutive look-away time.
+                self.habSetWhen[blockName] = self.habCount[blockName]
+        elif self.habCount[blockName] == self.blockList[blockName]['setCritWindow'] and self.blockList[blockName]['setCritType'] != 'Threshold':  # time to set the hab criterion.
             # This condition sets the initial criterion for peak/max, first, and last. Threshold needs more.
             sumOnTimes = 0
             for j in range(0,self.habCount[blockName]):
@@ -588,8 +600,48 @@ class PyHab:
             # Not problem per se. Essentially, trials that set the criterion are never included when evaluating it.
             # Fixed window is the only thing that ignores habsetwhen.
             # Last needs to ignore HabSetWhen, or rather, cannot wait MetCritWindow trials past when it is set.
-            if self.habCount[blockName] < self.habSetWhen[blockName] + self.blockList[blockName]['metCritWindow'] and self.blockList[blockName]['metCritStatic'] == 'Moving' and self.blockList[blockName]['setCritType'] != 'Last': # Was the hab set "late" and are we too early as a result
+            if self.blockList[blockName]['setCritType'] == 'FixedTrialLength' and self.habCount[blockName] >= self.habSetWhen[blockName] + self.blockList[blockName]['metCritWindow'] - 1: # The -1 is necessary for when the hab crit is set on trial 0
+                # Check for consecutive trials with consecutive off-time greater than the criterion.
+                if self.blockList[blockName]['metCritStatic'] == 'Moving' or (self.habCount[blockName]-self.blockList[blockName]['setCritWindow']) % self.blockList[blockName]['metCritWindow'] == 0:
+                    habIndex = self.habCount[blockName] - self.blockList[blockName]['metCritWindow']
+                    # Problem, this requires us to dig into the verbose data, which uses the actual trial number, not the hab counter!
+                    # Means we need to pull just the trials that are of the right type and figure out their actual trial names,
+                    # and make a list of those. Needs to be trial nos, not just names, b/c multiple repetitions w/in a block
+                    # are possible.
+                    targetTrials = []
+                    targetTrialNames = [] # Done to reduce number of iterations through whole data matrix.
+                    for j in range(habIndex, self.habCount[blockName]):
+                        for q in range(0, len(self.blockList[blockName]['calcHabOver'])):
+                            matchName = blockName + str(j+1) + '.' + self.blockList[blockName]['calcHabOver'][q]
+                            targetTrialNames.append(matchName)
+                    # find all indexes in dataMatrix with that name, and extract trial numbers for matching w/ verbose.
+                    for i in range(0, len(self.dataMatrix)):
+                        if self.dataMatrix[i]['trialType'] in targetTrialNames:
+                            targetTrials.append(self.dataMatrix[i]['trial'])
+
+                    consecPostThreshold = [0 for x in range(self.blockList[blockName]['metCritWindow'])]
+                    # There is a complication here because of the fact that this cares about whether there is an off-time of
+                    # sufficient length within a given iteration of the whole hab block, not just each individual trial.
+                    # However the number of trials that need to be considered per block is always going to be the same.
+                    trialPerIter = len(targetTrials)/self.blockList[blockName]['metCritWindow'] # Typically this will be 1
+                    currIter = 0
+                    for n in range(0, len(targetTrials)):
+                        if n % trialPerIter == 0 and n > 0: # must be updated first to hit the correct trial.
+                            currIter += 1
+                        for i in range(0, len(self.verbDatList['verboseOff'])):
+                            if self.verbDatList['verboseOff'][i]['trial'] == targetTrials[n]:
+                                if self.verbDatList['verboseOff'][i]['duration'] >= self.habCrit[blockName]:
+                                    consecPostThreshold[currIter] = 1 # Doesn't matter if it's set redundantly.
+
+
+                    if 0 in consecPostThreshold: # Works
+                        return False
+                    else:
+                        self.habMetWhen[blockName] = self.habCount[blockName]
+                        return True
+            elif self.habCount[blockName] < self.habSetWhen[blockName] + self.blockList[blockName]['metCritWindow'] and self.blockList[blockName]['metCritStatic'] == 'Moving' and self.blockList[blockName]['setCritType'] != 'Last': # Was the hab set "late" and are we too early as a result
                 return False
+
             else:
                 sumOnTimes = 0
                 index = self.habCount[blockName] - self.blockList[blockName]['metCritWindow']
@@ -1708,7 +1760,7 @@ class PyHab:
         Control function for individual trials, to be called by doExperiment
         Returns a status value (int) that tells doExperiment what to do next
 
-        self.playThrough registers the end-trial crieria
+        self.playThrough registers the end-trial criteria
         0 = standard "cumulative on-time >= MinOn and consecutive off-time >= MaxOff"
         1 = "OnOnly", only requires that cumulative on-time > MinOn
         2 = "None", plays to max duration no matter what.
@@ -1735,7 +1787,7 @@ class PyHab:
             # datatype should be the full block-trial name minus *^
             dataType = ttype.translate({94:None, 42:None})
             habBlock = ttype[:ttype.index('*')]
-            # Now we need to trim out the hab number. Assume maxHab < 100
+            # Now we need to trim out the hab number.
             for b, c in self.habCount.items():
                 if habBlock[0:len(b)] == b and habBlock[len(b):] == str(c+1):
                     habBlock = habBlock[0:len(b)]
@@ -1815,7 +1867,7 @@ class PyHab:
             elif core.getTime() - startTrial >= .5 and self.keyboard[self.key.S] and '*' not in ttype:
                 # New feature: End trial and go forward manually. Disabled for hab trials and meta-trials.
                 # Disabled for the first half-second to stop you from skipping through multiple auto-advancing trials
-                if localType in self.movieEnd:
+                if localType in self.movieEnd or localType in self.minDur.keys():
                     endFlag = True
                 else:
                     runTrial = False
@@ -1852,7 +1904,7 @@ class PyHab:
                 ttype = 4  # to force an immediate quit.
             # Now for the non-abort states.
             elif core.getTime() - startTrial >= self.maxDur[localType] + maxDurAdd and not endFlag:  # reached max trial duration
-                if localType in self.movieEnd:
+                if localType in self.movieEnd or localType in self.minDur.keys():
                     endFlag = True
                 else:
                     runTrial = False
@@ -1897,7 +1949,7 @@ class PyHab:
 
                 if endCondMet:
                     # if they have previously looked for at least minOn and now looked away for maxOff continuous sec
-                    if localType in self.movieEnd and not endNow:
+                    if (localType in self.movieEnd or localType in self.minDur.keys()) and not endNow:
                         endFlag = True
                     else:
                         runTrial = False
@@ -1969,7 +2021,7 @@ class PyHab:
                 nowOn = core.getTime() - startTrial
                 # the argument for oncheck accounts for the current gaze-on, if we aren't using duration mode.
                 if self.playThrough[localType] in [1, 3] and onDuration(adds=nowOn-startOn) > self.minOn[localType] and not endFlag:  # For trial types where the only crit is min-on.
-                    if localType in self.movieEnd and not endNow:
+                    if (localType in self.movieEnd or localType in self.minDur.keys()) and not endNow:
                         endFlag = True
                     else:
                         runTrial = False
@@ -1983,7 +2035,7 @@ class PyHab:
                         onArray.append(tempGazeArray)
                 # New "max-on" criterion, which is only used in combination with the "normal" minon/maxoff criterion. Only needs testing here.
                 elif self.playThrough[localType] == 4 and onDuration(adds=nowOn-startOn) > self.maxOn[localType] and not endFlag:
-                    if localType in self.movieEnd and not endNow:
+                    if (localType in self.movieEnd or localType in self.minDur.keys()) and not endNow:
                         endFlag = True
                     else:
                         runTrial = False
@@ -2024,17 +2076,35 @@ class PyHab:
                 onArray2.append(tempGazeArray2)
                 sumOn2 = sumOn2 + onDur2
             movieStatus = self.dispTrial(localType, disMovie)
-            if localType in self.movieEnd and endFlag and movieStatus >= 1:
-                runTrial = False
-                endTrial = core.getTime() - startTrial
-                if gazeOn:
-                    onDur = endTrial - startOn
-                    tempGazeArray = {'trial':number, 'trialType':dataType, 'startTime':startOn, 'endTime':endTrial, 'duration':onDur}
-                    onArray.append(tempGazeArray)
-                else:
-                    offDur = endTrial - startOff
-                    tempGazeArray = {'trial':number, 'trialType':dataType, 'startTime':startOff, 'endTime':endTrial, 'duration':offDur}
-                    offArray.append(tempGazeArray)
+            if endFlag:
+                if localType in self.movieEnd and movieStatus >= 1:
+                    runTrial = False
+                    endTrial = core.getTime() - startTrial
+                    if gazeOn:
+                        onDur = endTrial - startOn
+                        tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOn,
+                                         'endTime': endTrial, 'duration': onDur}
+                        onArray.append(tempGazeArray)
+                    else:
+                        offDur = endTrial - startOff
+                        tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOff,
+                                         'endTime': endTrial, 'duration': offDur}
+                        offArray.append(tempGazeArray)
+                elif localType in self.minDur.keys():
+                    if self.minDur[localType] <= core.getTime() - startTrial:
+                        runTrial = False
+                        endTrial = core.getTime() - startTrial
+                        if gazeOn:
+                            onDur = endTrial - startOn
+                            tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOn,
+                                             'endTime': endTrial, 'duration': onDur}
+                            onArray.append(tempGazeArray)
+                        else:
+                            offDur = endTrial - startOff
+                            tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOff,
+                                             'endTime': endTrial, 'duration': offDur}
+                            offArray.append(tempGazeArray)
+
         if gazeOn2:
             onDur2 = endTrial - startOn2
             tempGazeArray2 = {'trial':number, 'trialType':dataType, 'startTime':startOn2, 'endTime':endTrial, 'duration':onDur2}

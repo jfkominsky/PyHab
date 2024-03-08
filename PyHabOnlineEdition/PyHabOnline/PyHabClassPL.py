@@ -49,6 +49,10 @@ class PyHabPL(PyHab):
         sumOn2 = 0
         if habTrialNo <= 0:
             habTrialNo = ''
+        if len(onArray) > 0:
+            firstLookL = onArray[0]['duration']
+        if len(onArray2) > 0:
+            firstLookR = onArray2[0]['duration']
         for i in range(0, len(onArray)):
             sumOn = sumOn + onArray[i]['duration']
         for k in range(0, len(onArray2)):
@@ -74,7 +78,7 @@ class PyHabPL(PyHab):
                     'trial': trial, 'GNG': 0, 'trialType': ttype, 'stimName': stimName, 'habCrit': self.habCrit, 'habTrialNo': habTrialNo,
                     'sumOnL': sumOn, 'numOnL': len(onArray),
                     'sumOnR': sumOn2, 'numOnR': len(onArray2), 'sumOff': sumOff, 'numOff': len(offArray),
-                    'trialDuration': totalduration}
+                    'trialDuration': totalduration, 'firstLookL':firstLookL, 'firstLookR':firstLookR}
         self.badTrials.append(tempData)
 
     def dataRec(self, onArray, offArray, trial, type, onArray2, stimName = '', habTrialNo = 0):
@@ -101,6 +105,10 @@ class PyHabPL(PyHab):
         sumOn2 = 0
         if habTrialNo <= 0:
             habTrialNo = ''
+        if len(onArray) > 0:
+            firstLookL = onArray[0]['duration']
+        if len(onArray2) > 0:
+            firstLookR = onArray2[0]['duration']
         #loop through each array adding up gaze duration (on and off).
         for i in range(0,len(onArray)):
             sumOn = sumOn + onArray[i]['duration']
@@ -126,7 +134,7 @@ class PyHabPL(PyHab):
                                 'trial':trial, 'GNG':1, 'trialType':type, 'stimName':stimName, 'habCrit':self.habCrit, 'habTrialNo': habTrialNo,
                                 'sumOnL':sumOn, 'numOnL':len(onArray),
                                 'sumOnR':sumOn2,'numOnR':len(onArray2),'sumOff':sumOff, 'numOff':len(offArray),
-                                'trialDuration': totalduration}
+                                'trialDuration': totalduration, 'firstLookL': firstLookL, 'firstLookR': firstLookR}
         self.dataMatrix.append(tempData)
 
 
@@ -175,26 +183,26 @@ class PyHabPL(PyHab):
         :rtype:
         """
         self.trialText.text = "Trial no. " + str(number)
-        habTrial = False
+        habTrial = False  # Just for tracking if this is part of a habituation, whether or not it is included in the hab calc
+        habBlock = ''
         localType = deepcopy(ttype)
         while '.' in localType:
             localType = localType[localType.index('.') + 1:]
-        if ttype[0:3] == 'hab' and '.' in ttype:  # Hab sub-trials. Hard to ID definitively, actually.
-            spliceType = ttype[ttype.index('.')+1:]
-            if '.' in spliceType:
-                spliceType = spliceType[0:spliceType.index('.')] # Isolate the part between '.'s, which will be what shows up in habtriallist.
-            if spliceType in self.habTrialList:
-                dataType = 'hab' + ttype[ttype.index('.'):]  # Collapses down the number and ^ markings for the data file
-                habTrial = True
-            else:
-                dataType = ttype
-        elif len(self.habTrialList) == 0 and ttype == 'Hab':
-            dataType = ttype
+        if '*' in ttype:  # Hab block trial
+            # Hab trials have this * marker, but also the hab block will always be the top-level block, i.e., before the first .
+            # Even if it's a one-trial block this will be true.
+            # datatype should be the full block-trial name minus *^
+            dataType = ttype.translate({94: None, 42: None})
+            habBlock = ttype[:ttype.index('*')]
+            # Now we need to trim out the hab number. Assume maxHab < 100
+            for b, c in self.habCount.items():
+                if habBlock[0:len(b)] == b and habBlock[len(b):] == str(c + 1):
+                    habBlock = habBlock[0:len(b)]
             habTrial = True
         else:
             dataType = ttype
         self.frameCount['C'] = 0  # reset display
-        self.pauseCount['C'] = 0 #needed for ISI
+        self.pauseCount['C'] = 0  # needed for ISI
 
         startTrial = core.getTime()
         startTrial2=core.getTime()
@@ -264,7 +272,7 @@ class PyHabPL(PyHab):
                     offArray.append(tempGazeArray)
             elif core.getTime() - startTrial >= .5 and self.keyboard[self.key.S] and ttype != 'Hab' and '^' not in ttype:
                 # End this trial, move to next, do not mark as bad.
-                if localType in self.movieEnd:
+                if localType in self.minDur.keys():
                     endFlag = True
                 else:
                     runTrial = False
@@ -322,7 +330,7 @@ class PyHabPL(PyHab):
                 ttype = 4 #to force an immediate quit.
             #Now for the non-abort states.
             elif core.getTime() - startTrial >= self.maxDur[localType] + maxDurAdd and not endFlag: #reached max trial duration
-                if localType in self.movieEnd:
+                if localType in self.minDur.keys():
                     endFlag = True
                 else:
                     runTrial = False
@@ -377,7 +385,7 @@ class PyHabPL(PyHab):
                         endNow = True
 
                 if endCondMet:
-                    if localType in self.movieEnd and not endNow:
+                    if localType in self.minDur.keys() and not endNow:
                         endFlag = True
                     else:
                         runTrial = False
@@ -441,7 +449,7 @@ class PyHabPL(PyHab):
                     tempOn = startOn2
 
                 if self.playThrough[localType] in [1,3] and onDuration(adds=nowOn - tempOn) >= self.minOn[localType] and not endFlag:
-                    if localType in self.movieEnd and not endNow:
+                    if localType in self.minDur.keys() and not endNow:
                         endFlag = True
                     else:
                         runTrial = False
@@ -490,34 +498,37 @@ class PyHabPL(PyHab):
                         numOff = numOff + 1
                         startOff = core.getTime() - startTrial
             movieStatus = self.dispTrial(localType, disMovie)
-            if localType in self.movieEnd and endFlag and movieStatus >= 1:
-                runTrial = False
-                endTrial = core.getTime() - startTrial
-                if not self.stimPres:
-                    self.endTrialSound.play()
-                    self.endTrialSound = sound.Sound('A', octave=4, sampleRate=44100, secs=0.2)
-                # determine if they were looking or not at end of trial and update appropriate array
-                if gazeOn:
-                    onDur = endTrial - startOn
-                    tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOn, 'endTime': endTrial,
-                                             'duration': onDur}
-                    onArray.append(tempGazeArray)
-                if gazeOn2:
-                    onDur = endTrial - startOn2
-                    tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOn2, 'endTime': endTrial,
-                                             'duration': onDur}
-                    onArray2.append(tempGazeArray)
-                else:
-                    offDur = endTrial - startOff
-                    tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOff, 'endTime': endTrial,
-                                     'duration':offDur}
-                    offArray.append(tempGazeArray)
+            if endFlag:
+                if self.minDur[localType] <= core.getTime() - startTrial:
+                    runTrial = False
+                    endTrial = core.getTime() - startTrial
+                    if not self.stimPres:
+                        self.endTrialSound.play()
+                        self.endTrialSound = sound.Sound('A', octave=4, sampleRate=44100, secs=0.2)
+                    # determine if they were looking or not at end of trial and update appropriate array
+                    if gazeOn:
+                        onDur = endTrial - startOn
+                        tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOn, 'endTime': endTrial,
+                                                 'duration': onDur}
+                        onArray.append(tempGazeArray)
+                    if gazeOn2:
+                        onDur = endTrial - startOn2
+                        tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOn2, 'endTime': endTrial,
+                                                 'duration': onDur}
+                        onArray2.append(tempGazeArray)
+                    else:
+                        offDur = endTrial - startOff
+                        tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOff, 'endTime': endTrial,
+                                         'duration':offDur}
+                        offArray.append(tempGazeArray)
 
         self.trialTiming.append({'trialNum': number,'trialType':dataType, 'event': 'endTrial', 'time': (core.getTime() - self.absoluteStart)})
         if habTrial:
-            habDataRec = self.habCount + 1
+            habDataRec = self.habCount[habBlock] + 1
+            habCrit = self.habCrit[habBlock]
         else:
             habDataRec = 0
+            habCrit = -1
         self.statusSquareA.fillColor='black'
         self.statusSquareB.fillColor='black'
         self.statusTextA.text=""
@@ -555,54 +566,44 @@ class PyHabPL(PyHab):
             return 3
         else:
             self.dataRec(onArray, offArray, number, dataType, onArray2, self.stimName, habDataRec)
-        if self.habMetWhen == -1 and len(self.habTrialList) > 0 and not abort:   # if still during habituation
-            if dataType[0:4] == 'hab.' and dataType[4:] in self.calcHabOver:
-                tempSum = 0
-                if self.habByDuration == 1:
-                    for c in range(0, len(onArray)):
-                        tempSum += onArray[c]['duration']
-                    for d in range(0, len(onArray2)):
-                        tempSum += onArray2[d]['duration']
-                    for e in range(0, len(offArray)):
-                        tempSum += offArray[e]['duration']
-                    if self.durationInclude == 0 and len(offArray) > 0:
-                        if offArray[-1]['endTime'] > onArray[-1]['endTime'] and offArray[-1]['endTime'] > onArray2[-1]['endTime']:
-                            tempSum = tempSum - offArray[-1]['duration']
-                else:
-                    for c in range(0, len(onArray)):
-                        tempSum += onArray[c]['duration']
-                    for d in range(0, len(onArray2)):
-                        tempSum += onArray2[d]['duration']
-                self.habDataCompiled[self.habCount] += tempSum
-            if ttype == 4:
-                return 2
-            elif '^' in ttype:
-                self.habCount += 1
-                # Check if criteria need to be set or have been met
-                if self.checkStop():  # If criteria met
-                    # Check if there are any trials FOLLOWING the hab trials.
-                    if self.maxHabIndex < len(self.actualTrialOrder)-1:
-                        return 1
+        if habTrial:
+            if self.habMetWhen[habBlock] == -1:
+                if localType in self.blockList[habBlock]['calcHabOver']:
+                    tempSum = 0
+                    if self.habByDuration == 1:
+                        for c in range(0, len(onArray)):
+                            tempSum += onArray[c]['duration']
+                        for d in range(0, len(onArray2)):
+                            tempSum += onArray2[d]['duration']
+                        for e in range(0, len(offArray)):
+                            tempSum += offArray[e]['duration']
+                        if self.durationInclude == 0 and len(offArray) > 0:
+                            if offArray[-1]['endTime'] > onArray[-1]['endTime'] and offArray[-1]['endTime'] > onArray2[-1]['endTime']:
+                                tempSum = tempSum - offArray[-1]['duration']
                     else:
-                        return 2  # End experiment.
+                        for c in range(0, len(onArray)):
+                            tempSum += onArray[c]['duration']
+                        for d in range(0, len(onArray2)):
+                            tempSum += onArray2[d]['duration']
+                    self.habDataCompiled[self.habCount] += tempSum
+                if number >= len(self.actualTrialOrder) or ttype == 4:
+                    return 2
+                elif '^' in ttype:
+                    self.habCount += 1
+                    # Check if criteria need to be set or have been met
+                    if self.checkStop(habBlock):  # If criteria met
+                        # Check if there are any trials FOLLOWING the hab trials.
+                        maxHab = 0
+                        if habBlock in self.actualTrialOrder[number][0:len(habBlock)] and '^' in self.actualTrialOrder[number]:
+                            maxHab = number
+                        if maxHab < len(self.actualTrialOrder) - 1:
+                            return 1
+                        else:
+                            return 2  # End experiment.
+                    else:
+                        return 0
                 else:
                     return 0
-            else:
-                return 0
-        elif ttype == 'Hab' and self.habMetWhen == -1 and not abort:
-            tempSum = 0
-            for c in range(0, len(onArray)):
-                tempSum += onArray[c]['duration']
-            for d in range(0, len(onArray2)):
-                tempSum += onArray2[d]['duration']
-            self.habDataCompiled[self.habCount] += tempSum
-            self.habCount += 1
-            if self.checkStop():  # If criteria met
-                # Check if there are any trials FOLLOWING the hab trials.
-                if self.actualTrialOrder[-1] != 'Hab':
-                    return 1
-                else:
-                    return 2  # End experiment.
             else:
                 return 0
         elif number >= len(self.actualTrialOrder) or ttype == 4:
@@ -621,8 +622,6 @@ class PyHabPL(PyHab):
         tempText = visual.TextStim(self.win2, text="Saving data...", pos=[0, 0], color='white', bold=True, height=40)
         tempText.draw()
         self.win2.flip()
-        if self.stimPres:
-            self.browser.get(self.presentationURL + '#/' + self.blankSlide)  # go to blank slide
 
         # Block-level summary data. Omits bad trials.
         if len(self.blockDataList) > 0 and self.blockSum:
@@ -648,7 +647,11 @@ class PyHabPL(PyHab):
 
         # If there is habituation data, create hab summary file. Similar to the block one, but a little easier thanks to
         # the tagging of habituation trial numbers.
-        if self.habSetWhen > 0 and len(self.habTrialList) > 0:  # If there's a 'Hab' trial type, the main summary file does the trick just fine.
+        wasHab = False
+        for q, r in self.blockList.items():
+            if r['habituation'] in [1, '1', True, 'True']:
+                wasHab = True
+        if wasHab:
             habMatrix = self.saveHabFile()
             # Now, actually write the file
             nDupe = ''  # This infrastructure eliminates the risk of overwriting existing data
@@ -669,43 +672,44 @@ class PyHabPL(PyHab):
                 for z in range(0, len(habMatrix)):
                     habWriter.writerow(habMatrix[z])
 
-        #sort the data matrices and shuffle them together.
-        if len(self.badTrials) > 0: #if there are any redos, they need to be shuffled in appropriately.
-            for i in range(0,len(self.badTrials)):
+        # sort the data matrices and shuffle them together.
+        if len(self.badTrials) > 0:  # if there are any redos, they need to be shuffled in appropriately.
+            for i in range(0, len(self.badTrials)):
                 x = 0
                 while self.dataMatrix[x]['trial'] != self.badTrials[i]['trial']:
                     x += 1
-                while self.dataMatrix[x]['GNG'] == 0: #this is to get around the possibility that the same trial had multiple 'false starts'
+                while self.dataMatrix[x][
+                    'GNG'] == 0:  # this is to get around the possibility that the same trial had multiple 'false starts'
                     x += 1
-                self.dataMatrix.insert(x, self.badTrials[i]) #python makes this stupid easy
-        #Trial-level summary file
+                self.dataMatrix.insert(x, self.badTrials[i])  # python makes this stupid easy
+        # Trial-level summary file
         if self.trialSum:
             nDupe = ''  # This infrastructure eliminates the risk of overwriting existing data
             o = 1
-            filename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '.csv'
+            filename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(
+                self.today.month) + str(self.today.day) + str(self.today.year) + '.csv'
             while os.path.exists(filename):
                 o += 1
                 nDupe = str(o)
-                filename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(self.today.month) + str(self.today.day) + str(self.today.year) + '.csv'
+                filename = self.dataFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(
+                    self.today.month) + str(self.today.day) + str(self.today.year) + '.csv'
             with open(filename, 'w') as f:
-                outputWriter = csv.DictWriter(f,fieldnames = self.dataColumns, extrasaction='ignore', lineterminator ='\n')
+                outputWriter = csv.DictWriter(f, fieldnames=self.dataColumns, extrasaction='ignore',
+                                              lineterminator='\n')
                 outputWriter.writeheader()
                 for r in range(0, len(self.dataMatrix)):
                     outputWriter.writerow(self.dataMatrix[r])
 
-        # If stimulus presentation, save timing file.
         if self.stimPres:
             nDupe = ''  # This infrastructure eliminates the risk of overwriting existing data
             o = 1
-            filename = self.timingFolder + self.prefix + str(self.sNum) + '_' + str(
-                self.sID) + nDupe + '_' + str(
+            filename = self.timingFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(
                 self.today.month) + str(
                 self.today.day) + str(self.today.year) + '_trialTiming.csv'
             while os.path.exists(filename):
                 o += 1
                 nDupe = str(o)
-                filename = self.timingFolder + self.prefix + str(self.sNum) + '_' + str(
-                    self.sID) + nDupe + '_' + str(
+                filename = self.timingFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(
                     self.today.month) + str(
                     self.today.day) + str(self.today.year) + '_trialTiming.csv'
             timingHeaders = ['trialNum', 'trialType', 'event', 'time']
@@ -722,15 +726,17 @@ class PyHabPL(PyHab):
         # on and off until we reach the end of a given trial, to reconstruct it.
         # at the start of each line, add information: sNum, ageMo, ageDay, sex, cond, GNG, ON/OFF
         for n in range(0, len(self.verbDatList['verboseOn'])):
-            self.verbDatList['verboseOn'][n].update({'snum': self.sNum, 'sID': self.sID, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex,
-                                      'cond': self.cond, 'GNG': 1, 'gazeOnOff': 1})
+            self.verbDatList['verboseOn'][n].update(
+                {'snum': self.sNum, 'sID': self.sID, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex,
+                 'cond': self.cond, 'GNG': 1, 'gazeOnOff': 1})
         for m in range(0, len(self.verbDatList['verboseOff'])):  # adding the details to the verbose array
             self.verbDatList['verboseOff'][m].update(
                 {'snum': self.sNum, 'sID': self.sID, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex,
                  'cond': self.cond, 'GNG': 1, 'gazeOnOff': 0})
         for o in range(0, len(self.verbDatList['verboseOn2'])):
-            self.verbDatList['verboseOn2'][o].update({'snum': self.sNum, 'sID': self.sID, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex,
-                                      'cond': self.cond, 'GNG': 1, 'gazeOnOff': 2})
+            self.verbDatList['verboseOn2'][o].update(
+                {'snum': self.sNum, 'sID': self.sID, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex,
+                 'cond': self.cond, 'GNG': 1, 'gazeOnOff': 2})
         if len(self.badTrials) > 0:
             for p in range(0, len(self.verbBadList['verboseOn'])):
                 self.verbBadList['verboseOn'][p].update(
@@ -744,22 +750,24 @@ class PyHabPL(PyHab):
                 self.verbBadList['verboseOn2'][r].update(
                     {'snum': self.sNum, 'sID': self.sID, 'months': self.ageMo, 'days': self.ageDay, 'sex': self.sex,
                      'cond': self.cond, 'GNG': 0, 'gazeOnOff': 2})
-        #read the final data matrix and go trial by trial.
-        #print(verboseOn) #debug, to make sure verboseOn is being constructed correctly
+        # read the final data matrix and go trial by trial.
+        # print(verboseOn) #debug, to make sure verboseOn is being constructed correctly
         for q in range(0, len(self.dataMatrix)):
             tnum = self.dataMatrix[q]['trial']
             onIndex = -1
             onIndex2 = -1
             offIndex = -1
-            if self.dataMatrix[q]['GNG'] == 1: #separate for good and bad trials
+            if self.dataMatrix[q]['GNG'] == 1:  # separate for good and bad trials
                 for x in range(0, len(self.verbDatList['verboseOn'])):
-                    if self.verbDatList['verboseOn'][x]['trial'] == tnum and onIndex == -1: #find the right index in the verbose matrices
+                    if self.verbDatList['verboseOn'][x][
+                        'trial'] == tnum and onIndex == -1:  # find the right index in the verbose matrices
                         onIndex = x
                 for y in range(0, len(self.verbDatList['verboseOff'])):
                     if self.verbDatList['verboseOff'][y]['trial'] == tnum and offIndex == -1:
                         offIndex = y
                 for z in range(0, len(self.verbDatList['verboseOn2'])):
-                    if self.verbDatList['verboseOn2'][z]['trial'] == tnum and onIndex2 == -1: #find the right index in the verbose matrices
+                    if self.verbDatList['verboseOn2'][z][
+                        'trial'] == tnum and onIndex2 == -1:  # find the right index in the verbose matrices
                         onIndex2 = z
                 trialVerbose = []
                 if onIndex >= 0:
@@ -774,24 +782,26 @@ class PyHabPL(PyHab):
                         onIndex2 += 1
                 if offIndex >= 0:
                     while offIndex < len(self.verbDatList['verboseOff']):
-                        if self.verbDatList['verboseOff'][offIndex]['trial']==tnum:
+                        if self.verbDatList['verboseOff'][offIndex]['trial'] == tnum:
                             trialVerbose.append(self.verbDatList['verboseOff'][offIndex])
                         offIndex += 1
-                trialVerbose2 = sorted(trialVerbose, key=lambda trialVerbose:trialVerbose['startTime']) #this is the magic bullet, in theory.
+                trialVerbose2 = sorted(trialVerbose, key=lambda trialVerbose: trialVerbose[
+                    'startTime'])  # this is the magic bullet, in theory.
                 verboseMatrix.extend(trialVerbose2)
-            elif self.dataMatrix[q]['GNG']==0: #bad trials.
-                if q > 0 and self.dataMatrix[q-1]['GNG']==0:
-                    pass #stops it from doubling up. If there is more than one consecutive bad trial, it will get all of them in a row the first time,
+            elif self.dataMatrix[q]['GNG'] == 0:  # bad trials.
+                if q > 0 and self.dataMatrix[q - 1]['GNG'] == 0:
+                    pass  # stops it from doubling up. If there is more than one consecutive bad trial, it will get all of them in a row the first time,
                 else:
                     trialVerbose = []
-                    for x in range(0,len(self.verbBadList['verboseOn'])):
+                    for x in range(0, len(self.verbBadList['verboseOn'])):
                         if self.verbBadList['verboseOn'][x]['trial'] == tnum and onIndex == -1:
                             onIndex = x
                     for y in range(0, len(self.verbBadList['verboseOff'])):
                         if self.verbBadList['verboseOff'][y]['trial'] == tnum and offIndex == -1:
                             offIndex = y
                     for z in range(0, len(self.verbDatList['verboseOn2'])):
-                        if self.verbDatList['verboseOn2'][z]['trial'] == tnum and onIndex2 == -1: #find the right index in the verbose matrices
+                        if self.verbDatList['verboseOn2'][z][
+                            'trial'] == tnum and onIndex2 == -1:  # find the right index in the verbose matrices
                             onIndex2 = z
                     if onIndex >= 0:
                         while onIndex < len(self.verbBadList['verboseOn']):
@@ -803,19 +813,21 @@ class PyHabPL(PyHab):
                             if self.verbBadList['verboseOn2'][onIndex2]['trial'] == tnum:
                                 trialVerbose.append(self.verbBadList['verboseOn2'][onIndex2])
                             onIndex2 += 1
-                    if offIndex >=0:
+                    if offIndex >= 0:
                         while offIndex < len(self.verbBadList['verboseOff']):
-                            if self.verbBadList['verboseOff'][offIndex]['trial']==tnum:
+                            if self.verbBadList['verboseOff'][offIndex]['trial'] == tnum:
                                 trialVerbose.append(self.verbBadList['verboseOff'][offIndex])
                             offIndex += 1
-                    trialVerbose2 = sorted(trialVerbose, key=lambda trialVerbose:trialVerbose['startTime']) #this is the magic bullet, in theory.
+                    trialVerbose2 = sorted(trialVerbose, key=lambda trialVerbose: trialVerbose[
+                        'startTime'])  # this is the magic bullet, in theory.
                     verboseMatrix.extend(trialVerbose2)
         headers2 = ['snum', 'sID', 'months', 'days', 'sex', 'cond', 'GNG', 'gazeOnOff', 'trial', 'trialType',
-                                'startTime', 'endTime', 'duration']
-        with open(self.verboseFolder+self.prefix+str(self.sNum)+'_'+str(self.sID)+nDupe+'_'+str(self.today.month)+str(self.today.day)+str(self.today.year)+'_VERBOSE.csv','w') as f:
-            outputWriter2 = csv.DictWriter(f, fieldnames=headers2, extrasaction = 'ignore', lineterminator ='\n')
+                    'startTime', 'endTime', 'duration']
+        with open(self.verboseFolder + self.prefix + str(self.sNum) + '_' + str(self.sID) + nDupe + '_' + str(
+                self.today.month) + str(self.today.day) + str(self.today.year) + '_VERBOSE.csv', 'w') as f:
+            outputWriter2 = csv.DictWriter(f, fieldnames=headers2, extrasaction='ignore', lineterminator='\n')
             outputWriter2.writeheader()
-            for z in range(0,len(verboseMatrix)):
+            for z in range(0, len(verboseMatrix)):
                 outputWriter2.writerow(verboseMatrix[z])
         # core.wait(.3) Replaced by end-of-experiment screen
         # "end of experiment" screen. By default this will go to a black screen on the stim view

@@ -295,7 +295,7 @@ class PyHabPL(PyHab):
                     offArray.append(tempGazeArray)
             elif core.getTime() - startTrial >= .5 and self.keyboard[self.key.S] and ttype != 'Hab' and '^' not in ttype:
                 # End this trial, move to next, do not mark as bad.
-                if localType in self.movieEnd:
+                if localType in self.movieEnd or localType in self.minDur.keys():
                     endFlag = True
                 else:
                     runTrial = False
@@ -353,7 +353,7 @@ class PyHabPL(PyHab):
                 ttype = 4 #to force an immediate quit.
             #Now for the non-abort states.
             elif core.getTime() - startTrial >= self.maxDur[localType] + maxDurAdd and not endFlag: #reached max trial duration
-                if localType in self.movieEnd:
+                if localType in self.movieEnd or localType in self.minDur.keys():
                     endFlag = True
                 else:
                     runTrial = False
@@ -408,7 +408,7 @@ class PyHabPL(PyHab):
                         endNow = True
 
                 if endCondMet:
-                    if localType in self.movieEnd and not endNow:
+                    if (localType in self.movieEnd or localType in self.minDur.keys()) and not endNow:
                         endFlag = True
                     else:
                         runTrial = False
@@ -492,7 +492,7 @@ class PyHabPL(PyHab):
                     tempOn = startOn2
 
                 if self.playThrough[localType] in [1,3] and onDuration(adds=nowOn - tempOn) >= self.minOn[localType] and not endFlag:
-                    if localType in self.movieEnd and not endNow:
+                    if (localType in self.movieEnd or localType in self.minDur.keys()) and not endNow:
                         endFlag = True
                     else:
                         runTrial = False
@@ -511,7 +511,7 @@ class PyHabPL(PyHab):
                                              'duration': onDur}
                             onArray2.append(tempGazeArray)
                 elif self.playThrough[localType] == 4 and onDuration(adds=nowOn - tempOn) >= self.maxOn[localType] and not endFlag:
-                    if localType in self.movieEnd and not endNow:
+                    if (localType in self.movieEnd or localType in self.minDur.keys()) and not endNow:
                         endFlag = True
                     else:
                         runTrial = False
@@ -562,28 +562,55 @@ class PyHabPL(PyHab):
                         numOff = numOff + 1
                         startOff = core.getTime() - startTrial
             movieStatus = self.dispTrial(localType, disMovie)
-            if localType in self.movieEnd and endFlag and movieStatus >= 1:
-                runTrial = False
-                endTrial = core.getTime() - startTrial
-                if not self.stimPres:
-                    self.endTrialSound.play()
-                    self.endTrialSound = sound.Sound('A', octave=4, sampleRate=44100, secs=0.2)
-                # determine if they were looking or not at end of trial and update appropriate array
-                if gazeOn:
-                    onDur = endTrial - startOn
-                    tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOn, 'endTime': endTrial,
+            if endFlag:
+                if localType in self.movieEnd and movieStatus >= 1:
+                    runTrial = False
+                    endTrial = core.getTime() - startTrial
+                    if not self.stimPres:
+                        self.endTrialSound.play()
+                        self.endTrialSound = sound.Sound('A', octave=4, sampleRate=44100, secs=0.2)
+                    # determine if they were looking or not at end of trial and update appropriate array
+                    if gazeOn:
+                        onDur = endTrial - startOn
+                        tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOn, 'endTime': endTrial,
+                                                 'duration': onDur}
+                        onArray.append(tempGazeArray)
+                    if gazeOn2:
+                        onDur = endTrial - startOn2
+                        tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOn2, 'endTime': endTrial,
+                                                 'duration': onDur}
+                        onArray2.append(tempGazeArray)
+                    else:
+                        offDur = endTrial - startOff
+                        tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOff, 'endTime': endTrial,
+                                         'duration':offDur}
+                        offArray.append(tempGazeArray)
+                elif localType in self.minDur.keys():
+                    if self.minDur[localType] <= core.getTime() - startTrial:
+                        runTrial = False
+                        endTrial = core.getTime() - startTrial
+                        if not self.stimPres:
+                            self.endTrialSound.play()
+                            self.endTrialSound = sound.Sound('A', octave=4, sampleRate=44100, secs=0.2)
+                        # determine if they were looking or not at end of trial and update appropriate array
+                        if gazeOn:
+                            onDur = endTrial - startOn
+                            tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOn,
+                                             'endTime': endTrial,
                                              'duration': onDur}
-                    onArray.append(tempGazeArray)
-                if gazeOn2:
-                    onDur = endTrial - startOn2
-                    tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOn2, 'endTime': endTrial,
+                            onArray.append(tempGazeArray)
+                        if gazeOn2:
+                            onDur = endTrial - startOn2
+                            tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOn2,
+                                             'endTime': endTrial,
                                              'duration': onDur}
-                    onArray2.append(tempGazeArray)
-                else:
-                    offDur = endTrial - startOff
-                    tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOff, 'endTime': endTrial,
-                                     'duration':offDur}
-                    offArray.append(tempGazeArray)
+                            onArray2.append(tempGazeArray)
+                        else:
+                            offDur = endTrial - startOff
+                            tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOff,
+                                             'endTime': endTrial,
+                                             'duration': offDur}
+                            offArray.append(tempGazeArray)
         self.trialTiming.append({'trialNum': number, 'trialType': dataType, 'event': 'endTrial',
                                  'time': (core.getTime() - self.absoluteStart)})
         if self.eyetracker > 0:
