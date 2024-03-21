@@ -1477,8 +1477,9 @@ class PyHab:
                     else:
                         lastBlockName = self.actualTrialOrder[trialNum-2]
                     blockRedo = False
-                    if self.blockList[lastBlockName]['blockRedo'] in [True, 'True',1,'1']:
-                        blockRedo = True
+                    if lastBlockName in self.blockList.keys():
+                        if self.blockList[lastBlockName]['blockRedo'] in [True, 'True',1,'1']:
+                            blockRedo = True
                     [disMovie,trialNum] = self.redoSetup(trialNum, AA, lastBlockName, blockRedo=blockRedo) #This returns a new value for DisMovie and trialNum
                     trialType = self.actualTrialOrder[trialNum - 1]
                     while '.' in trialType:
@@ -1625,8 +1626,9 @@ class PyHab:
                         else:
                             lastBlockName = self.actualTrialOrder[trialNum - 2]
                         blockRedo = False
-                        if self.blockList[lastBlockName]['blockRedo'] in [True, 'True', 1, '1']:
-                            blockRedo = True
+                        if lastBlockName in self.blockList.keys():
+                            if self.blockList[lastBlockName]['blockRedo'] in [True, 'True', 1, '1']:
+                                blockRedo = True
                         [disMovie, trialNum] = self.redoSetup(trialNum, AA, lastBlockName, blockRedo)  # This returns a new value for DisMovie and trialNum
                         trialType = self.actualTrialOrder[trialNum - 1]
                         while '.' in trialType:
