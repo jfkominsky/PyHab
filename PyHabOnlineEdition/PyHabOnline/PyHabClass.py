@@ -1372,6 +1372,9 @@ class PyHab:
                                         trialType = trialType[trialType.index('.') + 1:]
                     elif self.keyboard[self.key.S] and '*' not in trialType:  #  Skip trial. Doesn't work on things required for habituation.
                         skip = True
+                        waitStart = False
+                        while self.keyboard[self.key.S]:
+                            self.dispCoderWindow(0) # To prevent rapid multiskipping
                     else:
                         self.dispCoderWindow(0)
             if not end or skip: #If Y has not been pressed, do the trial! Otherwise, end the experiment.

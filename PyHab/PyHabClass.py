@@ -1648,6 +1648,9 @@ class PyHab:
                                         trialType = trialType[trialType.index('.') + 1:]
                     elif self.keyboard[self.key.S] and '*' not in trialType:  # Skip trial. Doesn't work on things required for habituation.
                         skip = True
+                        waitStart = False
+                        while self.keyboard[self.key.S]:
+                            self.dispCoderWindow(0) # To prevent rapid multiskipping
                     # eye-tracker only: Redo calibration
                     elif self.eyetracker > 0 and self.keyboard[self.key.C]:
                         self.tracker.stop_recording()
