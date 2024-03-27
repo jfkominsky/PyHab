@@ -1357,10 +1357,14 @@ class PyHab:
                         trialType = self.actualTrialOrder[trialNum - 1]
                         while '.' in trialType:
                             trialType = trialType[trialType.index('.') + 1:]
-                            didRedo = True
+                        didRedo = True
+                        if self.stimPres:
+                            self.browser.get(self.presentationURL + '#/' + self.blankSlide)  # go to blank slide
                     elif self.keyboard[self.key.J] and topBlockName in self.habMetWhen.keys():
                         if self.habMetWhen[topBlockName] == -1:  # jump to test in a hab design
                             [disMovie, trialType] = self.jumpToTest(trialNum)
+                        if self.stimPres:
+                            self.browser.get(self.presentationURL + '#/' + self.blankSlide)  # go to blank slide
                     elif self.keyboard[self.key.I] and len(self.habMetWhen.keys()) > 0 and not habInsert:  # insert additional hab trial
                         # Only works if trial before this one was a hab block trial.
                         if '*' in self.actualTrialOrder[trialNum - 2]:
@@ -1373,6 +1377,8 @@ class PyHab:
                     elif self.keyboard[self.key.S] and '*' not in trialType:  #  Skip trial. Doesn't work on things required for habituation.
                         skip = True
                         waitStart = False
+                        if self.stimPres:
+                            self.browser.get(self.presentationURL + '#/' + self.blankSlide)  # go to blank slide
                         while self.keyboard[self.key.S]:
                             self.dispCoderWindow(0) # To prevent rapid multiskipping
                     else:
