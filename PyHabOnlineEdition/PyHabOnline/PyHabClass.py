@@ -1189,7 +1189,7 @@ class PyHab:
             habInsert = False
             if trialType not in AA and self.nextFlash in [1,'1',True,'True']: # The 'flasher' to alert the experimenter they need to start the next trial
                 self.flashCoderWindow()
-            while not self.keyboard[self.key.A] and trialType not in AA and not end:  # wait for 'ready' key, check at frame intervals
+            while not self.keyboard[self.key.A] and trialType not in AA and not end and not skip:  # wait for 'ready' key, check at frame intervals
                 if self.keyboard[self.key.Y]:
                     end = True
                 elif self.keyboard[self.key.R] and not didRedo:
@@ -1231,6 +1231,10 @@ class PyHab:
                                 habInsert = True
                                 while '.' in trialType:
                                     trialType = trialType[trialType.index('.') + 1:]
+                elif self.keyboard[self.key.S] and '*' not in trialType:  # Skip trial. Doesn't work on things required for habituation.
+                    skip = True
+                    while self.keyboard[self.key.S]:
+                        self.dispCoderWindow(0)  # To prevent rapid multiskipping
                 elif trialNum > 1 and not self.stimPres and self.keyboard[self.key.P] and not reviewed:  # Print data so far, as xHab. Non-stimulus version only. Only between trials.
                     reviewed = True
                     self.printCurrentData()
@@ -1239,7 +1243,7 @@ class PyHab:
             AA = self.autoAdvance
             if trialNum == 1:
                 self.absoluteStart = core.getTime()
-            if not end: #This if statement checks if we're trying to quit.
+            if not end or skip: #This if statement checks if we're trying to quit.
                 self.frameCount = {k:0 for k,v in self.frameCount.items()}
                 # framerate = win.getActualFrameRate()
                 # print(framerate)               #just some debug code.
