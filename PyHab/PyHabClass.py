@@ -1457,7 +1457,7 @@ class PyHab:
             habInsert = False # Adding this to track whether a hab trial has been inserted already
             if trialType not in AA and self.nextFlash in [1,'1',True,'True']: # The 'flasher' to alert the experimenter they need to start the next trial
                 self.flashCoderWindow()
-            while not self.keyboard[self.key.A] and trialType not in AA and not end:  # wait for 'ready' key, check at frame intervals
+            while not self.keyboard[self.key.A] and trialType not in AA and not end and not skip:  # wait for 'ready' key, check at frame intervals
                 if self.keyboard[self.key.Y]:
                     end = True
                 elif self.keyboard[self.key.R] and not didRedo:
@@ -1503,6 +1503,12 @@ class PyHab:
                     self.tracker.stop_recording() # scary, but as long as "newfile" is false, then it should be possible to resume.
                     self.TrackerCalibrateValidate()
                     self.tracker.start_recording(self.et_filename, newfile=False)
+                elif self.keyboard[self.key.S] and '*' not in trialType:  # Skip trial. Doesn't work on things required for habituation.
+                    skip = True
+                    if self.stimPres:
+                        self.win.flip()
+                    while self.keyboard[self.key.S]:
+                        self.dispCoderWindow(0)  # To prevent rapid multiskipping
                 elif trialNum > 1 and not self.stimPres and self.keyboard[self.key.P] and not reviewed:  # Print data so far, as xHab. Non-stimulus version only. Only between trials.
                     reviewed = True
                     self.printCurrentData()
@@ -1514,7 +1520,7 @@ class PyHab:
                 if self.eyetracker > 0: # Should align timing file w/eye-tracker timing.
                     self.tracker.start_recording(self.et_filename)
                 self.absoluteStart = core.getTime()
-            if not end: #This if statement checks if we're trying to quit.
+            if not end and not skip: #This if statement checks if we're trying to quit.
                 self.frameCount = {k:0 for k,v in self.frameCount.items()}
                 # framerate = win.getActualFrameRate()
                 # print(framerate)               #just some debug code.
@@ -1565,7 +1571,7 @@ class PyHab:
                         waitStart = True
                     else:
                         waitStart = True
-                while waitStart and trialType not in AA and not end:  # Wait for first gaze-on
+                while waitStart and trialType not in AA and not end and not skip:  # Wait for first gaze-on
                     if self.keyboard[self.key.Y]:  # End experiment right there and then.
                         end = True
                     elif self.keyboard[self.key.A]:
@@ -1652,7 +1658,6 @@ class PyHab:
                                         trialType = trialType[trialType.index('.') + 1:]
                     elif self.keyboard[self.key.S] and '*' not in trialType:  # Skip trial. Doesn't work on things required for habituation.
                         skip = True
-                        waitStart = False
                         if self.stimPres:
                             self.win.flip() # blank the screen
                         while self.keyboard[self.key.S]:
@@ -1664,7 +1669,7 @@ class PyHab:
                         self.tracker.start_recording(self.et_filename, newfile=False)
                     else:
                         self.dispCoderWindow(0)
-            if not end or skip: #If Y has not been pressed, do the trial! Otherwise, end the experiment.
+            if not end and not skip: #If Y has not been pressed, do the trial! Otherwise, end the experiment.
                 x = self.doTrial(trialNum, self.actualTrialOrder[trialNum - 1], disMovie)  # the actual trial, returning one of four status values at the end
                 AA = self.autoAdvance  # After the very first trial AA will always be just the autoadvance list.
             elif skip:
@@ -1895,6 +1900,10 @@ class PyHab:
                         offDur = endTrial - startOff
                         tempGazeArray = {'trial':number, 'trialType':dataType, 'startTime':startOff, 'endTime':endTrial, 'duration':offDur}
                         offArray.append(tempGazeArray)
+                    while self.keyboard[self.key.S]:
+                        self.dispCoderWindow(0)
+                        if self.stimPres:
+                            self.win.flip()
 
             elif self.keyboard[self.key.Y]:  # the 'end the study' button, for fuss-outs
                 runTrial = False

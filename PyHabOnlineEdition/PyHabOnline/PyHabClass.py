@@ -1243,7 +1243,7 @@ class PyHab:
             AA = self.autoAdvance
             if trialNum == 1:
                 self.absoluteStart = core.getTime()
-            if not end or skip: #This if statement checks if we're trying to quit.
+            if not end and not skip: #This if statement checks if we're trying to quit.
                 self.frameCount = {k:0 for k,v in self.frameCount.items()}
                 # framerate = win.getActualFrameRate()
                 # print(framerate)               #just some debug code.
@@ -1387,7 +1387,7 @@ class PyHab:
                             self.dispCoderWindow(0) # To prevent rapid multiskipping
                     else:
                         self.dispCoderWindow(0)
-            if not end or skip: #If Y has not been pressed, do the trial! Otherwise, end the experiment.
+            if not end and not skip: #If Y has not been pressed, do the trial! Otherwise, end the experiment.
                 x = self.doTrial(trialNum, self.actualTrialOrder[trialNum - 1], disMovie)  # the actual trial, returning one of four status values at the end
                 AA = self.autoAdvance  # After the very first trial AA will always be just the autoadvance list.
             elif skip:
