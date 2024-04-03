@@ -3878,7 +3878,7 @@ class PyHabBuilder:
                         errDlg.show()
                         return self.habSettingsDlg(trialList, newHabSettings, redo=True)
                 else: # If there's only one trial in the block then that's the hab trial!
-                    newHabSettings['calcHabOver'] = trialList[0]
+                    newHabSettings['calcHabOver'] = [trialList[0]]
                 return newHabSettings
             else:
                 errDlg = gui.Dlg(title="Warning, invalid number!")

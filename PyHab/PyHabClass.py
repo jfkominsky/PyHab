@@ -154,6 +154,8 @@ class PyHab:
                     self.blockList[i]['blockRedo'] = False
                 if 'maxHabSet' not in j.keys():
                     self.blockList[i]['maxHabSet'] = -1 # Default value
+                if type(j['calcHabOver']) is not list: # A fix for a bug from 0.10.6
+                    self.blockList[i]['calcHabOver'] = [j['calcHabOver']]
         else:
             self.blockList = {}
             self.blockDataList = []
