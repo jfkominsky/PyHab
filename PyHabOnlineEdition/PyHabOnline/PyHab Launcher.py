@@ -15,19 +15,19 @@ def run():
         setArr.append(row)
     setDict = dict(setArr) 
     launcherDlg = gui.Dlg(title="PyHab Launcher",labelButtonCancel=u'Exit')
-    launcherDlg.addText('Current settings file: ' + setName)
-    launcherDlg.addField('Run study or open builder?', choices=['Run','Builder'])
+    launcherDlg.addText(text='Current settings file: ' + setName)
+    launcherDlg.addField('buildrun',label='Run study or open builder?', choices=['Run','Builder'])
     tempOrd = eval(setDict['trialOrder'])
     stPres = True
     if stPres:
         ch = ['On','Off']
-        launcherDlg.addField('Online stimulus presentation mode (Run only): ', choices=ch)
+        launcherDlg.addField('stimpres',label='Online stimulus presentation mode (Run only): ', choices=ch)
     launcherDlg.show()
     if launcherDlg.OK:
         launcher = launcherDlg.data
-        if launcher[0] == 'Run':
+        if launcher['buildrun'] == 'Run':
             if stPres:
-                if launcher[1] == 'On':
+                if launcher['stimpres'] == 'On':
                     setDict['stimPres'] = '1'
                 else:
                     setDict['stimPres'] = '0'
