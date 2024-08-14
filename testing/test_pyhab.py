@@ -1834,7 +1834,9 @@ class TestRunSetup(object):
         assert self.trialInst.blockDataTags=={'E':[[6,7,8],[11,12,13]]}
 
     def test_multiyear_age(self):
-        self.trialInst.run(testMode=testOne)
+        testTwo ={'snum':99, 'sID':'Test', 'sex':'NB', 'dob_m':'7', 'dob_d':'2', 'dob_y':'16', 'cond':'testcond',
+                   'dot_m':'8', 'dot_d':'2', 'dot_y':'18'}
+        self.trialInst.run(testMode=testTwo)
 
         assert self.trialInst.ageMo == 25
         assert self.trialInst.ageDay == 0
@@ -1848,7 +1850,7 @@ class TestRunSetup(object):
 
     def test_four_digit_years(self):
         testTwo = {'snum': 99, 'sID': 'Test', 'sex': 'NB', 'dob_m': '7', 'dob_d': '2', 'dob_y': '2016',
-                   'cond': 'testcond', 'dot_m': '8', 'dot_d': '1', 'dot_y': '18'}
+                   'cond': 'testcond', 'dot_m': '8', 'dot_d': '2', 'dot_y': '18'}
         self.trialInst.run(testMode=testTwo)
 
         assert self.trialInst.ageMo == 25
@@ -1876,7 +1878,7 @@ class TestRunSetup(object):
         self.trialInst.randPres = True
         self.trialInst.stimPres = True
 
-        testTwo = [99, 'Test', 'NB', '7', '2', '16', '1']  # corresponds to {Intro:[1,2], Fam:[1,2], Test:[1,2]}
+        testTwo = {'snum':99, 'sID':'Test', 'sex':'NB', 'dob_m':'7', 'dob_d':'2', 'dob_y':'16', 'cond':'1'} # corresponds to {Intro:[1,2], Fam:[1,2], Test:[1,2]}
         self.trialInst.run(testMode=testTwo)
 
         # First make sure it won't go without condlist
