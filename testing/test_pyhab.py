@@ -59,6 +59,8 @@ base_settings = {
     'prefLook': '0',
     'loadSep': '0'}
 
+testOne= {'snum':99, 'sID':'Test', 'sex':'NB', 'dob_m':'7', 'dob_d':'2', 'dob_y':'18', 'cond':'testcond',
+                   'dot_m':'8', 'dot_d':'2', 'dot_y':'18'}
 
 def test_init():
     """
@@ -1648,7 +1650,6 @@ class TestRunSetup(object):
         del self.trialInst
 
     def test_setup(self):
-        testOne = [99, 'Test', 'NB', '7', '2', '18', 'testcond', '8', '2', '18']
 
         self.trialInst.run(testMode=testOne)
 
@@ -1657,7 +1658,6 @@ class TestRunSetup(object):
         assert self.trialInst.ageDay == 0
 
     def test_hab_one_trial_expansion(self):
-        testOne = [99, 'Test', 'NB', '7', '2', '18', 'testcond', '8', '2', '18']
         self.trialInst.trialOrder = ['A', 'A', 'B', 'B', 'C', 'D']
         # C is a hab block
         self.trialInst.blockList = {'C': {'trialList': ['F'],
@@ -1682,7 +1682,6 @@ class TestRunSetup(object):
         assert self.trialInst.actualTrialOrder.index('C14*^.F') == self.trialInst.maxHabIndex['C']
 
     def test_hab_block_expansion(self):
-        testOne = [99, 'Test', 'NB', '7', '2', '18', 'testcond', '8', '2', '18']
         self.trialInst.trialOrder = ['A', 'A', 'B', 'B', 'C', 'D']
         self.trialInst.blockList = {'C': {'trialList': ['X', 'E', 'B'],
                                           'habituation': 1,
@@ -1717,7 +1716,6 @@ class TestRunSetup(object):
         assert self.trialInst.actualTrialOrder.index('C10*^.B') == self.trialInst.maxHabIndex['C']
 
     def test_block_expansion(self):
-        testOne = [99, 'Test', 'NB', '7', '2', '18', 'testcond', '8', '2', '18']
         self.trialInst.trialOrder = ['A', 'A', 'B', 'B', 'C', 'D']
         self.trialInst.blockList = {'C': {'trialList': ['X', 'E', 'B'],
                                         'habituation': 0,
@@ -1783,7 +1781,6 @@ class TestRunSetup(object):
 
 
     def test_block_data_setup(self):
-        testOne = [99, 'Test', 'NB', '7', '2', '18', 'testcond', '8', '2', '18']
         self.trialInst.trialOrder = ['A', 'A', 'B', 'B', 'C', 'D']
         self.trialInst.blockList = {'C': {'trialList': ['X','E','B'],
                                         'habituation': 0,
@@ -1837,26 +1834,28 @@ class TestRunSetup(object):
         assert self.trialInst.blockDataTags=={'E':[[6,7,8],[11,12,13]]}
 
     def test_multiyear_age(self):
-        testOne = [99, 'Test', 'NB', '7', '2', '16', 'testcond', '8', '2', '18']
         self.trialInst.run(testMode=testOne)
 
         assert self.trialInst.ageMo == 25
         assert self.trialInst.ageDay == 0
 
-        testTwo = [99, 'Test', 'NB', '7', '2', '16', 'testcond', '8', '1', '18']
+        testTwo ={'snum':99, 'sID':'Test', 'sex':'NB', 'dob_m':'7', 'dob_d':'2', 'dob_y':'16', 'cond':'testcond',
+                   'dot_m':'8', 'dot_d':'1', 'dot_y':'18'}
         self.trialInst.run(testMode=testTwo)
 
         assert self.trialInst.ageMo == 24
         assert self.trialInst.ageDay == 30
 
     def test_four_digit_years(self):
-        testOne = [99, 'Test', 'NB', '7', '2', '2016', 'testcond', '8', '2', '18']
-        self.trialInst.run(testMode=testOne)
+        testTwo = {'snum': 99, 'sID': 'Test', 'sex': 'NB', 'dob_m': '7', 'dob_d': '2', 'dob_y': '2016',
+                   'cond': 'testcond', 'dot_m': '8', 'dot_d': '1', 'dot_y': '18'}
+        self.trialInst.run(testMode=testTwo)
 
         assert self.trialInst.ageMo == 25
         assert self.trialInst.ageDay == 0
 
-        testTwo = [99, 'Test', 'NB', '7', '2', '16', 'testcond', '8', '2', '2018']
+        testTwo = {'snum': 99, 'sID': 'Test', 'sex': 'NB', 'dob_m': '7', 'dob_d': '2', 'dob_y': '16',
+                   'cond': 'testcond', 'dot_m': '8', 'dot_d': '1', 'dot_y': '2018'}
         self.trialInst.run(testMode=testTwo)
         assert self.trialInst.ageMo == 25
         assert self.trialInst.ageDay == 0
@@ -2054,7 +2053,6 @@ class TestMultiHabBlock(object):
         del self.habInst2
 
     def test_initial_setup(self):
-        testOne = [99, 'Test', 'NB', '7', '2', '18', 'testcond', '8', '2', '18']
         self.habInst.run(testMode=testOne)
 
         assert 'E' in self.habInst.habCount.keys()
@@ -2219,7 +2217,6 @@ class TestMultiHabBlock(object):
 
     def test_short_hab(self):
         # A specialized test for an edge case involving a very low number of maxhabtrials
-        testOne = [99, 'Test', 'NB', '7', '2', '18', 'testcond', '8', '2', '18']
         self.habInst2.run(testMode=testOne)
 
         assert len(self.habInst2.actualTrialOrder) == 28  # 6+6*3+4 = 6*4+4 = 28
@@ -2267,7 +2264,6 @@ class TestHabNaming(object):
         del self.habInst3
 
     def test_initial_setup(self):
-        testOne = [99, 'Test', 'NB', '7', '2', '18', 'testcond', '8', '2', '18']
         self.habInst3.run(testMode=testOne)
 
         assert 'HAB_A' in self.habInst3.habCount.keys()
@@ -2389,7 +2385,6 @@ class TestCommands(object):
     def test_jump_and_insert(self):
         self.commandInst.trialText = mock.MagicMock()
         self.commandInst.stimPres = True
-        testOne = [99, 'Test', 'NB', '7', '2', '18', 'testcond', '8', '2', '18']
         self.commandInst.stimNames = {'A': ['Movie1', 'Movie2', 'Movie3', 'Movie4'],
                                       'B': ['Movie5', 'Movie6', 'Movie7', 'Movie8'],
                                       'C': ['Movie1', 'Movie2', 'Movie3', 'Movie4'],
@@ -2496,7 +2491,6 @@ class TestCommands(object):
         """
         self.commandInst.trialText = mock.MagicMock()
         self.commandInst.stimPres = True
-        testOne = [99, 'Test', 'NB', '7', '2', '18', 'testcond', '8', '2', '18']
         self.commandInst.stimNames = {'A': ['Movie1', 'Movie2', 'Movie3', 'Movie4'],
                                       'B': ['Movie5', 'Movie6', 'Movie7', 'Movie8'],
                                       'C': ['Movie1', 'Movie2', 'Movie3', 'Movie4'],
@@ -2711,7 +2705,6 @@ class TestCommands(object):
         assert self.commandInst.habSetWhen['Hab'] == 4  # Verifying unchanged.
 
     def test_blockredo(self):
-        testOne = [99, 'Test', 'NB', '7', '2', '18', 'testcond', '8', '2', '18']
         self.commandInst.blockList = {'C': {'trialList': ['X', 'E', 'B'],
                                             'habituation': 0,
                                             'habByDuration': 0,
