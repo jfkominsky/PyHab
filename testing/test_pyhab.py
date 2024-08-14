@@ -1857,7 +1857,7 @@ class TestRunSetup(object):
         assert self.trialInst.ageDay == 0
 
         testTwo = {'snum': 99, 'sID': 'Test', 'sex': 'NB', 'dob_m': '7', 'dob_d': '2', 'dob_y': '16',
-                   'cond': 'testcond', 'dot_m': '8', 'dot_d': '1', 'dot_y': '2018'}
+                   'cond': 'testcond', 'dot_m': '8', 'dot_d': '2', 'dot_y': '2018'}
         self.trialInst.run(testMode=testTwo)
         assert self.trialInst.ageMo == 25
         assert self.trialInst.ageDay == 0
