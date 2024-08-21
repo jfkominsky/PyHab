@@ -544,7 +544,7 @@ class PyHabBuilder:
             types['text'][o].draw()
 
 
-    def trialTypeDlg(self, trialType="TrialTypeNew", makeNew=True, prevInfo=[]):
+    def trialTypeDlg(self, trialType="TrialTypeNew", makeNew=True, prevInfo={}):
         """
         Dialog for creating OR modifying a trial type. Allows you to set
         the maximum duration of that trial type as well as remove movies
@@ -586,7 +586,7 @@ class PyHabBuilder:
         :param makeNew: Making a new trial type or modifying an existing one?
         :type makeNew: bool
         :param prevInfo: If user attempts to create an invalid trial type, the dialog is re-opened with the previously entered information stored and restored
-        :type prevInfo: list
+        :type prevInfo: dict
         :return:
         :rtype:
         """
@@ -615,11 +615,11 @@ class PyHabBuilder:
                         maxOn = 5.0
 
                 else:
-                    typeDlg.addField('maxDur', label="Max duration", initial=prevInfo[1])  # Index 1
-                    maxOff = prevInfo[3]
-                    minOn = prevInfo[4]
-                    ISI = prevInfo[11]
-                    maxOn = prevInfo[12]
+                    typeDlg.addField('maxDur', label="Max duration", initial=prevInfo['maxDur'])
+                    maxOff = prevInfo['maxOff']
+                    minOn = prevInfo['minOn']
+                    ISI = prevInfo['ISI']
+                    maxOn = prevInfo['maxOn']
 
                 # Find the index of the existing trial type in the study flow and type pane.
                 flowIndexes=[]
@@ -638,18 +638,18 @@ class PyHabBuilder:
                 else:
                     chz = ["Yes", "OnOnly", "No", "EitherOr", "MaxOff/MaxOn"]
             elif len(prevInfo) > 0:
-                typeDlg.addField('maxDur',label="Max duration", initial=prevInfo[1])  # Index 1
-                maxOff = prevInfo[3]
-                minOn = prevInfo[4]
-                ISI = prevInfo[11]
-                maxOn = prevInfo[12]
-                if prevInfo[2] == 3:
+                typeDlg.addField('maxDur',label="Max duration", initial=prevInfo['maxDur'])  # Index 1
+                maxOff = prevInfo['maxOff']
+                minOn = prevInfo['minOn']
+                ISI = prevInfo['ISI']
+                maxOn = prevInfo['maxOn']
+                if prevInfo['playThrough'] == 3:
                     chz = ["EitherOr", "Yes", "OnOnly", "No", "MaxOff/MaxOn"]
-                elif prevInfo[2] == 2:
+                elif prevInfo['playThrough'] == 2:
                     chz = ["No", "Yes", "OnOnly", "EitherOr", "MaxOff/MaxOn"]
-                elif prevInfo[2] == 1:
+                elif prevInfo['playThrough'] == 1:
                     chz = ["OnOnly", "Yes", "EitherOr", "No", "MaxOff/MaxOn"]
-                elif prevInfo[2] == 4:
+                elif prevInfo['playThrough'] == 4:
                     chz = ["MaxOff/MaxOn", "Yes", "OnOnly", "EitherOr", "No"]
                 else:
                     chz = ["Yes", "OnOnly", "EitherOr", "No","MaxOff/MaxOn"]
@@ -665,10 +665,10 @@ class PyHabBuilder:
             typeDlg.addField('minOn', label="Minimum time looking at screen before stimuli can be ended (not consecutive)", initial=minOn)  # Index 4
             # On-time deadline
             if len(prevInfo) > 0:
-                if prevInfo[5] in [True, 'True', 1, '1']:
-                    autoredo = True
-                otdl = prevInfo[6]
-                if prevInfo[7] in [True, 'True', 1, '1']:
+                if prevInfo['autoRedo'] in [True, 'True', 1, '1']:
+                    autoRedo = True
+                otdl = prevInfo['onTimeDeadline']
+                if prevInfo['durationCriterion'] in [True, 'True', 1, '1']:
                     durCrit = True
             else:
                 if trialType in self.settings['autoRedo']:
@@ -690,7 +690,7 @@ class PyHabBuilder:
             typeDlg.addField('durationCriteron', label="Check to use total trial duration instead of gaze-on time for trial length calculation", initial=durCrit)  # Index 7
 
             if len(prevInfo) > 0:
-                if prevInfo[8] in [True, 'True', 1, '1']:
+                if prevInfo['autoAdvance'] in [True, 'True', 1, '1']:
                     chz2 = True
             elif trialType in self.settings['autoAdvance']:
                 chz2 = True
@@ -732,9 +732,9 @@ class PyHabBuilder:
                     typeDlg.addText("Current stimuli in trial type (uncheck to remove)")
                     for i in range(0,len(self.settings['stimNames'][trialType])):
                         if self.settings['prefLook'] in [2,'2']:
-                            typeDlg.addField(self.settings['stimNames'][trialType][i]['C'],label=self.settings['stimNames'][trialType][i+9]['C'], initial=prevInfo[i])
+                            typeDlg.addField(self.settings['stimNames'][trialType][i]['C'],label=self.settings['stimNames'][trialType][i+9]['C'], initial=prevInfo[self.settings['stimNames'][trialType][i]['C']])
                         else:
-                            typeDlg.addField(self.settings['stimNames'][trialType][i], label=self.settings['stimNames'][trialType][i], initial=prevInfo[i])
+                            typeDlg.addField(self.settings['stimNames'][trialType][i], label=self.settings['stimNames'][trialType][i], initial=prevInfo[self.settings['stimNames'][trialType][i]])
 
 
             typeInfo = typeDlg.show()
@@ -907,23 +907,23 @@ class PyHabBuilder:
         """
         A dialog for advanced trial settings mostly having to do with attention-getters and stimulus presentation
 
-        0/-9 = Minimum duration independent of anything else.
+        minDur = Minimum duration independent of anything else.
 
-        1/-8 = cutoff attention-getter on gaze-on? T/F [if trial has an AG - not always present]
+        cutoff = cutoff attention-getter on gaze-on? T/F [if trial has an AG - not always present]
 
-        2/-7 = cutoff on-time: How long do they have to look to cut off presentation? [if trial has an AG - not always present]
+        onmin = cutoff on-time: How long do they have to look to cut off presentation? [if trial has an AG - not always present]
 
-        3/-6 = Pause stimulus presentation when infant is not looking at screen?
+        dynamicPause = Pause stimulus presentation when infant is not looking at screen?
 
-        4/-5 = Mid-trial AG: Play an attention-getter if infant looks away mid-trial?
+        midAG = Mid-trial AG: Play an attention-getter if infant looks away mid-trial?
 
-        5/-4 = mid-trial AG trigger: Minimum time to trigger mid-trial AG
+        trigger = mid-trial AG trigger: Minimum time to trigger mid-trial AG
 
-        6/-3 = mid-trial AG cutoff: Stop mid-trial AG on gaze-on?
+        midcutoff = mid-trial AG cutoff: Stop mid-trial AG on gaze-on?
 
-        7/-2 = mid-trial AG cutoff ontime
+        midonmin = mid-trial AG cutoff ontime
 
-        8/-1 = HPP ONLY: Only count gaze-on to stimulus-presenting screen? T/F, casts to hppStimScrOnly
+        hppStimScrOnly = HPP ONLY: Only count gaze-on to stimulus-presenting screen? T/F, casts to hppStimScrOnly
 
 
 
@@ -943,23 +943,23 @@ class PyHabBuilder:
             val1 = self.settings['minDur'][trialType]
         else:
             val1 = 0.0
-        adTypeDlg.addField("Minimum trial duration (independent of gaze behavior)", val1)
+        adTypeDlg.addField('minDur', label="Minimum trial duration (independent of gaze behavior)", initial=val1)
 
         if trialType in self.settings['playAttnGetter']:
             if self.settings['playAttnGetter'][trialType]['cutoff'] in [1, '1', True, 'True']:
                 chz1 = True
             else:
                 chz1 = False
-            adTypeDlg.addField("Cutoff attention-getter on gaze-on?", initial=chz1)
-            adTypeDlg.addField("Minimum on-time to cutoff attention-getter (ignored if box above is not checked)",
-                               self.settings['playAttnGetter'][trialType]['onmin'])
+            adTypeDlg.addField('cutoff', label="Cutoff attention-getter on gaze-on?", initial=chz1)
+            adTypeDlg.addField('onmin', label="Minimum on-time to cutoff attention-getter (ignored if box above is not checked)",
+                               initial=self.settings['playAttnGetter'][trialType]['onmin'])
         # The "dynamic pause" feature is available even if there are no stimuli in order to allow offline coding to
         # simulate it, and if necessary add time to the trial (...?)
         if trialType in self.settings['dynamicPause']:
             chz2 = True
         else:
             chz2 = False
-        adTypeDlg.addField("Pause stimulus presentation when infant is not looking at screen?", initial=chz2)
+        adTypeDlg.addField('dynamicPause', label="Pause stimulus presentation when infant is not looking at screen?", initial=chz2)
 
         # mid-trial AG settings are present regardless of whether there is an AG at the start of the trial or not.
         if trialType in self.settings['midAG']:
@@ -989,80 +989,80 @@ class PyHabBuilder:
             trigger = 2.0
             midcutoff = False
             midonmin = 0.0
-        adTypeDlg.addField("Play mid-trial attention-getter on sustained gaze-off (select AG)?", choices=chz3)
-        adTypeDlg.addField("Seconds of gaze-off to trigger attention-getter", trigger)
-        adTypeDlg.addField("Stop mid-trial AG on gaze-on?", initial=midcutoff)
-        adTypeDlg.addField("Minimum on-time to stop mid-trial AG", midonmin)
+        adTypeDlg.addField('midAG', "Play mid-trial attention-getter on sustained gaze-off (select AG)?", choices=chz3)
+        adTypeDlg.addField('trigger', label="Seconds of gaze-off to trigger attention-getter", initial=trigger)
+        adTypeDlg.addField('midcutoff',label="Stop mid-trial AG on gaze-on?", initial=midcutoff)
+        adTypeDlg.addField('midonmin', label="Minimum on-time to stop mid-trial AG", initial=midonmin)
 
         hppstimonly = False
         if trialType in self.settings['hppStimScrOnly']:
             hppstimonly = True
-        adTypeDlg.addField("HPP Only: Only count stim screen as gaze-on for ending trials?", initial=hppstimonly)
+        adTypeDlg.addField('hppStimScrOnly', label="HPP Only: Only count stim screen as gaze-on for ending trials?", initial=hppstimonly)
 
 
         adTypeInfo = adTypeDlg.show()
         if adTypeDlg.OK:
             fail = [] # amass invalid inputs, save the rest
 
-            if not isinstance(adTypeInfo[0], float) and not isinstance(adTypeInfo[0], int):
+            if not isinstance(adTypeInfo['minDur'], float) and not isinstance(adTypeInfo[0], int):
                 try:
-                    eval(adTypeInfo[0])
+                    eval(adTypeInfo['minDur'])
                 except:
                     fail.append("Number expected for minimum duration, got text instead!")
             else:
-                if adTypeInfo[0] > 0.0:
-                    self.settings['minDur'][trialType] = adTypeInfo[0]
-                elif trialType in self.settings['minDur'].keys() and adTypeInfo[0] <= 0.0:
+                if adTypeInfo['minDur'] > 0.0:
+                    self.settings['minDur'][trialType] = adTypeInfo['minDur']
+                elif trialType in self.settings['minDur'].keys() and adTypeInfo['minDur'] <= 0.0:
                     self.settings['minDur'].pop(trialType, None)
             if trialType in self.settings['playAttnGetter']:
-                if adTypeInfo[len(adTypeInfo)-8] in [True, 1, 'True', '1']:
+                if adTypeInfo['cutoff'] in [True, 1, 'True', '1']:
                     self.settings['playAttnGetter'][trialType]['cutoff'] = 1
                 else:
                     self.settings['playAttnGetter'][trialType]['cutoff'] = 0
-                if not isinstance(adTypeInfo[len(adTypeInfo)-7], float) and not isinstance(adTypeInfo[len(adTypeInfo)-7], int):
+                if not isinstance(adTypeInfo['onmin'], float) and not isinstance(adTypeInfo['onmin'], int):
                     try:
-                        eval(adTypeInfo[len(adTypeInfo)-7])
+                        eval(adTypeInfo['onmin'])
                     except:
                         fail.append("Number expected for minimum on-time to end attention-getter, got text instead!")
-                if isinstance(adTypeInfo[len(adTypeInfo)-7], float) and not isinstance(adTypeInfo[len(adTypeInfo)-7], int):
-                    self.settings['playAttnGetter'][trialType]['onmin'] = adTypeInfo[len(adTypeInfo)-7]
+                if isinstance(adTypeInfo['onmin'], float) and not isinstance(adTypeInfo['onmin'], int):
+                    self.settings['playAttnGetter'][trialType]['onmin'] = adTypeInfo['onmin']
             # Pause behavior
-            if adTypeInfo[len(adTypeInfo)-6] in [True, 1, 'True', '1'] and trialType not in self.settings['dynamicPause']:
+            if adTypeInfo['dynamicPause'] in [True, 1, 'True', '1'] and trialType not in self.settings['dynamicPause']:
                 self.settings['dynamicPause'].append(trialType)
-            elif adTypeInfo[len(adTypeInfo)-6] in [False, 0, 'False', '0'] and trialType in self.settings['dynamicPause']:
+            elif adTypeInfo['dynamicPause'] in [False, 0, 'False', '0'] and trialType in self.settings['dynamicPause']:
                 # Remove if this behavior has been turned off.
                 self.settings['dynamicPause'].pop(self.settings['dynamicPause'].index(trialType))
             # Mid-trial AG
-            if adTypeInfo[len(adTypeInfo)-5] in self.settings['attnGetterList']:
+            if adTypeInfo['midAG'] in self.settings['attnGetterList']:
                 # We have the luxury of only caring about certain inputs if there is a mid-trial AG
-                if not isinstance(adTypeInfo[len(adTypeInfo) - 4], float) and not isinstance(adTypeInfo[len(adTypeInfo) - 4], int):
+                if not isinstance(adTypeInfo['trigger'], float) and not isinstance(adTypeInfo['trigger'], int):
                     try:
-                        trigger = eval(adTypeInfo[len(adTypeInfo) - 4])
+                        trigger = eval(adTypeInfo['trigger'])
                     except:
                         trigger = 0.0
                         fail.append("Number expected for minimum off-time to trigger mid-trail AG, got text instead!")
                 else:
-                    trigger = adTypeInfo[len(adTypeInfo) - 4]
+                    trigger = adTypeInfo['trigger']
 
-                if adTypeInfo[len(adTypeInfo)-3] in [1, '1', True, 'True']:
+                if adTypeInfo['midcutoff'] in [1, '1', True, 'True']:
                     midcut = 1
-                    if not isinstance(adTypeInfo[len(adTypeInfo) - 2], float) and not isinstance(adTypeInfo[len(adTypeInfo) - 2], int):
+                    if not isinstance(adTypeInfo['midonmin'], float) and not isinstance(adTypeInfo['midonmin'], int):
                         try:
-                            midmin = eval(adTypeInfo[len(adTypeInfo) - 2])
+                            midmin = eval(adTypeInfo['midonmin'])
                         except:
                             midmin = 0.0
                             fail.append("Number expected for minimum on-time to cutoff mid-trail AG, got text instead!")
                     else:
-                        midmin = adTypeInfo[len(adTypeInfo) - 2]
+                        midmin = adTypeInfo['midonmin']
                 else:
                     midcut = 0
                     midmin = 0.0
-                self.settings['midAG'][trialType] = {'attnGetter':adTypeInfo[len(adTypeInfo)-5], 'trigger':trigger,
+                self.settings['midAG'][trialType] = {'attnGetter':adTypeInfo['midAG'], 'trigger':trigger,
                                                      'cutoff':midcut, 'onmin':midmin}
             elif trialType in self.settings['midAG'].keys():
                 # If the mid-trial AG has been set to "none" but was previously set to something, remove it.
                 self.settings['midAG'].pop(trialType)
-            if adTypeInfo[len(adTypeInfo) - 1] in [1, '1', True, 'True']:
+            if adTypeInfo['hppStimScrOnly'] in [1, '1', True, 'True']:
                 if trialType not in self.settings['hppStimScrOnly']:
                     self.settings['hppStimScrOnly'].append(trialType)
             elif trialType in self.settings['hppStimScrOnly']:
@@ -1166,30 +1166,30 @@ class PyHabBuilder:
             self.workingText.draw()
             self.win.flip()
             newBlockDlg = gui.Dlg(title="Create new block")
-            newBlockDlg.addField("Block name: ", initial=name)
+            newBlockDlg.addField('name', label="Block name: ", initial=name)
             newBlockDlg.addText("Hit OK to select trials for this block")
             newBlock = newBlockDlg.show()
             if newBlockDlg.OK:
-                newBlock[0] = str(newBlock[0])  # In case PyQT does something weird
+                newBlock['name'] = str(newBlock['name'])  # In case PyQT does something weird
                 startsSameAs = False
                 for i,j in self.settings['blockList'].items():
-                    if len(newBlock[0]) <= len(i):
-                        if newBlock[0] == i[0:len(newBlock[0])]:
+                    if len(newBlock['name']) <= len(i):
+                        if newBlock['name'] == i[0:len(newBlock['name'])]:
                             startsSameAs = True
-                    if len(i) <= len(newBlock[0]):
-                        if i == newBlock[0][0:len(i)]:
+                    if len(i) <= len(newBlock['name']):
+                        if i == newBlock['name'][0:len(i)]:
                             startsSameAs = True
-                if newBlock[0] == '':
+                if newBlock['name'] == '':
                     errDlg = gui.Dlg(title="Missing information!")
                     errDlg.addText("Name cannot be blank!")
                     irrel = errDlg.show()
                     self.makeBlockDlg(name, new)
-                elif '.' in newBlock[0] or '^' in newBlock[0] or '*' in newBlock[0]:
+                elif '.' in newBlock['name'] or '^' in newBlock[0] or '*' in newBlock[0]:
                     errDlg = gui.Dlg(title="Illegal block name!")
                     errDlg.addText("Name contains illegal character, or is reserved. Please rename!")
                     irrel = errDlg.show()
                     self.makeBlockDlg(name, new)
-                elif new and newBlock[0] in self.settings['trialTypes']:
+                elif new and newBlock['name'] in self.settings['trialTypes']:
                     errDlg = gui.Dlg(title="Name already in use!")
                     errDlg.addText("Name is already in use for another trial or block. Please rename!")
                     irrel = errDlg.show()
@@ -1201,39 +1201,39 @@ class PyHabBuilder:
                     irrel = errDlg.show()
                     self.makeBlockDlg(name, new)
                 else:
-                    if not new and name != newBlock[0]:
+                    if not new and name != newBlock['name']:
                         # Change the name of the extant block.
                         blockIndex = self.trialTypesArray['labels'].index(name)
-                        numChar = len(newBlock[0])
+                        numChar = len(newBlock['name'])
                         if numChar <= 3:
                             numChar = 4  # Maximum height
-                        self.settings['blockList'][newBlock[0]] = self.settings['blockList'].pop(name)
+                        self.settings['blockList'][newBlock['name']] = self.settings['blockList'].pop(name)
                         flowIndexes = []
                         for i in range(0, len(self.studyFlowArray['labels'])):
                             if self.studyFlowArray['labels'][i] == name:
                                 flowIndexes.append(i)
                         for i in flowIndexes:
-                            self.studyFlowArray['labels'][i] = newBlock[0]
-                            self.studyFlowArray['text'][i].text = newBlock[0]
+                            self.studyFlowArray['labels'][i] = newBlock['name']
+                            self.studyFlowArray['text'][i].text = newBlock['name']
                             self.studyFlowArray['text'][i].height = self.flowHeightObj / (
                                         .42 * numChar)  # Update text height for new length
-                        self.trialTypesArray['labels'][blockIndex] = newBlock[0]
-                        self.trialTypesArray['text'][blockIndex].text = newBlock[0]
+                        self.trialTypesArray['labels'][blockIndex] = newBlock['name']
+                        self.trialTypesArray['text'][blockIndex].text = newBlock['name']
                         self.trialTypesArray['text'][blockIndex].height = self.typeHeightObj / (.33 * numChar)
-                        self.settings['trialTypes'] = [newBlock[0] if x == name else x for x in self.settings['trialTypes']]
-                        self.settings['trialOrder'] = [newBlock[0] if x == name else x for x in self.settings['trialOrder']]
+                        self.settings['trialTypes'] = [newBlock['name'] if x == name else x for x in self.settings['trialTypes']]
+                        self.settings['trialOrder'] = [newBlock['name'] if x == name else x for x in self.settings['trialOrder']]
                         if len(self.settings['habTrialList']) > 0:
                             for z in range(0, len(self.settings['habTrialList'])):
                                 if self.settings['habTrialList'][z] == name:
-                                    self.settings['habTrialList'][z] = newBlock[0]
+                                    self.settings['habTrialList'][z] = newBlock['name']
                         for a, b in self.settings['blockList'].items():
                             for c in range(0, len(b)):
                                 if b[c] == name:
-                                    b[c] = newBlock[0]
+                                    b[c] = newBlock['name']
                     if os.name != 'posix':
                         # For Windows, because now we snap back to the regular window.
                         self.win.winHandle.set_visible(visible=True)
-                    self.blockMaker(newBlock[0], new)
+                    self.blockMaker(newBlock['name'], new)
         elif len(self.settings['trialTypes']) == 0:
             errDlg = gui.Dlg(title="No trials to make blocks with!")
             errDlg.addText("Make some trial types before trying to add them to a block.")
@@ -1526,19 +1526,20 @@ class PyHabBuilder:
         blockDataDlg.addText("Check all non-nested blocks you want to condense.")
         for a in range(0, len(fieldList)):
             if isinstance(fieldList[a], list):
-                blockDataDlg.addField("Pick one of these nested blocks to record data for", choices=fieldList[a])
+                # Because the indexes need to line up, just using a string-ified version of the index as the key for the dlg
+                blockDataDlg.addField(str(a), label="Pick one of these nested blocks to record data for", choices=fieldList[a])
             else:
-                blockDataDlg.addField(fieldList[a], initial=False)
+                blockDataDlg.addField(str(a), label=fieldList[a], initial=False)
 
         blockDataInfo = blockDataDlg.show()
         if blockDataDlg.OK:
             finalList = []
             for i in range(0, len(fieldList)):
                 if isinstance(fieldList[i], list):
-                    if blockDataInfo[i] != 'None':
-                        finalList.append(blockDataInfo[i])
+                    if blockDataInfo[str(i)] != 'None':
+                        finalList.append(blockDataInfo[str(i)])
                 else:
-                    if blockDataInfo[i]:
+                    if blockDataInfo[str(i)]:
                         finalList.append(fieldList[i])
             self.settings['blockDataList'] = finalList
 
@@ -1556,10 +1557,10 @@ class PyHabBuilder:
         self.win.flip()
         delTypeDlg = gui.Dlg(title="Choose trial type or block to delete.")
         delTypeDlg.addText("Warning: Cannot be undone. All instances of this trial or block in study flow will also be removed!")
-        delTypeDlg.addField("Choose trial type or block to delete, then hit OK.", choices=self.trialTypesArray['labels'])
+        delTypeDlg.addField('dType', label="Choose trial type or block to delete, then hit OK.", choices=self.trialTypesArray['labels'])
         delInfo=delTypeDlg.show()
         if delTypeDlg.OK:
-            dType=delInfo[0]
+            dType=delInfo['dType']
             self.deleteType(dType)
 
 
@@ -1909,22 +1910,22 @@ class PyHabBuilder:
         """
         Settings that apply to every PyHab study regardless of anything else.
 
-        0 = prefix: The prefix of the launcher and all data files.
+        'prefix' 0 = prefix: The prefix of the launcher and all data files.
 
-        1 = blindPres: Level of experimenter blinding, 0 (none), 1 (no trial type info), or
+        'blindPres' 1 = blindPres: Level of experimenter blinding, 0 (none), 1 (no trial type info), or
             2 (only info is whether a trial is currently active.
 
-        2 = nextFlash: Whether to have the coder window flash to alert the experimenter they need to manually trigger
+        'nextFlash' 2 = nextFlash: Whether to have the coder window flash to alert the experimenter they need to manually trigger
             the next trial
 
-        3 = durationInclude: Trial duration calculations include last gaze-off or not
+        'durationInclude' 3 = durationInclude: Trial duration calculations include last gaze-off or not
 
-        4 = loadSeparate: New setting in 0.9.4, movie playback issues have created a situation where some (but not all)
+        'loadSep' 4 = loadSeparate: New setting in 0.9.4, movie playback issues have created a situation where some (but not all)
             experiments might benefit from going back to the old ways of loading one movie file for *each* individual
             instance of a trial, rather than trying to load one movie file and load it once. This setting controls
             whether that happens.
 
-        5 = eyetracker: New in 0.10.4, Tobii integration (which is much more seamless than alternatives). Can be set
+        'eyetracker' 5 = eyetracker: New in 0.10.4, Tobii integration (which is much more seamless than alternatives). Can be set
             to simply record eye-tracking info OR to control the experiment as a replacement for a human coder. (0/1/2)
 
         :return:
@@ -1936,7 +1937,7 @@ class PyHabBuilder:
         self.win.flip()
         uDlg = gui.Dlg(title="Universal settings")
         # [default] blindpres, autoadvance, ISI,
-        uDlg.addField("Experiment name", self.settings['prefix'])
+        uDlg.addField('prefix',label="Experiment name", initial=self.settings['prefix'])
         ch = []
         if self.settings['blindPres'] == '1' or self.settings['blindPres'] == 1:
             ch=['do not display next trial type','none','only show trial active/inactive']
@@ -1944,23 +1945,23 @@ class PyHabBuilder:
             ch=['show trial active/not active only','none','do not display next trial type']
         else:
             ch=['none','do not display next trial type','show trial active/not active only']
-        uDlg.addField("Experimenter blinding:", choices=ch)
+        uDlg.addField('blindPres', label="Experimenter blinding:", choices=ch)
         if self.settings['nextFlash'] in ['1',1,'True',True]:
             ch3 = ["Yes","No"]
         else:
             ch3= ["No","Yes"]
-        uDlg.addField("Flash to alert experimenter to manually start next trial?", choices=ch3)
+        uDlg.addField('nextFlash', label="Flash to alert experimenter to manually start next trial?", choices=ch3)
         if self.settings['durationInclude'] in ['1',1,'True',True]:
             ch4 = ["Yes","No"]
         else:
             ch4 = ["No","Yes"]
-        uDlg.addField("Trial duration calculations include last gaze-off event?", choices=ch4)
+        uDlg.addField('durationInclude', label="Trial duration calculations include last gaze-off event?", choices=ch4)
 
         if self.settings['loadSep'] in ['1',1,'True',True]:
             ch5 = ["Yes","No"]
         else:
             ch5 = ["No", "Yes"]
-        uDlg.addField("Load each stimulus file multiple times to prevent rewind glitches? SEE 'Troubleshooting' IN MANUAL", choices=ch5)
+        uDlg.addField('loadSep', label="Load each stimulus file multiple times to prevent rewind glitches? SEE 'Troubleshooting' IN MANUAL", choices=ch5)
 
         ch6 = []
         if self.settings['eyetracker'] in ['1',1]:
@@ -1969,31 +1970,31 @@ class PyHabBuilder:
             ch6 = ["Control advancement", "Off", "Record only"]
         else:
             ch6 = ["Off", "Record only", "Control advancement"]
-        uDlg.addField("Tobii eye-tracker integration", choices=ch6)
+        uDlg.addField('eyetracker', label="Tobii eye-tracker integration", choices=ch6)
 
         uInfo = uDlg.show()
         if uDlg.OK:
             tryAgain = False
-            self.settings['prefix'] = uInfo[0]
-            if uInfo[1] == 'none':
+            self.settings['prefix'] = uInfo['prefix']
+            if uInfo['blindPres'] == 'none':
                 self.settings['blindPres'] = 0
-            elif uInfo[1] == 'do not display next trial type':
+            elif uInfo['blindPres'] == 'do not display next trial type':
                 self.settings['blindPres'] = 1
             else:
                 self.settings['blindPres'] = 2
-            if uInfo[2] == "Yes":
+            if uInfo['nextFlash'] == "Yes":
                 self.settings['nextFlash'] = 1
             else:
                 self.settings['nextFlash'] = 0
-            if uInfo[3] == "Yes":
+            if uInfo['durationInclude'] == "Yes":
                 self.settings['durationInclude'] = 1
             else:
                 self.settings['durationInclude'] = 0
-            if uInfo[4] == "Yes":
+            if uInfo['loadSep'] == "Yes":
                 self.settings['loadSep'] = 1
             else:
                 self.settings['loadSep'] = 0
-            if uInfo[5] == "Off":
+            if uInfo['eyetracker'] == "Off":
                 self.settings['eyetracker'] = 0
             elif self.settings['prefLook'] == 2:
                 self.settings['eyetracker'] = 0
@@ -2001,7 +2002,7 @@ class PyHabBuilder:
                 errDlg.addText("Cannot use eye-tracker in HPP experiments!")
                 errDlg.addText("Set eye-tracker mode to 'Off'")
                 errDlg.show()
-            elif uInfo[5] == "Record only":
+            elif uInfo['eyetracker'] == "Record only":
                 self.settings['eyetracker'] = 1
             elif self.settings['prefLook'] == 1:
                 self.settings['eyetracker'] = 1
@@ -2032,13 +2033,13 @@ class PyHabBuilder:
         dDlg.addText("trial-level means one line for each individual trial (the verbose file will always have this)")
         # Because addField is very literal about check-boxes, need to do this
         if self.settings['blockSum']:
-            dDlg.addField("Block-level", initial=True)
+            dDlg.addField('blockSum', label="Block-level", initial=True)
         else:
-            dDlg.addField("Block-level", initial=False)
+            dDlg.addField('blockSum', label="Block-level", initial=False)
         if self.settings['trialSum']:
-            dDlg.addField("Trial-level", initial=True)
+            dDlg.addField('trialSum', label="Trial-level", initial=True)
         else:
-            dDlg.addField("Trial-level", initial=False)
+            dDlg.addField('trialSum', label="Trial-level", initial=False)
         dDlg.addText("Check all columns you would like to be recorded in your data files. ")
         dDlg.addText("ANYTHING UNCHECKED WILL NOT BE STORED IN ANY WAY!")
         if self.settings['prefLook'] in [1,'1',True,'True']:
@@ -2049,23 +2050,23 @@ class PyHabBuilder:
             tempDataCols = self.allDataColumns
         for i in range(0, len(tempDataCols)):
             if tempDataCols[i] in self.settings['dataColumns']:
-                dDlg.addField(tempDataCols[i],initial=True)
+                dDlg.addField(str(i), label=tempDataCols[i],initial=True)
             else:
-                dDlg.addField(tempDataCols[i],initial=False)
+                dDlg.addField(str(i), label=tempDataCols[i],initial=False)
         datInfo = dDlg.show()
         if dDlg.OK:
             tempCols = []
-            if datInfo[0]:
+            if datInfo['blockSum']:
                 self.settings['blockSum'] = 1
             else:
                 self.settings['blockSum'] = 0
-            if datInfo[1]:
+            if datInfo['trialSum']:
                 self.settings['trialSum'] = 1
             else:
                 self.settings['trialSum'] = 0
-            for j in range(2, len(datInfo)): # For the data columsn themselves, separate from the toggle of block/trial level
-                if datInfo[j]:
-                    tempCols.append(tempDataCols[j-2])
+            for j in range(0, len(datInfo)): # For the data columns themselves, separate from the toggle of block/trial level
+                if datInfo[str(j)]:
+                    tempCols.append(tempDataCols[j])
             self.settings['dataColumns'] = tempCols
         
     def toST(self):
@@ -2225,30 +2226,30 @@ class PyHabBuilder:
             while 1 in self.mouse.getPressed():
                 pass # Just a little thing so it doesn't get called for every frame the mouse is down on the button.
 
-    def stimSettingsDlg(self, lastSet=[], redo=False, screen='all'):
+    def stimSettingsDlg(self, lastSet={}, redo=False, screen='all'):
         """
 
         Settings relating to stimulus presentation. Indexes from the dialog (non-HPP version):
 
-        0 = screenWidth: Width of stim window
+        'screenWidth' 0 = screenWidth: Width of stim window
 
-        1 = screenHeight: Height of stim window
+        'screenHeight' 1 = screenHeight: Height of stim window
 
-        2 = Background color of stim window
+        'screenColor' 2 = Background color of stim window
 
-        3 = movieWidth: Width of movieStim3 object inside stim window. Future: Allows for movie default resolution?
+        'movieWidth' 3 = movieWidth: Width of movieStim3 object inside stim window. Future: Allows for movie default resolution?
 
-        4 = movieWidth: Height of movieStim3 object inside stim window
+        'movieHeight' 4 = movieHeight: Height of movieStim3 object inside stim window
 
-        5 = freezeFrame: If the attention-getter is used (for a given trial type), this is the minimum time the first frame
+        'freezeFrame' 5 = freezeFrame: If the attention-getter is used (for a given trial type), this is the minimum time the first frame
         of the movie will be displayed after the attention-getter finishes.
 
-        6 = screenIndex: Which screen to display the stim window on.
+        'screenIndex' 6 = screenIndex: Which screen to display the stim window on.
 
-        7 = expScreenIndex: Which screen to display the experimenter window on
+        'expScreenIndex' 7 = expScreenIndex: Which screen to display the experimenter window on
 
         :param lastSet: Optional. Last entered settings, in case dialog needs to be presented again to fix bad entries.
-        :type lastSet: list
+        :type lastSet: dict
         :param redo: Are we doing this again to fix bad entries?
         :type redo: boolean
         :param screen: Optional. For HPP, lets you set for just the individual screen the settings apply to.
@@ -2264,37 +2265,37 @@ class PyHabBuilder:
 
         sDlg = gui.Dlg(title="Stimulus presentation settings")
         if not redo:
-            lastSet=[]
+            lastSet= {}
             # This order maps on to the order of the dialog box. This allows for carrying over from previous entries
             # if there's a problem (e.g., text where numbers should be). Done as separate lines basically for ease of
             # correspondence to the field definitions and the saving at the end.
             if screen == 'all':
-                lastSet.append(self.settings['screenWidth']['C'])
-                lastSet.append(self.settings['screenHeight']['C'])
-                lastSet.append(self.settings['screenColor']['C'])
-                lastSet.append(self.settings['movieWidth']['C'])
-                lastSet.append(self.settings['movieHeight']['C'])
+                lastSet['screenWidth'] = self.settings['screenWidth']['C']
+                lastSet['screenHeight'] = self.settings['screenHeight']['C']
+                lastSet['screenColor'] = self.settings['screenColor']['C']
+                lastSet['movieWidth'] = self.settings['movieWidth']['C']
+                lastSet['movieHeight'] = self.settings['movieHeight']['C']
             else:
-                lastSet.append(self.settings['screenWidth'][screen])
-                lastSet.append(self.settings['screenHeight'][screen])
-                lastSet.append(self.settings['screenColor'][screen])
-                lastSet.append(self.settings['movieWidth'][screen])
-                lastSet.append(self.settings['movieHeight'][screen])
-            lastSet.append(self.settings['freezeFrame'])
+                lastSet['screenWidth'] = self.settings['screenWidth'][screen]
+                lastSet['screenHeight'] = self.settings['screenHeight'][screen]
+                lastSet['screenColor'] = self.settings['screenColor'][screen]
+                lastSet['movieWidth'] = self.settings['movieWidth'][screen]
+                lastSet['movieHeight'] = self.settings['movieHeight'][screen]
+            lastSet['freezeFrame'] =self.settings['freezeFrame']
             if screen == 'all':
-                lastSet.append(self.settings['screenIndex']['C'])
+                lastSet['screenIndex'] = self.settings['screenIndex']['C']
             else:
-                lastSet.append(self.settings['screenIndex'][screen])
-            lastSet.append(self.settings['expScreenIndex'])
+                lastSet['screenIndex'] = self.settings['screenIndex'][screen]
+            lastSet['expScreenIndex'] = self.settings['expScreenIndex']
         colors = ['black', 'white', 'gray']
-        colorchz = [x for x in colors if x != lastSet[2]]
-        colorchz.insert(0, lastSet[2])
-        sDlg.addField("Stimulus display width in pixels", lastSet[0])
-        sDlg.addField("Stimulus display height in pixels", lastSet[1])
-        sDlg.addField("Stimulus display background color", choices=colorchz)
-        sDlg.addField("Width of movie stimuli in pixels", lastSet[3])
-        sDlg.addField("Height of movie stimuli in pixels", lastSet[4])
-        sDlg.addField("Freeze first frame for how many seconds after attention-getter?", lastSet[5])
+        colorchz = [x for x in colors if x != lastSet['screenColor']]
+        colorchz.insert(0, lastSet['screenColor'])
+        sDlg.addField('screenWidth', label="Stimulus display width in pixels", initial=lastSet['screenWidth'])
+        sDlg.addField('screenHeight', label="Stimulus display height in pixels", initial=lastSet['screenHeight'])
+        sDlg.addField('screenColor', label="Stimulus display background color", choices=colorchz)
+        sDlg.addField('movieWidth', label="Width of movie stimuli in pixels", initial=lastSet['movieWidth'])
+        sDlg.addField('movieHeight', label="Height of movie stimuli in pixels", initial=lastSet['movieHeight'])
+        sDlg.addField('freezeFrame', label="Freeze first frame for how many seconds after attention-getter?", initial=lastSet['freezeFrame'])
         # Get a list of all screens. Requires us to import pyglet, assuming we are using pyglet displays (until glfw works)
         defDisp = pyglet.canvas.Display()
         allScrs = defDisp.get_screens()
@@ -2304,19 +2305,19 @@ class PyHabBuilder:
             screenList = [0, 1, 2, 3]  # Because even if you don't have a second screen now, you presumably will later.
         else:
             screenList = [0, 1]  # Because even if you don't have a second screen now, you presumably will later.
-        if isinstance(lastSet[6],str):
-            lastSet[6] = eval(lastSet[6])
-        scrchz = [x for x in screenList if x != lastSet[6]]
-        scrchz.insert(0, lastSet[6])
-        sDlg.addField("Screen index of presentation window (0 = primary display, 1-N = secondary screens)", choices=scrchz)
-        escrchz = [x for x in screenList if x != lastSet[7]]
-        escrchz.insert(0, lastSet[7])
-        sDlg.addField("Screen index of experimenter window", choices=escrchz)
+        if isinstance(lastSet['screenIndex'],str):
+            lastSet['screenIndex'] = eval(lastSet['screenIndex'])
+        scrchz = [x for x in screenList if x != lastSet['screenIndex']]
+        scrchz.insert(0, lastSet['screenIndex'])
+        sDlg.addField('screenIndex', label="Screen index of presentation window (0 = primary display, 1-N = secondary screens)", choices=scrchz)
+        escrchz = [x for x in screenList if x != lastSet['expScreenIndex']]
+        escrchz.insert(0, lastSet['expScreenIndex'])
+        sDlg.addField('expScreenIndex', label="Screen index of experimenter window", choices=escrchz)
 
         stimfo = sDlg.show()
         if sDlg.OK:
             problem = False
-            for i in [0, 1, 3, 4, 5, 6, 7]:
+            for i in ['screenWidth', 'screenHeight', 'movieWidth', 'movieHeight', 'freezeFrame', 'screenIndex', 'expScreenIndex']:
                 if not isinstance(stimfo[i], float) and not isinstance(stimfo[i], int):
                     try:
                         stimfo[i] = eval(stimfo[i])
@@ -2326,20 +2327,19 @@ class PyHabBuilder:
                 if screen == 'all':
                     # Settings that are screen-specific, setting for all screens at once.
                     allScreenSets = ['screenWidth','screenHeight','screenColor','movieWidth','movieHeight','screenIndex']
-                    indList = [0, 1, 2, 3, 4, 6]  # indexes that are screen-spec settings
                     for q in range(0, len(allScreenSets)):
                         # Iterates through the dicts of screen-specific settings
                         for i,j in self.settings[allScreenSets[q]].items():
-                            self.settings[allScreenSets[q]][i] = stimfo[indList[q]]
+                            self.settings[allScreenSets[q]][i] = stimfo[allScreenSets[q]]
                 else:
-                    self.settings['screenWidth'][screen] = stimfo[0]
-                    self.settings['screenHeight'][screen] = stimfo[1]
-                    self.settings['screenColor'][screen] = stimfo[2]
-                    self.settings['movieWidth'][screen] = stimfo[3]
-                    self.settings['movieHeight'][screen] = stimfo[4]
-                    self.settings['screenIndex'][screen] = stimfo[6]
-                self.settings['freezeFrame'] = stimfo[5]
-                self.settings['expScreenIndex'] = stimfo[7]
+                    self.settings['screenWidth'][screen] = stimfo['screenWidth']
+                    self.settings['screenHeight'][screen] = stimfo['screenHeight']
+                    self.settings['screenColor'][screen] = stimfo['screenColor']
+                    self.settings['movieWidth'][screen] = stimfo['movieWidth']
+                    self.settings['movieHeight'][screen] = stimfo['movieHeight']
+                    self.settings['screenIndex'][screen] = stimfo['screenIndex']
+                self.settings['freezeFrame'] = stimfo['freezeFrame']
+                self.settings['expScreenIndex'] = stimfo['expScreenIndex']
             else:
                 warnDlg = gui.Dlg(title="Warning!")
                 warnDlg.addText(
@@ -2362,13 +2362,13 @@ class PyHabBuilder:
 
         sDlg = gui.Dlg(title="Select screen")
 
-        sDlg.addField("Select which screen to modify settings of", choices=['all','Left','Center','Right'])
+        sDlg.addField('screen', label="Select which screen to modify settings of", choices=['all','Left','Center','Right'])
         sDlg.addText("WARNING: selecting 'all' will overwrite all settings for individual screens!")
         screenChoice = sDlg.show()
         if sDlg.OK:
-            if screenChoice[0] != 'all':
-                screenChoice[0] = screenChoice[0][0]  # Get just the first letter for L/C/R
-            self.stimSettingsDlg(screen=screenChoice[0])
+            if screenChoice['screen'] != 'all':
+                screenChoice['screen'] = screenChoice['screen'][0]  # Get just the first letter for L/C/R
+            self.stimSettingsDlg(screen=screenChoice['screen'])
 
 
     def addStimToLibraryDlg(self):
