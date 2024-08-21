@@ -2385,9 +2385,9 @@ class PyHabBuilder:
         add = 1
         if len(self.settings['stimList'].keys())>0:
             sDlg0 = gui.Dlg(title="Add/remove stimuli")
-            sDlg0.addField("Add or remove stimuli?", choices=['Add','Remove'])
+            sDlg0.addField('addremove', label="Add or remove stimuli?", choices=['Add','Remove'])
             sd0 = sDlg0.show()
-            if sDlg0.OK and sd0[0] == 'Remove':
+            if sDlg0.OK and sd0['addremove'] == 'Remove':
                 add = -1
             elif sDlg0.OK:
                 add = 1
@@ -2396,43 +2396,43 @@ class PyHabBuilder:
         if add == 1:
             cz = ['Movie', 'Image', 'Audio', 'Image with audio', 'Animation']
             sDlg1 = gui.Dlg(title="Add stimuli to library, step 1")
-            sDlg1.addField("What kind of stimuli would you like to add? (Please add each type separately)", choices=cz)
+            sDlg1.addField('type', label="What kind of stimuli would you like to add? (Please add each type separately)", choices=cz)
             sDlg1.addText("NOTE: 'Animation' is for custom-programmed animations. Don't select unless you plan to modify the PyHab code itself.")
-            sDlg1.addField("How many? (For image with audio, how many pairs?) You will select them one at a time.", 1)
+            sDlg1.addField('number', label="How many? (For image with audio, how many pairs?) You will select them one at a time.", initial=1)
             sd1 = sDlg1.show()
             allowedStrings = {'Audio': "Audio (*.aac, *.aiff, *.flac, *.m4a, *.mp3, *.ogg, *.raw, *.wav, *.m4b, *.m4p)",
                               'Movie': "Movies (*.mov, *.avi, *.ogv, *.mkv, *.mp4, *.mpeg, *.mpe, *.mpg, *.dv, *.wmv, *.3gp)",
                               'Image': "Images (*.jpg, *.jpeg, *.png, *.gif, *.bmp, *.tif, *.tiff)"}
-            if sDlg1.OK and isinstance(sd1[1],int):
-                stType = sd1[0]  # Type of stimuli (from drop-down).
-                stNum = sd1[1]  # Number to add.
+            if sDlg1.OK and isinstance(sd1['number'],int):
+                stType = sd1['type']  # Type of stimuli (from drop-down).
+                stNum = sd1['number']  # Number to add.
                 NoneType = type(None)
                 if stType in ['Movie', 'Image', 'Audio']:  # Image w/ audio is complicated, so we will take care of that separately.
                     for i in range(0, stNum):
                         stimDlg = gui.fileOpenDlg(prompt="Select stimulus file (only one!)")
                         if type(stimDlg) is not NoneType:
-                            fileName = os.path.split(stimDlg[0])[1] # Gets the file name in isolation.
+                            fileName = os.path.split(stimDlg[0])[1] # Gets the file name in isolation. NOTE: Does fileopendlg still uses lists
                             self.stimSource[fileName] = stimDlg[0]  # Creates a "Find this file" path for the save function.
                             self.settings['stimList'][fileName] = {'stimType': stType, 'stimLoc': stimDlg[0]}
                 elif stType == 'Animation':  #Animations don't require files, just names
                     sDlg2 = gui.Dlg(title="Name of animations (no spaces)")
                     sDlg2.addText("Put the names of the different animation functions you will create here")
                     for i in range(0, stNum):
-                        sDlg2.addField("Animation name:")
+                        sDlg2.addField(str(i),label="Animation name:") #because of alignment, need to do keys as strings of indexes
                     animInfo = sDlg2.show()
                     if sDlg2.OK:
                         for j in range(0, len(animInfo)):
                             # As long as nothing is added to stimSource it won't fail because stimLoc isn't a path
-                            self.settings['stimList'][animInfo[j]] = {'stimType':stType, 'stimLoc':animInfo[j]}
+                            self.settings['stimList'][animInfo[str(j)]] = {'stimType':stType, 'stimLoc':animInfo[j]}
                 else:  # Creating image/audio pairs is more complicated.
                     for i in range(0, stNum):
                         stimDlg1 = gui.Dlg(title="Pair number " + str(i+1))
-                        stimDlg1.addField("Unique name for this stimulus pair (you will use this to add it to trials later)", 'pairName')
+                        stimDlg1.addField('pairName', label="Unique name for this stimulus pair (you will use this to add it to trials later)", initial='pairName')
                         stimDlg1.addText("Click OK to select the AUDIO file for this pair")
                         sd2 = stimDlg1.show()
                         if stimDlg1.OK:
                             a = True
-                            if sd2[0] in list(self.settings['stimList'].keys()):  # If the pair name exists already
+                            if sd2['pairName'] in list(self.settings['stimList'].keys()):  # If the pair name exists already
                                 a = False
                                 errDlg = gui.Dlg("Change existing pair?")
                                 errDlg.addText("Warning: Pair name already in use! Press OK to overwrite existing pair, or cancel to skip to next pair.")
@@ -2444,7 +2444,7 @@ class PyHabBuilder:
                                 if type(stimDlg) is not NoneType:
                                     fileName = os.path.split(stimDlg[0])[1] # Gets the file name in isolation.
                                     self.stimSource[fileName] = stimDlg[0]  # Creates a "Find this file" path for the save function.
-                                    self.settings['stimList'][sd2[0]] = {'stimType': stType, 'audioLoc': stimDlg[0]}
+                                    self.settings['stimList'][sd2['pairName']] = {'stimType': stType, 'audioLoc': stimDlg[0]}
                                     tempDlg = gui.Dlg(title="Now select image")
                                     tempDlg.addText("Now, select the IMAGE file for this pair (cancel to erase audio and skip pair)")
                                     t = tempDlg.show()
@@ -2453,9 +2453,9 @@ class PyHabBuilder:
                                         if type(stimDlg2) is not NoneType:
                                             fileName2 = os.path.split(stimDlg2[0])[1] # Gets the file name in isolation.
                                             self.stimSource[fileName2] = stimDlg2[0]
-                                            self.settings['stimList'][sd2[0]].update({'imageLoc': stimDlg2[0]})
+                                            self.settings['stimList'][sd2['pairName']].update({'imageLoc': stimDlg2[0]})
                                     else:
-                                        del self.settings['stimList'][sd2[0]]
+                                        del self.settings['stimList'][sd2['pairName']]
 
             elif sDlg1.OK:
                 errDlg = gui.Dlg(title="Warning, invalid value!")
@@ -2490,14 +2490,14 @@ class PyHabBuilder:
         orderList = []
         remDlg.addText("Uncheck any stimuli you want to remove. NOTE: This will remove stimuli from trial types as well.")
         for i in self.settings['stimList'].keys():
-            remDlg.addField(i, initial=True)
+            remDlg.addField(i, label=i, initial=True)
             orderList.append(i) # Neccessary because dicts are un-ordered.
 
         remList=remDlg.show()
 
         if remDlg.OK:
             for j in range(0,len(remList)):
-                if not remList[j]:
+                if not remList[str(j)]:
                     toRemove = orderList[j]
                     #Things to remove it from: stimlist, stimsource, stimNames(if assigned to trial types). Doesn't apply to attngetter, has its own system.
                     if self.settings['stimList'][toRemove]['stimType'] != 'Image with audio' and self.settings['stimList'][toRemove]['stimType'] != 'Animation':
@@ -2557,8 +2557,8 @@ class PyHabBuilder:
                 else:
                     choiceList.append(self.trialTypesArray['labels'][i])
             choiceList.append('Start and end of experiment screens')
-            d1.addField("Trial type to add stimulus file to", choices=choiceList)
-            d1.addField("Number of stimuli to add (you will select them in the next window)",1)
+            d1.addField('trialType', label="Trial type to add stimulus file to", choices=choiceList)
+            d1.addField('numAdd', label="Number of stimuli to add (you will select them in the next window)", initial=1)
             d1.addText("Note: You can only select stimuli you have already added to the experiment library")
             d1.addText("Note: You can only REMOVE stimuli from a trial type in the trial type's own settings, this will add to whatever is already there")
             d = d1.show()
@@ -2567,21 +2567,21 @@ class PyHabBuilder:
                 self.workingRect.draw()
                 self.workingText.draw()
                 self.win.flip()
-                tType = d[0]
-                numAdd = d[1]
+                tType = d['trialType']
+                numAdd = d['numAdd']
                 if tType != 'Start and end of experiment screens':
                     d2 = gui.Dlg(title="Select stimuli")
                     stimKeyList = list(self.settings['stimList'].keys())
                     stimKeyList.sort()
                     for i in range(0, numAdd):
-                        d2.addField("Stimulus no. " + str(i+1), choices=stimKeyList)
+                        d2.addField(str(i), label="Stimulus no. " + str(i+1), choices=stimKeyList)
                     newList = d2.show()
                     if d2.OK:
                         for z in range(0, len(newList)):
                             if self.settings['prefLook'] in [2, '2']: # HPP
-                                self.settings['stimNames'][tType].append({'L':0, 'C':newList[z], 'R':0})
+                                self.settings['stimNames'][tType].append({'L':0, 'C':newList[str(z)], 'R':0})
                             else:
-                                self.settings['stimNames'][tType].append(newList[z])
+                                self.settings['stimNames'][tType].append(newList[str(z)])
                 else:
                     d2 = gui.Dlg(title="Select image")
                     # Create a list of just image stim
@@ -2597,17 +2597,17 @@ class PyHabBuilder:
                     if self.settings['endImage'] != '':
                         endimgs = [x for x in endimgs if x != self.settings['endImage']]
                         endimgs.insert(0, self.settings['endImage'])
-                    d2.addField("Start of experiment image", choices=startimgs)
-                    d2.addField("End of experiment image", choices=endimgs)
+                    d2.addField('startImage', label="Start of experiment image", choices=startimgs)
+                    d2.addField('endImage', label="End of experiment image", choices=endimgs)
 
                     newList = d2.show()
                     if d2.OK:
-                        if newList[0] != 'None':
-                            self.settings['startImage'] = newList[0]
+                        if newList['startImage'] != 'None':
+                            self.settings['startImage'] = newList['startImage']
                         else:
                             self.settings['startImage'] = ''
-                        if newList[1] != 'None':
-                            self.settings['endImage'] = newList[1]
+                        if newList['endImage'] != 'None':
+                            self.settings['endImage'] = newList['endImage']
                         else:
                             self.settings['endImage'] = ''
             elif d1.OK:
@@ -2629,18 +2629,18 @@ class PyHabBuilder:
         """
         NoneType = type(None)
         aDlg3 = gui.Dlg(title="Audio attention-getter settings")
-        aDlg3.addField("Looming shape type", choices=['Rectangle', 'Cross', 'Star'])
-        aDlg3.addField("Looming shape color", choices=['yellow', 'green', 'red', 'blue', 'white', 'black'])
+        aDlg3.addField('shapeType', label="Looming shape type", choices=['Rectangle', 'Cross', 'Star'])
+        aDlg3.addField('shapeColor', label="Looming shape color", choices=['yellow', 'green', 'red', 'blue', 'white', 'black'])
         ans3 = aDlg3.show()
         if aDlg3.OK:
-            shape = ans3[0].split()  # Pulls out rectangle, cross, or star.
+            shape = ans3['shapeType'].split()  # Pulls out rectangle, cross, or star.
             fileSelectDlg = gui.fileOpenDlg(prompt="Select attention-getter audio file")
             if type(fileSelectDlg) is not NoneType:
                 path, namething = os.path.split(fileSelectDlg[0])
                 # Again an ugly but necessary solution for getting the duration.
                 tempSound = sound.Sound(fileSelectDlg[0])
                 tempGetter = {'stimLoc': fileSelectDlg[0], 'stimName': namething,
-                                   'shape': shape[-1], 'color': ans3[1],
+                                   'shape': shape[-1], 'color': ans3['shapeColor'],
                                    'stimDur': tempSound.getDuration()}
                 del tempSound
                 return tempGetter
@@ -2720,19 +2720,19 @@ class PyHabBuilder:
         achz = [a for a in achz if a != 'PyHabDefault']
         achz.insert(0, 'Make New')  # Top item will always be "make new"
         aDlg1 = gui.Dlg(title="Select attention-getter or make new")
-        aDlg1.addField("Select attention-getter or 'Make New'", choices=achz)
+        aDlg1.addField('AGName', label="Select attention-getter or 'Make New'", choices=achz)
         ans1 = aDlg1.show()
         NoneType = type(None)
         if aDlg1.OK:
-            if ans1[0] == 'Make New':
+            if ans1['AGName'] == 'Make New':
                 # New window to design an attention getter! Choose your own adventure a bit.
                 aDlg2 = gui.Dlg(title="Make new attention-getter: step 1")
-                aDlg2.addField("Attention-getter name: ", 'NewAttnGetter')
-                aDlg2.addField("Audio (with built-in shape) or movie, or silent movie with sep. audio track?", choices=['Audio','Movie','Movie + Audio'])
-                aDlg2.addField("Attention-getter background color (default = same as stimuli)", choices=['default','white','black','gray'])
+                aDlg2.addField('AGName', label="Attention-getter name: ", initial='NewAttnGetter')
+                aDlg2.addField('AGType', label="Audio (with built-in shape) or movie, or silent movie with sep. audio track?", choices=['Audio','Movie','Movie + Audio'])
+                aDlg2.addField('AGColor', label="Attention-getter background color (default = same as stimuli)", choices=['default','white','black','gray'])
                 ans2 = aDlg2.show()
                 if aDlg2.OK:
-                    tempGetter={'stimType': ans2[1], 'bgColor': ans2[2]}
+                    tempGetter={'stimType': ans2['AGType'], 'bgColor': ans2['AGColor']}
                     if tempGetter['stimType'] == 'Movie':
                         newTempGet = self.attnGetterVideoDlg()
                     elif tempGetter['stimType'] == 'Audio':
@@ -2741,46 +2741,46 @@ class PyHabBuilder:
                         newTempGet = self.attnGetterMovieAudioDlg()
                     if len(newTempGet) > 0:
                         tempGetter.update(newTempGet)
-                        self.settings['attnGetterList'][ans2[0]] = tempGetter
+                        self.settings['attnGetterList'][ans2['AGName']] = tempGetter
 
             else: # Modifying an existing AG. Little complex.
                 aDlg2b = gui.Dlg(title="Change attention-getter properties")
-                currAG = self.settings['attnGetterList'][ans1[0]] #The current attention-getter.
-                aDlg2b.addField("Attention-getter name: ", ans1[0])
+                currAG = self.settings['attnGetterList'][ans1['AGName']] #The current attention-getter.
+                aDlg2b.addField('AGName', label="Attention-getter name: ", initial=ans1['AGName'])
                 if currAG['stimType'] == 'Audio':
                     chz = ['Audio', 'Movie', 'Movie + Audio']
                 elif currAG['stimType'] == 'Movie':
                     chz = ['Movie', 'Audio', 'Movie + Audio']
                 else:
                     chz = ['Movie + Audio', 'Movie', 'Audio']
-                aDlg2b.addField("Attention-getter type: ", choices=chz)
+                aDlg2b.addField('AGType', label="Attention-getter type: ", choices=chz)
                 ch2 = ['default','white','black','gray']
                 if 'bgColor' in currAG.keys():
                     ch2 = [x for x in ch2 if x != currAG['bgColor']]
                     ch2.insert(0, currAG['bgColor'])
-                aDlg2b.addField("Attention-getter background color: ", choices=ch2) # Index 2
-                aDlg2b.addField("Change current file (%s)?" % currAG['stimName'], choices=["No","Yes"])
+                aDlg2b.addField('AGColor', label="Attention-getter background color: ", choices=ch2) # Index 2
+                aDlg2b.addField('AGChangeFile', label="Change current file (%s)?" % currAG['stimName'], choices=["No","Yes"])
                 if currAG['stimType'] == 'Movie + Audio':
-                    aDlg2b.addField("Change audio file (%s)?" % currAG['audioName'], choices=["No","Yes"])
+                    aDlg2b.addField('AGChangeAudio', label="Change audio file (%s)?" % currAG['audioName'], choices=["No","Yes"])
                 elif currAG['stimType'] == 'Audio':
                     allShapes = ['Rectangle','Cross','Star']
                     shapeChz = [x for x in allShapes if x is not currAG['shape']]
                     shapeChz.insert(0, currAG['shape'])
-                    aDlg2b.addField("Looming shape type", choices=shapeChz)
+                    aDlg2b.addField('AGChangeShape', label="Looming shape type", choices=shapeChz)
                     allColors = ['yellow', 'green', 'red', 'blue', 'white', 'black']
                     colorChz = [x for x in allColors if x is not currAG['color']]
                     colorChz.insert(0, currAG['color']) # A more elegant shuffle because the words match
-                    aDlg2b.addField("Looming shape color", choices=colorChz)
+                    aDlg2b.addField('AGShapeColor', label="Looming shape color", choices=colorChz)
                 ans2b = aDlg2b.show()
                 if aDlg2b.OK:
-                    if ans2b[0] is not ans1[0]:  # Did they change the name?
-                        self.settings['attnGetterList'][ans2b[0]] = self.settings['attnGetterList'].pop(ans1[0])
-                        currAG = self.settings['attnGetterList'][ans2b[0]]
+                    if ans2b['AGName'] is not ans1['AGName']:  # Did they change the name?
+                        self.settings['attnGetterList'][ans2b['AGName']] = self.settings['attnGetterList'].pop(ans1['AGName'])
+                        currAG = self.settings['attnGetterList'][ans2b['AGName']]
                         for i, j in self.settings['playAttnGetter'].items():
-                            if j == ans1[0]:
-                                self.settings['playAttnGetter'][i] = ans2b[0]
-                    if ans2b[1] is not currAG['stimType']:  # if they change it from audio to video or the reverse...
-                        tempGetter = {'stimType': ans2b[1]}
+                            if j == ans1['AGName']:
+                                self.settings['playAttnGetter'][i] = ans2b['AGName']
+                    if ans2b['AGType'] is not currAG['stimType']:  # if they change it from audio to video or the reverse...
+                        tempGetter = {'stimType': ans2b['AGType']}
                         # 1. If going to audio, select shape then new file.
                         if currAG['stimType'] == 'Movie':
                             newTempGet = self.attnGetterAudioDlg()
@@ -2790,26 +2790,29 @@ class PyHabBuilder:
                             newTempGet = self.attnGetterMovieAudioDlg()
                         if len(newTempGet) > 0:
                             tempGetter.update(newTempGet)
-                            self.settings['attnGetterList'][ans2b[0]] = tempGetter # Overwrite existing.
+                            self.settings['attnGetterList'][ans2b['AGName']] = tempGetter # Overwrite existing.
                     else:
-                        if ans2b[3] == "Yes":  # Same stim type, change file. Ignore shape settings for now
+                        if ans2b['AGChangeFile'] == "Yes":  # Same stim type, change file. Ignore shape settings for now
                             fileSelectDlg = gui.fileOpenDlg(prompt="Select attention-getter file")
                             if type(fileSelectDlg) is not NoneType:
                                 path, namething = os.path.split(fileSelectDlg[0])
-                                if ans2b[1] == 'Audio':
+                                if ans2b['AGType'] == 'Audio':
                                     tempStim = sound.Sound(fileSelectDlg[0])
                                 else:
                                     tempStim = visual.MovieStim3(self.win, fileSelectDlg[0])
-                                self.settings['attnGetterList'][ans2b[0]].update({'stimLoc': fileSelectDlg[0],
+                                self.settings['attnGetterList'][ans2b['AGName']].update({'stimLoc': fileSelectDlg[0],
                                                                                   'stimName': namething,
                                                                                   'stimDur': tempStim.duration})
                                 del tempStim
-                        if currAG['stimType'] == 'Movie + Audio' and ans2b[3] == "Yes":
-                            self.settings['attnGetterList'][ans2b[0]].update({'audioLoc': fileSelectDlg[0],
+                        if currAG['stimType'] == 'Movie + Audio' and ans2b['AGChangeAudio'] == "Yes":
+                            fileSelectDlg2 = gui.fileOpenDlg(prompt="Select attention-getter AUDIO file")
+                            if type(fileSelectDlg2) is not NoneType:
+                                path, namething = os.path.split(fileSelectDlg2[0])
+                                self.settings['attnGetterList'][ans2b['AGName']].update({'audioLoc': fileSelectDlg2[0],
                                                                               'audioName': namething})
                     if len(ans2b) > 5:  # If we had shape/color settings
-                        self.settings['attnGetterList'][ans2b[0]].update({'shape': ans2b[4], 'color': ans2b[5]})
-                    self.settings['attnGetterList'][ans2b[0]].update({'bgColor': ans2b[2]}) # update BGcolor
+                        self.settings['attnGetterList'][ans2b['AGName']].update({'shape': ans2b['AGChangeShape'], 'color': ans2b['AGShapeColor']})
+                    self.settings['attnGetterList'][ans2b['AGName']].update({'bgColor': ans2b['AGColor']}) # update BGcolor
 
     def condSettingsDlg(self): #Settings relating to conditions and randomization
         """
@@ -2827,19 +2830,19 @@ class PyHabBuilder:
         chkBox = False
         if self.settings['randPres'] in [1,'1',True,'True']:
             chkBox = True
-        cDlg.addField("Use condition-based presentation? If yes, a new interface will open",initial=chkBox)
-        cDlg.addField("Pre-existing condition file (optional, leave blank to make new file called conditions.csv)", self.settings['condFile'])
+        cDlg.addField('randPres', label="Use condition-based presentation? If yes, a new interface will open",initial=chkBox)
+        cDlg.addField('condFile', label="Pre-existing condition file (optional, leave blank to make new file called conditions.csv)",initial=self.settings['condFile'])
         if not chkBox:
             cDlg.addText("NOTE: This will overwrite any existing file named conditions.csv! If you have an existing conditions file, rename it first.")
         if len(self.baseCondDict) > 0:
-            cDlg.addField("Reload base conditions instead of randomized conditions? (WARNING: You will need to re-randomize)", initial=False)
+            cDlg.addField('baseCond', label="Reload base conditions instead of randomized conditions? (WARNING: You will need to re-randomize)", initial=False)
         condInfo = cDlg.show()
         if cDlg.OK:
-            self.settings['randPres'] = condInfo[0]
-            if condInfo[0]:
+            self.settings['randPres'] = condInfo['randPres']
+            if condInfo['randPres']:
                 # A new interface that allows you to re-order things
                 # Check if there are movies to re-order.
-                if len(condInfo) == 3 and condInfo[2] == True:
+                if len(condInfo) == 3 and condInfo['baseCond'] == True:
                     # Reload the 'base' conditions instead of randomized ones.
                     baseConds = True
                 else:
@@ -2854,8 +2857,8 @@ class PyHabBuilder:
                         elif len(self.settings['stimNames'][self.settings['trialTypes'][i]]) == 0:  # Another way that it can have no movies associated with it.
                             allReady = False
                 if allReady:
-                    if len(condInfo[1]) > 0:
-                        self.settings['condFile'] = condInfo[1]
+                    if len(condInfo['condFile']) > 0:
+                        self.settings['condFile'] = condInfo['condFile']
                     else:
                         self.settings['condFile'] = ""
                     if os.name != 'posix':
@@ -2869,11 +2872,11 @@ class PyHabBuilder:
                     errDlg = gui.Dlg(title="No stimuli!")
                     errDlg.addText("Not all trial types have stimuli!")
                     errDlg.addText("Please add stimuli to all trial types first and then set conditions for randomized presentation.")
-                    errDlg.addField("For studies without stimuli, enter list of arbitrary condition labels here, each one in quotes, separated by commas, all inside the square brackets",self.settings['condList'])
+                    errDlg.addField('condList',"For studies without stimuli, enter list of arbitrary condition labels here, each one in quotes, separated by commas, all inside the square brackets",initial=self.settings['condList'])
                     # This is non-ideal but a reasonable temporary patch.
                     e = errDlg.show()
                     if errDlg.OK:
-                        self.settings['condList'] = e[0]
+                        self.settings['condList'] = e['condList']
             else:
                 self.settings['condFile'] = ''  # Erases one if it existed.
                 self.settings['condList'] = []  # Gets rid of existing condition list to save trouble.
@@ -3190,18 +3193,18 @@ class PyHabBuilder:
         :rtype:
         """
         condDlg2 = gui.Dlg(title="Define condition")
-        condDlg2.addField("Condition label:", cond)
+        condDlg2.addField('cond', label="Condition label:", initial=cond)
         condDlg2.addText("You will have separate screens to set the order of movies in each trial type. Press OK to begin")
         condDinfo = condDlg2.show()
         if condDlg2.OK:
             if os.name != 'posix':
                 self.win.winHandle.set_visible(visible=True)
-            condDinfo[0] = str(condDinfo[0])
+            condDinfo['cond'] = str(condDinfo['cond'])
             if ex and condDinfo[0] != cond:  # Renamed existing condition
-                self.settings['condList'][self.settings['condList'].index(cond)] = condDinfo[0]
+                self.settings['condList'][self.settings['condList'].index(cond)] = condDinfo['cond']
                 if cond in self.condDict.keys():
-                    self.condDict[condDinfo[0]] = self.condDict.pop(cond)
-            cond = condDinfo[0]
+                    self.condDict[condDinfo['cond']] = self.condDict.pop(cond)
+            cond = condDinfo['cond']
             outputDict = {}
             if self.settings['prefLook'] in [2, '2']: # Just for convenience
                 HPP = True
@@ -3451,9 +3454,10 @@ class PyHabBuilder:
                                                          conlines=blockmode)
                     else:
                         # Click on a stimulus to add it. Remove it from the palette when added. Re-add it as appropriate.
+                        # TODO Problem of half the stims (everything after index 5) not being selectable for no obvious reason
                         for j in range(0, len(stims['shapes'])):  # Only need to worry about adding stim
                             if self.mouse.isPressedIn(stims['shapes'][j], buttons=[0]):
-                                if stims['labels'][j] not in invisStims:
+                                if stims['labels'][j] not in condOrder: # TODO: This is the most likely source of trouble
                                     condOrder.append(stims['labels'][j])
                                     condFlow = self.loadFlow(tOrd=condOrder, space=newFlowArea, locs=newFlowLocs,
                                                              overflow=newFlowLocs, types=tempStims, trials=False,
@@ -3462,6 +3466,12 @@ class PyHabBuilder:
 
                                 while self.mouse.isPressedIn(stims['shapes'][j], buttons=[0]):  # waits until the mouse is released before continuing.
                                     pass
+                            else:
+                                while self.mouse.isPressedIn(stims['shapes'][j], buttons=[0]):  # waits until the mouse is released before continuing.
+                                    pass
+                                errDlg = gui.Dlg(title="Inconcievable!")
+                                errDlg.addText("Somehow, you tried to add a stimulus that has already been added and should be invisible. This will not work.")
+                                errDlg.show()
                         for k in range(0, len(condFlow['shapes'])):  # Rearrange or remove, as in the usual loop!
                             if self.mouse.isPressedIn(condFlow['shapes'][k], buttons=[0]):
                                 condOrder = self.moveTrialInFlow(k, condOrder, newFlowArea, condUI, condFlow,
@@ -3524,11 +3534,11 @@ class PyHabBuilder:
         Present list of existing conditions. Choose one to remove.
         """
         dCondDlg = gui.Dlg(title="Delete a condition")
-        dCondDlg.addField('Choose a condition to delete', choices = self.settings['condList'])
+        dCondDlg.addField('delCond', label='Choose a condition to delete', choices = self.settings['condList'])
         delCond = dCondDlg.show()
         if dCondDlg.OK:
-            self.settings['condList'].remove(str(delCond[0]))
-            del self.condDict[delCond[0]]          
+            self.settings['condList'].remove(str(delCond['delCond']))
+            del self.condDict[delCond['delCond']]
 
     def autoCondSetup(self):
         """
@@ -3552,15 +3562,15 @@ class PyHabBuilder:
         whatGenDlg = gui.Dlg("Automatic condition generation")
         if len(list(self.settings['blockList'].keys())) > 0:
             whatGenDlg.addText("Select whether to generate counterbalanced orders of stimuli within trial types, of trials within blocks, or both")
-            whatGenDlg.addField("Order of stimuli in trials", initial=True)
-            whatGenDlg.addField("Order of trials in blocks", initial=True)
+            whatGenDlg.addField('orderStim', label="Order of stimuli in trials", initial=True)
+            whatGenDlg.addField('orderTrial', label="Order of trials in blocks", initial=True)
         whatGenDlg.addText("Select whether to keep all items in all conditions, or control which items are shown at all by condition")
-        whatGenDlg.addField("Keep all items in blocks/trials in all conditions?", initial=True)
+        whatGenDlg.addField('keepAll', label="Keep all items in blocks/trials in all conditions?", initial=True)
         whatGenInfo = whatGenDlg.show()
         if whatGenDlg.OK:
             if len(list(self.settings['blockList'].keys())) > 0:
-                trialGen = whatGenInfo[0]
-                blockGen = whatGenInfo[1]
+                trialGen = whatGenInfo['orderStim']
+                blockGen = whatGenInfo['orderTrial']
             else:
                 trialGen = True
                 blockGen = False
@@ -3569,7 +3579,7 @@ class PyHabBuilder:
                 errDlg=gui.Dlg("Nothing to randomize!")
                 errDlg.addText("Check at least one, trials or blocks, to randomize.")
                 errDlg.show()
-            keepAll = whatGenInfo[-1]
+            keepAll = whatGenInfo['keepAll']
             counterDict = {}
             # This dict is how we track how many things should be in each condition.
             # Defaults to 'all items assigned to that block/trial'
@@ -3586,17 +3596,17 @@ class PyHabBuilder:
                 lockDlg.addText("Make sure there is a check next to every block/trial you want to vary by condition, then hit OK to generate conditions")
                 tempList = list(counterDict.keys())
                 for k in tempList:
-                    lockDlg.addField(k, initial=True)
+                    lockDlg.addField(str(k), label=k, initial=True)
                 lockInfo = lockDlg.show()
                 if lockDlg.OK:
-                    if lockInfo.count(True) == 0:
+                    if sum(x == True for x in lockInfo.values()) == 0:
                         abort = True
                         errDlg = gui.Dlg("Error: No trials/blocks selected!")
                         errDlg.addText("Nothing to randomize! Check all trials/blocks to randomize.")
                         errDlg.show()
                     else:
                         for i in range(0, len(tempList)):
-                            if not lockInfo[i]:
+                            if not lockInfo[str(i)]:
                                 counterDict.pop(tempList[i])  # Remove any 'locked' trials or blocks.
                 else:
                     abort = True
@@ -3606,7 +3616,7 @@ class PyHabBuilder:
                 tempTypes = [x for x in self.settings['trialTypes'] if x in counterDict.keys()]
                 howManyKeep = gui.DlgFromDict(counterDict, title="How many items for each trial/block type per condition?",
                                               order=tempTypes, copyDict=False)
-                ctrInfo = howManyKeep.show()
+                ctrInfo = howManyKeep.show() #TODO: This is not doing anything. REwork.
                 if not howManyKeep.OK:
                     abort = True
             # Finally, we should have all the information we need to start actually creating conditions.
@@ -3683,11 +3693,11 @@ class PyHabBuilder:
         """
 
         rCondDlg = gui.Dlg(title="Create randomized condition list")
-        rCondDlg.addField('How many repetitions of each condition? (Length of list will be this X # conditions)',1)
-        rCondDlg.addField('Condition label prefix? (Will be followed by "01...N" in condition list)', self.settings['prefix'])
+        rCondDlg.addField('numReps', label='How many repetitions of each condition? (Length of list will be this X # conditions)',initial=1)
+        rCondDlg.addField('prefix',label='Condition label prefix? (Will be followed by "01...N" in condition list)', initial=self.settings['prefix'])
         randCond = rCondDlg.show()
-        if rCondDlg.OK and isinstance(randCond[0],int):
-            totalN = len(self.condDict.keys())*randCond[0]
+        if rCondDlg.OK and isinstance(randCond['numReps'],int):
+            totalN = len(self.condDict.keys())*randCond['numReps']
             # First, save the old, un-randomized thing for later reference.
             # However, we need a safety in case the cond list has been randomized once, so we only randomize the
             # base conditions and not re-randomize the old list. In that case, we essentially force revert the
@@ -3704,13 +3714,13 @@ class PyHabBuilder:
                     numStr = "0" + str(i)
                 else:
                     numStr = str(i)
-                newCondList.append(randCond[1]+numStr)
+                newCondList.append(randCond['prefix']+numStr)
             listOfConds = [] # A list of the existing conditions that will be the items for the new condDict.
             for j, k in self.condDict.items():
                 listOfConds.append(k)
             mixer = [] # The list with all repetitions, which we then shuffle.
             for q in range(0, len(listOfConds)):
-                for r in range(0, randCond[0]):
+                for r in range(0, randCond['numReps']):
                     mixer.append(listOfConds[q])
             random.shuffle(mixer)
 
