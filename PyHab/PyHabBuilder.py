@@ -3740,30 +3740,30 @@ class PyHabBuilder:
         """
         Dialog for settings relating to habituation criteria:
 
-        0 = habituation (Active/not active)
+        'hab' 0 = habituation (Active/not active)
 
-        1 = maxHabTrials (maximum possible hab trials if criterion not met)
+        'maxHabTrials' 1 = maxHabTrials (maximum possible hab trials if criterion not met)
 
-        2 = setCritWindow (# trials summed over when creating criterion)
+        'setCritWindow' 2 = setCritWindow (# trials summed over when creating criterion)
 
-        3 = setCritDivisor (denominator of criterion calculation . e.g., sum of first 3 trials
+        'setCritDivisor' 3 = setCritDivisor (denominator of criterion calculation . e.g., sum of first 3 trials
             divided by 2 would have 3 for setCritWindow and 2 for this.)
 
-        4 = setCritType (peak window, max trials, first N, last N, or first N above threshold)
+        'setCritType' 4 = setCritType (peak window, max trials, first N, last N, or first N above threshold)
 
-        5 = habThresh (threshold for N above threshold)
+        'habThresh' 5 = habThresh (threshold for N above threshold)
 
-        6 = maxHabSet (if habituation is not SET by this trial number, then habituation immediately ends)
+        'maxHabSet' 6 = maxHabSet (if habituation is not SET by this trial number, then habituation immediately ends)
 
-        7 = metCritWindow (# trials summed over when evaluating whether criterion has been met)
+        'metCritWindow' 7 = metCritWindow (# trials summed over when evaluating whether criterion has been met)
 
-        8 = metCritDivisor (denominator of sum calculated when determining if criterion has been met)
+        'metCritDivisor' 8 = metCritDivisor (denominator of sum calculated when determining if criterion has been met)
 
-        9 = metCritStatic (static or moving window?)
+        'metCritStatic' 9 = metCritStatic (static or moving window?)
 
-        10 = habByDuration (habituation by duration or by on-time)
+        'habByDuration' 10 = habByDuration (habituation by duration or by on-time)
 
-        11-N = Which trials to calculate hab over for multi-trial blocks.
+        str(0-N) = Which trials to calculate hab over for multi-trial blocks.
 
         :param trialList: List of available trials in the block, since this follows from block settings.
         :type trialList: list
@@ -3789,17 +3789,17 @@ class PyHabBuilder:
         else:
             byDur = False
 
-        hDlg.addField("Habituation on/off (uncheck to turn off)", True) # Always defaults to true if you open this menu.
-        hDlg.addField("Max number of habituation trials (if criterion not met)", lastSet['maxHabTrials'])
-        hDlg.addField("Number of trials to sum looking time over when making hab criterion (for FixedTrialLength, ignore first N trials)", lastSet['setCritWindow'])
-        hDlg.addField("Number to divide sum of looking time by when computing criterion (ignored for FixedTrialLength)", lastSet['setCritDivisor'])
-        hDlg.addField("Criterion window First trials, first trials w/total above Threshold, dynamic Peak contiguous window, or the set of hab trials with Max looking time? Or alternate mode for fixed trial lengths?", choices=winchz)
-        hDlg.addField("Threshold value to use if 'Threshold' selected above, or the consecutive off-time for 'FixedTrialLength' mode", lastSet['habThresh'])
-        hDlg.addField("Maximum number of trials to SET habituation criterion if 'Threshold' selected (ignored otherwise)", lastSet['maxHabSet'])
-        hDlg.addField("Number of trials to sum looking time over when determining whether criterion has been met", lastSet['metCritWindow'])
-        hDlg.addField("Number to divide sum of looking time by when determining whether criterion has been met (ignored for FixedTrialLength)", lastSet['metCritDivisor'])
-        hDlg.addField("Evaluate criterion over moving window or fixed windows?", choices=evalChz)
-        hDlg.addField("Compute habituation over total trial duration instead of on-time?", byDur)
+        hDlg.addField('hab', label="Habituation on/off (uncheck to turn off)", inital=True) # Always defaults to true if you open this menu.
+        hDlg.addField('maxHabTrials', label="Max number of habituation trials (if criterion not met)", initial=lastSet['maxHabTrials'])
+        hDlg.addField('setCritWindow', label="Number of trials to sum looking time over when making hab criterion (for FixedTrialLength, ignore first N trials)", initial=lastSet['setCritWindow'])
+        hDlg.addField('setCritDivisor', label="Number to divide sum of looking time by when computing criterion (ignored for FixedTrialLength)", initial=lastSet['setCritDivisor'])
+        hDlg.addField('setCritType', label="Criterion window First trials, first trials w/total above Threshold, dynamic Peak contiguous window, or the set of hab trials with Max looking time? Or alternate mode for fixed trial lengths?", choices=winchz)
+        hDlg.addField('habThresh', label="Threshold value to use if 'Threshold' selected above, or the consecutive off-time for 'FixedTrialLength' mode", initial=lastSet['habThresh'])
+        hDlg.addField('maxHabSet', label="Maximum number of trials to SET habituation criterion if 'Threshold' selected (ignored otherwise)", initial=lastSet['maxHabSet'])
+        hDlg.addField('metCritWindow', label="Number of trials to sum looking time over when determining whether criterion has been met", initial=lastSet['metCritWindow'])
+        hDlg.addField('metCritDivisor', label="Number to divide sum of looking time by when determining whether criterion has been met (ignored for FixedTrialLength)", initial=lastSet['metCritDivisor'])
+        hDlg.addField('metCritStatic', label="Evaluate criterion over moving window or fixed windows?", choices=evalChz)
+        hDlg.addField('habByDuration', label="Compute habituation over total trial duration instead of on-time?", initial=byDur)
         if len(trialList) > 1: # If there's only one trial, then it's automatically that trial!
             hDlg.addText("Check which trial types criteria should be computed over (both setting and checking)")
             expandedHabList = []
@@ -3826,20 +3826,20 @@ class PyHabBuilder:
                             chk = True
                         else:
                             chk = False
-                        hDlg.addField(listThings[z], initial=chk)
+                        hDlg.addField(str(z), label=listThings[z], initial=chk)
                         expandedHabList.append(listThings[z])
                 else:
                     if trialList[q] in lastSet['calcHabOver']:
                         chk = True
                     else:
                         chk = False
-                    hDlg.addField(trialList[q], initial=chk)
+                    hDlg.addField(str(q), label=trialList[q], initial=chk)
                     expandedHabList.append(trialList[q])
         habDat=hDlg.show()
         if hDlg.OK:
             skip = False
-            intevals = [1,2,6,7]
-            fevals = [3,5,8] # These can be floats
+            intevals = ['maxHabTrials','setCritWindow','maxHabSet','metCritWindow']
+            fevals = ['setCritDivisor','habThresh','metCritDivisor'] # These can be floats
             for i in intevals:
                 if not isinstance(habDat[i], int):
                     if isinstance(habDat[i], str):
@@ -3860,17 +3860,17 @@ class PyHabBuilder:
 
             if not skip:
                 newHabSettings = {}
-                newHabSettings['habituation'] = habDat[0]
-                newHabSettings['maxHabTrials'] = habDat[1]
-                newHabSettings['setCritWindow'] = habDat[2]
-                newHabSettings['setCritDivisor'] = habDat[3]
-                newHabSettings['setCritType'] = habDat[4]
-                newHabSettings['habThresh'] = habDat[5]
-                newHabSettings['maxHabSet'] = habDat[6]
-                newHabSettings['metCritWindow'] = habDat[7]
-                newHabSettings['metCritDivisor'] = habDat[8]
-                newHabSettings['metCritStatic'] = habDat[9]
-                if habDat[10] in [1, '1', True, 'True']:
+                newHabSettings['habituation'] = habDat['hab']
+                newHabSettings['maxHabTrials'] = habDat['maxHabTrials']
+                newHabSettings['setCritWindow'] = habDat['setCritWindow']
+                newHabSettings['setCritDivisor'] = habDat['setCritDivisor']
+                newHabSettings['setCritType'] = habDat['setCritType']
+                newHabSettings['habThresh'] = habDat['habThresh']
+                newHabSettings['maxHabSet'] = habDat['maxHabSet']
+                newHabSettings['metCritWindow'] = habDat['metCritWindow']
+                newHabSettings['metCritDivisor'] = habDat['metCritDivisor']
+                newHabSettings['metCritStatic'] = habDat['metCritStatic']
+                if habDat['habByDuration'] in [1, '1', True, 'True']:
                     newHabSettings['habByDuration'] = 1
                 else:
                     newHabSettings['habByDuration'] = 0
@@ -3878,7 +3878,7 @@ class PyHabBuilder:
                 if len(trialList) > 1:
                     tempArr = []
                     for i in range(0, len(expandedHabList)):
-                        if habDat[i+11]:
+                        if habDat[str(i)]:
                            tempArr.append(expandedHabList[i])
                     if len(tempArr) > 0:
                         newHabSettings['calcHabOver'] = tempArr
@@ -3896,17 +3896,17 @@ class PyHabBuilder:
                     "Please make sure all values are valid numbers. Remember that any 'number of trials' field must be a whole number (no decimal).")
                 errDlg.show()
                 lastSetDat = {}
-                lastSetDat['habituation'] = habDat[0]
-                lastSetDat['maxHabTrials'] = habDat[1]
-                lastSetDat['setCritWindow'] = habDat[2]
-                lastSetDat['setCritDivisor'] = habDat[3]
-                lastSetDat['setCritType'] = habDat[4]
-                lastSetDat['habThresh'] = habDat[5]
-                lastSetDat['maxHabSet'] = habDat[6]
-                lastSetDat['metCritWindow'] = habDat[7]
-                lastSetDat['metCritDivisor'] = habDat[8]
-                lastSetDat['metCritStatic'] = habDat[9]
-                if habDat[10] in [1, '1', True, 'True']:
+                lastSetDat['habituation'] = habDat['hab']
+                lastSetDat['maxHabTrials'] = habDat['maxHabTrials']
+                lastSetDat['setCritWindow'] = habDat['setCritWindow']
+                lastSetDat['setCritDivisor'] = habDat['setCritDivisor']
+                lastSetDat['setCritType'] = habDat['setCritType']
+                lastSetDat['habThresh'] = habDat['habThresh']
+                lastSetDat['maxHabSet'] = habDat['maxHabSet']
+                lastSetDat['metCritWindow'] = habDat['metCritWindow']
+                lastSetDat['metCritDivisor'] = habDat['metCritDivisor']
+                lastSetDat['metCritStatic'] = habDat['metCritStatic']
+                if habDat['habByDuration'] in [1, '1', True, 'True']:
                     lastSetDat['habByDuration'] = 1
                 else:
                     lastSetDat['habByDuration'] = 0
@@ -3914,7 +3914,7 @@ class PyHabBuilder:
                 if len(trialList) > 1:
                     tempArr = []
                     for i in range(0, len(expandedHabList)):
-                        if habDat[i+11]:
+                        if habDat[str(i)]:
                            tempArr.append(expandedHabList[i])
                     if len(tempArr) > 0:
                         lastSetDat['calcHabOver'] = tempArr
