@@ -687,7 +687,7 @@ class PyHabBuilder:
                     durCrit = False
             typeDlg.addField('autoRedo',label="Auto-redo of minimum on-time criterion not met?", initial=autoRedo)  # Index 5
             typeDlg.addField('onTimeDeadline',label="Deadline to meet on-time criterion (ignored if <= 0)", initial=otdl)  # Index 6
-            typeDlg.addField('durationCriteron', label="Check to use total trial duration instead of gaze-on time for trial length calculation", initial=durCrit)  # Index 7
+            typeDlg.addField('durationCriterion', label="Check to use total trial duration instead of gaze-on time for trial length calculation", initial=durCrit)  # Index 7
 
             if len(prevInfo) > 0:
                 if prevInfo['autoAdvance'] in [True, 'True', 1, '1']:
