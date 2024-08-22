@@ -3453,15 +3453,28 @@ class PyHabBuilder:
                         # Click on a stimulus to add it. Remove it from the palette when added. Re-add it as appropriate.
                         for j in range(0, len(stims['shapes'])):  # Only need to worry about adding stim
                             if self.mouse.isPressedIn(stims['shapes'][j], buttons=[0]):
-                                if stims['labels'][j] not in invisStims:
+                                if stims['labels'][j] not in condOrder:
                                     condOrder.append(stims['labels'][j])
                                     condFlow = self.loadFlow(tOrd=condOrder, space=newFlowArea, locs=newFlowLocs,
                                                              overflow=newFlowLocs, types=tempStims, trials=False,
                                                              conlines=blockmode)
                                     invisStims.append(stims['labels'][j])
 
-                                while self.mouse.isPressedIn(stims['shapes'][j], buttons=[0]):  # waits until the mouse is released before continuing.
-                                    pass
+                                    while self.mouse.isPressedIn(stims['shapes'][j], buttons=[
+                                        0]):  # waits until the mouse is released before continuing.
+                                        pass
+                                elif stims['labels'][j] in invisStims:
+                                    while self.mouse.isPressedIn(stims['shapes'][j], buttons=[
+                                        0]):  # waits until the mouse is released before continuing.
+                                        pass
+                                else:
+                                    while self.mouse.isPressedIn(stims['shapes'][j], buttons=[
+                                        0]):  # waits until the mouse is released before continuing.
+                                        pass
+                                    errDlg = gui.Dlg(title="Inconcievable!")
+                                    errDlg.addText(
+                                        "Somehow, you tried to add a stimulus that has already been added and should be invisible. This will not work.")
+                                    errDlg.show()
                         for k in range(0, len(condFlow['shapes'])):  # Rearrange or remove, as in the usual loop!
                             if self.mouse.isPressedIn(condFlow['shapes'][k], buttons=[0]):
                                 condOrder = self.moveTrialInFlow(k, condOrder, newFlowArea, condUI, condFlow,
