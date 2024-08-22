@@ -29,7 +29,7 @@ class PyHabBuilder:
         # loadedSaved is "is this a new experiment or are we operating inside an existing experiment's folder?"
         if not loadedSaved:  # A new blank experiment
             # Load some defaults to start with.
-            self.settings = {'dataColumns': ['sNum', 'sID', 'months', 'days', 'sex', 'cond','condLabel', 'trial','GNG','trialType','stimName','habCrit','habTrialNo','sumOnA','numOnA','sumOffA','numOffA','sumOnB','numOnB','sumOffB','numOffB','trialDuration'],
+            self.settings = {'dataColumns': ['sNum', 'sID', 'months', 'days', 'sex', 'cond','condLabel', 'trial','GNG','trialType','stimName','habCrit','habTrialNo','sumOnA','numOnA','sumOffA','numOffA','sumOnB','numOnB','sumOffB','numOffB','trialDuration', 'firstLook'],
                                                         'blockSum': '1',
                                                         'trialSum': '1',
                                                         'prefix': 'PyHabExperiment',
@@ -2064,7 +2064,7 @@ class PyHabBuilder:
                 self.settings['trialSum'] = 1
             else:
                 self.settings['trialSum'] = 0
-            for j in range(0, len(datInfo)): # For the data columns themselves, separate from the toggle of block/trial level
+            for j in range(0, len(tempDataCols)): # For the data columns themselves, separate from the toggle of block/trial level
                 if datInfo[str(j)]:
                     tempCols.append(tempDataCols[j])
             self.settings['dataColumns'] = tempCols
@@ -2562,7 +2562,7 @@ class PyHabBuilder:
             d1.addText("Note: You can only select stimuli you have already added to the experiment library")
             d1.addText("Note: You can only REMOVE stimuli from a trial type in the trial type's own settings, this will add to whatever is already there")
             d = d1.show()
-            if d1.OK and isinstance(d[1], int):
+            if d1.OK and isinstance(d['numAdd'], int):
                 self.showMainUI(self.UI, self.studyFlowArray, self.trialTypesArray)
                 self.workingRect.draw()
                 self.workingText.draw()
