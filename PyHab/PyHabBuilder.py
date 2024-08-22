@@ -872,7 +872,7 @@ class PyHabBuilder:
                         # Remove stimuli if needed
                         if len(typeInfo) > 13: #Again, if there were movies to list.
                             tempMovies = [] #This will just replace the stimNames list
-                            for i in range(self.settings['stimNames'][trialType]):
+                            for i in self.settings['stimNames'][trialType]:
                                 if typeInfo[i]:
                                     tempMovies.append(i)
                             self.settings['stimNames'][trialType] = tempMovies
@@ -1579,7 +1579,7 @@ class PyHabBuilder:
             nowColor = self.colorsArray.pop(self.settings['trialTypes'].index(dType))
             self.colorsArray.insert(len(self.settings['trialTypes']) - 1, nowColor)
         self.settings['trialTypes'].remove(dType)  # remove the type from the list of trial types.
-        if dType in self.settings['blockList'].keys():  # Block vs. trial
+        if dType in self.settings['blockList'].keys():  # Block vs. trial. Includes hab.
             del self.settings['blockList'][dType]
         else:
             keylist = ['stimNames','maxDur','minOn','maxOff','ISI']
@@ -1588,14 +1588,12 @@ class PyHabBuilder:
                     del self.settings[keylist[j]][dType]
             if dType in self.settings['playThrough']:  # if it was in playThrough, remove it from there too.
                 self.settings['playThrough'].pop(dType, None)
-        if dType in self.settings['habTrialList']:  # If it was in a hab meta-trial.
-            while dType in self.settings['habTrialList']:
-                self.settings['habTrialList'].remove(dType)
-            if dType in self.settings['calcHabOver']:
-                self.settings['calcHabOver'].remove(dType)
         for i, j in self.settings['blockList'].items():  # If it's part of a block
-            while dType in j:
-                j.remove(dType)
+            if dType in j:
+                while dType in j:
+                    j.remove(dType)
+                if len(j) == 0: # if the block is now empty, delete the block
+                    self.deleteType(i)
         if len(self.settings['trialTypes']) > 0:  # A catch if we've deleted the last trial type so it doesn't break the palette
             self.totalPalettePages = floor((len(self.settings['trialTypes']) - 1) / 8) + 1  # Update if needed
             if self.trialPalettePage > self.totalPalettePages:  # In case we've lost the page we're on. Otherwise, stay on current page
@@ -3454,24 +3452,26 @@ class PyHabBuilder:
                                                          conlines=blockmode)
                     else:
                         # Click on a stimulus to add it. Remove it from the palette when added. Re-add it as appropriate.
-                        # TODO Problem of half the stims (everything after index 5) not being selectable for no obvious reason
                         for j in range(0, len(stims['shapes'])):  # Only need to worry about adding stim
                             if self.mouse.isPressedIn(stims['shapes'][j], buttons=[0]):
-                                if stims['labels'][j] not in condOrder: # TODO: This is the most likely source of trouble
+                                if stims['labels'][j] not in condOrder:
                                     condOrder.append(stims['labels'][j])
                                     condFlow = self.loadFlow(tOrd=condOrder, space=newFlowArea, locs=newFlowLocs,
                                                              overflow=newFlowLocs, types=tempStims, trials=False,
                                                              conlines=blockmode)
                                     invisStims.append(stims['labels'][j])
 
-                                while self.mouse.isPressedIn(stims['shapes'][j], buttons=[0]):  # waits until the mouse is released before continuing.
-                                    pass
-                            else:
-                                while self.mouse.isPressedIn(stims['shapes'][j], buttons=[0]):  # waits until the mouse is released before continuing.
-                                    pass
-                                errDlg = gui.Dlg(title="Inconcievable!")
-                                errDlg.addText("Somehow, you tried to add a stimulus that has already been added and should be invisible. This will not work.")
-                                errDlg.show()
+                                    while self.mouse.isPressedIn(stims['shapes'][j], buttons=[0]):  # waits until the mouse is released before continuing.
+                                        pass
+                                elif stims['labels'][j] in invisStims:
+                                    while self.mouse.isPressedIn(stims['shapes'][j], buttons=[0]):  # waits until the mouse is released before continuing.
+                                        pass
+                                else:
+                                    while self.mouse.isPressedIn(stims['shapes'][j], buttons=[0]):  # waits until the mouse is released before continuing.
+                                        pass
+                                    errDlg = gui.Dlg(title="Inconcievable!")
+                                    errDlg.addText("Somehow, you tried to add a stimulus that has already been added and should be invisible. This will not work.")
+                                    errDlg.show()
                         for k in range(0, len(condFlow['shapes'])):  # Rearrange or remove, as in the usual loop!
                             if self.mouse.isPressedIn(condFlow['shapes'][k], buttons=[0]):
                                 condOrder = self.moveTrialInFlow(k, condOrder, newFlowArea, condUI, condFlow,
