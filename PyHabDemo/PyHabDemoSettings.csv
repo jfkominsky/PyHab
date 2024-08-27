@@ -1,4 +1,4 @@
-dataColumns,"['sNum', 'sID', 'months', 'days', 'sex', 'cond', 'condLabel', 'trial', 'GNG', 'trialType', 'stimName', 'habCrit', 'habTrialNo', 'sumOnA', 'numOnA', 'sumOffA', 'numOffA', 'sumOnB', 'numOnB', 'sumOffB', 'numOffB', 'trialDuration']"
+dataColumns,"['sNum', 'sID', 'months', 'days', 'sex', 'cond', 'condLabel', 'trial', 'GNG', 'trialType', 'stimName', 'habCrit', 'habTrialNo', 'sumOnA', 'numOnA', 'sumOffA', 'numOffA', 'sumOnB', 'numOnB', 'sumOffB', 'numOffB', 'trialDuration', 'firstLook']"
 blockSum,1
 trialSum,1
 prefix,PyHabDemo
@@ -22,7 +22,7 @@ baseCondFile,
 baseCondList,[]
 trialTypes,"['Intro', 'Fam', 'Test', 'BlockA']"
 trialOrder,"['BlockA', 'BlockA', 'BlockA', 'BlockA', 'Test', 'Test']"
-blockList,"{'BlockA': {'habituation': 0, 'habByDuration': 0, 'maxHabTrials': 14, 'setCritWindow': 3, 'setCritDivisor': 2.0, 'setCritType': 'First', 'habThresh': 5.0, 'metCritWindow': 3, 'metCritDivisor': 1.0, 'metCritStatic': 'Moving', 'calcHabOver': [], 'trialList': ['Intro', 'Fam']}}"
+blockList,"{'BlockA': {'habituation': 0, 'habByDuration': 0, 'maxHabTrials': 14, 'setCritWindow': 3, 'setCritDivisor': 2.0, 'setCritType': 'First', 'habThresh': 5.0, 'metCritWindow': 3, 'metCritDivisor': 1.0, 'metCritStatic': 'Moving', 'calcHabOver': [], 'trialList': ['Intro', 'Fam'], 'blockRedo': False}}"
 blockDataList,[]
 stimPres,0
 stimPath,stimuli/
@@ -48,3 +48,5 @@ startImage,
 endImage,
 nextFlash,0
 loadSep,0
+maxOn,{}
+eyetracker,0
