@@ -675,7 +675,7 @@ class PyHab:
                         if completeVerbose[m]['gazeOnOff'] == 0:
                             if m < len(completeVerbose)-1:
                                 tempTotal = completeVerbose[m]['duration']
-                                while completeVerbose[m+1]['gazeOnOff'] == 0 and m < len(completeVerbose)-1:
+                                while m < len(completeVerbose)-1 and completeVerbose[m+1]['gazeOnOff'] == 0 :
                                     tempTotal += completeVerbose[m+1]['duration']
                                     m = m+1
                                 consecOffTimes.append(tempTotal)
