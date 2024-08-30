@@ -1499,6 +1499,165 @@ class TestDataFunc(object):
 
         assert self.dataInst.checkStop('D') == True
 
+    def test_fixedlength_crosstrial(self):
+        """
+        Tests the "fixed trial length" hab type with the new "cross-trial" criterion mode
+        :return:
+        :rtype:
+        """
+        self.dataInst.blockList = {'D': {'trialList': ['C'],
+                                         'habituation': 1,
+                                         'habByDuration': 0,
+                                         'maxHabTrials': 14,
+                                         'setCritWindow': 0,  # From start of experiment
+                                         'setCritDivisor': 2.0,
+                                         'setCritType': 'FixedTrialLength',
+                                         'habThresh': 5, # one five-second look-away bridging trials
+                                         'maxHabSet': -1,
+                                         'metCritWindow': 3,  # over 3 trials
+                                         'metCritDivisor': 1.0,
+                                         'metCritStatic': 'Cross-trial (fixed length only)',
+                                         'calcHabOver': ['C']}}
+
+        i = 'D'
+        # These are settings which would normally happen during init, but we are doing here b/c hab is added late.
+        self.dataInst.habCount[i] = 0
+        self.dataInst.habCrit[i] = 0
+        self.dataInst.habSetWhen[i] = -1
+        self.dataInst.habMetWhen[i] = -1
+        self.dataInst.maxHabIndex[i] = 0
+        self.dataInst.habDataCompiled[i] = [0] * self.dataInst.blockList['D']['maxHabTrials']
+
+        habMatrix = copy.deepcopy(self.testMatrix)
+        self.dataInst.dataMatrix = habMatrix  # We can actually use python's pointer thing to our advantage here: dataMatrix will update with habMatrix
+        # The main problem is that the relevant data are not from the hab matrix but from the verbose data in this case.
+        habOn1_1 = [{'trial': 3, 'trialType': 'D1.C', 'startTime': 0, 'endTime': 1.5, 'duration': 1.5},
+                    {'trial': 3, 'trialType': 'D1.C', 'startTime': 3.0, 'endTime': 4.5,
+                     'duration': 1.5}]
+        habOff1_1 = [{'trial': 3, 'trialType': 'D1.C', 'startTime': 1.5, 'endTime': 3.0, 'duration': 1.5},
+                     {'trial': 3, 'trialType': 'D1.C', 'startTime': 4.5, 'endTime': 7.5,
+                      'duration': 3.0}]
+        habOn2_1 = [{'trial': 3, 'trialType': 'D1.C', 'startTime': 0, 'endTime': 1.5, 'duration': 1.5},
+                    {'trial': 3, 'trialType': 'D1.C', 'startTime': 3.0, 'endTime': 4.5,
+                     'duration': 1.5}]
+        habOff2_1 = [{'trial': 3, 'trialType': 'D1.C', 'startTime': 1.5, 'endTime': 3.0, 'duration': 1.5},
+                     {'trial': 3, 'trialType': 'D1.C', 'startTime': 4.5, 'endTime': 7.5,
+                      'duration': 3.0}]
+        habOn1_2 = [{'trial': 4, 'trialType': 'D2.C', 'startTime': 0, 'endTime': 1.5, 'duration': 1.5},
+                    {'trial': 4, 'trialType': 'D2.C', 'startTime': 3.0, 'endTime': 4.5,
+                     'duration': 1.5}]
+        habOff1_2 = [{'trial': 4, 'trialType': 'D2.C', 'startTime': 1.5, 'endTime': 3.0, 'duration': 1.5},
+                     {'trial': 4, 'trialType': 'D2.C', 'startTime': 4.5, 'endTime': 7.5,
+                      'duration': 3.0}]
+        habOn2_2 = [{'trial': 4, 'trialType': 'D2.C', 'startTime': 0, 'endTime': 1.5, 'duration': 1.5},
+                    {'trial': 4, 'trialType': 'D2.C', 'startTime': 3.0, 'endTime': 4.5,
+                     'duration': 1.5}]
+        habOff2_2 = [{'trial': 4, 'trialType': 'D2.C', 'startTime': 1.5, 'endTime': 3.0, 'duration': 1.5},
+                     {'trial': 4, 'trialType': 'D2.C', 'startTime': 4.5, 'endTime': 7.5,
+                      'duration': 3.0}]
+        habOn1_3 = [{'trial': 5, 'trialType': 'D3.C', 'startTime': 2.5, 'endTime': 3.5, 'duration': 1.0},
+                    {'trial': 5, 'trialType': 'D3.C', 'startTime': 4.0, 'endTime': 4.5,
+                     'duration': 1.5}]
+        habOff1_3 = [{'trial': 5, 'trialType': 'D3.C', 'startTime': 0, 'endTime': 2.5, 'duration': 2.5},
+                     {'trial': 5, 'trialType': 'D3.C', 'startTime': 3.5, 'endTime': 4.0, 'duration': 0.5},
+                     {'trial': 5, 'trialType': 'D3.C', 'startTime': 4.5, 'endTime': 7.5,
+                      'duration': 3.0}]
+        habOn2_3 = [{'trial': 5, 'trialType': 'D3.C', 'startTime': 2.5, 'endTime': 3.5, 'duration': 1.0},
+                    {'trial': 5, 'trialType': 'D3.C', 'startTime': 4.0, 'endTime': 4.5,
+                     'duration': 1.5}]
+        habOff2_3 = [{'trial': 5, 'trialType': 'D3.C', 'startTime': 0, 'endTime': 2.5, 'duration': 2.5},
+                     {'trial': 5, 'trialType': 'D3.C', 'startTime': 3.5, 'endTime': 4.0, 'duration': 0.5},
+                     {'trial': 5, 'trialType': 'D3.C', 'startTime': 4.5, 'endTime': 7.5,
+                      'duration': 3.0}]
+
+        self.dataInst.dataRec(habOn1_1, habOff1_1, 3, 'D1.C', habOn2_1, habOff2_1, 'movie1.mov')
+        self.dataInst.badTrials = []
+        self.dataInst.habDataCompiled['D'] = [0] * 14
+        self.dataInst.stimPres = True  # Temporary, so it doesn't try to play the end-hab sound.
+        self.dataInst.habDataCompiled['D'][self.dataInst.habCount['D']] += habMatrix[-1]['sumOnA']  # 0, 5
+        self.dataInst.habCount['D'] = 1
+
+        assert self.dataInst.checkStop('D') == False
+        assert self.dataInst.habCrit['D'] == 5
+        assert self.dataInst.habSetWhen['D'] == 1
+
+        self.dataInst.dataRec(habOn1_2, habOff1_2, 4, 'D2.C', habOn2_2, habOff2_2, 'movie1.mov')
+        self.dataInst.habDataCompiled['D'][self.dataInst.habCount['D']] += habMatrix[-1]['sumOnA']  # 1, 5
+        self.dataInst.habCount['D'] = 2
+
+        assert self.dataInst.checkStop('D') == False
+
+        self.dataInst.habDataCompiled['D'][self.dataInst.habCount['D']] += habMatrix[-1]['sumOnA']  # 2, 5
+        self.dataInst.habCount['D'] = 3
+        self.dataInst.dataRec(habOn1_3, habOff1_3, 5, 'D3.C', habOn2_3, habOff2_3, 'movie1.mov')
+
+        blockName = 'D'
+        assert self.dataInst.habCount[blockName] >= self.dataInst.habSetWhen[blockName] + self.dataInst.blockList[blockName]['metCritWindow'] - 1
+
+        assert self.dataInst.checkStop('D') == True
+        habIndex = self.dataInst.habCount[blockName] - self.dataInst.blockList[blockName]['metCritWindow']
+
+        targetTrials = []
+        targetTrialNames = []
+        for j in range(habIndex, self.dataInst.habCount[blockName]):
+            for q in range(0, len(self.dataInst.blockList[blockName]['calcHabOver'])):
+                matchName = blockName + str(j + 1) + '.' + self.dataInst.blockList[blockName]['calcHabOver'][q]
+                targetTrialNames.append(matchName)
+        for i in range(0, len(self.dataInst.dataMatrix)):
+            if self.dataInst.dataMatrix[i]['trialType'] in targetTrialNames:
+                targetTrials.append(self.dataInst.dataMatrix[i]['trial'])
+
+        assert targetTrials == [3, 4, 5]
+
+        completeVerbose = []
+        # Stitching together the verbose trials as is done at the end of the experiment.
+        for n in range(0, len(targetTrials)):
+            onIndex = -1
+            offIndex = -1
+            for x in range(0, len(self.dataInst.verbDatList['verboseOn'])):
+                if self.dataInst.verbDatList['verboseOn'][x]['trial'] == targetTrials[
+                    n] and onIndex == -1:  # find the right index in the verbose matrices
+                    onIndex = x
+            for y in range(0, len(self.dataInst.verbDatList['verboseOff'])):
+                if self.dataInst.verbDatList['verboseOff'][y]['trial'] == targetTrials[n] and offIndex == -1:
+                    offIndex = y
+            trialVerbose = []
+            if onIndex >= 0:
+                while onIndex < len(self.dataInst.verbDatList['verboseOn']):
+                    if self.dataInst.verbDatList['verboseOn'][onIndex]['trial'] == targetTrials[n]:
+                        tmpVerbose = copy.deepcopy(self.dataInst.verbDatList['verboseOn'][onIndex])
+                        tmpVerbose['gazeOnOff'] = 1
+                        trialVerbose.append(tmpVerbose)
+                    onIndex += 1
+            if offIndex >= 0:
+                while offIndex < len(self.dataInst.verbDatList['verboseOff']):
+                    if self.dataInst.verbDatList['verboseOff'][offIndex]['trial'] == targetTrials[n]:
+                        tmpVerbose = copy.deepcopy(self.dataInst.verbDatList['verboseOff'][offIndex])
+                        tmpVerbose['gazeOnOff'] = 0
+                        trialVerbose.append(tmpVerbose)
+                    offIndex += 1
+            trialVerbose2 = sorted(trialVerbose, key=lambda trialVerbose: trialVerbose['startTime'])  # Sorts by "startTime" of each gaze event
+            completeVerbose.extend(trialVerbose2)
+        assert len(completeVerbose) == 13
+        # Now cycle through the sorted verbose matrix and identify consecutive off events, extract their duration
+        consecOffTimes = []
+        m = 0
+        while m < len(completeVerbose):
+            if completeVerbose[m]['gazeOnOff'] == 0:
+                if m < len(completeVerbose) - 1:
+                    tempTotal = completeVerbose[m]['duration']
+                    while completeVerbose[m + 1]['gazeOnOff'] == 0 and m < len(completeVerbose) - 1:
+                        tempTotal += completeVerbose[m + 1]['duration']
+                        m = m + 1
+                    consecOffTimes.append(tempTotal)
+                else:
+                    consecOffTimes.append(completeVerbose[m]['duration'])
+            m = m + 1
+        assert 5.5 in consecOffTimes
+        assert len([x for x in consecOffTimes if x >= self.dataInst.habCrit['D']]) > 0
+        assert self.dataInst.checkStop('D') == True
+
+
     def test_bugged_config(self):
         """
         Tests the new "fixed trial length" habituation type. Slightly complicated.
