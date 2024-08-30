@@ -143,8 +143,8 @@ class PyHab:
             self.ITIbase = eval(settingsDict['ITIbase'])
             self.ITIjitter = eval(settingsDict['ITIjitter'])
         except:
-            self.ITIbase = eval(settingsDict['ITIbase'])
-            self.ITIjitter = eval(settingsDict['ITIjitter'])
+            self.ITIbase = 0.0
+            self.ITIjitter = 0.0
 
 
         # ORDER OF PRESENTATION
