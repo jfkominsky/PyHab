@@ -1615,8 +1615,7 @@ class TestDataFunc(object):
             onIndex = -1
             offIndex = -1
             for x in range(0, len(self.dataInst.verbDatList['verboseOn'])):
-                if self.dataInst.verbDatList['verboseOn'][x]['trial'] == targetTrials[
-                    n] and onIndex == -1:  # find the right index in the verbose matrices
+                if self.dataInst.verbDatList['verboseOn'][x]['trial'] == targetTrials[n] and onIndex == -1:  # find the right index in the verbose matrices
                     onIndex = x
             for y in range(0, len(self.dataInst.verbDatList['verboseOff'])):
                 if self.dataInst.verbDatList['verboseOff'][y]['trial'] == targetTrials[n] and offIndex == -1:
@@ -1638,7 +1637,8 @@ class TestDataFunc(object):
                     offIndex += 1
             trialVerbose2 = sorted(trialVerbose, key=lambda trialVerbose: trialVerbose['startTime'])  # Sorts by "startTime" of each gaze event
             completeVerbose.extend(trialVerbose2)
-        assert len(completeVerbose) == 13
+        assert len([x for x in completeVerbose if x['trial'] in [3,4,5]]) == len(completeVerbose) # make sure we're not getting weird stuff.
+        assert len([x for x in completeVerbose if x['trial'] == 3]) == 4 # should only be 4 entries from this trial.
         # Now cycle through the sorted verbose matrix and identify consecutive off events, extract their duration
         consecOffTimes = []
         m = 0
