@@ -3830,7 +3830,7 @@ class PyHabBuilder:
         hDlg.addField('habThresh', label="Threshold value to use if 'Threshold' selected above, or the consecutive off-time for 'FixedTrialLength' mode", initial=lastSet['habThresh'])
         hDlg.addField('maxHabSet', label="Maximum number of trials to SET habituation criterion if 'Threshold' selected (ignored otherwise)", initial=lastSet['maxHabSet'])
         hDlg.addField('metCritWindow', label="Number of trials to sum looking time over when determining whether criterion has been met", initial=lastSet['metCritWindow'])
-        hDlg.addField('metCritDivisor', label="Number to divide sum of looking time by when determining whether criterion has been met (ignored for FixedTrialLength)", initial=lastSet['metCritDivisor'])
+        hDlg.addField('metCritDivisor', label="Number to divide sum of looking time by when determining whether criterion has been met (or n above threshold for FixedTrialLength w/cross-trial)", initial=lastSet['metCritDivisor'])
         hDlg.addField('metCritStatic', label="Evaluate criterion over moving window or fixed windows?", choices=evalChz)
         hDlg.addField('habByDuration', label="Compute habituation over total trial duration instead of on-time?", initial=byDur)
         if len(trialList) > 1: # If there's only one trial, then it's automatically that trial!

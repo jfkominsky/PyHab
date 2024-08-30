@@ -1654,7 +1654,13 @@ class TestDataFunc(object):
                     consecOffTimes.append(completeVerbose[m]['duration'])
             m = m + 1
         assert 5.5 in consecOffTimes
-        assert len([x for x in consecOffTimes if x >= self.dataInst.habCrit['D']]) > 0
+        assert len([x for x in consecOffTimes if x >= self.dataInst.habCrit['D']]) > self.dataInst.blockList['D']['metCritDivisor']
+        assert self.dataInst.checkStop('D') == True
+
+        # additional test for situation where there need to be N gaze-off events above threshold.
+        self.dataInst.blockList['D']['metCritDivisor'] = 3
+        assert self.dataInst.checkStop('D') == False
+        self.dataInst.habCrit['D'] = 2.75
         assert self.dataInst.checkStop('D') == True
 
 
