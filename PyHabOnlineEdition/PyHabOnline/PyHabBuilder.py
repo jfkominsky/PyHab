@@ -538,7 +538,7 @@ class PyHabBuilder:
             types['text'][o].draw()
 
 
-    def trialTypeDlg(self, trialType="TrialTypeNew", makeNew=True, prevInfo=[]):
+    def trialTypeDlg(self, trialType="TrialTypeNew", makeNew=True, prevInfo={}):
         """
         Dialog for creating OR modifying a trial type. Allows you to set
         the maximum duration of that trial type as well as remove movies
@@ -1149,30 +1149,30 @@ class PyHabBuilder:
             self.workingText.draw()
             self.win.flip()
             newBlockDlg = gui.Dlg(title="Create new block")
-            newBlockDlg.addField("Block name: ", initial=name)
+            newBlockDlg.addField('name', label="Block name: ", initial=name)
             newBlockDlg.addText("Hit OK to select trials for this block")
             newBlock = newBlockDlg.show()
             if newBlockDlg.OK:
-                newBlock[0] = str(newBlock[0])  # In case PyQT does something weird
+                newBlock['name'] = str(newBlock['name'])  # In case PyQT does something weird
                 startsSameAs = False
                 for i,j in self.settings['blockList'].items():
-                    if len(newBlock[0]) <= len(i):
-                        if newBlock[0] == i[0:len(newBlock[0])]:
+                    if len(newBlock['name']) <= len(i):
+                        if newBlock['name'] == i[0:len(newBlock['name'])]:
                             startsSameAs = True
-                    if len(i) <= len(newBlock[0]):
-                        if i == newBlock[0][0:len(i)]:
+                    if len(i) <= len(newBlock['name']):
+                        if i == newBlock['name'][0:len(i)]:
                             startsSameAs = True
-                if newBlock[0] == '':
+                if newBlock['name'] == '':
                     errDlg = gui.Dlg(title="Missing information!")
                     errDlg.addText("Name cannot be blank!")
                     irrel = errDlg.show()
                     self.makeBlockDlg(name, new)
-                elif '.' in newBlock[0] or '^' in newBlock[0] or '*' in newBlock[0]:
+                elif '.' in newBlock['name'] or '^' in newBlock['name'] or '*' in newBlock['name']:
                     errDlg = gui.Dlg(title="Illegal block name!")
                     errDlg.addText("Name contains illegal character, or is reserved. Please rename!")
                     irrel = errDlg.show()
                     self.makeBlockDlg(name, new)
-                elif new and newBlock[0] in self.settings['trialTypes']:
+                elif new and newBlock['name'] in self.settings['trialTypes']:
                     errDlg = gui.Dlg(title="Name already in use!")
                     errDlg.addText("Name is already in use for another trial or block. Please rename!")
                     irrel = errDlg.show()
@@ -1184,31 +1184,31 @@ class PyHabBuilder:
                     irrel = errDlg.show()
                     self.makeBlockDlg(name, new)
                 else:
-                    if not new and name != newBlock[0]:
+                    if not new and name != newBlock['name']:
                         # Change the name of the extant block.
                         blockIndex = self.trialTypesArray['labels'].index(name)
-                        numChar = len(newBlock[0])
+                        numChar = len(newBlock['name'])
                         if numChar <= 3:
                             numChar = 4  # Maximum height
-                        self.settings['blockList'][newBlock[0]] = self.settings['blockList'].pop(name)
+                        self.settings['blockList'][newBlock['name']] = self.settings['blockList'].pop(name)
                         flowIndexes = []
                         for i in range(0, len(self.studyFlowArray['labels'])):
                             if self.studyFlowArray['labels'][i] == name:
                                 flowIndexes.append(i)
                         for i in flowIndexes:
-                            self.studyFlowArray['labels'][i] = newBlock[0]
-                            self.studyFlowArray['text'][i].text = newBlock[0]
+                            self.studyFlowArray['labels'][i] = newBlock['name']
+                            self.studyFlowArray['text'][i].text = newBlock['name']
                             self.studyFlowArray['text'][i].height = self.flowHeightObj / (
                                         .42 * numChar)  # Update text height for new length
-                        self.trialTypesArray['labels'][blockIndex] = newBlock[0]
-                        self.trialTypesArray['text'][blockIndex].text = newBlock[0]
+                        self.trialTypesArray['labels'][blockIndex] = newBlock['name']
+                        self.trialTypesArray['text'][blockIndex].text = newBlock['name']
                         self.trialTypesArray['text'][blockIndex].height = self.typeHeightObj / (.33 * numChar)
-                        self.settings['trialTypes'] = [newBlock[0] if x == name else x for x in self.settings['trialTypes']]
-                        self.settings['trialOrder'] = [newBlock[0] if x == name else x for x in self.settings['trialOrder']]
+                        self.settings['trialTypes'] = [newBlock['name'] if x == name else x for x in self.settings['trialTypes']]
+                        self.settings['trialOrder'] = [newBlock['name'] if x == name else x for x in self.settings['trialOrder']]
                         if len(self.settings['habTrialList']) > 0:
                             for z in range(0, len(self.settings['habTrialList'])):
                                 if self.settings['habTrialList'][z] == name:
-                                    self.settings['habTrialList'][z] = newBlock[0]
+                                    self.settings['habTrialList'][z] = newBlock['name']
                         for a, b in self.settings['blockList'].items():
                             for c in range(0, len(b)):
                                 if b[c] == name:
@@ -1509,19 +1509,20 @@ class PyHabBuilder:
         blockDataDlg.addText("Check all non-nested blocks you want to condense.")
         for a in range(0, len(fieldList)):
             if isinstance(fieldList[a], list):
-                blockDataDlg.addField("Pick one of these nested blocks to record data for", choices=fieldList[a])
+                # Because the indexes need to line up, just using a string-ified version of the index as the key for the dlg
+                blockDataDlg.addField(str(a), label="Pick one of these nested blocks to record data for", choices=fieldList[a])
             else:
-                blockDataDlg.addField(fieldList[a], initial=False)
+                blockDataDlg.addField(str(a), label=fieldList[a], initial=False)
 
         blockDataInfo = blockDataDlg.show()
         if blockDataDlg.OK:
             finalList = []
             for i in range(0, len(fieldList)):
                 if isinstance(fieldList[i], list):
-                    if blockDataInfo[i] != 'None':
-                        finalList.append(blockDataInfo[i])
+                    if blockDataInfo[str(i)] != 'None':
+                        finalList.append(blockDataInfo[str(i)])
                 else:
-                    if blockDataInfo[i]:
+                    if blockDataInfo[str(i)]:
                         finalList.append(fieldList[i])
             self.settings['blockDataList'] = finalList
 
@@ -1539,10 +1540,10 @@ class PyHabBuilder:
         self.win.flip()
         delTypeDlg = gui.Dlg(title="Choose trial type or block to delete.")
         delTypeDlg.addText("Warning: Cannot be undone. All instances of this trial or block in study flow will also be removed!")
-        delTypeDlg.addField("Choose trial type or block to delete, then hit OK.", choices=self.trialTypesArray['labels'])
+        delTypeDlg.addField('dType', label="Choose trial type or block to delete, then hit OK.", choices=self.trialTypesArray['labels'])
         delInfo=delTypeDlg.show()
         if delTypeDlg.OK:
-            dType=delInfo[0]
+            dType=delInfo['dType']
             self.deleteType(dType)
 
 
@@ -1911,15 +1912,15 @@ class PyHabBuilder:
         """
         Settings that apply to every PyHab study regardless of anything else.
 
-        0 = prefix: The prefix of the launcher and all data files.
+        prefix: The prefix of the launcher and all data files.
 
-        1 = blindPres: Level of experimenter blinding, 0 (none), 1 (no trial type info), or
+        blindPres: Level of experimenter blinding, 0 (none), 1 (no trial type info), or
             2 (only info is whether a trial is currently active.
 
-        2 = nextFlash: Whether to have the coder window flash to alert the experimenter they need to manually trigger
+        nextFlash: Whether to have the coder window flash to alert the experimenter they need to manually trigger
             the next trial
 
-        3 = durationInclude: Trial duration calculations include last gaze-off or not
+        durationInclude: Trial duration calculations include last gaze-off or not
 
         :return:
         :rtype:
@@ -1930,7 +1931,7 @@ class PyHabBuilder:
         self.win.flip()
         uDlg = gui.Dlg(title="Universal settings")
         # [default] blindpres, autoadvance, ISI,
-        uDlg.addField("Experiment name", self.settings['prefix'])
+        uDlg.addField('prefix', label="Experiment name", initial=self.settings['prefix'])
         ch = []
         if self.settings['blindPres'] == '1' or self.settings['blindPres'] == 1:
             ch=['do not display next trial type','none','only show trial active/inactive']
@@ -1938,33 +1939,33 @@ class PyHabBuilder:
             ch=['show trial active/not active only','none','do not display next trial type']
         else:
             ch=['none','do not display next trial type','show trial active/not active only']
-        uDlg.addField("Experimenter blinding:", choices=ch)
+        uDlg.addField('blindPres', label="Experimenter blinding:", choices=ch)
         if self.settings['nextFlash'] in ['1',1,'True',True]:
             ch3 = ["Yes","No"]
         else:
             ch3= ["No","Yes"]
-        uDlg.addField("Flash to alert experimenter to manually start next trial?", choices=ch3)
+        uDlg.addField('nextFlash', label="Flash to alert experimenter to manually start next trial?", choices=ch3)
         if self.settings['durationInclude'] in ['1',1,'True',True]:
             ch4 = ["Yes","No"]
         else:
             ch4 = ["No","Yes"]
-        uDlg.addField("Trial duration calculations include last gaze-off event?", choices=ch4)
+        uDlg.addField('durationInclude', label="Trial duration calculations include last gaze-off event?", choices=ch4)
 
         uInfo = uDlg.show()
         if uDlg.OK:
             tryAgain = False
-            self.settings['prefix'] = uInfo[0]
-            if uInfo[1] == 'none':
+            self.settings['prefix'] = uInfo['prefix']
+            if uInfo['blindPres'] == 'none':
                 self.settings['blindPres'] = 0
-            elif uInfo[1] == 'do not display next trial type':
+            elif uInfo['blindPres'] == 'do not display next trial type':
                 self.settings['blindPres'] = 1
             else:
                 self.settings['blindPres'] = 2
-            if uInfo[2] == "Yes":
+            if uInfo['nextFlash'] == "Yes":
                 self.settings['nextFlash'] = 1
             else:
                 self.settings['nextFlash'] = 0
-            if uInfo[3] == "Yes":
+            if uInfo['durationInclude'] == "Yes":
                 self.settings['durationInclude'] = 1
             else:
                 self.settings['durationInclude'] = 0
@@ -1989,40 +1990,40 @@ class PyHabBuilder:
         dDlg.addText("trial-level means one line for each individual trial (the verbose file will always have this)")
         # Because addField is very literal about check-boxes, need to do this
         if self.settings['blockSum']:
-            dDlg.addField("Block-level", initial=True)
+            dDlg.addField('blockSum', label="Block-level", initial=True)
         else:
-            dDlg.addField("Block-level", initial=False)
+            dDlg.addField('blockSum', label="Block-level", initial=False)
         if self.settings['trialSum']:
-            dDlg.addField("Trial-level", initial=True)
+            dDlg.addField('trialSum', label="Trial-level", initial=True)
         else:
-            dDlg.addField("Trial-level", initial=False)
+            dDlg.addField('trialSum', label="Trial-level", initial=False)
         dDlg.addText("Check all columns you would like to be recorded in your data files. ")
         dDlg.addText("ANYTHING UNCHECKED WILL NOT BE STORED IN ANY WAY!")
-        if self.settings['prefLook'] in [1,'1',True,'True']:
+        if self.settings['prefLook'] in [1, '1', True, 'True']:
             tempDataCols = self.allDataColumnsPL
-        elif self.settings['prefLook'] in [2,'2']:
+        elif self.settings['prefLook'] in [2, '2']:
             tempDataCols = self.allDataColumnsHPP
         else:
             tempDataCols = self.allDataColumns
         for i in range(0, len(tempDataCols)):
             if tempDataCols[i] in self.settings['dataColumns']:
-                dDlg.addField(tempDataCols[i],initial=True)
+                dDlg.addField(str(i), label=tempDataCols[i], initial=True)
             else:
-                dDlg.addField(tempDataCols[i],initial=False)
+                dDlg.addField(str(i), label=tempDataCols[i], initial=False)
         datInfo = dDlg.show()
         if dDlg.OK:
             tempCols = []
-            if datInfo[0]:
+            if datInfo['blockSum']:
                 self.settings['blockSum'] = 1
             else:
                 self.settings['blockSum'] = 0
-            if datInfo[1]:
+            if datInfo['trialSum']:
                 self.settings['trialSum'] = 1
             else:
                 self.settings['trialSum'] = 0
-            for j in range(2, len(datInfo)): # For the data columsn themselves, separate from the toggle of block/trial level
-                if datInfo[j]:
-                    tempCols.append(tempDataCols[j-2])
+            for j in range(0, len(tempDataCols)):  # For the data columns themselves, separate from the toggle of block/trial level
+                if datInfo[str(j)]:
+                    tempCols.append(tempDataCols[j])
             self.settings['dataColumns'] = tempCols
         
     def toST(self):
@@ -2178,7 +2179,7 @@ class PyHabBuilder:
             while 1 in self.mouse.getPressed():
                 pass # Just a little thing so it doesn't get called for every frame the mouse is down on the button.
 
-    def stimSettingsDlg(self, lastSet=[], redo=False, screen='all'):
+    def stimSettingsDlg(self, lastSet={}, redo=False, screen='all'):
         """
 
         self.presentationURL = settingsDict['presentationURL']
@@ -2189,19 +2190,19 @@ class PyHabBuilder:
 
         Settings relating to stimulus presentation. Indexes from the dialog (non-HPP version):
 
-        0 = presentation URL
+        presentationURL = presentation URL
 
-        1 = email for Slides.com login
+        slidesEmail = email for Slides.com login
 
-        2 = password for Slides.com login
+        slidesPW = password for Slides.com login
 
-        3 = browser type (Chrome, Firefox, Safari, or Edge)
+        browserType = browser type (Chrome, Firefox, Safari, or Edge)
 
-        4 = slide number for blank slide.
+        blankSlide = slide number for blank slide.
 
 
         :param lastSet: Optional. Last entered settings, in case dialog needs to be presented again to fix bad entries.
-        :type lastSet: list
+        :type lastSet: dict
         :param redo: Are we doing this again to fix bad entries?
         :type redo: boolean
         :param screen: Optional. For HPP, lets you set for just the individual screen the settings apply to. IGNORED
@@ -2226,56 +2227,31 @@ class PyHabBuilder:
         browsers = [x for x in browsers if x != lastSet[3]]
         browsers.insert(0, lastSet[3])
 
-        sDlg.addField("Presentation URL from Slides.com (ending in '/live')", lastSet[0])
-        sDlg.addField("Email for Slides.com login", lastSet[1])
-        sDlg.addField("Password for slides.com login", lastSet[2])
-        sDlg.addField("What web browser will you be using?", choices=browsers)
-        sDlg.addField("Slide number of a blank slide", lastSet[4])
+        sDlg.addField('presentationURL', label="Presentation URL from Slides.com (ending in '/live')", initial=lastSet['presentationURL'])
+        sDlg.addField('slidesEmail', label="Email for Slides.com login", initial=lastSet['slidesEmail'])
+        sDlg.addField('slidesPW', label="Password for slides.com login", initial=lastSet['slidesPW'])
+        sDlg.addField('browserType',label="What web browser will you be using?", choices=browsers)
+        sDlg.addField('blankSlide', label="Slide number of a blank slide", initial=lastSet['blankSlide'])
 
         stimfo = sDlg.show()
         if sDlg.OK:
             problem = False
-            if not isinstance(stimfo[4], int):
+            if not isinstance(stimfo['blankSlide'], int):
                 try:
-                    stimfo[4] = eval(stimfo[4])
+                    stimfo['blankSlide'] = eval(stimfo['blankSlide'])
                 except:
                     problem = True
             if not problem:
-                self.settings['presentationURL'] = stimfo[0]
-                self.settings['slidesEmail'] = stimfo[1]
-                self.settings['slidesPW'] = stimfo[2]
-                self.settings['browserType'] = stimfo[3]
-                self.settings['blankSlide'] = stimfo[4]
+                self.settings['presentationURL'] = stimfo['presentationURL']
+                self.settings['slidesEmail'] = stimfo['slidesEmail']
+                self.settings['slidesPW'] = stimfo['slidesPW']
+                self.settings['browserType'] = stimfo['browserType']
+                self.settings['blankSlide'] = stimfo['blankSlide']
             else:
                 warnDlg = gui.Dlg(title="Warning!")
-                warnDlg.addText(
-                    "Expected number for blank slide, got something else instead. Please re-enter")
+                warnDlg.addText("Expected number for blank slide, got something else instead. Please re-enter")
                 warnDlg.show()
                 self.stimSettingsDlg(stimfo, redo=True)
-
-    def HPP_stimSettingsDlg(self):
-        """
-        A dialog box for the stimulus settings unique to head-turn preference procedures. Just selects the screen to
-        then open the stimulus dialog window for.
-
-        :return:
-        :rtype:
-        """
-        self.showMainUI(self.UI, self.studyFlowArray, self.trialTypesArray)
-        self.workingRect.draw()
-        self.workingText.draw()
-        self.win.flip()
-
-        sDlg = gui.Dlg(title="Select screen")
-
-        sDlg.addField("Select which screen to modify settings of", choices=['all','Left','Center','Right'])
-        sDlg.addText("WARNING: selecting 'all' will overwrite all settings for individual screens!")
-        screenChoice = sDlg.show()
-        if sDlg.OK:
-            if screenChoice[0] != 'all':
-                screenChoice[0] = screenChoice[0][0]  # Get just the first letter for L/C/R
-            self.stimSettingsDlg(screen=screenChoice[0])
-
 
     def addStimToLibraryDlg(self):
         """
@@ -2293,9 +2269,9 @@ class PyHabBuilder:
         add = 1
         if len(self.settings['stimList'].keys())>0:
             sDlg0 = gui.Dlg(title="Add/remove stimuli")
-            sDlg0.addField("Add or remove stimuli?", choices=['Add','Remove'])
+            sDlg0.addField('addremove', label="Add or remove stimuli?", choices=['Add','Remove'])
             sd0 = sDlg0.show()
-            if sDlg0.OK and sd0[0] == 'Remove':
+            if sDlg0.OK and sd0['addremove'] == 'Remove':
                 add = -1
             elif sDlg0.OK:
                 add = 1
@@ -2304,30 +2280,42 @@ class PyHabBuilder:
         if add == 1:
             # There are only two things we need here: A stimulus name so it can be assigned to a trial type, and a slide number.
             sDlg1 = gui.Dlg(title="Add new stimulus")
-            sDlg1.addField("Stimulus name (will appear in data, used to add stimuli to trials, must be unique)")
-            sDlg1.addField("Stimulus slide number")
+            sDlg1.addField('sName', label="Stimulus name (will appear in data, used to add stimuli to trials, must be unique)")
+            sDlg1.addField('slideNum', label="Stimulus slide number")
             sd1 = sDlg1.show()
 
             if sDlg1.OK:
                 # First, check if the stimulus name is unique.
-                if sd1[0] in self.settings['stimList'].keys():
+                if sd1['sName'] in self.settings['stimList'].keys():
                     errDlg = gui.Dlg(title="Name in use!")
                     errDlg.addText("This stimulus name is already in use, please use a different name.")
                     errDlg.show()
                     if errDlg.OK:
                         self.addStimToLibraryDlg()
                 else:
-                    self.settings['stimList'][sd1[0]] = sd1[1] # Keep it simple.
+                    problem = False
+                    if not isinstance(sd1['slideNum'], int):
+                        try:
+                            sd1['slideNum'] = eval(sd1['slideNum'])
+                        except:
+                            problem = True
+                            errDlg = gui.Dlg(title="Invalid slide number")
+                            errDlg.addText("Slide number was not a number")
+                            errDlg.show()
+                            if errDlg.OK:
+                                self.addStimToLibraryDlg()
+                    if not problem:
+                        self.settings['stimList'][sd1['sName']] = sd1['slideNum'] # Keep it simple.
 
-                    # When we are done with this dialog, if we have actually added anything, create the "add to types" dlg.
-                    if len(list(self.settings['stimList'].keys())) > 0 and self.addStimToTypesDlg not in self.buttonList['functions']:
-                        addMovButton = visual.Rect(self.win, width=.3, height=.5 * (.2 / self.aspect), pos=[.4, -.65],
-                                                   fillColor="white")
-                        addMovText = visual.TextStim(self.win, text="Add stimulus files \nto trial types", color="black",
-                                                     height=addMovButton.height * .3, alignHoriz='center', pos=addMovButton.pos)
-                        self.buttonList['shapes'].append(addMovButton)
-                        self.buttonList['text'].append(addMovText)
-                        self.buttonList['functions'].append(self.addStimToTypesDlg)
+                        # When we are done with this dialog, if we have actually added anything, create the "add to types" dlg.
+                        if len(list(self.settings['stimList'].keys())) > 0 and self.addStimToTypesDlg not in self.buttonList['functions']:
+                            addMovButton = visual.Rect(self.win, width=.3, height=.5 * (.2 / self.aspect), pos=[.4, -.65],
+                                                       fillColor="white")
+                            addMovText = visual.TextStim(self.win, text="Add stimulus files \nto trial types", color="black",
+                                                         height=addMovButton.height * .3, alignHoriz='center', pos=addMovButton.pos)
+                            self.buttonList['shapes'].append(addMovButton)
+                            self.buttonList['text'].append(addMovText)
+                            self.buttonList['functions'].append(self.addStimToTypesDlg)
 
         elif add == -1: # Remove stimuli from library
             self.removeStimFromLibrary()
@@ -2347,14 +2335,14 @@ class PyHabBuilder:
         orderList = []
         remDlg.addText("Uncheck any stimuli you want to remove. NOTE: This will remove stimuli from trial types as well.")
         for i in self.settings['stimList'].keys():
-            remDlg.addField(i, initial=True)
+            remDlg.addField(i, label=i, initial=True)
             orderList.append(i) # Neccessary because dicts are un-ordered.
 
         remList=remDlg.show()
 
         if remDlg.OK:
-            for j in range(0,len(remList)):
-                if not remList[j]:
+            for j in range(0,len(orderList)):
+                if not remList[orderList[j]]:
                     toRemove = orderList[j]
                     try:
                         del self.settings['stimList'][toRemove]
@@ -2400,56 +2388,56 @@ class PyHabBuilder:
                 else:
                     choiceList.append(self.trialTypesArray['labels'][i])
             choiceList.append('Start and end of experiment screens')
-            d1.addField("Trial type to add stimulus file to", choices=choiceList)
-            d1.addField("Number of stimuli to add (you will select them in the next window)",1)
+            d1.addField('trialType', label="Trial type to add stimulus file to", choices=choiceList)
+            d1.addField('numAdd', label="Number of stimuli to add (you will select them in the next window)", initial=1)
             d1.addText("Note: You can only select stimuli you have already added to the experiment library")
             d1.addText("Note: You can only REMOVE stimuli from a trial type in the trial type's own settings, this will add to whatever is already there")
             d = d1.show()
-            if d1.OK and isinstance(d[1], int):
+            if d1.OK and isinstance(d['numAdd'], int):
                 self.showMainUI(self.UI, self.studyFlowArray, self.trialTypesArray)
                 self.workingRect.draw()
                 self.workingText.draw()
                 self.win.flip()
-                tType = d[0]
-                numAdd = d[1]
+                tType = d['trialType']
+                numAdd = d['numAdd']
                 if tType != 'Start and end of experiment screens':
                     d2 = gui.Dlg(title="Select stimuli")
                     stimKeyList = list(self.settings['stimList'].keys())
                     stimKeyList.sort()
                     for i in range(0, numAdd):
-                        d2.addField("Stimulus no. " + str(i+1), choices=stimKeyList)
+                        d2.addField(str(i), label="Stimulus no. " + str(i+1), choices=stimKeyList)
                     newList = d2.show()
                     if d2.OK:
                         for z in range(0, len(newList)):
                             if self.settings['prefLook'] in [2, '2']: # HPP
-                                self.settings['stimNames'][tType].append({'L':0, 'C':newList[z], 'R':0})
+                                self.settings['stimNames'][tType].append({'L':0, 'C':newList[str(z)], 'R':0})
                             else:
-                                self.settings['stimNames'][tType].append(newList[z])
+                                self.settings['stimNames'][tType].append(newList[str(z)])
                 else:
                     d2 = gui.Dlg(title="Select image")
                     # Create a list of just image stim
-                    startimgs = [x for x in list(self.settings['stimList'].keys()) if self.settings['stimList'][x]['stimType'] == 'Image']
+                    startimgs = [x for x in list(self.settings['stimList'].keys())]
                     startimgs.sort()
                     startimgs.insert(0,'None')
                     if self.settings['startImage'] != '':
                         startimgs = [x for x in startimgs if x != self.settings['startImage']]
                         startimgs.insert(0,self.settings['startImage'])
-                    endimgs = [x for x in list(self.settings['stimList'].keys()) if self.settings['stimList'][x]['stimType'] == 'Image']
+                    endimgs = [x for x in list(self.settings['stimList'].keys())]
                     endimgs.sort()
                     endimgs.insert(0,'None')
                     if self.settings['endImage'] != '':
                         endimgs = [x for x in endimgs if x != self.settings['endImage']]
                         endimgs.insert(0, self.settings['endImage'])
-                    d2.addField("Start of experiment image", choices=startimgs)
-                    d2.addField("End of experiment image", choices=endimgs)
+                    d2.addField('startImage', label="Start of experiment image", choices=startimgs)
+                    d2.addField('endImage', label="End of experiment image", choices=endimgs)
 
                     newList = d2.show()
                     if d2.OK:
-                        if newList[0] is not 'None':
+                        if newList['startImage'] is not 'None':
                             self.settings['startImage'] = newList[0]
                         else:
                             self.settings['startImage'] = ''
-                        if newList[1] is not 'None':
+                        if newList['endImage'] is not 'None':
                             self.settings['endImage'] = newList[1]
                         else:
                             self.settings['endImage'] = ''
@@ -2463,93 +2451,10 @@ class PyHabBuilder:
             e = errDlg.show()
 
 
-    def attnGetterAudioDlg(self):
-        """
-        A modular dialog for setting the options for an audio-based attention-getter
-
-        :return: A dictionary containing all the info required for an audio attention-getter
-        :rtype: dict
-        """
-        NoneType = type(None)
-        aDlg3 = gui.Dlg(title="Audio attention-getter settings")
-        aDlg3.addField("Looming shape type", choices=['Rectangle', 'Cross', 'Star'])
-        aDlg3.addField("Looming shape color", choices=['yellow', 'green', 'red', 'blue', 'white', 'black'])
-        ans3 = aDlg3.show()
-        if aDlg3.OK:
-            shape = ans3[0].split()  # Pulls out rectangle, cross, or star.
-            fileSelectDlg = gui.fileOpenDlg(prompt="Select attention-getter audio file")
-            if type(fileSelectDlg) is not NoneType:
-                path, namething = os.path.split(fileSelectDlg[0])
-                # Again an ugly but necessary solution for getting the duration.
-                tempSound = sound.Sound(fileSelectDlg[0])
-                tempGetter = {'stimLoc': fileSelectDlg[0], 'stimName': namething,
-                                   'shape': shape[-1], 'color': ans3[1],
-                                   'stimDur': tempSound.getDuration()}
-                del tempSound
-                return tempGetter
-            else:
-                return {}
-        else:
-            return {}
-
-    def attnGetterVideoDlg(self):
-        """
-        A modular dialog for setting the options for a video-based attention-getter
-
-        :return: A dictionary containing all the info required for a video attention-getter
-        :rtype: dict
-        """
-        NoneType = type(None)
-        fileSelectDlg = gui.fileOpenDlg(prompt="Select attention-getter movie file")
-        if type(fileSelectDlg) is not NoneType:
-            path, namething = os.path.split(fileSelectDlg[0])
-            # Suboptimal solution for getting duration, but possibly only available.
-            tempMovie = visual.MovieStim3(self.win, fileSelectDlg[0])
-            tempGetter = {'stimLoc': fileSelectDlg[0], 'stimName': namething,
-                               'stimDur': tempMovie.duration}
-            del tempMovie
-            return tempGetter
-        else:
-            return {}
-
-    def attnGetterMovieAudioDlg(self):
-        """
-        A modular dialog for finding an audio file and a video file and titling them appropriately.
-
-        :return: A dictionary containing all the info required for a video/audio attngetter.
-        :rtype:
-        """
-        initialDlg = gui.Dlg("Instructions")
-        initialDlg.addText("First select movie file, then select audio file.")
-        iShow = initialDlg.show()
-        if not initialDlg.OK:
-            return {}
-        NoneType = type(None)
-        fileSelectDlg = gui.fileOpenDlg(prompt="Select attention-getter MOVIE file")
-        if type(fileSelectDlg) is not NoneType:
-            path, namething = os.path.split(fileSelectDlg[0])
-            # Suboptimal solution for getting duration, but possibly only available.
-            tempMovie = visual.MovieStim3(self.win, fileSelectDlg[0])
-            tempDuration = tempMovie.duration
-            soundSelectDlg = gui.fileOpenDlg(prompt="Select attention-getter AUDIO file")
-            if type(soundSelectDlg) is not NoneType:
-                apath, aname = os.path.split(soundSelectDlg[0])
-                tempGetter = {'stimLoc': fileSelectDlg[0], 'stimName': namething, 'audioLoc': soundSelectDlg[0],
-                              'audioName': aname, 'stimDur': tempDuration}
-                del tempMovie
-                return tempGetter
-            else:
-                del tempMovie
-                return {}
-        else:
-            return {}
-
-
     def attnGetterDlg(self):
         """
         The dialog window for customizing the attention-getters available to use for different trials.
-        Two-stage: Modify existing attngetter or make new, then what do you do with ether of those.
-        Allows audio with PsychoPy-produced looming shape or just a video file.
+        For the online version this references a slide an stores a duration.
 
         :return:
         :rtype:
@@ -2561,37 +2466,37 @@ class PyHabBuilder:
         achz = list(self.settings['attnGetterList'].keys())
         achz.insert(0, 'Make New')  # Top item will always be "make new"
         aDlg1 = gui.Dlg(title="Select attention-getter or make new")
-        aDlg1.addField("Select attention-getter or 'Make New'", choices=achz)
+        aDlg1.addField('AGName', label="Select attention-getter or 'Make New'", choices=achz)
         ans1 = aDlg1.show()
         NoneType = type(None)
         if aDlg1.OK:
-            if ans1[0] is 'Make New':
+            if ans1['AGName'] is 'Make New':
                 # New window to design an attention getter! Choose your own adventure a bit.
                 aDlg2 = gui.Dlg(title="Make new attention-getter: step 1")
-                aDlg2.addField("Attention-getter name: ", 'NewAttnGetter')
-                aDlg2.addField("Attention-getter slide number: ")
-                aDlg2.addField("Attention-getter duration (in seconds): ")
+                aDlg2.addField('AGName', label="Attention-getter name: ", initial='NewAttnGetter')
+                aDlg2.addField('AGSlideNum', label="Attention-getter slide number: ")
+                aDlg2.addField('AGDuration', label="Attention-getter duration (in seconds): ")
                 ans2 = aDlg2.show()
                 if aDlg2.OK:
                     problems = False
-                    if not isinstance(ans2[1], int):
+                    if not isinstance(ans2['AGSlideNum'], int):
                         try:
-                            eval(ans2[1])
+                            eval(ans2['AGSlideNum'])
                         except:
                             problems = True
-                    if not isinstance(ans2[2], int) and not isinstance(ans2[2], float):
+                    if not isinstance(ans2['AGDuration'], int) and not isinstance(ans2['AGDuration'], float):
                         try:
-                            eval(ans2[2])
+                            eval(ans2['AGDuration'])
                         except:
                             problems = True
-                    if ans2[0] in self.settings['attnGetterList'].keys():
+                    if ans2['AGName'] in self.settings['attnGetterList'].keys():
                         errDlg = gui.Dlg(title="Name in use")
                         errDlg.addText("There is already an attention-getter with that name, please choose another name.")
                         errDlg.show()
                         if errDlg.OK:
                             self.attnGetterDlg()
                     elif not problems:
-                        self.settings['attnGetterList'][ans2[0]] = {'slide': ans2[1], 'duration': ans2[2]}
+                        self.settings['attnGetterList'][ans2['AGName']] = {'slide': ans2['AGSlideNum'], 'duration': ans2['AGDuration']}
                     else:
                         errDlg = gui.Dlg(title="Expected a number")
                         errDlg.addText("Expected numbers for slide and duration, got something else. Please re-enter.")
@@ -2602,42 +2507,40 @@ class PyHabBuilder:
 
             else: # Modifying an existing AG. Little complex.
                 aDlg2 = gui.Dlg(title="Change attention-getter properties")
-                currAG = self.settings['attnGetterList'][ans1[0]] #The current attention-getter.
-                aDlg2.addField("Attention-getter name: ", ans1[0])
-                aDlg2.addField("Attention-getter slide number: ", currAG['slide'])
-                aDlg2.addField("Attention-getter duration (in seconds): ", currAG['duration'])
+                currAG = self.settings['attnGetterList'][ans1['AGName']] #The current attention-getter.
+                aDlg2.addField('AGName', label="Attention-getter name: ", initial=ans1['AGName'])
+                aDlg2.addField('AGSlideNum', label="Attention-getter slide number: ", initial=currAG['slide'])
+                aDlg2.addField('AGDuration', label="Attention-getter duration (in seconds): ", initial=currAG['duration'])
 
 
                 ans2b = aDlg2.show()
                 if aDlg2.OK:
                     problems = False
-                    if not isinstance(ans2b[1], int):
+                    if not isinstance(ans2b['AGSlideNum'], int):
                         try:
-                            eval(ans2b[1])
+                            eval(ans2b['AGSlideNum'])
                         except:
                             problems = True
-                    if not isinstance(ans2b[2], int) and not isinstance(ans2b[2], float):
+                    if not isinstance(ans2b['AGDuration'], int) and not isinstance(ans2b[2], float):
                         try:
-                            eval(ans2b[2])
+                            eval(ans2b['AGDuration'])
                         except:
                             problems = True
-                    if ans2b[0] is not ans1[0]:  # Did they change the name?
-                        self.settings['attnGetterList'][ans2b[0]] = self.settings['attnGetterList'].pop(ans1[0])
-                        currAG = self.settings['attnGetterList'][ans2b[0]]
+                    if ans2b['AGName'] is not ans1['AGName']:  # Did they change the name?
+                        self.settings['attnGetterList'][ans2b['AGName']] = self.settings['attnGetterList'].pop(ans1['AGName'])
+                        currAG = self.settings['attnGetterList'][ans2b['AGName']]
                         for i, j in self.settings['playAttnGetter'].items():
-                            if j == ans1[0]:
-                                self.settings['playAttnGetter'][i] = ans2b[0]
+                            if j == ans1['AGName']:
+                                self.settings['playAttnGetter'][i] = ans2b['AGName']
 
                     if not problems:
-                        self.settings['attnGetterList'][ans2b[0]] = {'slide': ans2b[1], 'duration': ans2b[2]}
+                        self.settings['attnGetterList'][ans2b['AGName']] = {'slide': ans2b['AGSlideNum'], 'duration': ans2b['AGDuration']}
                     else:
                         errDlg = gui.Dlg(title="Expected a number")
                         errDlg.addText("Expected numbers for slide and duration, got something else. Please re-enter.")
                         errDlg.show()
                         if errDlg.OK:
                             self.attnGetterDlg()
-
-
 
     def condSettingsDlg(self): #Settings relating to conditions and randomization
         """

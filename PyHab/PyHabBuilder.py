@@ -2494,8 +2494,8 @@ class PyHabBuilder:
         remList=remDlg.show()
 
         if remDlg.OK:
-            for j in range(0,len(remList)):
-                if not remList[str(j)]:
+            for j in range(0,len(orderList)):
+                if not remList[orderList[j]]:
                     toRemove = orderList[j]
                     #Things to remove it from: stimlist, stimsource, stimNames(if assigned to trial types). Doesn't apply to attngetter, has its own system.
                     if self.settings['stimList'][toRemove]['stimType'] != 'Image with audio' and self.settings['stimList'][toRemove]['stimType'] != 'Animation':
