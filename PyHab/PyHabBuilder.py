@@ -3811,9 +3811,11 @@ class PyHabBuilder:
         winchz = [x for x in windowtypes if x != lastSet['setCritType']]
         winchz.insert(0, lastSet['setCritType'])
         if lastSet['metCritStatic'] == 'Fixed':
-            evalChz = ['Fixed', 'Moving']
+            evalChz = ['Fixed', 'Moving', 'Cross-trial (fixed length only)']
+        elif lastSet['metCritStatic'] == 'Cross-trial (fixed length only)':
+            evalChz = ['Cross-trial (fixed length only)', 'Moving', 'Fixed', ]
         else:
-            evalChz = ['Moving', 'Fixed']
+            evalChz = ['Moving', 'Fixed', 'Cross-trial (fixed length only)']
 
         if lastSet['habByDuration'] in ['1',1,'True',True]:
             byDur = True
