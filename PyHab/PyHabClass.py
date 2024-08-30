@@ -138,7 +138,13 @@ class PyHab:
         except:
             self.minDur = {}
 
-
+        # new settings for 0.11.0
+        try:
+            self.ITIbase = eval(settingsDict['ITIbase'])
+            self.ITIjitter = eval(settingsDict['ITIjitter'])
+        except:
+            self.ITIbase = eval(settingsDict['ITIbase'])
+            self.ITIjitter = eval(settingsDict['ITIjitter'])
 
 
         # ORDER OF PRESENTATION
@@ -1684,6 +1690,17 @@ class PyHab:
                 x = 0 # Simply proceed to next trial.
             else:
                 x = 2
+
+            #0.11.0: new ITI options, base+jitter. Only invoke if necessary.
+            if self.ITIbase + self.ITIjitter > 0:
+                ITIstart = core.getTime()
+                ITIwait = self.ITIbase + (random.random()*self.ITIjitter)
+                while core.getTime() - ITIstart < ITIwait: # Note that the experiment is 100% unresponsive during ITI.
+                    if self.stimPres:
+                        self.dummyThing.draw()
+                        self.win.flip()
+                    self.dispCoderWindow()
+
             if x == 2:  # end experiment, either due to final trial ending or 'end experiment altogether' button.
                 runExp = False
                 didRedo = False

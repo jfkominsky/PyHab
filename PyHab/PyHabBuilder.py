@@ -86,7 +86,9 @@ class PyHabBuilder:
                                                         'endImage': '',
                                                         'nextFlash': '0',
                                                         'loadSep': '0',
-                                                        'eyetracker': '0'}
+                                                        'eyetracker': '0',
+                                                        'ITIbase': '0.0',
+                                                        'ITIjitter': '0.0'}
             self.condDict = {}
             self.baseCondDict = {}
         else:
@@ -121,12 +123,15 @@ class PyHabBuilder:
                 self.settings['eyetracker'] = '0'
             if 'minDur' not in self.settings.keys():
                 self.settings['minDur'] = '{}'
+            if 'ITIbase' not in self.settings.keys():
+                self.settings['ITIbase'] = '0.0'
+                self.settings['ITIjitter'] = '0.0'
             # Settings requiring evaluation to get sensible values. Mostly dicts.
             evalList = ['dataColumns','blockSum','trialSum','maxDur','minDur','condList','baseCondList','movieEnd','playThrough',
                         'trialOrder','stimNames', 'stimList', 'ISI', 'maxOff','minOn', 'maxOn','durationCriterion','autoRedo',
                         'onTimeDeadline','autoAdvance','playAttnGetter','attnGetterList','trialTypes', 'nextFlash',
                         'blockList', 'dynamicPause','midAG','screenWidth','screenHeight','screenIndex','movieWidth',
-                        'movieHeight', 'durationInclude', 'loadSep', 'hppStimScrOnly', 'eyetracker']  # in 0.9, this becomes necessary.
+                        'movieHeight', 'durationInclude', 'loadSep', 'hppStimScrOnly', 'eyetracker', 'ITIbase', 'ITIjitter']  # in 0.9, this becomes necessary.
             for i in evalList:
                 self.settings[i] = eval(self.settings[i])
                 if i in ['stimList','attnGetterList']:
@@ -1908,22 +1913,26 @@ class PyHabBuilder:
         """
         Settings that apply to every PyHab study regardless of anything else.
 
-        'prefix' 0 = prefix: The prefix of the launcher and all data files.
+        'prefix' = prefix: The prefix of the launcher and all data files.
 
-        'blindPres' 1 = blindPres: Level of experimenter blinding, 0 (none), 1 (no trial type info), or
+        'blindPres' = blindPres: Level of experimenter blinding, 0 (none), 1 (no trial type info), or
             2 (only info is whether a trial is currently active.
 
-        'nextFlash' 2 = nextFlash: Whether to have the coder window flash to alert the experimenter they need to manually trigger
+        'nextFlash' = nextFlash: Whether to have the coder window flash to alert the experimenter they need to manually trigger
             the next trial
 
-        'durationInclude' 3 = durationInclude: Trial duration calculations include last gaze-off or not
+        'ITIbase' = new in 0.11.0, a base ITI delay that can be added between trials.
 
-        'loadSep' 4 = loadSeparate: New setting in 0.9.4, movie playback issues have created a situation where some (but not all)
+        'ITIjitter' = new in 0.11.0, a random additional delay that can be added to the base delay.
+
+        'durationInclude' = durationInclude: Trial duration calculations include last gaze-off or not
+
+        'loadSep' = loadSeparate: New setting in 0.9.4, movie playback issues have created a situation where some (but not all)
             experiments might benefit from going back to the old ways of loading one movie file for *each* individual
             instance of a trial, rather than trying to load one movie file and load it once. This setting controls
             whether that happens.
 
-        'eyetracker' 5 = eyetracker: New in 0.10.4, Tobii integration (which is much more seamless than alternatives). Can be set
+        'eyetracker' = eyetracker: New in 0.10.4, Tobii integration (which is much more seamless than alternatives). Can be set
             to simply record eye-tracking info OR to control the experiment as a replacement for a human coder. (0/1/2)
 
         :return:
@@ -1955,6 +1964,10 @@ class PyHabBuilder:
             ch4 = ["No","Yes"]
         uDlg.addField('durationInclude', label="Trial duration calculations include last gaze-off event?", choices=ch4)
 
+        uDlg.addField('ITIbase', label="ITI (delay between trials) - constant (in seconds)", initial=self.settings['ITIbase'])
+        uDlg.addField('ITIjitter', label="ITI jitter - adds a random delay from 0 to this value to ITI constant", initial=self.settings['ITIjitter'])
+
+
         if self.settings['loadSep'] in ['1',1,'True',True]:
             ch5 = ["Yes","No"]
         else:
@@ -1984,6 +1997,21 @@ class PyHabBuilder:
                 self.settings['nextFlash'] = 1
             else:
                 self.settings['nextFlash'] = 0
+            # The next two fields have validation, but any other changes to settings will be saved even if they fail.
+            if isinstance(uInfo['ITIbase'], int):
+                self.settings['ITIbase'] = uInfo['ITIbase']
+            else:
+                try:
+                    self.settings['ITIbase'] = eval(uInfo['ITIbase'])
+                except:
+                    tryAgain = True
+            if isinstance(uInfo['ITIjitter'], int):
+                self.settings['ITIjitter'] = uInfo['ITIjitter']
+            else:
+                try:
+                    self.settings['ITIjitter'] = eval(uInfo['ITIjitter'])
+                except:
+                    tryAgain = True
             if uInfo['durationInclude'] == "Yes":
                 self.settings['durationInclude'] = 1
             else:
@@ -2011,6 +2039,9 @@ class PyHabBuilder:
             else:
                 self.settings['eyetracker'] = 2
             if tryAgain:
+                errDlg = gui.Dlg(title="Invalid entry!")
+                errDlg.addText("Number expected for ITI, got something else instead. Other settings have been saved.")
+                errDlg.show()
                 self.univSettingsDlg()
         
     def dataSettingsDlg(self):
