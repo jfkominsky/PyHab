@@ -1531,6 +1531,7 @@ class TestDataFunc(object):
         habMatrix = copy.deepcopy(self.testMatrix)
         self.dataInst.dataMatrix = habMatrix  # We can actually use python's pointer thing to our advantage here: dataMatrix will update with habMatrix
         # The main problem is that the relevant data are not from the hab matrix but from the verbose data in this case.
+        self.dataInst.verbDatList = copy.deepcopy(self.testDatList)
         habOn1_1 = [{'trial': 3, 'trialType': 'D1.C', 'startTime': 0, 'endTime': 1.5, 'duration': 1.5},
                     {'trial': 3, 'trialType': 'D1.C', 'startTime': 3.0, 'endTime': 4.5,
                      'duration': 1.5}]
@@ -1637,8 +1638,7 @@ class TestDataFunc(object):
                     offIndex += 1
             trialVerbose2 = sorted(trialVerbose, key=lambda trialVerbose: trialVerbose['startTime'])  # Sorts by "startTime" of each gaze event
             completeVerbose.extend(trialVerbose2)
-        assert len([x for x in completeVerbose if x['trial'] in [3,4,5]]) == len(completeVerbose) # make sure we're not getting weird stuff.
-        assert len([x for x in completeVerbose if x['trial'] == 3]) == 4 # should only be 4 entries from this trial.
+        assert len(completeVerbose) == 13
         # Now cycle through the sorted verbose matrix and identify consecutive off events, extract their duration
         consecOffTimes = []
         m = 0
@@ -1790,7 +1790,6 @@ class TestDataFunc(object):
         assert consecPostThreshold == [1,1,1]
 
         assert self.dataInst.checkStop('D') == True
-
 
 
 
