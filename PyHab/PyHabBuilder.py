@@ -2870,7 +2870,7 @@ class PyHabBuilder:
                     errDlg = gui.Dlg(title="No stimuli!")
                     errDlg.addText("Not all trial types have stimuli!")
                     errDlg.addText("Please add stimuli to all trial types first and then set conditions for randomized presentation.")
-                    errDlg.addField('condList',"For studies without stimuli, enter list of arbitrary condition labels here, each one in quotes, separated by commas, all inside the square brackets",initial=self.settings['condList'])
+                    errDlg.addField('condList', label="For studies without stimuli, enter list of arbitrary condition labels here, each one in quotes, separated by commas, all inside the square brackets",initial=self.settings['condList'])
                     # This is non-ideal but a reasonable temporary patch.
                     e = errDlg.show()
                     if errDlg.OK:
@@ -3198,7 +3198,7 @@ class PyHabBuilder:
             if os.name != 'posix':
                 self.win.winHandle.set_visible(visible=True)
             condDinfo['cond'] = str(condDinfo['cond'])
-            if ex and condDinfo[0] != cond:  # Renamed existing condition
+            if ex and condDinfo['cond'] != cond:  # Renamed existing condition
                 self.settings['condList'][self.settings['condList'].index(cond)] = condDinfo['cond']
                 if cond in self.condDict.keys():
                     self.condDict[condDinfo['cond']] = self.condDict.pop(cond)
@@ -3789,7 +3789,7 @@ class PyHabBuilder:
         else:
             byDur = False
 
-        hDlg.addField('hab', label="Habituation on/off (uncheck to turn off)", inital=True) # Always defaults to true if you open this menu.
+        hDlg.addField('hab', label="Habituation on/off (uncheck to turn off)", initial=True) # Always defaults to true if you open this menu.
         hDlg.addField('maxHabTrials', label="Max number of habituation trials (if criterion not met)", initial=lastSet['maxHabTrials'])
         hDlg.addField('setCritWindow', label="Number of trials to sum looking time over when making hab criterion (for FixedTrialLength, ignore first N trials)", initial=lastSet['setCritWindow'])
         hDlg.addField('setCritDivisor', label="Number to divide sum of looking time by when computing criterion (ignored for FixedTrialLength)", initial=lastSet['setCritDivisor'])

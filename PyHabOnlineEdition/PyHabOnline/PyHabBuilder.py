@@ -2558,19 +2558,19 @@ class PyHabBuilder:
         chkBox = False
         if self.settings['randPres'] in [1,'1',True,'True']:
             chkBox = True
-        cDlg.addField("Use condition-based presentation? If yes, a new interface will open",initial=chkBox)
-        cDlg.addField("Pre-existing condition file (optional, leave blank to make new file called conditions.csv)", self.settings['condFile'])
+        cDlg.addField('randPres', label="Use condition-based presentation? If yes, a new interface will open",initial=chkBox)
+        cDlg.addField('condFile', label="Pre-existing condition file (optional, leave blank to make new file called conditions.csv)", initial=self.settings['condFile'])
         if not chkBox:
             cDlg.addText("NOTE: This will overwrite any existing file named conditions.csv! If you have an existing conditions file, rename it first.")
         if len(self.baseCondDict) > 0:
-            cDlg.addField("Reload base conditions instead of randomized conditions? (WARNING: You will need to re-randomize)", initial=False)
+            cDlg.addField('baseCond', label="Reload base conditions instead of randomized conditions? (WARNING: You will need to re-randomize)", initial=False)
         condInfo = cDlg.show()
         if cDlg.OK:
-            self.settings['randPres'] = condInfo[0]
-            if condInfo[0]:
+            self.settings['randPres'] = condInfo['randPres']
+            if condInfo['randPres']:
                 # A new interface that allows you to re-order things
                 # Check if there are movies to re-order.
-                if len(condInfo) == 3 and condInfo[2] == True:
+                if len(condInfo) == 3 and condInfo['baseCond'] == True:
                     # Reload the 'base' conditions instead of randomized ones.
                     baseConds = True
                 else:
@@ -2587,8 +2587,8 @@ class PyHabBuilder:
                         elif len(self.settings['stimNames'][self.settings['trialTypes'][i]]) == 0:  # Another way that it can have no movies associated with it.
                             allReady = False
                 if allReady:
-                    if len(condInfo[1]) > 0:
-                        self.settings['condFile'] = condInfo[1]
+                    if len(condInfo['condFile']) > 0:
+                        self.settings['condFile'] = condInfo['condFile']
                     else:
                         self.settings['condFile'] = ""
                     if os.name != 'posix':
@@ -2602,11 +2602,11 @@ class PyHabBuilder:
                     errDlg = gui.Dlg(title="No stimuli!")
                     errDlg.addText("Not all trial types have stimuli!")
                     errDlg.addText("Please add stimuli to all trial types first and then set conditions for randomized presentation.")
-                    errDlg.addField("For studies without stimuli, enter list of arbitrary condition labels here, each one in quotes, separated by commas, all inside the square brackets",self.settings['condList'])
+                    errDlg.addField('condList', label="For studies without stimuli, enter list of arbitrary condition labels here, each one in quotes, separated by commas, all inside the square brackets", initial=self.settings['condList'])
                     # This is non-ideal but a reasonable temporary patch.
                     e = errDlg.show()
                     if errDlg.OK:
-                        self.settings['condList'] = e[0]
+                        self.settings['condList'] = e['condList']
             else:
                 self.settings['condFile'] = ''  # Erases one if it existed.
                 self.settings['condList'] = []  # Gets rid of existing condition list to save trouble.
@@ -2923,18 +2923,18 @@ class PyHabBuilder:
         :rtype:
         """
         condDlg2 = gui.Dlg(title="Define condition")
-        condDlg2.addField("Condition label:", cond)
+        condDlg2.addField('cond', label="Condition label:", initial=cond)
         condDlg2.addText("You will have separate screens to set the order of movies in each trial type. Press OK to begin")
         condDinfo = condDlg2.show()
         if condDlg2.OK:
             if os.name != 'posix':
                 self.win.winHandle.set_visible(visible=True)
-            condDinfo[0] = str(condDinfo[0])
-            if ex and condDinfo[0] != cond:  # Renamed existing condition
-                self.settings['condList'][self.settings['condList'].index(cond)] = condDinfo[0]
+            condDinfo['cond'] = str(condDinfo['cond'])
+            if ex and condDinfo['cond'] != cond:  # Renamed existing condition
+                self.settings['condList'][self.settings['condList'].index(cond)] = condDinfo['cond']
                 if cond in self.condDict.keys():
-                    self.condDict[condDinfo[0]] = self.condDict.pop(cond)
-            cond = condDinfo[0]
+                    self.condDict[condDinfo['cond']] = self.condDict.pop(cond)
+            cond = condDinfo['cond']
             outputDict = {}
             if self.settings['prefLook'] in [2, '2']: # Just for convenience
                 HPP = True
@@ -3186,15 +3186,24 @@ class PyHabBuilder:
                         # Click on a stimulus to add it. Remove it from the palette when added. Re-add it as appropriate.
                         for j in range(0, len(stims['shapes'])):  # Only need to worry about adding stim
                             if self.mouse.isPressedIn(stims['shapes'][j], buttons=[0]):
-                                if stims['labels'][j] not in invisStims:
+                                if stims['labels'][j] not in condOrder:
                                     condOrder.append(stims['labels'][j])
                                     condFlow = self.loadFlow(tOrd=condOrder, space=newFlowArea, locs=newFlowLocs,
                                                              overflow=newFlowLocs, types=tempStims, trials=False,
                                                              conlines=blockmode)
                                     invisStims.append(stims['labels'][j])
 
-                                while self.mouse.isPressedIn(stims['shapes'][j], buttons=[0]):  # waits until the mouse is released before continuing.
-                                    pass
+                                    while self.mouse.isPressedIn(stims['shapes'][j], buttons=[0]):  # waits until the mouse is released before continuing.
+                                        pass
+                                elif stims['labels'][j] in invisStims:
+                                    while self.mouse.isPressedIn(stims['shapes'][j], buttons=[0]):  # waits until the mouse is released before continuing.
+                                        pass
+                                else:
+                                    while self.mouse.isPressedIn(stims['shapes'][j], buttons=[0]):  # waits until the mouse is released before continuing.
+                                        pass
+                                    errDlg = gui.Dlg(title="Inconcievable!")
+                                    errDlg.addText("Somehow, you tried to add a stimulus that has already been added and should be invisible. This will not work.")
+                                    errDlg.show()
                         for k in range(0, len(condFlow['shapes'])):  # Rearrange or remove, as in the usual loop!
                             if self.mouse.isPressedIn(condFlow['shapes'][k], buttons=[0]):
                                 condOrder = self.moveTrialInFlow(k, condOrder, newFlowArea, condUI, condFlow,
@@ -3285,24 +3294,24 @@ class PyHabBuilder:
         whatGenDlg = gui.Dlg("Automatic condition generation")
         if len(list(self.settings['blockList'].keys())) > 0:
             whatGenDlg.addText("Select whether to generate counterbalanced orders of stimuli within trial types, of trials within blocks, or both")
-            whatGenDlg.addField("Order of stimuli in trials", initial=True)
-            whatGenDlg.addField("Order of trials in blocks", initial=True)
+            whatGenDlg.addField('orderStim', label="Order of stimuli in trials", initial=True)
+            whatGenDlg.addField('orderTrial', label="Order of trials in blocks", initial=True)
         whatGenDlg.addText("Select whether to keep all items in all conditions, or control which items are shown at all by condition")
-        whatGenDlg.addField("Keep all items in blocks/trials in all conditions?", initial=True)
+        whatGenDlg.addField('keepAll', label="Keep all items in blocks/trials in all conditions?", initial=True)
         whatGenInfo = whatGenDlg.show()
         if whatGenDlg.OK:
             if len(list(self.settings['blockList'].keys())) > 0:
-                trialGen = whatGenInfo[0]
-                blockGen = whatGenInfo[1]
+                trialGen = whatGenInfo['orderStim']
+                blockGen = whatGenInfo['orderTrial']
             else:
                 trialGen = True
                 blockGen = False
             if not trialGen and not blockGen:
                 abort = True
-                errDlg=gui.Dlg("Nothing to randomize!")
+                errDlg = gui.Dlg("Nothing to randomize!")
                 errDlg.addText("Check at least one, trials or blocks, to randomize.")
                 errDlg.show()
-            keepAll = whatGenInfo[-1]
+            keepAll = whatGenInfo['keepAll']
             counterDict = {}
             # This dict is how we track how many things should be in each condition.
             # Defaults to 'all items assigned to that block/trial'
@@ -3400,44 +3409,55 @@ class PyHabBuilder:
         self.condDict = deepcopy(outputDict)
         self.settings['condList'] = list(outputDict.keys())
 
-
-    def condRandomizer(self):
+    def condRandomizer(self, bcReset=False):
         """
         This is based on other scripts I've made. Basically, say you have four conditions, and you want four participants
         to be assigned to each one, but you want to be totally blind to which condition a given participant is in. Here,
         once you have made your four conditions, you can tell it to create a condition list that it never shows you that
         has each condition X times, and that becomes the new condition file/list/etc.
 
+        :param bcReset: For the edge case where someone re-loads the base conditions and wants to re-randomize them.
+        :type bcReset: bool
+
         :return:
         :rtype:
         """
 
         rCondDlg = gui.Dlg(title="Create randomized condition list")
-        rCondDlg.addField('How many repetitions of each condition? (Length of list will be this X # conditions)',1)
-        rCondDlg.addField('Condition label prefix? (Will be followed by "01...N" in condition list)', self.settings['prefix'])
+        rCondDlg.addField('numReps', label='How many repetitions of each condition? (Length of list will be this X # conditions)',
+                          initial=1)
+        rCondDlg.addField('prefix', label='Condition label prefix? (Will be followed by "01...N" in condition list)',
+                          initial=self.settings['prefix'])
         randCond = rCondDlg.show()
-        if rCondDlg.OK and isinstance(randCond[0],int):
-            totalN = len(self.condDict.keys())*randCond[0]
+        if rCondDlg.OK and isinstance(randCond['numReps'], int):
+            totalN = len(self.condDict.keys()) * randCond['numReps']
             # First, save the old, un-randomized thing for later reference.
-            self.baseCondDict = deepcopy(self.condDict)
-            self.settings['baseCondList'] = deepcopy(self.settings['condList'])
-            newCondList = [] # Will replace condlist.
-            for i in range (1, totalN+1):
+            # However, we need a safety in case the cond list has been randomized once, so we only randomize the
+            # base conditions and not re-randomize the old list. In that case, we essentially force revert the
+            # old randomized conditions to the base conditions.
+            if not bcReset:
+                self.baseCondDict = deepcopy(self.condDict)
+                self.settings['baseCondList'] = deepcopy(self.settings['condList'])
+            else:
+                self.condDict = deepcopy(self.baseCondDict)  # because this is what the randomizer will pull from
+                self.settings['condList'] = deepcopy(self.settings['baseCondList'])  # as above.
+            newCondList = []  # Will replace condlist.
+            for i in range(1, totalN + 1):
                 if i < 10:
                     numStr = "0" + str(i)
                 else:
                     numStr = str(i)
-                newCondList.append(randCond[1]+numStr)
-            listOfConds = [] # A list of the existing conditions that will be the items for the new condDict.
+                newCondList.append(randCond['prefix'] + numStr)
+            listOfConds = []  # A list of the existing conditions that will be the items for the new condDict.
             for j, k in self.condDict.items():
                 listOfConds.append(k)
-            mixer = [] # The list with all repetitions, which we then shuffle.
+            mixer = []  # The list with all repetitions, which we then shuffle.
             for q in range(0, len(listOfConds)):
-                for r in range(0, randCond[0]):
+                for r in range(0, randCond['numReps']):
                     mixer.append(listOfConds[q])
             random.shuffle(mixer)
 
-            newCondDict={}
+            newCondDict = {}
             for s in range(0, len(newCondList)):
                 newCondDict[newCondList[s]] = mixer[s]
 
@@ -3447,36 +3467,35 @@ class PyHabBuilder:
             errDlg = gui.Dlg(title="Warning, invalid number!")
             errDlg.addText("Multiplier must be a whole number, no decimals. Please re-open condition settings and try again.")
             errDlg.show()
-   
-   
-    def habSettingsDlg(self, trialList, lastSet, redo=False): #Habituation criteria
+
+    def habSettingsDlg(self, trialList, lastSet, redo=False):  # Habituation criteria
         """
         Dialog for settings relating to habituation criteria:
 
-        0 = habituation (Active/not active)
+        'hab' 0 = habituation (Active/not active)
 
-        1 = maxHabTrials (maximum possible hab trials if criterion not met)
+        'maxHabTrials' 1 = maxHabTrials (maximum possible hab trials if criterion not met)
 
-        2 = setCritWindow (# trials summed over when creating criterion)
+        'setCritWindow' 2 = setCritWindow (# trials summed over when creating criterion)
 
-        3 = setCritDivisor (denominator of criterion calculation . e.g., sum of first 3 trials
+        'setCritDivisor' 3 = setCritDivisor (denominator of criterion calculation . e.g., sum of first 3 trials
             divided by 2 would have 3 for setCritWindow and 2 for this.)
 
-        4 = setCritType (peak window, max trials, first N, last N, or first N above threshold)
+        'setCritType' 4 = setCritType (peak window, max trials, first N, last N, or first N above threshold)
 
-        5 = habThresh (threshold for N above threshold)
+        'habThresh' 5 = habThresh (threshold for N above threshold)
 
-        6 = maxHabSet (if habituation is not SET by this trial number, then habituation immediately ends)
+        'maxHabSet' 6 = maxHabSet (if habituation is not SET by this trial number, then habituation immediately ends)
 
-        7 = metCritWindow (# trials summed over when evaluating whether criterion has been met)
+        'metCritWindow' 7 = metCritWindow (# trials summed over when evaluating whether criterion has been met)
 
-        8 = metCritDivisor (denominator of sum calculated when determining if criterion has been met)
+        'metCritDivisor' 8 = metCritDivisor (denominator of sum calculated when determining if criterion has been met)
 
-        9 = metCritStatic (static or moving window?)
+        'metCritStatic' 9 = metCritStatic (static or moving window?)
 
-        10 = habByDuration (habituation by duration or by on-time)
+        'habByDuration' 10 = habByDuration (habituation by duration or by on-time)
 
-        11-N = Which trials to calculate hab over for multi-trial blocks.
+        str(0-N) = Which trials to calculate hab over for multi-trial blocks.
 
         :param trialList: List of available trials in the block, since this follows from block settings.
         :type trialList: list
@@ -3489,7 +3508,7 @@ class PyHabBuilder:
         """
 
         hDlg = gui.Dlg(title="Habituation block settings")
-        windowtypes = ['First', 'Peak', 'Max', 'Last', 'Threshold','FixedTrialLength']
+        windowtypes = ['First', 'Peak', 'Max', 'Last', 'Threshold', 'FixedTrialLength']
         winchz = [x for x in windowtypes if x != lastSet['setCritType']]
         winchz.insert(0, lastSet['setCritType'])
         if lastSet['metCritStatic'] == 'Fixed':
@@ -3497,30 +3516,40 @@ class PyHabBuilder:
         else:
             evalChz = ['Moving', 'Fixed']
 
-        if lastSet['habByDuration'] in ['1',1,'True',True]:
+        if lastSet['habByDuration'] in ['1', 1, 'True', True]:
             byDur = True
         else:
             byDur = False
 
-        hDlg.addField("Habituation on/off (uncheck to turn off)", True) # Always defaults to true if you open this menu.
-        hDlg.addField("Max number of habituation trials (if criterion not met)", lastSet['maxHabTrials'])
-        hDlg.addField("Number of trials to sum looking time over when making hab criterion (for FixedTrialLength, ignores first N trials)", lastSet['setCritWindow'])
-        hDlg.addField("Number to divide sum of looking time by when computing criterion (ignored for FixedTrialLength)", lastSet['setCritDivisor'])
-        hDlg.addField("Criterion window First trials, first trials w/total above Threshold, dynamic Peak contiguous window, or the set of hab trials with Max looking time? Or alternate mode for fixed trial lengths?", choices=winchz)
-        hDlg.addField("Threshold value to use if 'Threshold' selected above, or the consecutive off-time for 'FixedTrialLength' mode", lastSet['habThresh'])
-        hDlg.addField("Maximum number of trials to SET habituation criterion if 'Threshold' selected (ignored otherwise)", lastSet['maxHabSet'])
-        hDlg.addField("Number of trials to sum looking time over when determining whether criterion has been met", lastSet['metCritWindow'])
-        hDlg.addField("Number to divide sum of looking time by when determining whether criterion has been met (ignored for FixedTrialLength)", lastSet['metCritDivisor'])
-        hDlg.addField("Evaluate criterion over moving window or fixed windows?", choices=evalChz)
-        hDlg.addField("Compute habituation over total trial duration instead of on-time?", byDur)
-        if len(trialList) > 1: # If there's only one trial, then it's automatically that trial!
+        hDlg.addField('hab', label="Habituation on/off (uncheck to turn off)",
+                      initial=True)  # Always defaults to true if you open this menu.
+        hDlg.addField('maxHabTrials', label="Max number of habituation trials (if criterion not met)",
+                      initial=lastSet['maxHabTrials'])
+        hDlg.addField('setCritWindow', label="Number of trials to sum looking time over when making hab criterion (for FixedTrialLength, ignore first N trials)",
+                      initial=lastSet['setCritWindow'])
+        hDlg.addField('setCritDivisor', label="Number to divide sum of looking time by when computing criterion (ignored for FixedTrialLength)",
+                      initial=lastSet['setCritDivisor'])
+        hDlg.addField('setCritType', label="Criterion window First trials, first trials w/total above Threshold, dynamic Peak contiguous window, or the set of hab trials with Max looking time? Or alternate mode for fixed trial lengths?",
+                      choices=winchz)
+        hDlg.addField('habThresh', label="Threshold value to use if 'Threshold' selected above, or the consecutive off-time for 'FixedTrialLength' mode",
+                      initial=lastSet['habThresh'])
+        hDlg.addField('maxHabSet', label="Maximum number of trials to SET habituation criterion if 'Threshold' selected (ignored otherwise)",
+                      initial=lastSet['maxHabSet'])
+        hDlg.addField('metCritWindow', label="Number of trials to sum looking time over when determining whether criterion has been met",
+                      initial=lastSet['metCritWindow'])
+        hDlg.addField('metCritDivisor', label="Number to divide sum of looking time by when determining whether criterion has been met (ignored for FixedTrialLength)",
+                      initial=lastSet['metCritDivisor'])
+        hDlg.addField('metCritStatic', label="Evaluate criterion over moving window or fixed windows?", choices=evalChz)
+        hDlg.addField('habByDuration', label="Compute habituation over total trial duration instead of on-time?",
+                      initial=byDur)
+        if len(trialList) > 1:  # If there's only one trial, then it's automatically that trial!
             hDlg.addText("Check which trial types criteria should be computed over (both setting and checking)")
             expandedHabList = []
             for q in range(0, len(trialList)):
                 if trialList[q] in self.settings['blockList'].keys():
                     doneBlock = False
                     listThings = []
-                    listBlocks = [] # A list of all blocks that need to go into the thing.
+                    listBlocks = []  # A list of all blocks that need to go into the thing.
                     blockType = trialList[q]
                     prfx = blockType + '.'
                     while not doneBlock:
@@ -3532,32 +3561,32 @@ class PyHabBuilder:
                         if len(listBlocks) == 0:
                             doneBlock = True
                         else:
-                            blockType = listBlocks.pop(0) # Pull out the next block and repeat until empty.
-                            prfx = prfx + blockType+'.'
-                    for z in range(0,len(listThings)):
+                            blockType = listBlocks.pop(0)  # Pull out the next block and repeat until empty.
+                            prfx = prfx + blockType + '.'
+                    for z in range(0, len(listThings)):
                         if listThings[z] in lastSet['calcHabOver']:
                             chk = True
                         else:
                             chk = False
-                        hDlg.addField(listThings[z], initial=chk)
+                        hDlg.addField(str(z), label=listThings[z], initial=chk)
                         expandedHabList.append(listThings[z])
                 else:
                     if trialList[q] in lastSet['calcHabOver']:
                         chk = True
                     else:
                         chk = False
-                    hDlg.addField(trialList[q], initial=chk)
+                    hDlg.addField(str(q), label=trialList[q], initial=chk)
                     expandedHabList.append(trialList[q])
-        habDat=hDlg.show()
+        habDat = hDlg.show()
         if hDlg.OK:
             skip = False
-            intevals = [1,2,6,7]
-            fevals = [3,5,8] # These can be floats
+            intevals = ['maxHabTrials', 'setCritWindow', 'maxHabSet', 'metCritWindow']
+            fevals = ['setCritDivisor', 'habThresh', 'metCritDivisor']  # These can be floats
             for i in intevals:
                 if not isinstance(habDat[i], int):
                     if isinstance(habDat[i], str):
                         try:
-                            habDat[i]=eval(habDat[i])
+                            habDat[i] = eval(habDat[i])
                         except:
                             skip = True
                         if not isinstance(habDat[i], int):
@@ -3567,23 +3596,23 @@ class PyHabBuilder:
             for i in fevals:
                 if not isinstance(habDat[i], float):
                     try:
-                        habDat[i]=float(habDat[i])
+                        habDat[i] = float(habDat[i])
                     except:
                         skip = True
 
             if not skip:
                 newHabSettings = {}
-                newHabSettings['habituation'] = habDat[0]
-                newHabSettings['maxHabTrials'] = habDat[1]
-                newHabSettings['setCritWindow'] = habDat[2]
-                newHabSettings['setCritDivisor'] = habDat[3]
-                newHabSettings['setCritType'] = habDat[4]
-                newHabSettings['habThresh'] = habDat[5]
-                newHabSettings['maxHabSet'] = habDat[6]
-                newHabSettings['metCritWindow'] = habDat[7]
-                newHabSettings['metCritDivisor'] = habDat[8]
-                newHabSettings['metCritStatic'] = habDat[9]
-                if habDat[10] in [1, '1', True, 'True']:
+                newHabSettings['habituation'] = habDat['hab']
+                newHabSettings['maxHabTrials'] = habDat['maxHabTrials']
+                newHabSettings['setCritWindow'] = habDat['setCritWindow']
+                newHabSettings['setCritDivisor'] = habDat['setCritDivisor']
+                newHabSettings['setCritType'] = habDat['setCritType']
+                newHabSettings['habThresh'] = habDat['habThresh']
+                newHabSettings['maxHabSet'] = habDat['maxHabSet']
+                newHabSettings['metCritWindow'] = habDat['metCritWindow']
+                newHabSettings['metCritDivisor'] = habDat['metCritDivisor']
+                newHabSettings['metCritStatic'] = habDat['metCritStatic']
+                if habDat['habByDuration'] in [1, '1', True, 'True']:
                     newHabSettings['habByDuration'] = 1
                 else:
                     newHabSettings['habByDuration'] = 0
@@ -3591,7 +3620,7 @@ class PyHabBuilder:
                 if len(trialList) > 1:
                     tempArr = []
                     for i in range(0, len(expandedHabList)):
-                        if habDat[i+11]:
+                        if habDat[str(i)]:
                            tempArr.append(expandedHabList[i])
                     if len(tempArr) > 0:
                         newHabSettings['calcHabOver'] = tempArr
@@ -3600,26 +3629,25 @@ class PyHabBuilder:
                         errDlg.addText("You must select at least one trial to calculate habituation over!")
                         errDlg.show()
                         return self.habSettingsDlg(trialList, newHabSettings, redo=True)
-                else: # If there's only one trial in the block then that's the hab trial!
-                    newHabSettings['calcHabOver'] = trialList[0]
+                else:  # If there's only one trial in the block then that's the hab trial!
+                    newHabSettings['calcHabOver'] = [trialList[0]]
                 return newHabSettings
             else:
                 errDlg = gui.Dlg(title="Warning, invalid number!")
-                errDlg.addText(
-                    "Please make sure all values are valid numbers. Remember that any 'number of trials' field must be a whole number (no decimal).")
+                errDlg.addText("Please make sure all values are valid numbers. Remember that any 'number of trials' field must be a whole number (no decimal).")
                 errDlg.show()
                 lastSetDat = {}
-                lastSetDat['habituation'] = habDat[0]
-                lastSetDat['maxHabTrials'] = habDat[1]
-                lastSetDat['setCritWindow'] = habDat[2]
-                lastSetDat['setCritDivisor'] = habDat[3]
-                lastSetDat['setCritType'] = habDat[4]
-                lastSetDat['habThresh'] = habDat[5]
-                lastSetDat['maxHabSet'] = habDat[6]
-                lastSetDat['metCritWindow'] = habDat[7]
-                lastSetDat['metCritDivisor'] = habDat[8]
-                lastSetDat['metCritStatic'] = habDat[9]
-                if habDat[10] in [1, '1', True, 'True']:
+                lastSetDat['habituation'] = habDat['hab']
+                lastSetDat['maxHabTrials'] = habDat['maxHabTrials']
+                lastSetDat['setCritWindow'] = habDat['setCritWindow']
+                lastSetDat['setCritDivisor'] = habDat['setCritDivisor']
+                lastSetDat['setCritType'] = habDat['setCritType']
+                lastSetDat['habThresh'] = habDat['habThresh']
+                lastSetDat['maxHabSet'] = habDat['maxHabSet']
+                lastSetDat['metCritWindow'] = habDat['metCritWindow']
+                lastSetDat['metCritDivisor'] = habDat['metCritDivisor']
+                lastSetDat['metCritStatic'] = habDat['metCritStatic']
+                if habDat['habByDuration'] in [1, '1', True, 'True']:
                     lastSetDat['habByDuration'] = 1
                 else:
                     lastSetDat['habByDuration'] = 0
@@ -3627,7 +3655,7 @@ class PyHabBuilder:
                 if len(trialList) > 1:
                     tempArr = []
                     for i in range(0, len(expandedHabList)):
-                        if habDat[i+11]:
+                        if habDat[str(i)]:
                            tempArr.append(expandedHabList[i])
                     if len(tempArr) > 0:
                         lastSetDat['calcHabOver'] = tempArr
