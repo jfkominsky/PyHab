@@ -1595,7 +1595,6 @@ class TestDataFunc(object):
         blockName = 'D'
         assert self.dataInst.habCount[blockName] >= self.dataInst.habSetWhen[blockName] + self.dataInst.blockList[blockName]['metCritWindow'] - 1
 
-        assert self.dataInst.checkStop('D') == True
         habIndex = self.dataInst.habCount[blockName] - self.dataInst.blockList[blockName]['metCritWindow']
 
         targetTrials = []
@@ -1654,7 +1653,7 @@ class TestDataFunc(object):
                     consecOffTimes.append(completeVerbose[m]['duration'])
             m = m + 1
         assert 5.5 in consecOffTimes
-        assert len([x for x in consecOffTimes if x >= self.dataInst.habCrit['D']]) > self.dataInst.blockList['D']['metCritDivisor']
+        assert len([x for x in consecOffTimes if x >= self.dataInst.habCrit['D']]) >= self.dataInst.blockList['D']['metCritDivisor']
         assert self.dataInst.checkStop('D') == True
 
         # additional test for situation where there need to be N gaze-off events above threshold.

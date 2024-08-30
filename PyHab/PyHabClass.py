@@ -683,7 +683,7 @@ class PyHab:
                                 consecOffTimes.append(completeVerbose[m]['duration'])
                         m = m+1
                     # This is a very pythonic way of doing it, but checks if enough of the assembled consecutive off-times are above threshold.
-                    return len([x for x in consecOffTimes if x >= self.habCrit[blockName]]) > self.blockList[blockName]['metCritDivisor']
+                    return len([x for x in consecOffTimes if x >= self.habCrit[blockName]]) >= self.blockList[blockName]['metCritDivisor']
                 elif self.blockList[blockName]['metCritStatic'] == 'Moving' or (self.habCount[blockName]-self.blockList[blockName]['setCritWindow']) % self.blockList[blockName]['metCritWindow'] == 0:
                     habIndex = self.habCount[blockName] - self.blockList[blockName]['metCritWindow']
                     # As above
