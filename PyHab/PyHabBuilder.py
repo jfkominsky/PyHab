@@ -3491,7 +3491,6 @@ class PyHabBuilder:
                                                              overflow=newFlowLocs, types=tempStims, trials=False,
                                                              conlines=blockmode)
                                     invisStims.append(stims['labels'][j])
-
                                     while self.mouse.isPressedIn(stims['shapes'][j], buttons=[0]):  # waits until the mouse is released before continuing.
                                         pass
                                 elif stims['labels'][j] in invisStims:
