@@ -2406,7 +2406,7 @@ class PyHab:
         except ValueError:
             return False
 
-    def run(self, testMode = []):
+    def run(self, testMode={}):
         """
         Startup function. Presents subject information dialog to researcher, reads and follows settings and condition
         files. Now with a testing mode to allow us to skip the dialog and ensure the actualTrialOrder structure is being
@@ -2416,7 +2416,7 @@ class PyHab:
         the symbol for the end of a hab block (^)
 
         :param testMode: Optional and primarily only used for unit testing. Will not launch the window and start the experiment. Contains all the info that would appear in the subject info dialog.
-        :type testMode: list
+        :type testMode: dict
         :return:
         :rtype:
         """
@@ -2428,21 +2428,21 @@ class PyHab:
         else:
             startDlg = gui.Dlg(title=self.prefix + ' Experiment')
             startDlg.addText('Subject info')
-            startDlg.addField('Subject Number: ')
-            startDlg.addField('Subject ID: ')
-            startDlg.addField('sex: ')
-            startDlg.addField('DOB(month): ')
-            startDlg.addField('DOB(day): ')
-            startDlg.addField('DOB(year): ')
+            startDlg.addField('snum',label='Subject Number: ')
+            startDlg.addField('sID',label='Subject ID: ')
+            startDlg.addField('sex',label='sex: ')
+            startDlg.addField('dob_m',label='DOB(month): ')
+            startDlg.addField('dob_d',label='DOB(day): ')
+            startDlg.addField('dob_y', label='DOB(year): ')
             if self.randPres and len(self.condList) > 0:
-                startDlg.addField('Cond: ', choices=self.condList)
+                startDlg.addField('cond', label='Cond: ', choices=self.condList)
             else:
-                startDlg.addField('Cond: ')
+                startDlg.addField('cond', label='Cond: ')
             if not self.stimPres:
                 startDlg.addText("Date of test (leave blank for today)")
-                startDlg.addField('DOT(month): ')
-                startDlg.addField('DOT(day): ')
-                startDlg.addField('DOT(year): ')
+                startDlg.addField('dot_m', label='DOT(month): ')
+                startDlg.addField('dot_d', label='DOT(day): ')
+                startDlg.addField('dot_y', label='DOT(year): ')
             startDlg.show()
         if startDlg.OK:
             # Log in to slides (if needed)
@@ -2467,35 +2467,35 @@ class PyHab:
 
             fail = False # A bool for detecting if we have to start over at any point.
             thisInfo = startDlg.data
-            self.sNum = thisInfo[0]
-            self.sID = thisInfo[1]
-            self.sex = thisInfo[2]
+            self.sNum = thisInfo['snum']
+            self.sID = thisInfo['sID']
+            self.sex = thisInfo['sex']
             # now for the exciting bit: converting DOB into months/days.
             self.today = date.today()
             # First, check valid entries
             try:
-                for i in range(3,6):
+                for i in ['dob_m','dob_d','dob_y']:
                     irrel = int(thisInfo[i])
             except:
                 fail = True
             if not fail:
                 # then, check if 4-digit or 2-digit year.
-                if len(thisInfo[5]) > 2:
-                    year = int(thisInfo[5])
+                if len(thisInfo['dob_y']) > 2:
+                    year = int(thisInfo['dob_y'])
                 else:
-                    year = 2000 + int(thisInfo[5])
-                DOB = date(year, int(thisInfo[3]), int(thisInfo[4]))
+                    year = 2000 + int(thisInfo['dob_y'])
+                DOB = date(year, int(thisInfo['dob_m']), int(thisInfo['dob_d']))
                 if self.stimPres:
                     DOT = self.today
-                elif len(thisInfo[9]) == 0 or len(thisInfo[8]) == 0 or len(thisInfo[7]) == 0:
+                elif len(thisInfo['dot_y']) == 0 or len(thisInfo['dot_m']) == 0 or len(thisInfo['dot_d']) == 0:
                     DOT = self.today
                 else:
                     try:
-                        if len(thisInfo[9]) > 2:
-                            year = int(thisInfo[9])
+                        if len(thisInfo['dot_y']) > 2:
+                            year = int(thisInfo['dot_y'])
                         else:
-                            year = 2000 + int(thisInfo[9])
-                        DOT = date(year, int(thisInfo[7]), int(thisInfo[8]))
+                            year = 2000 + int(thisInfo['dot_y'])
+                        DOT = date(year, int(thisInfo['dot_m']), int(thisInfo['dot_d']))
                     except:
                         DOT = self.today
                         warnDlg = gui.Dlg("Warning! Invalid date!")
@@ -2508,7 +2508,7 @@ class PyHab:
                 # build stimulus order
 
                 if self.randPres and len(self.condList) > 0:  # Extra check: We WANT conditions and we HAVE them too.
-                    self.condLabel = thisInfo[6]
+                    self.condLabel = thisInfo['cond']
                     testReader = csv.reader(open(self.condPath + self.condFile, 'rU'))
                     testStuff = []
                     for row in testReader:
@@ -2536,7 +2536,7 @@ class PyHab:
                     self.stimNames = finalDict
                     self.blockList = finalBlock
                 else:
-                    self.cond = thisInfo[6]
+                    self.cond = thisInfo['cond']
                     self.condLabel = self.cond
                 # Set actual order of trials
                 self.actualTrialOrder = []  # in this version, mostly a key for the hab trials and blocks.

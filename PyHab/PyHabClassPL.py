@@ -164,7 +164,13 @@ class PyHabPL(PyHab):
         :rtype:
         """
 
-        if self.keyboard[self.key.B] or self.keyboard[self.key.M]:
+        if self.eyetracker == 2:
+            gpos = self.tracker.get_current_gaze_position()
+            if np.nan not in gpos:
+                return True
+            else:
+                return False
+        elif self.keyboard[self.key.B] or self.keyboard[self.key.M]:
             return True
         else:
             return False
@@ -255,21 +261,40 @@ class PyHabPL(PyHab):
         else:
             deadlineChecked = True
         self.readyText.text="Trial running"
-        if self.keyboard[self.key.B]:
-            gazeOn = True
-            gazeOn2 = False
-            startOn = 0 #we want these to be 0 because every other time is put in reference to the startTrial timestamp so it's not some absurd number
-            numOn = 1
-        elif self.keyboard[self.secondKey]:
-            gazeOn2 = True
-            gazeOn = False
-            startOn2 = 0
-            numOn2 = 1
+
+        if self.eyetracker == 2: # This is substantially more complex than single-target
+            gpos = self.tracker.get_current_gaze_position()
+            if np.nan in gpos: #gaze off
+                gazeOn = False
+                gazeOn2 = False
+                numOff = 1
+                startOff = 0
+            elif gpos[0] <= 0: # Simple median split of the screen, for now.
+                gazeOn = True
+                gazeOn2 = False
+                startOn = 0
+                numOn = 1
+            else:
+                gazeOn2 = True
+                gazeOn = False
+                startOn2 = 0
+                numOn2 = 1
         else:
-            gazeOn = False
-            gazeOn2 = False
-            numOff = 1
-            startOff = 0
+            if self.keyboard[self.key.B]:
+                gazeOn = True
+                gazeOn2 = False
+                startOn = 0 #we want these to be 0 because every other time is put in reference to the startTrial timestamp so it's not some absurd number
+                numOn = 1
+            elif self.keyboard[self.secondKey]:
+                gazeOn2 = True
+                gazeOn = False
+                startOn2 = 0
+                numOn2 = 1
+            else:
+                gazeOn = False
+                gazeOn2 = False
+                numOff = 1
+                startOff = 0
         while runTrial:
             if self.keyboard[self.key.R]: #'abort trial' is pressed
                 abort = True
@@ -421,6 +446,85 @@ class PyHabPL(PyHab):
                         tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOff, 'endTime': endOff,
                                          'duration': offDur}
                         offArray.append(tempGazeArray)
+                elif self.eyetracker == 2: # Again, trickier than single-target.
+                    gpos = self.tracker.get_current_gaze_position()
+                    if np.nan in gpos:
+                        #gaze off
+                        if localType in self.dynamicPause and self.stimPres:
+                            if disMovie['stimType'] in ['Movie', 'Audio'] and disMovie['stim'].status == PLAYING:
+                                disMovie['stim'].pause()
+                            elif disMovie['stimType'] == ['Image with audio'] and disMovie['stim'][
+                                'Audio'].status == PLAYING:
+                                disMovie['stim']['Audio'].pause()
+                        if localType in self.midAG and self.stimPres:
+                            if nowOff - startOff >= self.midAG[localType]['trigger']:
+                                # TODO: Do something here to deal with recording data about mid-trial AG behavior?
+                                if localType not in self.dynamicPause:  # Need to pause it anyways to play the AG so they don't overlap
+                                    if disMovie['stimType'] in ['Movie', 'Audio'] and disMovie[
+                                        'stim'].status == PLAYING:
+                                        disMovie['stim'].pause()
+                                    elif disMovie['stimType'] == ['Image with audio'] and disMovie['stim'][
+                                        'Audio'].status == PLAYING:
+                                        disMovie['stim']['Audio'].pause()
+                                tempTiming = {'trialNum': number, 'trialType': dataType, 'event': 'startAttnGetter',
+                                              'time': (core.getTime() - self.absoluteStart)}
+                                self.trialTiming.append(tempTiming)
+                                if self.eyetracker > 0:
+                                    self.tracker.record_event(
+                                        'trial_' + str(number) + '_' + tempTiming['trialType'] + '_startAttnGetter')
+                                startAG = core.getTime()
+                                self.attnGetter(localType, self.midAG[localType]['cutoff'],
+                                                self.midAG[localType]['onmin'])
+                                tempTiming = {'trialNum': number, 'trialType': dataType, 'event': 'endAttnGetter', 'time': (core.getTime() - self.absoluteStart)}
+                                self.trialTiming.append(tempTiming)
+                                if self.eyetracker > 0:
+                                    self.tracker.record_event(
+                                        'trial_' + str(number) + '_' + tempTiming['trialType'] + '_endAttnGetter')
+                                durAG = core.getTime() - startAG
+                                maxDurAdd = maxDurAdd + durAG  # Increase max length of trial by duration that AG played.
+                                if localType not in self.dynamicPause:
+                                    if disMovie['stimType'] in ['Movie', 'Audio'] and disMovie[
+                                        'stim'].status != PLAYING:
+                                        disMovie['stim'].play()
+                                    elif disMovie['stimType'] == ['Image with audio'] and disMovie['stim'][
+                                        'Audio'].status != PLAYING:
+                                        disMovie['stim']['Audio'].play()
+                    elif gpos[0] <= 0: # Middle split again
+                        # Gaze on left
+                        gazeOn = True
+                        numOn = numOn + 1
+                        startOn = core.getTime() - startTrial
+                        endOff = core.getTime() - startTrial
+                        # by definition, if this is tripped there will be a preceding 'off' section if this is tripped because gazeOn is set at start
+                        offDur = endOff - startOff
+                        tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOff,
+                                         'endTime': endOff,
+                                         'duration': offDur}
+                        offArray.append(tempGazeArray)
+                        if localType in self.dynamicPause and self.stimPres:
+                            if disMovie['stimType'] in ['Movie', 'Audio'] and disMovie['stim'].status != PLAYING:
+                                disMovie['stim'].play()
+                            elif disMovie['stimType'] == ['Image with audio'] and disMovie['stim'][
+                                'Audio'].status != PLAYING:
+                                disMovie['stim']['Audio'].play()
+                    else:
+                        # Gaze on right
+                        gazeOn2 = True
+                        numOn2 = numOn2 + 1
+                        startOn2 = core.getTime() - startTrial
+                        endOff = core.getTime() - startTrial
+                        # by definition, if this is tripped there will be a preceding 'off' section if this is tripped because gazeOn is set at start
+                        offDur = endOff - startOff
+                        tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOff,
+                                         'endTime': endOff,
+                                         'duration': offDur}
+                        offArray.append(tempGazeArray)
+                        if localType in self.dynamicPause and self.stimPres:
+                            if disMovie['stimType'] in ['Movie', 'Audio'] and disMovie['stim'].status != PLAYING:
+                                disMovie['stim'].play()
+                            elif disMovie['stimType'] == ['Image with audio'] and disMovie['stim'][
+                                'Audio'].status != PLAYING:
+                                disMovie['stim']['Audio'].play()
                 elif self.keyboard[self.key.B]: #if they have started looking since the last refresh and not met criterion
                     gazeOn = True
                     numOn = numOn + 1
@@ -531,36 +635,86 @@ class PyHabPL(PyHab):
                                              'endTime': endTrial,
                                              'duration': onDur}
                             onArray2.append(tempGazeArray)
-                if gazeOn and not self.keyboard[self.key.B]: #if they were looking and have looked away.
-                    gazeOn = False
-                    endOn = core.getTime() - startTrial
-                    onDur = endOn - startOn
-                    tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOn, 'endTime': endOn,
-                                     'duration': onDur}
-                    onArray.append(tempGazeArray)
-                    sumOn = sumOn + onDur
-                    if self.keyboard[self.key.M]:
-                        gazeOn2 = True
-                        numOn2 = numOn2 + 1
-                        startOn2 = core.getTime() - startTrial
-                    else:
-                        numOff = numOff + 1
-                        startOff = core.getTime() - startTrial
-                if gazeOn2 and not self.keyboard[self.key.M]: #if they were looking and have looked away.
-                    gazeOn2 = False
-                    endOn2 = core.getTime() - startTrial2
-                    onDur2 = endOn2 - startOn2
-                    tempGazeArray2 = {'trial': number, 'trialType': dataType, 'startTime': startOn2, 'endTime': endOn2,
-                                      'duration': onDur2}
-                    onArray2.append(tempGazeArray2)
-                    sumOn2 = sumOn2 + onDur2
-                    if self.keyboard[self.key.B]:
+                if self.eyetracker == 2:
+                    gpos = self.tracker.get_current_gaze_position()
+                    if np.nan in gpos:
+                        if gazeOn:
+                            gazeOn = False
+                            endOn = core.getTime() - startTrial
+                            onDur = endOn - startOn
+                            tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOn,
+                                             'endTime': endOn,
+                                             'duration': onDur}
+                            onArray.append(tempGazeArray)
+                            sumOn = sumOn + onDur
+                            numOff = numOff + 1 # will always be a gaze-off event
+                            startOff = core.getTime() - startTrial
+                        if gazeOn2:
+                            gazeOn2 = False
+                            endOn2 = core.getTime() - startTrial
+                            onDur2 = endOn2 - startOn2
+                            tempGazeArray2 = {'trial': number, 'trialType': dataType, 'startTime': startOn2,
+                                              'endTime': endOn2,
+                                              'duration': onDur2}
+                            onArray2.append(tempGazeArray2)
+                            sumOn2 = sumOn2 + onDur2
+                            numOff = numOff + 1
+                            startOff = core.getTime() - startTrial
+                    elif gpos[0] <= 0 and not gazeOn: # Again doing a coarse median split
+                        # Parent condition: This conditional only active if gazeOn or gazeOn2
+                        gazeOn2 = False
+                        endOn2 = core.getTime() - startTrial
+                        onDur2 = endOn2 - startOn2
+                        tempGazeArray2 = {'trial': number, 'trialType': dataType, 'startTime': startOn2,
+                                          'endTime': endOn2,
+                                          'duration': onDur2}
+                        onArray2.append(tempGazeArray2)
+                        sumOn2 = sumOn2 + onDur2
                         gazeOn = True
                         numOn = numOn + 1
                         startOn = core.getTime() - startTrial
-                    else:
-                        numOff = numOff + 1
-                        startOff = core.getTime() - startTrial
+                    elif gpos[0] > 0 and not gazeOn2:
+                        gazeOn = False
+                        endOn = core.getTime() - startTrial
+                        onDur = endOn - startOn
+                        tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOn, 'endTime': endOn,
+                                         'duration': onDur}
+                        onArray.append(tempGazeArray)
+                        sumOn = sumOn + onDur
+                        gazeOn2 = True
+                        numOn2 = numOn2 + 1
+                        startOn2 = core.getTime() - startTrial
+                else:
+                    if gazeOn and not self.keyboard[self.key.B]: #if they were looking and have looked away.
+                        gazeOn = False
+                        endOn = core.getTime() - startTrial
+                        onDur = endOn - startOn
+                        tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOn, 'endTime': endOn,
+                                         'duration': onDur}
+                        onArray.append(tempGazeArray)
+                        sumOn = sumOn + onDur
+                        if self.keyboard[self.key.M]:
+                            gazeOn2 = True
+                            numOn2 = numOn2 + 1
+                            startOn2 = core.getTime() - startTrial
+                        else:
+                            numOff = numOff + 1
+                            startOff = core.getTime() - startTrial
+                    if gazeOn2 and not self.keyboard[self.key.M]: #if they were looking and have looked away.
+                        gazeOn2 = False
+                        endOn2 = core.getTime() - startTrial
+                        onDur2 = endOn2 - startOn2
+                        tempGazeArray2 = {'trial': number, 'trialType': dataType, 'startTime': startOn2, 'endTime': endOn2,
+                                          'duration': onDur2}
+                        onArray2.append(tempGazeArray2)
+                        sumOn2 = sumOn2 + onDur2
+                        if self.keyboard[self.key.B]:
+                            gazeOn = True
+                            numOn = numOn + 1
+                            startOn = core.getTime() - startTrial
+                        else:
+                            numOff = numOff + 1
+                            startOff = core.getTime() - startTrial
             movieStatus = self.dispTrial(localType, disMovie)
             if endFlag:
                 if localType in self.movieEnd and movieStatus >= 1:
