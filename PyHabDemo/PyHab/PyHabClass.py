@@ -1,6 +1,8 @@
 import os, sys
 from psychopy import gui, visual, event, core, data, monitors, tools, prefs, logging, __version__
 from psychopy.constants import (STARTED, PLAYING)  # Added for new stimulus types
+from scipy.cluster.hierarchy import complete
+
 if eval(__version__[0:4]) < 2023: # PTB has proven itself unreliable on too many systems, but sounddevice isn't included in 2023.
     prefs.hardware['audioLib'] = ['sounddevice'] # change to 'PTB' if you get audio errors
 else:
@@ -138,7 +140,13 @@ class PyHab:
         except:
             self.minDur = {}
 
-
+        # new settings for 0.11.0
+        try:
+            self.ITIbase = eval(settingsDict['ITIbase'])
+            self.ITIjitter = eval(settingsDict['ITIjitter'])
+        except:
+            self.ITIbase = 0.0
+            self.ITIjitter = 0.0
 
 
         # ORDER OF PRESENTATION
@@ -610,12 +618,75 @@ class PyHab:
             # Last needs to ignore HabSetWhen, or rather, cannot wait MetCritWindow trials past when it is set.
             if self.blockList[blockName]['setCritType'] == 'FixedTrialLength' and self.habCount[blockName] >= self.habSetWhen[blockName] + self.blockList[blockName]['metCritWindow'] - setZero: # The -1 is necessary for when the hab crit is set on trial 0
                 # Check for consecutive trials with consecutive off-time greater than the criterion.
-                if self.blockList[blockName]['metCritStatic'] == 'Moving' or (self.habCount[blockName]-self.blockList[blockName]['setCritWindow']) % self.blockList[blockName]['metCritWindow'] == 0:
-                    habIndex = self.habCount[blockName] - self.blockList[blockName]['metCritWindow']
+                if self.blockList[blockName]['metCritStatic'] == 'Cross-trial (fixed length only)':
+                    # A special case that looks for a single consecutive gaze-off event even if it occurs across multiple trials.
                     # Problem, this requires us to dig into the verbose data, which uses the actual trial number, not the hab counter!
                     # Means we need to pull just the trials that are of the right type and figure out their actual trial names,
                     # and make a list of those. Needs to be trial nos, not just names, b/c multiple repetitions w/in a block
                     # are possible.
+                    habIndex = self.habCount[blockName] - self.blockList[blockName]['metCritWindow']
+                    # Locate the relevant trials.
+                    targetTrials = []
+                    targetTrialNames = []  # Done to reduce number of iterations through whole data matrix.
+                    for j in range(habIndex, self.habCount[blockName]):
+                        for q in range(0, len(self.blockList[blockName]['calcHabOver'])):
+                            matchName = blockName + str(j + 1) + '.' + self.blockList[blockName]['calcHabOver'][q]
+                            targetTrialNames.append(matchName)
+                    # find all indexes in dataMatrix with that name, and extract trial numbers for matching w/ verbose.
+                    for i in range(0, len(self.dataMatrix)):
+                        if self.dataMatrix[i]['trialType'] in targetTrialNames:
+                            targetTrials.append(self.dataMatrix[i]['trial'])
+
+                    # In some ways this is simple: Create a complete verbose array for the identified trials, and then
+                    # add up consecutive gaze-off events, and see if any of them are above threshold.
+                    # The problem is that creating the complete verbose array and doing the check is non-trivial...
+                    completeVerbose = []
+                    # Stitching together the verbose trials as is done at the end of the experiment.
+                    for n in range(0, len(targetTrials)):
+                        onIndex = -1
+                        offIndex = -1
+                        for x in range(0, len(self.verbDatList['verboseOn'])):
+                            if self.verbDatList['verboseOn'][x]['trial'] == targetTrials[n] and onIndex == -1:  # find the right index in the verbose matrices
+                                onIndex = x
+                        for y in range(0, len(self.verbDatList['verboseOff'])):
+                            if self.verbDatList['verboseOff'][y]['trial'] == targetTrials[n] and offIndex == -1:
+                                offIndex = y
+                        trialVerbose = []
+                        if onIndex >= 0:
+                            while onIndex < len(self.verbDatList['verboseOn']):
+                                if self.verbDatList['verboseOn'][onIndex]['trial'] == targetTrials[n]:
+                                    tmpVerbose = deepcopy(self.verbDatList['verboseOn'][onIndex])
+                                    tmpVerbose['gazeOnOff'] = 1
+                                    trialVerbose.append(tmpVerbose)
+                                onIndex += 1
+                        if offIndex >= 0:
+                            while offIndex < len(self.verbDatList['verboseOff']):
+                                if self.verbDatList['verboseOff'][offIndex]['trial'] == targetTrials[n]:
+                                    tmpVerbose = deepcopy(self.verbDatList['verboseOff'][offIndex])
+                                    tmpVerbose['gazeOnOff'] = 0
+                                    trialVerbose.append(tmpVerbose)
+                                offIndex += 1
+                        trialVerbose2 = sorted(trialVerbose, key=lambda trialVerbose: trialVerbose['startTime'])  # Sorts by "startTime" of each gaze event
+                        completeVerbose.extend(trialVerbose2)
+                    # Now cycle through the sorted verbose matrix and identify consecutive off events, extract their duration
+                    consecOffTimes = []
+                    m = 0
+                    while m < len(completeVerbose):
+                        if completeVerbose[m]['gazeOnOff'] == 0:
+                            if m < len(completeVerbose)-1:
+                                tempTotal = completeVerbose[m]['duration']
+                                while m < len(completeVerbose)-1 and completeVerbose[m+1]['gazeOnOff'] == 0 :
+                                    tempTotal += completeVerbose[m+1]['duration']
+                                    m = m+1
+                                consecOffTimes.append(tempTotal)
+                            else:
+                                consecOffTimes.append(completeVerbose[m]['duration'])
+                        m = m+1
+                    # This is a very pythonic way of doing it, but checks if enough of the assembled consecutive off-times are above threshold.
+                    return len([x for x in consecOffTimes if x >= self.habCrit[blockName]]) >= self.blockList[blockName]['metCritDivisor']
+                elif self.blockList[blockName]['metCritStatic'] == 'Moving' or (self.habCount[blockName]-self.blockList[blockName]['setCritWindow']) % self.blockList[blockName]['metCritWindow'] == 0:
+                    habIndex = self.habCount[blockName] - self.blockList[blockName]['metCritWindow']
+                    # As above
                     targetTrials = []
                     targetTrialNames = [] # Done to reduce number of iterations through whole data matrix.
                     for j in range(habIndex, self.habCount[blockName]):
@@ -1684,6 +1755,17 @@ class PyHab:
                 x = 0 # Simply proceed to next trial.
             else:
                 x = 2
+
+            #0.11.0: new ITI options, base+jitter. Only invoke if necessary.
+            if self.ITIbase + self.ITIjitter > 0:
+                ITIstart = core.getTime()
+                ITIwait = self.ITIbase + (random.random()*self.ITIjitter)
+                while core.getTime() - ITIstart < ITIwait: # Note that the experiment is 100% unresponsive during ITI.
+                    if self.stimPres:
+                        self.dummyThing.draw()
+                        self.win.flip()
+                    self.dispCoderWindow()
+
             if x == 2:  # end experiment, either due to final trial ending or 'end experiment altogether' button.
                 runExp = False
                 didRedo = False
@@ -3089,6 +3171,10 @@ class PyHab:
         for i in range(0, len(self.calibPoints)):
             validTargs.append(visual.Circle(self.win, radius=30, lineColor='white', fillColor='white', pos=self.calibPoints[i]))
         wellCalibrated = False
+        tmpTxt = visual.TextStim(self.win, text="Space to begin, 1-5 to show targets, space to lock target, enter when done", pos=[0, -.2 * self.screenHeight['C']])
+        tmpTxt.draw()
+        self.win.flip()
+        event.waitKeys()
         while not wellCalibrated:
             success = self.tracker.run_calibration(self.calibPoints, self.calibStim, audio=self.calibSound)
             if not success:
@@ -3105,6 +3191,7 @@ class PyHab:
                 endValidation = False
                 # Saves to a validation data dump, separate from the main data file. Should overwrite previous file.
                 self.tracker.start_recording(self.dataFolder+'validationDump.tsv')
+                tmpTxt.text = "Space to proceed to experiment, R to redo calibration"
                 while not endValidation:
                     for v in range(0, len(validTargs)):
                         validTargs[v].draw()
@@ -3112,6 +3199,7 @@ class PyHab:
                     if not gpos == np.nan:
                         marker.setPos(gpos)
                         marker.draw()
+                    tmpTxt.draw()
                     self.win.flip()
                     keycheck = event.getKeys() # Can't use the normal keyboard stuff b/c it isn't loaded when this runs initially.
                     if 'space' in keycheck:
