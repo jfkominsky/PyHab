@@ -3171,6 +3171,10 @@ class PyHab:
         for i in range(0, len(self.calibPoints)):
             validTargs.append(visual.Circle(self.win, radius=30, lineColor='white', fillColor='white', pos=self.calibPoints[i]))
         wellCalibrated = False
+        tmpTxt = visual.TextStim(self.win, text="Space to begin, 1-5 to show targets, space to lock target, enter when done", pos=[0, -.2 * self.screenHeight['C']])
+        tmpTxt.draw()
+        self.win.flip()
+        event.waitKeys()
         while not wellCalibrated:
             success = self.tracker.run_calibration(self.calibPoints, self.calibStim, audio=self.calibSound)
             if not success:
@@ -3187,6 +3191,7 @@ class PyHab:
                 endValidation = False
                 # Saves to a validation data dump, separate from the main data file. Should overwrite previous file.
                 self.tracker.start_recording(self.dataFolder+'validationDump.tsv')
+                tmpTxt.text = "Space to proceed to experiment, R to redo calibration"
                 while not endValidation:
                     for v in range(0, len(validTargs)):
                         validTargs[v].draw()
@@ -3194,6 +3199,7 @@ class PyHab:
                     if not gpos == np.nan:
                         marker.setPos(gpos)
                         marker.draw()
+                    tmpTxt.draw()
                     self.win.flip()
                     keycheck = event.getKeys() # Can't use the normal keyboard stuff b/c it isn't loaded when this runs initially.
                     if 'space' in keycheck:
