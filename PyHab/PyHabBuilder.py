@@ -1189,7 +1189,7 @@ class PyHabBuilder:
                     errDlg.addText("Name cannot be blank!")
                     irrel = errDlg.show()
                     self.makeBlockDlg(name, new)
-                elif '.' in newBlock['name'] or '^' in newBlock[0] or '*' in newBlock[0]:
+                elif '.' in newBlock['name'] or '^' in newBlock['name'] or '*' in newBlock['name']:
                     errDlg = gui.Dlg(title="Illegal block name!")
                     errDlg.addText("Name contains illegal character, or is reserved. Please rename!")
                     irrel = errDlg.show()
