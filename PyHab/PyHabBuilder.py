@@ -1998,14 +1998,14 @@ class PyHabBuilder:
             else:
                 self.settings['nextFlash'] = 0
             # The next two fields have validation, but any other changes to settings will be saved even if they fail.
-            if isinstance(uInfo['ITIbase'], int):
+            if isinstance(uInfo['ITIbase'], float) or isinstance(uInfo['ITIbase'], int):
                 self.settings['ITIbase'] = uInfo['ITIbase']
             else:
                 try:
                     self.settings['ITIbase'] = eval(uInfo['ITIbase'])
                 except:
                     tryAgain = True
-            if isinstance(uInfo['ITIjitter'], int):
+            if isinstance(uInfo['ITIjitter'], float) or isinstance(uInfo['ITIjitter'], int):
                 self.settings['ITIjitter'] = uInfo['ITIjitter']
             else:
                 try:
