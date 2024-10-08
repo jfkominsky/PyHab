@@ -1098,10 +1098,10 @@ class PyHab:
             self.frameCount['C'] = 1
             return 0
         elif self.frameCount['C'] == 1:
-            if dispAudio.status not in [STARTED, PLAYING] and self.pauseCount['C'] < self.ISI[trialType] * 60:
+            if dispAudio.isPlaying == False and self.pauseCount['C'] < self.ISI[trialType] * 60:
                 self.pauseCount['C'] += 1
                 return 1
-            elif dispAudio.status not in [STARTED, PLAYING] and self.pauseCount['C'] >= self.ISI[trialType] * 60:
+            elif dispAudio.isPlaying == False and self.pauseCount['C'] >= self.ISI[trialType] * 60:
                 self.frameCount['C'] = 0
                 return 2
             else:
