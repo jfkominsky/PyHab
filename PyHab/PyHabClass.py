@@ -994,8 +994,8 @@ class PyHab:
 
         :param trialType: 0 for paused, otherwise a string
         :type trialType: int or str
-        :param dispMovie: The moviestim3 object for the stimuli
-        :type dispMovie: moviestim3 object
+        :param dispMovie: The moviestim object for the stimuli
+        :type dispMovie: moviestim object
         :param screen: The screen on which the movie should display. Only relevant for HPP.
         :type screen: str
         :return: an int specifying whether the movie is in progress (0), paused on its last frame (1), or ending and looping (2)
@@ -3292,7 +3292,12 @@ class PyHab:
                     if self.attnGetterList[i]['stimType'] == 'Audio':
                         self.attnGetterList[i]['file'] = sound.Sound(self.attnGetterList[i]['stimLoc'])
                     else:
-                        self.attnGetterList[i]['file'] = visual.MovieStim3(self.win, self.attnGetterList[i]['stimLoc'],
+                        if eval(__version__[0:4]) < 2023:
+                            self.attnGetterList[i]['file'] = visual.MovieStim3(self.win, self.attnGetterList[i]['stimLoc'],
+                                                                           size=[self.movieWidth['C'], self.movieHeight['C']],
+                                                                           flipHoriz=False, flipVert=False, loop=False)
+                        else:
+                            self.attnGetterList[i]['file'] = visual.MovieStim(self.win, self.attnGetterList[i]['stimLoc'],
                                                                            size=[self.movieWidth['C'], self.movieHeight['C']],
                                                                            flipHoriz=False, flipVert=False, loop=False)
                         if self.attnGetterList[i]['stimType'] == 'Movie + Audio':
