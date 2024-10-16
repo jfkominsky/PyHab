@@ -705,8 +705,6 @@ class PyHab:
                 self.readyText.draw()
         self.win2.flip()
 
-        onCheck = 0
-
         # Read off the relevant properties from the attention-getter settings
         if not midTrial:
             attnGetter = self.attnGetterList[self.playAttnGetter[trialType]['attnGetter']]['slide']  # Reads attention-getter from list of AGs.
@@ -730,9 +728,9 @@ class PyHab:
                 if self.lookKeysPressed() and not gazeOn:
                     gazeOn = True
                     startOn = core.getTime()
-                if gazeOn and self.lookKeysPressed() and (core.getTime() - startOn) > 1.5:
+                elif gazeOn and self.lookKeysPressed() and (core.getTime() - startOn) > onmin:
                     endAG = True
-                if gazeOn and not self.lookKeysPressed():
+                elif gazeOn and not self.lookKeysPressed():
                     gazeOn = False
 
 
