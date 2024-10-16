@@ -2266,9 +2266,9 @@ class PyHabBuilder:
 
         'screenColor' 2 = Background color of stim window
 
-        'movieWidth' 3 = movieWidth: Width of movieStim3 object inside stim window. Future: Allows for movie default resolution?
+        'movieWidth' 3 = movieWidth: Width of movieStim object inside stim window. Future: Allows for movie default resolution?
 
-        'movieHeight' 4 = movieHeight: Height of movieStim3 object inside stim window
+        'movieHeight' 4 = movieHeight: Height of movieStim object inside stim window
 
         'freezeFrame' 5 = freezeFrame: If the attention-getter is used (for a given trial type), this is the minimum time the first frame
         of the movie will be displayed after the attention-getter finishes.
@@ -2690,7 +2690,8 @@ class PyHabBuilder:
         if type(fileSelectDlg) is not NoneType:
             path, namething = os.path.split(fileSelectDlg[0])
             # Suboptimal solution for getting duration, but possibly only available.
-            tempMovie = visual.MovieStim3(self.win, fileSelectDlg[0])
+            tempMovie = visual.MovieStim(self.win, fileSelectDlg[0])
+            # In order to get duration yo uactually need to start the video...ridiculous.
             tempGetter = {'stimLoc': fileSelectDlg[0], 'stimName': namething,
                                'stimDur': tempMovie.duration}
             del tempMovie
@@ -2715,7 +2716,7 @@ class PyHabBuilder:
         if type(fileSelectDlg) is not NoneType:
             path, namething = os.path.split(fileSelectDlg[0])
             # Suboptimal solution for getting duration, but possibly only available.
-            tempMovie = visual.MovieStim3(self.win, fileSelectDlg[0])
+            tempMovie = visual.MovieStim(self.win, fileSelectDlg[0])
             tempDuration = tempMovie.duration
             soundSelectDlg = gui.fileOpenDlg(prompt="Select attention-getter AUDIO file")
             if type(soundSelectDlg) is not NoneType:
@@ -2828,7 +2829,7 @@ class PyHabBuilder:
                                 if ans2b['AGType'] == 'Audio':
                                     tempStim = sound.Sound(fileSelectDlg[0])
                                 else:
-                                    tempStim = visual.MovieStim3(self.win, fileSelectDlg[0])
+                                    tempStim = visual.MovieStim(self.win, fileSelectDlg[0])
                                 self.settings['attnGetterList'][ans2b['AGName']].update({'stimLoc': fileSelectDlg[0],
                                                                                   'stimName': namething,
                                                                                   'stimDur': tempStim.duration})
