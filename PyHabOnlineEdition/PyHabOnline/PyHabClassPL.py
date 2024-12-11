@@ -279,7 +279,7 @@ class PyHabPL(PyHab):
                     endTrial = core.getTime() - startTrial
                     if not self.stimPres:
                         self.endTrialSound.play()
-                        self.endTrialSound = sound.Sound('A', octave=4, sampleRate=44100, secs=0.2)
+                        self.endTrialSound = sound.Sound('A', octave=4, sampleRate=48000, secs=0.2, stereo=True)
                     #determine if they were looking or not at end of trial and update appropriate array
                     if gazeOn or gazeOn2:
                         if gazeOn:
@@ -337,7 +337,7 @@ class PyHabPL(PyHab):
                     endTrial = core.getTime() - startTrial
                     if not self.stimPres:
                         self.endTrialSound.play()
-                        self.endTrialSound = sound.Sound('A', octave=4, sampleRate=44100, secs=0.2)
+                        self.endTrialSound = sound.Sound('A', octave=4, sampleRate=48000, secs=0.2, stereo=True)
                     #determine if they were looking or not at end of trial and update appropriate array
                     if gazeOn or gazeOn2:
                         if gazeOn:
@@ -392,7 +392,7 @@ class PyHabPL(PyHab):
                         endTrial = core.getTime() - startTrial
                         if not self.stimPres:
                             self.endTrialSound.play()
-                            self.endTrialSound = sound.Sound('A', octave=4, sampleRate=44100, secs=0.2)
+                            self.endTrialSound = sound.Sound('A', octave=4, sampleRate=48000, secs=0.2, stereo=True)
                         endOff = nowOff
                         offDur = nowOff - startOff
                         tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOff, 'endTime': endOff,
@@ -456,7 +456,7 @@ class PyHabPL(PyHab):
                         endTrial = core.getTime() - startTrial
                         if not self.stimPres:
                             self.endTrialSound.play()
-                            self.endTrialSound = sound.Sound('A', octave=4, sampleRate=44100, secs=0.2)
+                            self.endTrialSound = sound.Sound('A', octave=4, sampleRate=48000, secs=0.2, stereo=True)
                         if gazeOn:
                             onDur = endTrial - startOn
                             tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOn, 'endTime': endTrial,
@@ -504,7 +504,7 @@ class PyHabPL(PyHab):
                     endTrial = core.getTime() - startTrial
                     if not self.stimPres:
                         self.endTrialSound.play()
-                        self.endTrialSound = sound.Sound('A', octave=4, sampleRate=44100, secs=0.2)
+                        self.endTrialSound = sound.Sound('A', octave=4, sampleRate=48000, secs=0.2, stereo=True)
                     # determine if they were looking or not at end of trial and update appropriate array
                     if gazeOn:
                         onDur = endTrial - startOn
