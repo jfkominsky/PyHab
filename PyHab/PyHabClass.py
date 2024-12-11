@@ -312,8 +312,8 @@ class PyHab:
         self.trialTiming = []  # new in 0.10.3: Records all stimulus start and end times relative to start of experiment.
         self.absoluteStart = 0  # A value for recording the start time of the experiment for trialTiming.
         if not self.stimPres and not testMode:
-            self.endTrialSound = sound.Sound('A', octave=4, sampleRate=44100, secs=0.2)
-            self.endHabSound = sound.Sound('G', octave=4, sampleRate=44100, secs=0.2)
+            self.endTrialSound = sound.Sound('A', octave=4, sampleRate=48000, secs=0.2, stereo=True)
+            self.endHabSound = sound.Sound('G', octave=4, sampleRate=48000, secs=0.2, stereo=True)
         if type(self.maxDur) is int:  # Secretly MaxDur will always be a dict, but if it's a constant we just create the dict here
             tempDur = self.maxDur
             self.maxDur = {}  # create a dict
@@ -605,7 +605,7 @@ class PyHab:
                 for i in [0, 1, 2]:
                     core.wait(.25)  # an inadvertent side effect of playing the sound is a short pause before the test trial can begin
                     self.endHabSound.play()
-                    self.endHabSound = sound.Sound('G', octave=4, sampleRate=44100, secs=0.2)
+                    self.endHabSound = sound.Sound('G', octave=4, sampleRate=48000, secs=0.2, stereo=True)
             self.habMetWhen[blockName] = self.habCount[blockName]
             return True
         elif self.blockList[blockName]['setCritType'] == 'Threshold' and self.blockList[blockName]['maxHabSet'] > 0 and self.habSetWhen[blockName] == -1 and self.habCount[blockName] >= self.blockList[blockName]['maxHabSet']:
@@ -1980,7 +1980,7 @@ class PyHab:
                     endTrial = core.getTime() - startTrial
                     if not self.stimPres:
                         self.endTrialSound.play()
-                        self.endTrialSound = sound.Sound('A', octave=4, sampleRate=44100, secs=0.2)
+                        self.endTrialSound = sound.Sound('A', octave=4, sampleRate=48000, secs=0.2, stereo=True)
                     # determine if they were looking or not at end of trial and update appropriate array
                     if gazeOn:
                         onDur = endTrial - startOn
@@ -2021,7 +2021,7 @@ class PyHab:
                     endTrial = core.getTime() - startTrial
                     if not self.stimPres:
                         self.endTrialSound.play()
-                        self.endTrialSound = sound.Sound('A', octave=4, sampleRate=44100, secs=0.2)
+                        self.endTrialSound = sound.Sound('A', octave=4, sampleRate=48000, secs=0.2, stereo=True)
                     # determine if they were looking or not at end of trial and update appropriate array
                     if gazeOn:
                         onDur = endTrial - startOn
@@ -2066,7 +2066,7 @@ class PyHab:
                         endTrial = core.getTime() - startTrial
                         if not self.stimPres:
                             self.endTrialSound.play()
-                            self.endTrialSound = sound.Sound('A', octave=4, sampleRate=44100, secs=0.2)
+                            self.endTrialSound = sound.Sound('A', octave=4, sampleRate=48000, secs=0.2, stereo=True)
                         endOff = nowOff
                         offDur = nowOff - startOff
                         tempGazeArray = {'trial':number, 'trialType':dataType, 'startTime':startOff, 'endTime':endOff, 'duration':offDur}
@@ -2138,7 +2138,7 @@ class PyHab:
                         endTrial = core.getTime() - startTrial
                         if not self.stimPres:
                             self.endTrialSound.play()
-                            self.endTrialSound = sound.Sound('A', octave=4, sampleRate=44100, secs=0.2)
+                            self.endTrialSound = sound.Sound('A', octave=4, sampleRate=48000, secs=0.2, stereo=True)
                         endOn = core.getTime() - startTrial
                         onDur = endOn - startOn
                         tempGazeArray = {'trial':number, 'trialType':dataType, 'startTime':startOn, 'endTime':endOn, 'duration':onDur}
@@ -2152,7 +2152,7 @@ class PyHab:
                         endTrial = core.getTime() - startTrial
                         if not self.stimPres:
                             self.endTrialSound.play()
-                            self.endTrialSound = sound.Sound('A', octave=4, sampleRate=44100, secs=0.2)
+                            self.endTrialSound = sound.Sound('A', octave=4, sampleRate=48000, secs=0.2, stereo=True)
                         endOn = core.getTime() - startTrial
                         onDur = endOn - startOn
                         tempGazeArray = {'trial':number, 'trialType':dataType, 'startTime':startOn, 'endTime':endOn, 'duration':onDur}
