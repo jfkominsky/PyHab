@@ -2218,14 +2218,14 @@ class PyHabBuilder:
 
         sDlg = gui.Dlg(title="Stimulus presentation settings")
         if not redo:
-            lastSet=[self.settings['presentationURL'],self.settings['slidesEmail'],self.settings['slidesPW'],
-                     self.settings['browserType'],self.settings['blankSlide']]
+            lastSet={'presentationURL': self.settings['presentationURL'],'slidesEmail':self.settings['slidesEmail'],'slidesPW':self.settings['slidesPW'],
+                    'browserType': self.settings['browserType'],'blankSlide':self.settings['blankSlide']}
             # This order maps on to the order of the dialog box. This allows for carrying over from previous entries
             # if there's a problem (e.g., text where numbers should be). Done as separate lines basically for ease of
             # correspondence to the field definitions and the saving at the end.
         browsers = ['Chrome', 'Firefox', 'Safari', 'Edge']
-        browsers = [x for x in browsers if x != lastSet[3]]
-        browsers.insert(0, lastSet[3])
+        browsers = [x for x in browsers if x != lastSet['browserType']]
+        browsers.insert(0, lastSet['browserType'])
 
         sDlg.addField('presentationURL', label="Presentation URL from Slides.com (ending in '/live')", initial=lastSet['presentationURL'])
         sDlg.addField('slidesEmail', label="Email for Slides.com login", initial=lastSet['slidesEmail'])
