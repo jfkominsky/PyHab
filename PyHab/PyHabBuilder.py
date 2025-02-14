@@ -764,9 +764,8 @@ class PyHabBuilder:
                         if not makeNew and typeInfo['trialType'] not in self.trialTypesArray['labels']:
                             # change all the dicts and everything.
                             # Using the trialTypeKeyList we can automate this to some degree.
-                            trialTypeKeylist = ['stimNames', 'maxDur', 'minOn', 'maxOff', 'ISI', 'autoAdvance', 'maxOn',
-                                                'minDur','playAttnGetter', 'midAg', 'dynamicPause', 'playThrough',
-                                                'onTimeDeadline']
+                            trialTypeKeylist = ['stimNames', 'maxDur', 'minOn', 'maxOff', 'ISI', 'maxOn',
+                                                'minDur','playAttnGetter', 'midAG', 'playThrough', 'onTimeDeadline']
                             for i in trialTypeKeylist:
                                 if trialType in self.settings[i].keys():
                                     self.settings[i][typeInfo['trialType']] = self.settings[i].pop(trialType)
@@ -781,8 +780,8 @@ class PyHabBuilder:
                             self.settings['trialTypes'] = [typeInfo['trialType'] if x == trialType else x for x in self.settings['trialTypes']]
                             self.settings['trialOrder'] = [typeInfo['trialType'] if x == trialType else x for x in self.settings['trialOrder']]
                             self.trialTypesArray = self.loadTypes(self.typeLocs, self.settings['trialTypes'], page=self.trialPalettePage)
-                            # Update in all the things that are lists of filenames with a given property
-                            listsList = ['autoRedo','autoAdvance','movieEnd','durationCriterion']
+                            # Update in all the things that are lists of trial types with a given property
+                            listsList = ['autoRedo','autoAdvance','movieEnd','durationCriterion', 'dynamicPause']
                             for k in range(0, len(listsList)):
                                 if trialType in self.settings[listsList[k]]:
                                     self.settings[listsList[k]].remove(trialType)
@@ -1586,11 +1585,16 @@ class PyHabBuilder:
             del self.settings['blockList'][dType]
         else:
             # A list of all the settings that use trial types as keys.
-            trialTypeKeylist = ['stimNames','maxDur','minOn','maxOff','ISI', 'autoAdvance', 'maxOn', 'minDur',
-                                'playAttnGetter','midAg','dynamicPause','playThrough', 'onTimeDeadline']
+            trialTypeKeylist = ['stimNames','maxDur','minOn','maxOff','ISI', 'maxOn', 'minDur',
+                                'playAttnGetter','midAG','playThrough', 'onTimeDeadline']
             for j in range(0, len(trialTypeKeylist)):
                 if dType in self.settings[trialTypeKeylist[j]].keys():
                     del self.settings[trialTypeKeylist[j]][dType]
+            # List of items that are lists of trial types themselves
+            listsList = ['autoRedo', 'autoAdvance', 'movieEnd', 'durationCriterion', 'dynamicPause']
+            for k in range(0, len(listsList)):
+                if dType in self.settings[listsList[k]]:
+                    self.settings[listsList[k]].remove(dType)
         for i, j in self.settings['blockList'].items():  # If it's part of a block
             if dType in j:
                 while dType in j:
