@@ -2081,15 +2081,15 @@ class PyHab:
                     tempGazeArray = {'trial':number, 'trialType':dataType, 'startTime':startOff, 'endTime':endOff, 'duration':offDur}
                     offArray.append(tempGazeArray)
                     if localType in self.dynamicPause and self.stimPres:
-                        if disMovie['stimType'] in ['Movie', 'Audio'] and disMovie['stim'].status != PLAYING:
+                        if disMovie['stimType'] in ['Movie', 'Audio'] and not disMovie['stim'].isPlaying:
                             disMovie['stim'].play()
-                        elif disMovie['stimType'] == ['Image with audio'] and disMovie['stim']['Audio'].status != PLAYING:
+                        elif disMovie['stimType'] == ['Image with audio'] and not disMovie['stim']['Audio'].isPlaying:
                             disMovie['stim']['Audio'].play()
                 else:
                     if localType in self.dynamicPause and self.stimPres:
-                        if disMovie['stimType'] in ['Movie','Audio'] and disMovie['stim'].status == PLAYING:
+                        if disMovie['stimType'] in ['Movie','Audio'] and disMovie['stim'].isPlaying:
                             disMovie['stim'].pause()
-                        elif disMovie['stimType'] == ['Image with audio'] and disMovie['stim']['Audio'].status == PLAYING:
+                        elif disMovie['stimType'] == ['Image with audio'] and disMovie['stim']['Audio'].isPlaying:
                             disMovie['stim']['Audio'].pause()
                     if localType in self.midAG and self.stimPres:
                         try:
@@ -2102,9 +2102,9 @@ class PyHab:
                         if nowOff - startAG >= self.midAG[localType]['trigger']:
                             # TODO: Do something here to deal with recording data about mid-trial AG behavior?
                             if localType not in self.dynamicPause: # Need to pause it anyways to play the AG so they don't overlap
-                                if disMovie['stimType'] in ['Movie', 'Audio'] and disMovie['stim'].status == PLAYING:
+                                if disMovie['stimType'] in ['Movie', 'Audio'] and disMovie['stim'].isPlaying:
                                     disMovie['stim'].pause()
-                                elif disMovie['stimType'] == ['Image with audio'] and disMovie['stim']['Audio'].status == PLAYING:
+                                elif disMovie['stimType'] == ['Image with audio'] and disMovie['stim']['Audio'].isPlaying:
                                     disMovie['stim']['Audio'].pause()
                             startAG = core.getTime() - startTrial
                             tempTiming = {'trialNum': number, 'trialType': dataType, 'event': 'startAttnGetter',
@@ -2122,9 +2122,9 @@ class PyHab:
                             durAG = endAG - startAG
                             maxDurAdd = maxDurAdd + durAG  # Increase max length of trial by duration that AG played.
                             if localType not in self.dynamicPause:
-                                if disMovie['stimType'] in ['Movie', 'Audio'] and disMovie['stim'].status != PLAYING:
+                                if disMovie['stimType'] in ['Movie', 'Audio'] and not disMovie['stim'].isPlaying:
                                     disMovie['stim'].play()
-                                elif disMovie['stimType'] == ['Image with audio'] and disMovie['stim']['Audio'].status != PLAYING:
+                                elif disMovie['stimType'] == ['Image with audio'] and not disMovie['stim']['Audio'].isPlaying:
                                     disMovie['stim']['Audio'].play()
 
             elif gazeOn:
