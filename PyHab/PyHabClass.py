@@ -852,10 +852,12 @@ class PyHab:
                     attnGetter['file'].stop(reset=True)
                     break
         else:
-            dMovie = attnGetter['file']
-            dMovie.seek(0.0)
+            dMovie = attnGetter['file'] # this is always a movie file
+            #dMovie.seek(0.0) # The reset has been moved elsewhere
             if attnGetter['stimType'] == 'Movie + Audio':
                 attnGetter['audioFile'].play()
+            if midTrial: # with mid-trial AGs, want to restart from the right point in the movie.
+                stimFrameCount = self.frameCount['C']
             self.frameCount['C'] = 0
             self.ISI['NobodyNameTheirTrialTypeThis'] = 0.0 # A goofy solution but it'll work. dispMovieStim requires a trial type, and the ISI for an attngetter needs to be 0.
             while self.dispMovieStim('NobodyNameTheirTrialTypeThis', dMovie) < 2:
@@ -882,6 +884,7 @@ class PyHab:
                         if attnGetter['stimType'] == 'Movie + Audio':
                             attnGetter['audioFile'].stop(reset=True)
                         dMovie.pause()
+                        dMovie.seek(0.0)
                         break
                 elif cutoff and onCheck > 0:  # A clever little way to say "if they aren't looking but were earlier"
                     self.statusSquareA.fillColor='blue'
@@ -892,8 +895,11 @@ class PyHab:
                     if attnGetter['stimType'] == 'Movie + Audio':
                         attnGetter['audioFile'].stop(reset=True)
                     dMovie.pause()
+                    dMovie.seek(0.0)
                     break
 
+            if midTrial:
+                self.frameCount['C'] = stimFrameCount
         if 'bgColor' in attnGetter.keys():
             if attnGetter['bgColor'] != 'default':
                 self.win.setColor(self.screenColor['C'])
@@ -2121,7 +2127,7 @@ class PyHab:
                                 self.tracker.record_event('trial_' + str(number) + '_' + tempTiming['trialType'] + '_endAttnGetter')
                             durAG = endAG - startAG
                             maxDurAdd = maxDurAdd + durAG  # Increase max length of trial by duration that AG played.
-                            if localType not in self.dynamicPause:
+                            if localType not in self.dynamicPause: # Note that this only trips if it is not in the "dynamic pause" category
                                 if disMovie['stimType'] in ['Movie', 'Audio'] and not disMovie['stim'].isPlaying:
                                     disMovie['stim'].play()
                                 elif disMovie['stimType'] == ['Image with audio'] and not disMovie['stim']['Audio'].isPlaying:
