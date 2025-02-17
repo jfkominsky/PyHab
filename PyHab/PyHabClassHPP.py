@@ -306,7 +306,7 @@ class PyHabHPP(PyHab):
             t = []
             for k in screens:
                 if dispMovie[k]['stimType'] == 'Movie':
-                    t.append(self.dispMovieStim(trialType, dispMovie[k]['stim'], screen=k))
+                    t.append(self.dispMovieStim(trialType, dispMovie[k]['stim'], dispMovie[k]['firstFrame'], screen=k))
                 elif dispMovie[k]['stimType'] == 'Image':
                     t.append(self.dispImageStim(dispMovie[k]['stim'], screen=k))
                 elif dispMovie[k]['stimType'] == 'Audio' and trialType != 0:  # No still-frame equivalent
