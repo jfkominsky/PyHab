@@ -284,7 +284,7 @@ class PyHabHPP(PyHab):
                 self.readyText.draw()
         self.win2.flip()  # flips the status screen without delaying the stimulus onset.
 
-    def dispTrial(self, trialType, dispMovie = False):
+    def dispTrial(self, trialType, dispMovie = False, trialNum=-1):
         """
         An HPP-specific version of dispTrial that can display on multiple things, read the new stimDict, etc.
 
@@ -292,6 +292,8 @@ class PyHabHPP(PyHab):
         :type trialType: str
         :param dispMovie: Now a dictionary C/L/R each index of which contains what this function expects in the base class
         :type dispMovie: bool or dict
+        :param trialNum: Trial number for movie playback timing. -1 for attention-getter and other cases where it is irrelevant
+        :type trialNum: int
         :return: 1 or 0. 1 = end of movie for trials that end on that. TODO: for HPP currently returns 1 if EVERYTHING IN IT is done.
         :rtype: int
         """
@@ -306,7 +308,7 @@ class PyHabHPP(PyHab):
             t = []
             for k in screens:
                 if dispMovie[k]['stimType'] == 'Movie':
-                    t.append(self.dispMovieStim(trialType, dispMovie[k]['stim'], dispMovie[k]['firstFrame'], screen=k))
+                    t.append(self.dispMovieStim(trialType, dispMovie[k]['stim'], dispMovie[k]['firstFrame'], trialNum=trialNum, screen=k))
                 elif dispMovie[k]['stimType'] == 'Image':
                     t.append(self.dispImageStim(dispMovie[k]['stim'], screen=k))
                 elif dispMovie[k]['stimType'] == 'Audio' and trialType != 0:  # No still-frame equivalent

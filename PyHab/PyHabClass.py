@@ -999,7 +999,7 @@ class PyHab:
                 self.readyText.draw()
         self.win2.flip()  # flips the status screen without delaying the stimulus onset.
 
-    def dispMovieStim(self, trialType, dispMovie, firstFrame, screen='C'):
+    def dispMovieStim(self, trialType, dispMovie, firstFrame, trialNum = -1, screen='C'):
         """
         Draws movie stimuli to the stimulus display, including movie-based attention-getters.
 
@@ -1009,6 +1009,8 @@ class PyHab:
         :type dispMovie: moviestim object
         :param firstFrame: An ImageStim with the first frame of the video, used to smooth out restarts.
         :type firstFrame: ImageStim or None
+        :param trialNum: To record timing, we need the trial number. -1 indicates that it's an attention-getter or otherwise irrelevant.
+        :type trialNum: int
         :param screen: The screen on which the movie should display. Only relevant for HPP.
         :type screen: str
         :return: an int specifying whether the movie is in progress (0), paused on its last frame (1), or ending and looping (2)
@@ -1049,7 +1051,7 @@ class PyHab:
         elif self.frameCount[screen] == 1:
             # print('playing')
             if not dispMovie.isPlaying:
-                dispMovie.play()
+                dispMovie.play() # It's hard to record the timing for the video start w/out the trial number
                 if dispMovie.frameIndex > 1: # Shouldn't be needed for the first time something plays, at least.
                     # Need to call this again because the first "seek" at the end doesn't actually "take" in the way
                     # you want it to and would mess with the sound playback if there's sound in the first 100ms or so.
@@ -1060,8 +1062,14 @@ class PyHab:
                 dispMovie.updateVideoFrame() # This forces it to advance until the "seek" takes.
                 firstFrame.draw()
                 self.frameCount[screen] = 1 # Stick here until we actually get the playback working.
-                # Todo: What should we do about timing and recording it? We are adding up to 100ms here.
             else:
+                # Record actual movie start time
+                if trialNum > 0:
+                    tempTiming = {'trialNum': trialNum, 'trialType': trialType, 'event': 'startMoviePlayback',
+                                  'time': (core.getTime() - self.absoluteStart)}
+                    self.trialTiming.append(tempTiming)
+                    if self.eyetracker > 0:
+                        self.tracker.record_event('trial_' + str(trialNum) + '_' + tempTiming['trialType'] + '_startMoviePlayback')
                 dispMovie.draw()
             w.flip()
             return 0
@@ -1084,6 +1092,12 @@ class PyHab:
             self.startPause[screen] = 0 # Reset everything
             dispMovie.draw()  # Comment this out as well to blank between loops.
             w.flip()
+            if trialNum > 0:
+                tempTiming = {'trialNum': trialNum, 'trialType': trialType, 'event': 'endMoviePlayback',
+                              'time': (core.getTime() - self.absoluteStart)}
+                self.trialTiming.append(tempTiming)
+                if self.eyetracker > 0:
+                    self.tracker.record_event('trial_' + str(trialNum) + '_' + tempTiming['trialType'] + '_endMoviePlayback')
             return 2
         else:
             dispMovie.draw()
@@ -1193,7 +1207,7 @@ class PyHab:
         return 1
 
 
-    def dispTrial(self, trialType, dispMovie = False): #If no stim, dispMovie defaults to false.
+    def dispTrial(self, trialType, dispMovie = False, trialNum=-1): #If no stim, dispMovie defaults to false.
         """
         Draws each frame of the trial. For stimPres, returns a movie-status value for determining when the movie has
         ended
@@ -1202,6 +1216,8 @@ class PyHab:
         :type trialType: string
         :param dispMovie: A dictionary containing both the stimulus type and the object with the stimulus file(s) (if applicable)
         :type dispMovie: bool or dict
+        :param trialNum: Trial number, relevant for recording timing of movie playback. -1 for attngetters and other cases where this is irrelevant.
+        :type trialNum: int
         :return: 1 or 0. 1 = end of movie for trials that end on that.
         :rtype: int
         """
@@ -1209,7 +1225,7 @@ class PyHab:
         # now for the test trial display
         if self.stimPres:
             if dispMovie['stimType'] == 'Movie':
-                t = self.dispMovieStim(trialType, dispMovie['stim'], dispMovie['firstFrame'])
+                t = self.dispMovieStim(trialType, dispMovie['stim'], dispMovie['firstFrame'], trialNum=trialNum)
             elif dispMovie['stimType'] == 'Animation':
                 t = self.dispAnimationStim(trialType, dispMovie['stim'])
             elif dispMovie['stimType'] == 'Image':
@@ -2139,8 +2155,6 @@ class PyHab:
                             if localType not in self.dynamicPause: # Need to pause it anyways to play the AG so they don't overlap
                                 if disMovie['stimType'] in ['Movie', 'Audio'] and disMovie['stim'].isPlaying:
                                     disMovie['stim'].pause()
-                                    if disMovie['stimType'] == 'Movie': # This is a safety measure to ensure that the "pause" has time to take before things start happening.
-                                        tempStimDisp = self.dispTrial(localType, disMovie)
                                 elif disMovie['stimType'] == ['Image with audio'] and disMovie['stim']['Audio'].isPlaying:
                                     disMovie['stim']['Audio'].pause()
                             startAG = core.getTime() - startTrial
@@ -2222,7 +2236,7 @@ class PyHab:
                 tempGazeArray2 = {'trial':number, 'trialType':dataType, 'startTime':startOn2, 'endTime':endOn2, 'duration':onDur2}
                 onArray2.append(tempGazeArray2)
                 sumOn2 = sumOn2 + onDur2
-            movieStatus = self.dispTrial(localType, disMovie)
+            movieStatus = self.dispTrial(localType, disMovie, trialNum=number)
             if endFlag:
                 if localType in self.movieEnd and movieStatus >= 1:
                     runTrial = False

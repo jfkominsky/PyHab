@@ -714,7 +714,7 @@ class PyHabPL(PyHab):
                         else:
                             numOff = numOff + 1
                             startOff = core.getTime() - startTrial
-            movieStatus = self.dispTrial(localType, disMovie)
+            movieStatus = self.dispTrial(localType, disMovie, trialNum=number)
             if endFlag:
                 if localType in self.movieEnd and movieStatus >= 1:
                     runTrial = False
