@@ -326,6 +326,7 @@ class PyHab:
         self.testOffset = 0
         self.frameCount = {'C':0,'L':0,'R':0}  # the frame counter for the trial. Redone so it works for each screen.
         self.pauseCount = {'C':0,'L':0,'R':0}  # used for ISI calculations
+        self.startPause = {'C':0, 'L':0, 'R':0}
         self.stimName = ''  # used for adding the name of the stimulus file to the output.
         self.key = pyglet.window.key  # This initiates the keyhandler. Here so we can then set the relevant keys.
         self.secondKey = self.key.L
@@ -1035,7 +1036,6 @@ class PyHab:
             self.frameCount[screen] += 1
             # The fundamental problem is that seek takes a few frames, so we need to ensure that it waits
             if dispMovie.frameIndex > 0: # It should be the first frame. If not, first frame image.
-
                 firstFrame.draw()
             else:
                 dispMovie.draw()
@@ -1056,33 +1056,32 @@ class PyHab:
                     dispMovie.seek(0.0)
             # Failsafe to prevent stuttering
             self.frameCount[screen] += 1
-            if dispMovie.frameIndex > 1: # TODO: This is iffy. A better status system is needed
+            if dispMovie.frameIndex > 1:
                 dispMovie.updateVideoFrame() # This forces it to advance until the "seek" takes.
                 firstFrame.draw()
                 self.frameCount[screen] = 1 # Stick here until we actually get the playback working.
-                # Todo: Timing recording somewhere?
+                # Todo: What should we do about timing and recording it? We are adding up to 100ms here.
             else:
                 dispMovie.draw()
             w.flip()
             return 0
-        elif dispMovie.isFinished and self.pauseCount[screen] < self.ISI[trialType] * 60:  # pause, check for ISI.
+        elif dispMovie.isFinished and self.pauseCount[screen] < self.ISI[trialType]:  # pause, check for ISI.
             self.dummyThing.draw()
-            dispMovie.pause() # This resets the isFinished state.
+            #dispMovie.pause() # This resets the isFinished state, so it can't be used here, but is no longer needed because it pauses anyway on the finish.
             dispMovie.draw()  # might want to have it vanish rather than leave it on the screen for the ISI, in which case comment out this line.
             self.frameCount[screen] += 1
-            self.pauseCount[screen] += 1 #TODO: This may not be reliable on Mac because it can refresh at faster than 60Hz.
+            self.pauseCount[screen] = core.getTime() - self.startPause[screen]
             w.flip() # TODO: Goes blank if ISI is long enough. Pyglet problem?
             return 1
-        elif dispMovie.isFinished and self.pauseCount[screen] >= self.ISI[trialType] * 60:  # MovieStim's Loop functionality can't do an ISI
-            dispMovie._player._tStream._player.set_mute(True)  # Force mute so the first sound does not replay.
-            #There's an oddity here: isFinished will still be true because "pause" wasn't called.
-            # However, it won't be playing, and the framecount reset will mean the condition isn't tripped again.
+        elif dispMovie.isFinished and self.pauseCount[screen] >= self.ISI[trialType]:  # If both are 0 then this is fine.
+            dispMovie.pause() # Necessary for a silent reset, also resets the "isFinished" status.
             dispMovie.seek(0.0) # In 2024 PsychoPy this is now when we want to seek to the start.
             dispMovie._player._tStream._player.set_mute(True)  # Force mute so the first sound does not replay.
             self.dummyThing.draw()
             # print('repeating at ' + str(dispMovie.getCurrentFrameTime()))
             self.frameCount[screen] = 0  # changed to 0 to better enable studies that want to blank between trials
             self.pauseCount[screen] = 0
+            self.startPause[screen] = 0 # Reset everything
             dispMovie.draw()  # Comment this out as well to blank between loops.
             w.flip()
             return 2
@@ -1090,6 +1089,9 @@ class PyHab:
             dispMovie.draw()
             self.frameCount[screen] += 1
             w.flip()
+            # This looks weird but if you are using ISI it is necessary to get accurate timing.
+            if self.ISI[trialType] > 0:
+                self.startPause[screen] = core.getTime()
             return 0
 
     def dispImageStim(self, dispImage, screen='C'):
@@ -2137,6 +2139,8 @@ class PyHab:
                             if localType not in self.dynamicPause: # Need to pause it anyways to play the AG so they don't overlap
                                 if disMovie['stimType'] in ['Movie', 'Audio'] and disMovie['stim'].isPlaying:
                                     disMovie['stim'].pause()
+                                    if disMovie['stimType'] == 'Movie': # This is a safety measure to ensure that the "pause" has time to take before things start happening.
+                                        tempStimDisp = self.dispTrial(localType, disMovie)
                                 elif disMovie['stimType'] == ['Image with audio'] and disMovie['stim']['Audio'].isPlaying:
                                     disMovie['stim']['Audio'].pause()
                             startAG = core.getTime() - startTrial
