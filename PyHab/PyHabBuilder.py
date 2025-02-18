@@ -743,7 +743,7 @@ class PyHabBuilder:
 
 
             typeInfo = typeDlg.show()
-
+            # Process response
             if typeDlg.OK:
                 # Check if all the things that need to be numbers are actually numbers.
                 for i in ['maxDur', 'maxOff', 'minOn', 'onTimeDeadline']:
@@ -763,15 +763,12 @@ class PyHabBuilder:
                     if typeInfo['trialType'] is not trialType:  # First, do we need to change the trial type label for an existing type?
                         if not makeNew and typeInfo['trialType'] not in self.trialTypesArray['labels']:
                             # change all the dicts and everything.
-                            self.settings['stimNames'][typeInfo['trialType']] = self.settings['stimNames'].pop(trialType)
-                            self.settings['maxDur'][typeInfo['trialType']]=self.settings['maxDur'].pop(trialType)
-                            self.settings['playThrough'][typeInfo['trialType']] = self.settings['playThrough'].pop(trialType)
-                            self.settings['maxOff'][typeInfo['trialType']] = self.settings['maxOff'].pop(trialType)
-                            self.settings['minOn'][typeInfo['trialType']] = self.settings['minOn'].pop(trialType)
-                            if trialType in self.settings['playAttnGetter'].keys():
-                                self.settings['playAttnGetter'][typeInfo['trialType']] = self.settings['playAttnGetter'].pop(trialType)
-                            if trialType in self.settings['onTimeDeadline'].keys():
-                                self.settings['onTimeDeadline'][typeInfo['trialType']] = self.settings['onTimeDeadline'].pop(trialType)
+                            # Using the trialTypeKeyList we can automate this to some degree.
+                            trialTypeKeylist = ['stimNames', 'maxDur', 'minOn', 'maxOff', 'ISI', 'maxOn',
+                                                'minDur','playAttnGetter', 'midAG', 'playThrough', 'onTimeDeadline']
+                            for i in trialTypeKeylist:
+                                if trialType in self.settings[i].keys():
+                                    self.settings[i][typeInfo['trialType']] = self.settings[i].pop(trialType)
                             # update trial type and study flow too
                             numChar = len(typeInfo['trialType'])
                             if numChar <= 3:
@@ -783,8 +780,8 @@ class PyHabBuilder:
                             self.settings['trialTypes'] = [typeInfo['trialType'] if x == trialType else x for x in self.settings['trialTypes']]
                             self.settings['trialOrder'] = [typeInfo['trialType'] if x == trialType else x for x in self.settings['trialOrder']]
                             self.trialTypesArray = self.loadTypes(self.typeLocs, self.settings['trialTypes'], page=self.trialPalettePage)
-                            # Update in all the things that are lists of filenames with a given property
-                            listsList = ['autoRedo','autoAdvance','movieEnd','durationCriterion']
+                            # Update in all the things that are lists of trial types with a given property
+                            listsList = ['autoRedo','autoAdvance','movieEnd','durationCriterion', 'dynamicPause']
                             for k in range(0, len(listsList)):
                                 if trialType in self.settings[listsList[k]]:
                                     self.settings[listsList[k]].remove(trialType)
@@ -1587,12 +1584,17 @@ class PyHabBuilder:
         if dType in self.settings['blockList'].keys():  # Block vs. trial. Includes hab.
             del self.settings['blockList'][dType]
         else:
-            keylist = ['stimNames','maxDur','minOn','maxOff','ISI']
-            for j in range(0, len(keylist)):
-                if dType in self.settings[keylist[j]].keys():
-                    del self.settings[keylist[j]][dType]
-            if dType in self.settings['playThrough']:  # if it was in playThrough, remove it from there too.
-                self.settings['playThrough'].pop(dType, None)
+            # A list of all the settings that use trial types as keys.
+            trialTypeKeylist = ['stimNames','maxDur','minOn','maxOff','ISI', 'maxOn', 'minDur',
+                                'playAttnGetter','midAG','playThrough', 'onTimeDeadline']
+            for j in range(0, len(trialTypeKeylist)):
+                if dType in self.settings[trialTypeKeylist[j]].keys():
+                    del self.settings[trialTypeKeylist[j]][dType]
+            # List of items that are lists of trial types themselves
+            listsList = ['autoRedo', 'autoAdvance', 'movieEnd', 'durationCriterion', 'dynamicPause']
+            for k in range(0, len(listsList)):
+                if dType in self.settings[listsList[k]]:
+                    self.settings[listsList[k]].remove(dType)
         for i, j in self.settings['blockList'].items():  # If it's part of a block
             if dType in j:
                 while dType in j:
@@ -1610,6 +1612,7 @@ class PyHabBuilder:
                 self.settings['trialOrder'].remove(dType)
         self.studyFlowArray = self.loadFlow(self.settings['trialOrder'], self.flowArea, self.flowLocs, self.overFlowLocs, types=self.settings['trialTypes'])  # To update colors if needed.
         if self.settings['condFile'] != '':
+            # TODO: Right now it just warns the user, but updating the conditions will be tricky.
             warnDlg = gui.Dlg(title="Update conditions")
             warnDlg.addText(
                 "WARNING! UPDATE CONDITION SETTINGS AFTER REMOVING THIS TRIAL TYPE! \nIf you do not update conditions, the experiment may crash when you try to run it.")

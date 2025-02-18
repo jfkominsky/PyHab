@@ -743,7 +743,7 @@ class PyHabBuilder:
 
 
             typeInfo = typeDlg.show()
-
+            # Process response
             if typeDlg.OK:
                 # Check if all the things that need to be numbers are actually numbers.
                 for i in ['maxDur', 'maxOff', 'minOn', 'onTimeDeadline']:
@@ -763,15 +763,12 @@ class PyHabBuilder:
                     if typeInfo['trialType'] is not trialType:  # First, do we need to change the trial type label for an existing type?
                         if not makeNew and typeInfo['trialType'] not in self.trialTypesArray['labels']:
                             # change all the dicts and everything.
-                            self.settings['stimNames'][typeInfo['trialType']] = self.settings['stimNames'].pop(trialType)
-                            self.settings['maxDur'][typeInfo['trialType']]=self.settings['maxDur'].pop(trialType)
-                            self.settings['playThrough'][typeInfo['trialType']] = self.settings['playThrough'].pop(trialType)
-                            self.settings['maxOff'][typeInfo['trialType']] = self.settings['maxOff'].pop(trialType)
-                            self.settings['minOn'][typeInfo['trialType']] = self.settings['minOn'].pop(trialType)
-                            if trialType in self.settings['playAttnGetter'].keys():
-                                self.settings['playAttnGetter'][typeInfo['trialType']] = self.settings['playAttnGetter'].pop(trialType)
-                            if trialType in self.settings['onTimeDeadline'].keys():
-                                self.settings['onTimeDeadline'][typeInfo['trialType']] = self.settings['onTimeDeadline'].pop(trialType)
+                            # Using the trialTypeKeyList we can automate this to some degree.
+                            trialTypeKeylist = ['stimNames', 'maxDur', 'minOn', 'maxOff', 'ISI', 'maxOn',
+                                                'minDur','playAttnGetter', 'midAG', 'playThrough', 'onTimeDeadline']
+                            for i in trialTypeKeylist:
+                                if trialType in self.settings[i].keys():
+                                    self.settings[i][typeInfo['trialType']] = self.settings[i].pop(trialType)
                             # update trial type and study flow too
                             numChar = len(typeInfo['trialType'])
                             if numChar <= 3:
@@ -783,8 +780,8 @@ class PyHabBuilder:
                             self.settings['trialTypes'] = [typeInfo['trialType'] if x == trialType else x for x in self.settings['trialTypes']]
                             self.settings['trialOrder'] = [typeInfo['trialType'] if x == trialType else x for x in self.settings['trialOrder']]
                             self.trialTypesArray = self.loadTypes(self.typeLocs, self.settings['trialTypes'], page=self.trialPalettePage)
-                            # Update in all the things that are lists of filenames with a given property
-                            listsList = ['autoRedo','autoAdvance','movieEnd','durationCriterion']
+                            # Update in all the things that are lists of trial types with a given property
+                            listsList = ['autoRedo','autoAdvance','movieEnd','durationCriterion', 'dynamicPause']
                             for k in range(0, len(listsList)):
                                 if trialType in self.settings[listsList[k]]:
                                     self.settings[listsList[k]].remove(trialType)
@@ -1189,7 +1186,7 @@ class PyHabBuilder:
                     errDlg.addText("Name cannot be blank!")
                     irrel = errDlg.show()
                     self.makeBlockDlg(name, new)
-                elif '.' in newBlock['name'] or '^' in newBlock[0] or '*' in newBlock[0]:
+                elif '.' in newBlock['name'] or '^' in newBlock['name'] or '*' in newBlock['name']:
                     errDlg = gui.Dlg(title="Illegal block name!")
                     errDlg.addText("Name contains illegal character, or is reserved. Please rename!")
                     irrel = errDlg.show()
@@ -1587,12 +1584,17 @@ class PyHabBuilder:
         if dType in self.settings['blockList'].keys():  # Block vs. trial. Includes hab.
             del self.settings['blockList'][dType]
         else:
-            keylist = ['stimNames','maxDur','minOn','maxOff','ISI']
-            for j in range(0, len(keylist)):
-                if dType in self.settings[keylist[j]].keys():
-                    del self.settings[keylist[j]][dType]
-            if dType in self.settings['playThrough']:  # if it was in playThrough, remove it from there too.
-                self.settings['playThrough'].pop(dType, None)
+            # A list of all the settings that use trial types as keys.
+            trialTypeKeylist = ['stimNames','maxDur','minOn','maxOff','ISI', 'maxOn', 'minDur',
+                                'playAttnGetter','midAG','playThrough', 'onTimeDeadline']
+            for j in range(0, len(trialTypeKeylist)):
+                if dType in self.settings[trialTypeKeylist[j]].keys():
+                    del self.settings[trialTypeKeylist[j]][dType]
+            # List of items that are lists of trial types themselves
+            listsList = ['autoRedo', 'autoAdvance', 'movieEnd', 'durationCriterion', 'dynamicPause']
+            for k in range(0, len(listsList)):
+                if dType in self.settings[listsList[k]]:
+                    self.settings[listsList[k]].remove(dType)
         for i, j in self.settings['blockList'].items():  # If it's part of a block
             if dType in j:
                 while dType in j:
@@ -1610,6 +1612,7 @@ class PyHabBuilder:
                 self.settings['trialOrder'].remove(dType)
         self.studyFlowArray = self.loadFlow(self.settings['trialOrder'], self.flowArea, self.flowLocs, self.overFlowLocs, types=self.settings['trialTypes'])  # To update colors if needed.
         if self.settings['condFile'] != '':
+            # TODO: Right now it just warns the user, but updating the conditions will be tricky.
             warnDlg = gui.Dlg(title="Update conditions")
             warnDlg.addText(
                 "WARNING! UPDATE CONDITION SETTINGS AFTER REMOVING THIS TRIAL TYPE! \nIf you do not update conditions, the experiment may crash when you try to run it.")
@@ -1998,14 +2001,14 @@ class PyHabBuilder:
             else:
                 self.settings['nextFlash'] = 0
             # The next two fields have validation, but any other changes to settings will be saved even if they fail.
-            if isinstance(uInfo['ITIbase'], int):
+            if isinstance(uInfo['ITIbase'], float) or isinstance(uInfo['ITIbase'], int):
                 self.settings['ITIbase'] = uInfo['ITIbase']
             else:
                 try:
                     self.settings['ITIbase'] = eval(uInfo['ITIbase'])
                 except:
                     tryAgain = True
-            if isinstance(uInfo['ITIjitter'], int):
+            if isinstance(uInfo['ITIjitter'], float) or isinstance(uInfo['ITIjitter'], int):
                 self.settings['ITIjitter'] = uInfo['ITIjitter']
             else:
                 try:
@@ -2266,9 +2269,9 @@ class PyHabBuilder:
 
         'screenColor' 2 = Background color of stim window
 
-        'movieWidth' 3 = movieWidth: Width of movieStim3 object inside stim window. Future: Allows for movie default resolution?
+        'movieWidth' 3 = movieWidth: Width of movieStim object inside stim window. Future: Allows for movie default resolution?
 
-        'movieHeight' 4 = movieHeight: Height of movieStim3 object inside stim window
+        'movieHeight' 4 = movieHeight: Height of movieStim object inside stim window
 
         'freezeFrame' 5 = freezeFrame: If the attention-getter is used (for a given trial type), this is the minimum time the first frame
         of the movie will be displayed after the attention-getter finishes.
@@ -2690,7 +2693,8 @@ class PyHabBuilder:
         if type(fileSelectDlg) is not NoneType:
             path, namething = os.path.split(fileSelectDlg[0])
             # Suboptimal solution for getting duration, but possibly only available.
-            tempMovie = visual.MovieStim3(self.win, fileSelectDlg[0])
+            tempMovie = visual.MovieStim(self.win, fileSelectDlg[0])
+            # In order to get duration yo uactually need to start the video...ridiculous.
             tempGetter = {'stimLoc': fileSelectDlg[0], 'stimName': namething,
                                'stimDur': tempMovie.duration}
             del tempMovie
@@ -2715,7 +2719,7 @@ class PyHabBuilder:
         if type(fileSelectDlg) is not NoneType:
             path, namething = os.path.split(fileSelectDlg[0])
             # Suboptimal solution for getting duration, but possibly only available.
-            tempMovie = visual.MovieStim3(self.win, fileSelectDlg[0])
+            tempMovie = visual.MovieStim(self.win, fileSelectDlg[0])
             tempDuration = tempMovie.duration
             soundSelectDlg = gui.fileOpenDlg(prompt="Select attention-getter AUDIO file")
             if type(soundSelectDlg) is not NoneType:
@@ -2828,7 +2832,7 @@ class PyHabBuilder:
                                 if ans2b['AGType'] == 'Audio':
                                     tempStim = sound.Sound(fileSelectDlg[0])
                                 else:
-                                    tempStim = visual.MovieStim3(self.win, fileSelectDlg[0])
+                                    tempStim = visual.MovieStim(self.win, fileSelectDlg[0])
                                 self.settings['attnGetterList'][ans2b['AGName']].update({'stimLoc': fileSelectDlg[0],
                                                                                   'stimName': namething,
                                                                                   'stimDur': tempStim.duration})
@@ -3491,7 +3495,6 @@ class PyHabBuilder:
                                                              overflow=newFlowLocs, types=tempStims, trials=False,
                                                              conlines=blockmode)
                                     invisStims.append(stims['labels'][j])
-
                                     while self.mouse.isPressedIn(stims['shapes'][j], buttons=[0]):  # waits until the mouse is released before continuing.
                                         pass
                                 elif stims['labels'][j] in invisStims:

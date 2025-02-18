@@ -284,7 +284,7 @@ class PyHabHPP(PyHab):
                 self.readyText.draw()
         self.win2.flip()  # flips the status screen without delaying the stimulus onset.
 
-    def dispTrial(self, trialType, dispMovie = False):
+    def dispTrial(self, trialType, dispMovie = False, trialNum=-1):
         """
         An HPP-specific version of dispTrial that can display on multiple things, read the new stimDict, etc.
 
@@ -292,6 +292,8 @@ class PyHabHPP(PyHab):
         :type trialType: str
         :param dispMovie: Now a dictionary C/L/R each index of which contains what this function expects in the base class
         :type dispMovie: bool or dict
+        :param trialNum: Trial number for movie playback timing. -1 for attention-getter and other cases where it is irrelevant
+        :type trialNum: int
         :return: 1 or 0. 1 = end of movie for trials that end on that. TODO: for HPP currently returns 1 if EVERYTHING IN IT is done.
         :rtype: int
         """
@@ -306,7 +308,7 @@ class PyHabHPP(PyHab):
             t = []
             for k in screens:
                 if dispMovie[k]['stimType'] == 'Movie':
-                    t.append(self.dispMovieStim(trialType, dispMovie[k]['stim'], screen=k))
+                    t.append(self.dispMovieStim(trialType, dispMovie[k]['stim'], dispMovie[k]['firstFrame'], trialNum=trialNum, screen=k))
                 elif dispMovie[k]['stimType'] == 'Image':
                     t.append(self.dispImageStim(dispMovie[k]['stim'], screen=k))
                 elif dispMovie[k]['stimType'] == 'Audio' and trialType != 0:  # No still-frame equivalent
@@ -662,9 +664,9 @@ class PyHabHPP(PyHab):
                     if localType in self.dynamicPause and self.stimPres:
                         # Let's get fancy: This now only starts playing the thing on the screen they're looking at!
                         if disMovie['C'] != 0:
-                            if disMovie['C']['stimType'] in ['Movie', 'Audio'] and disMovie['C']['stim'].status != PLAYING:
+                            if disMovie['C']['stimType'] in ['Movie', 'Audio'] and not disMovie['C']['stim'].isPlaying:
                                 disMovie['C']['stim'].play()
-                            elif disMovie['C']['stimType'] == ['Image with audio'] and disMovie['C']['stim']['Audio'].status != PLAYING:
+                            elif disMovie['C']['stimType'] == ['Image with audio'] and not disMovie['C']['stim']['Audio'].isPlaying:
                                 disMovie['C']['stim']['Audio'].play()
                 elif self.keyboard[self.leftKey]:
                     gazeOnL = True
@@ -679,9 +681,9 @@ class PyHabHPP(PyHab):
                     if localType in self.dynamicPause and self.stimPres:
                         # Let's get fancy: This now only starts playing the thing on the screen they're looking at!
                         if disMovie['L'] != 0:
-                            if disMovie['L']['stimType'] in ['Movie', 'Audio'] and disMovie['L']['stim'].status != PLAYING:
+                            if disMovie['L']['stimType'] in ['Movie', 'Audio'] and not disMovie['L']['stim'].isPlaying:
                                 disMovie['L']['stim'].play()
-                            elif disMovie['L']['stimType'] == ['Image with audio'] and disMovie['L']['stim']['Audio'].status != PLAYING:
+                            elif disMovie['L']['stimType'] == ['Image with audio'] and not disMovie['L']['stim']['Audio'].isPlaying:
                                 disMovie['L']['stim']['Audio'].play()
                 elif self.keyboard[self.rightKey]:
                     gazeOnR = True
@@ -696,9 +698,9 @@ class PyHabHPP(PyHab):
                     if localType in self.dynamicPause and self.stimPres:
                         # Let's get fancy: This now only starts playing the thing on the screen they're looking at!
                         if disMovie['R'] != 0:
-                            if disMovie['R']['stimType'] in ['Movie', 'Audio'] and disMovie['R']['stim'].status != PLAYING:
+                            if disMovie['R']['stimType'] in ['Movie', 'Audio'] and not disMovie['R']['stim'].isPlaying:
                                 disMovie['R']['stim'].play()
-                            elif disMovie['R']['stimType'] == ['Image with audio'] and disMovie['R']['stim']['Audio'].status != PLAYING:
+                            elif disMovie['R']['stimType'] == ['Image with audio'] and not disMovie['R']['stim']['Audio'].isPlaying:
                                 disMovie['R']['stim']['Audio'].play()
                 else:
                     if localType in self.midAG and self.stimPres:
@@ -707,9 +709,9 @@ class PyHabHPP(PyHab):
                             if localType not in self.dynamicPause: # Need to pause it anyways to play the AG so they don't overlap
                                 for i,j in disMovie.items():
                                     if j != 0:
-                                        if j['stimType'] in ['Movie', 'Audio'] and j['stim'].status == PLAYING:
+                                        if j['stimType'] in ['Movie', 'Audio'] and j['stim'].isPlaying:
                                             j['stim'].pause()
-                                        elif j['stimType'] == ['Image with audio'] and j['stim']['Audio'].status == PLAYING:
+                                        elif j['stimType'] == ['Image with audio'] and j['stim']['Audio'].isPlaying:
                                             j['stim']['Audio'].pause()
                             startAG = core.getTime()
                             tempTiming = {'trialNum': number, 'trialType': dataType, 'event': 'startAttnGetter',
@@ -724,9 +726,9 @@ class PyHabHPP(PyHab):
                             if localType not in self.dynamicPause:
                                 for i,j in disMovie.items():
                                     if j != 0:
-                                        if j['stimType'] in ['Movie', 'Audio'] and j['stim'].status != PLAYING:
+                                        if j['stimType'] in ['Movie', 'Audio'] and not j['stim'].isPlaying:
                                             j['stim'].play()
-                                        elif j['stimType'] == ['Image with audio'] and j['stim']['Audio'].status != PLAYING:
+                                        elif j['stimType'] == ['Image with audio'] and not j['stim']['Audio'].isPlaying:
                                             j['stim']['Audio'].play()
             elif gazeOnC or gazeOnL or gazeOnR:
                 nowOn = core.getTime() - startTrial
@@ -862,9 +864,9 @@ class PyHabHPP(PyHab):
                                 if localType not in self.dynamicPause:  # Need to pause it anyways to play the AG so they don't overlap
                                     for i, j in disMovie.items():
                                         if j != 0:
-                                            if j['stimType'] in ['Movie', 'Audio'] and j['stim'].status == PLAYING:
+                                            if j['stimType'] in ['Movie', 'Audio'] and j['stim'].isPlaying:
                                                 j['stim'].pause()
-                                            elif j['stimType'] == ['Image with audio'] and j['stim']['Audio'].status == PLAYING:
+                                            elif j['stimType'] == ['Image with audio'] and j['stim']['Audio'].isPlaying:
                                                 j['stim']['Audio'].pause()
                                 startAG = core.getTime()
                                 self.attnGetter(localType, self.midAG[localType]['cutoff'],
@@ -874,10 +876,10 @@ class PyHabHPP(PyHab):
                                 if localType not in self.dynamicPause:
                                     for i, j in disMovie.items():
                                         if j != 0:
-                                            if j['stimType'] in ['Movie', 'Audio'] and j['stim'].status != PLAYING:
+                                            if j['stimType'] in ['Movie', 'Audio'] and not j['stim'].isPlaying:
                                                 j['stim'].play()
-                                            elif j['stimType'] == ['Image with audio'] and j['stim'][
-                                                'Audio'].status != PLAYING:
+                                            elif j['stimType'] == ['Image with audio'] and not j['stim'][
+                                                'Audio'].isPlaying:
                                                 j['stim']['Audio'].play()
 
 
@@ -891,9 +893,9 @@ class PyHabHPP(PyHab):
                     sumOnC = sumOnC + onDur
                     if localType in self.dynamicPause and self.stimPres:
                         if disMovie['C'] != 0:
-                            if disMovie['C']['stimType'] in ['Movie','Audio'] and disMovie['C']['stim'].status == PLAYING:
+                            if disMovie['C']['stimType'] in ['Movie','Audio'] and disMovie['C']['stim'].isPlaying:
                                 disMovie['C']['stim'].pause()
-                            elif disMovie['C']['stimType'] == ['Image with audio'] and disMovie['C']['stim']['Audio'].status == PLAYING:
+                            elif disMovie['C']['stimType'] == ['Image with audio'] and disMovie['C']['stim']['Audio'].isPlaying:
                                 disMovie['C']['stim']['Audio'].pause()
                     if self.keyboard[self.leftKey]:
                         gazeOnL = True
@@ -925,9 +927,9 @@ class PyHabHPP(PyHab):
                     sumOnL = sumOnL + onDur
                     if localType in self.dynamicPause and self.stimPres:
                         if disMovie['L'] != 0:
-                            if disMovie['L']['stimType'] in ['Movie','Audio'] and disMovie['L']['stim'].status == PLAYING:
+                            if disMovie['L']['stimType'] in ['Movie','Audio'] and disMovie['L']['stim'].isPlaying:
                                 disMovie['L']['stim'].pause()
-                            elif disMovie['L']['stimType'] == ['Image with audio'] and disMovie['L']['stim']['Audio'].status == PLAYING:
+                            elif disMovie['L']['stimType'] == ['Image with audio'] and disMovie['L']['stim']['Audio'].isPlaying:
                                 disMovie['L']['stim']['Audio'].pause()
                     if self.keyboard[self.centerKey]:
                         gazeOnC = True
@@ -959,9 +961,9 @@ class PyHabHPP(PyHab):
                     sumOnR = sumOnR + onDur
                     if localType in self.dynamicPause and self.stimPres:
                         if disMovie['R'] != 0:
-                            if disMovie['R']['stimType'] in ['Movie','Audio'] and disMovie['R']['stim'].status == PLAYING:
+                            if disMovie['R']['stimType'] in ['Movie','Audio'] and disMovie['R']['stim'].isPlaying:
                                 disMovie['R']['stim'].pause()
-                            elif disMovie['R']['stimType'] == ['Image with audio'] and disMovie['R']['stim']['Audio'].status == PLAYING:
+                            elif disMovie['R']['stimType'] == ['Image with audio'] and disMovie['R']['stim']['Audio'].isPlaying:
                                 disMovie['R']['stim']['Audio'].pause()
                     if self.keyboard[self.centerKey]:
                         gazeOnC = True
