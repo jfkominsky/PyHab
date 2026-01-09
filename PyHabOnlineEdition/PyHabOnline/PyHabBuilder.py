@@ -705,7 +705,7 @@ class PyHabBuilder:
                 chz3 = [x for x in list(self.settings['attnGetterList'].keys()) if x != self.settings['playAttnGetter'][trialType]['attnGetter']]
                 chz3.insert(0, 'None')
                 chz3.insert(0, self.settings['playAttnGetter'][trialType]['attnGetter'])
-            typeDlg.addField('playAttnGetter', label="Attention-getter for this trial type (Stim presentation mode only)", choices = chz3)  # Index 9
+            typeDlg.addField('attnGetter', label="Attention-getter for this trial type (Stim presentation mode only)", choices = chz3)  # Index 9
             if trialType in self.settings['movieEnd']:
                 chz4 = True
             else:
