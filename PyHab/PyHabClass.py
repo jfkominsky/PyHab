@@ -888,7 +888,8 @@ class PyHab:
                             attnGetter['audioFile'].stop(reset=True)
                         dMovie.pause() # because we can't handle this w/dispMovieStim, we need to do the setup for the seek here.
                         dMovie.seek(0.0)
-                        dMovie._player._tStream._player.set_mute(True)  # Force mute
+                        if 2023 < eval(__version__[0:6]) <= 2025.1:
+                            dMovie._player._tStream._player.set_mute(True)  # Force mute
                         break
                 elif cutoff and onCheck > 0:  # A clever little way to say "if they aren't looking but were earlier"
                     self.statusSquareA.fillColor='blue'
@@ -900,7 +901,8 @@ class PyHab:
                         attnGetter['audioFile'].stop(reset=True)
                     dMovie.pause()
                     dMovie.seek(0.0)
-                    dMovie._player._tStream._player.set_mute(True)  # Force mute
+                    if 2023 < eval(__version__[0:6]) <= 2025.1:
+                        dMovie._player._tStream._player.set_mute(True)  # Force mute
                     break
 
             if midTrial:
@@ -1028,10 +1030,12 @@ class PyHab:
         if eval(__version__[0:4]) < 2023:
             playTime = dispMovie.getCurrentFrameTime()
             fps = dispMovie._frameInterval
+        elif eval(__version__[0:6]) <= 2025.1:
+            playTime = dispMovie.pts
+            fps = 1 / dispMovie.frameRate
         else:
             playTime = dispMovie.pts
-            fps = 1/dispMovie.frameRate
-
+            fps = dispMovie._player._metadata.frameRate
 
         if self.frameCount[screen] == 0:  # initial setup and on rewind
             self.dummyThing.draw()
@@ -1084,7 +1088,8 @@ class PyHab:
         elif dispMovie.isFinished and self.pauseCount[screen] >= self.ISI[trialType]:  # If both are 0 then this is fine.
             dispMovie.pause() # Necessary for a silent reset, also resets the "isFinished" status.
             dispMovie.seek(0.0) # In 2024 PsychoPy this is now when we want to seek to the start.
-            dispMovie._player._tStream._player.set_mute(True)  # Force mute so the first sound does not replay.
+            if 2023 < eval(__version__[0:6]) <= 2025.1:
+                dispMovie._player._tStream._player.set_mute(True)  # Force mute so the first sound does not replay.
             self.dummyThing.draw()
             # print('repeating at ' + str(dispMovie.getCurrentFrameTime()))
             self.frameCount[screen] = 0  # changed to 0 to better enable studies that want to blank between trials
@@ -2293,7 +2298,8 @@ class PyHab:
                 if disMovie['stim'].isPlaying:
                     disMovie['stim'].pause()
                 disMovie['stim'].seek(0.0)
-                disMovie['stim']._player._tStream._player.set_mute(True)
+                if 2023 < eval(__version__[0:6])<= 2025.1:
+                    disMovie['stim']._player._tStream._player.set_mute(True)
             elif disMovie['stimType'] == 'Audio':
                 disMovie['stim'].stop()
             elif disMovie['stimType'] == 'Image with audio':
@@ -3194,7 +3200,7 @@ class PyHab:
                                                size=[self.movieWidth[screen], self.movieHeight[screen]],
                                                flipHoriz=False,
                                                flipVert=False, loop=False)
-            else:
+            elif eval(__version__[0:6]) <= 2025.1: # MovieStim changes have made this nonviable as of psychopy 2025.2
                 tempStimObj = visual.MovieStim(w, tempStim['stimLoc'],
                                             size=[self.movieWidth[screen], self.movieHeight[screen]], flipHoriz=False,
                                             flipVert=False, loop=False)
@@ -3203,6 +3209,15 @@ class PyHab:
                 firstFrameImgTmp = Image.frombytes('RGBA',tempStimObj.frameSize,
                                                   tempStimObj.updateVideoFrame().colorData,'raw', 'BGRA')
                 firstFrameImage = visual.ImageStim(w, image=firstFrameImgTmp, size=[self.movieWidth[screen], self.movieHeight[screen]])
+            else:
+                tempStimObj = visual.MovieStim(w, tempStim['stimLoc'],
+                                               size=[self.movieWidth[screen], self.movieHeight[screen]],
+                                               flipHoriz=False,
+                                               flipVert=False, loop=False)
+                firstFrameImage = visual.ImageStim(w, image=tempStimObj._player._getFrameFromStore(0),
+                                                   size=[self.movieWidth[screen], self.movieHeight[screen]])
+                #TODO: First frame image for seek timing
+
         elif tempStim['stimType'] == 'Animation':
             tempStimObj = tempStim['stimLoc']  # in this case it's just a string referencing a custom function
         elif tempStim['stimType'] == 'Image':
@@ -3356,7 +3371,7 @@ class PyHab:
                             self.attnGetterList[i]['file'] = visual.MovieStim3(self.win, self.attnGetterList[i]['stimLoc'],
                                                                            size=[self.movieWidth['C'], self.movieHeight['C']],
                                                                            flipHoriz=False, flipVert=False, loop=False)
-                        else:
+                        elif eval(__version__[0:6]) <= 2025.1:
                             self.attnGetterList[i]['file'] = visual.MovieStim(self.win, self.attnGetterList[i]['stimLoc'],
                                                                            size=[self.movieWidth['C'], self.movieHeight['C']],
                                                                            flipHoriz=False, flipVert=False, loop=False)
@@ -3367,6 +3382,17 @@ class PyHab:
                             self.attnGetterList[i]['firstFrameImage'] = visual.ImageStim(self.win, image=tmpFirstFrame,
                                                                                     size=[self.movieWidth['C'],
                                                                                           self.movieHeight['C']])
+                        else:
+                            self.attnGetterList[i]['file'] = visual.MovieStim(self.win,
+                                                                              self.attnGetterList[i]['stimLoc'],
+                                                                              size=[self.movieWidth['C'],
+                                                                                    self.movieHeight['C']],
+                                                                              flipHoriz=False, flipVert=False,
+                                                                              loop=False)
+                            self.attnGetterList[i]['firstFrameImage'] = visual.ImageStim(self.win, image=tempStimObj._player._getFrameFromStore(0),
+                                                                                         size=[self.movieWidth['C'],
+                                                                                               self.movieHeight['C']])
+                            #TODO: first frame image issue
                         if self.attnGetterList[i]['stimType'] == 'Movie + Audio':
                             self.attnGetterList[i]['audioFile'] = sound.Sound(self.attnGetterList[i]['audioLoc'])
             if self.endImage != '':  # Load image for end of experiment, if needed.
