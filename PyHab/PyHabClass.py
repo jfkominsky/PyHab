@@ -759,7 +759,7 @@ class PyHab:
 
         :param trialType: Current trial type
         :type trialType: string
-        :param cutoff: Cut off AG immediately on gaze-on? Defaut False
+        :param cutoff: Cut off AG immediately on gaze-on? Default False
         :type cutoff: bool
         :param onmin: Delay in listening for gaze-on to immediately end AG. Default 0
         :type onmin: float
@@ -1041,8 +1041,11 @@ class PyHab:
             self.dummyThing.draw()
             self.frameCount[screen] += 1
             # The fundamental problem is that seek takes a few frames, so we need to ensure that it waits
-            if dispMovie.frameIndex > 0: # It should be the first frame. If not, first frame image.
-                firstFrame.draw()
+            if dispMovie.pts > 0: # It should be the first frame. If not, first frame image.
+                try:
+                    firstFrame.draw()
+                except:
+                    pass # if it fails leave the screen blank.
             else:
                 dispMovie.draw()
 
@@ -1056,15 +1059,18 @@ class PyHab:
             # print('playing')
             if not dispMovie.isPlaying:
                 dispMovie.play() # It's hard to record the timing for the video start w/out the trial number
-                if dispMovie.frameIndex > 1: # Shouldn't be needed for the first time something plays, at least.
+                if dispMovie.pts > 1: # Shouldn't be needed for the first time something plays, at least.
                     # Need to call this again because the first "seek" at the end doesn't actually "take" in the way
                     # you want it to and would mess with the sound playback if there's sound in the first 100ms or so.
                     dispMovie.seek(0.0)
             # Failsafe to prevent stuttering
             self.frameCount[screen] += 1
-            if dispMovie.frameIndex > 1:
+            if dispMovie.pts > 1:
                 dispMovie.updateVideoFrame() # This forces it to advance until the "seek" takes.
-                firstFrame.draw()
+                try:
+                    firstFrame.draw()
+                except:
+                    pass # If firstFrame fails, just leave blank.
                 self.frameCount[screen] = 1 # Stick here until we actually get the playback working.
             else:
                 # Record actual movie start time
@@ -3216,7 +3222,6 @@ class PyHab:
                                                flipVert=False, loop=False)
                 firstFrameImage = visual.ImageStim(w, image=tempStimObj._player._getFrameFromStore(0),
                                                    size=[self.movieWidth[screen], self.movieHeight[screen]])
-                #TODO: First frame image for seek timing
 
         elif tempStim['stimType'] == 'Animation':
             tempStimObj = tempStim['stimLoc']  # in this case it's just a string referencing a custom function
