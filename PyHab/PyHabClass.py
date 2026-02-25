@@ -1031,7 +1031,6 @@ class PyHab:
                return False
             else:
                return dispMovie.isNotStarted
-
         # Need to do a little safety thing here for MovieStim
         if eval(__version__[0:4]) < 2023:
             playTime = dispMovie.getCurrentFrameTime()
@@ -1124,7 +1123,7 @@ class PyHab:
             if self.ISI[trialType] > 0:
                 self.startPause[screen] = core.getTime()
             return 0
-
+        
     def dispImageStim(self, dispImage, screen='C'):
         """
         Very simple. Draws still-image stimuli and flips window
