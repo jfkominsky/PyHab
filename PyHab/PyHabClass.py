@@ -1026,6 +1026,12 @@ class PyHab:
         elif screen == 'R':
             w = self.winR
 
+        def startCheck():
+            if eval(__version__[0:6]) <= 2025.1:
+               return False
+            else:
+               return dispMovie.isNotStarted
+
         # Need to do a little safety thing here for MovieStim
         if eval(__version__[0:4]) < 2023:
             playTime = dispMovie.getCurrentFrameTime()
@@ -1041,7 +1047,7 @@ class PyHab:
             self.dummyThing.draw()
             self.frameCount[screen] += 1
             # The fundamental problem is that seek takes a few frames, so we need to ensure that it waits
-            if dispMovie.pts > 0: # It should be the first frame. If not, first frame image.
+            if playTime > 0 or startCheck(): # It should be the first frame.
                 try:
                     firstFrame.draw()
                 except:
@@ -3198,7 +3204,7 @@ class PyHab:
             w = self.winL
         elif screen == 'R':
             w = self.winR
-        firstFrameImage = None
+        firstFrameImage = None # Default, and solves the problem of non-movie stim.
         if tempStim['stimType'] == 'Movie':
             # It's finally time to switch to the new MovieStim, if we're on a sufficient version of PsychoPy.
             if eval(__version__[0:4]) < 2023:
@@ -3206,46 +3212,12 @@ class PyHab:
                                                size=[self.movieWidth[screen], self.movieHeight[screen]],
                                                flipHoriz=False,
                                                flipVert=False, loop=False)
-            elif eval(__version__[0:6]) <= 2025.1: # MovieStim changes have made this nonviable as of psychopy 2025.2
+            else: # Extract a first frame to make it possibleto loop smoothly
                 tempStimObj = visual.MovieStim(w, tempStim['stimLoc'],
                                             size=[self.movieWidth[screen], self.movieHeight[screen]], flipHoriz=False,
                                             flipVert=False, loop=False)
-                # First-frame extraction. This is needed to solve the stuttering problem,
-                # but introduces a number of downstream consequences.
-                firstFrameImgTmp = Image.frombytes('RGBA',tempStimObj.frameSize,
-                                                  tempStimObj.updateVideoFrame().colorData,'raw', 'BGRA')
-                firstFrameImage = visual.ImageStim(w, image=firstFrameImgTmp, size=[self.movieWidth[screen], self.movieHeight[screen]])
-            else:
-                tempStimObj = visual.MovieStim(w, tempStim['stimLoc'],
-                                               size=[self.movieWidth[screen], self.movieHeight[screen]],
-                                               flipHoriz=False,
-                                               flipVert=False, loop=False)
-                # This extracts the first frame, or at least tries for 5 seconds
-                gotFirstFrame = False
-                timer = core.getTime()
-                # Regrettably cannot force it to pull a frame without playing anymore.
-                #TODO: Potential solution of load without audio for first frame extraction, then clear the object for memory? ugh.
-                tempStimObj.play()
-                tempStimObj._player.mute() # attempting to mute it. Needs to come after "play" because play unmutes.
-                while not gotFirstFrame and core.getTime() - timer < 5:
-                    # attempt to directly pull first frame from ffpyplayer
-                    frameData = tempStimObj._player.getFrame(0.0)
-                    if frameData is not None:
-                        # Parts 2 and 3 of this tuple are irrelevant to our needs
-                        frameImage, stuff, things = frameData
-                        # Convert the ffpyplayer.Image object to a bytearray that is interpretable to PIL, and then to ImageStim
-                        videoByteArray = frameImage.to_bytearray()[0]
-                        # Why use a PIL image? Because the image size of the buffer =/= the image size as rendered (at least, it can differ)
-                        firstFrameImageTmp = Image.frombytes("RGB", frameImage.get_size(), videoByteArray)
-                        firstFrameImage = visual.ImageStim(w, image=firstFrameImageTmp,
-                                                           size=[self.movieWidth[screen], self.movieHeight[screen]])
-                        gotFirstFrame = True
-                if not gotFirstFrame:
-                    # This won't break things but it will just show a black screen instead.
-                    print("no frame retrieved after five seconds.")
-                # This essentially reloads the stimulus and resets it to 0 for its first presentation, wheter successful or not.
-                tempStimObj.reset()
-
+                # First-frame extraction. This is needed to solve the stuttering problem, and rewinding issues
+                firstFrameImage = self.firstFrameExtract(screen, tempStim['stimLoc'])
         elif tempStim['stimType'] == 'Animation':
             tempStimObj = tempStim['stimLoc']  # in this case it's just a string referencing a custom function
         elif tempStim['stimType'] == 'Image':
@@ -3260,6 +3232,61 @@ class PyHab:
             tempStimObj = {'Audio': audioObj, 'Image': imageObj}
         tempAdd = {'stimType': tempStim['stimType'], 'stim': tempStimObj, 'firstFrame':firstFrameImage}
         return tempAdd
+
+    def firstFrameExtract(self, screen, movieLoc):
+        """
+        Function that extracts the first frame of a movie stimulus to get around assorted seek issues. Actually loads
+        (and unloads) a separate audio-free copy of the stimulus file in order to avoid issues with playback.
+
+        :param screen: The window the stimulus appears in
+        :type screen: str
+        :param movieLoc: The stimulus location of the movie file
+        :type movieLoc: str
+        :return: An ImageStim object with the first frame of the movie file
+        :rtype: visual.ImageStim
+        """
+        if screen == 'C':
+            w = self.win
+        elif screen == 'L':
+            w = self.winL
+        elif screen == 'R':
+            w = self.winR
+
+        # Load a muted copy of the stimulus
+        tempMovieStim = visual.MovieStim(w, movieLoc, size=[self.movieWidth[screen], self.movieHeight[screen]], volume=0)
+
+        if eval(__version__[0:6]) <= 2025.1:
+            firstFrameImgTmp = Image.frombytes('RGBA', tempMovieStim.frameSize,
+                                               tempMovieStim.updateVideoFrame().colorData, 'raw', 'BGRA')
+            firstFrameImage = visual.ImageStim(w, image=firstFrameImgTmp,
+                                               size=[self.movieWidth[screen], self.movieHeight[screen]])
+        else: # A change in 2025.2 makes this harder.
+            # This extracts the first frame, or at least tries for 5 seconds
+            gotFirstFrame = False
+            timer = core.getTime()
+            # Regrettably cannot force it to pull a frame without playing anymore.
+            tempMovieStim.play()
+            while not gotFirstFrame and core.getTime() - timer < 5:
+                # attempt to directly pull first frame from ffpyplayer
+                frameData = tempMovieStim._player.getFrame(0.0)
+                if frameData is not None:
+                    # Parts 2 and 3 of this tuple are irrelevant to our needs
+                    frameImage, stuff, things = frameData
+                    # Convert the ffpyplayer.Image object to a bytearray that is interpretable to PIL, and then to ImageStim
+                    videoByteArray = frameImage.to_bytearray()[0]
+                    # Why use a PIL image? Because the image size of the buffer =/= the image size as rendered (at least, it can differ)
+                    firstFrameImageTmp = Image.frombytes("RGB", frameImage.get_size(), videoByteArray)
+                    firstFrameImage = visual.ImageStim(w, image=firstFrameImageTmp,
+                                                       size=[self.movieWidth[screen], self.movieHeight[screen]])
+                    gotFirstFrame = True
+            if not gotFirstFrame:
+                # This won't break things but it will just show a black screen instead.
+                print("no frame retrieved after five seconds.")
+                tempMovieStim.unload()
+                return
+            # This essentially reloads the stimulus and resets it to 0 for its first presentation, wheter successful or not.
+        tempMovieStim.unload()
+        return firstFrameImage
 
     def TrackerCalibrateValidate(self):
         """
@@ -3435,7 +3462,7 @@ class PyHab:
                                     videoByteArray = frameImage.to_bytearray()[0]
                                     # Why use a PIL image? Because the image size of the buffer =/= the image size as rendered (at least, it can differ)
                                     firstFrameImageTmp = Image.frombytes("RGB", frameImage.get_size(), videoByteArray)
-                                    self.attnGetterList[i]['firstFrameImage'] = visual.ImageStim(w, image=firstFrameImageTmp,
+                                    self.attnGetterList[i]['firstFrameImage'] = visual.ImageStim(self.win, image=firstFrameImageTmp,
                                                                        size=[self.movieWidth['C'],
                                                                              self.movieHeight['C']])
                                     gotFirstFrame = True
