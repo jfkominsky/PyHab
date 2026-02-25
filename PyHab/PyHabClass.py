@@ -3224,6 +3224,7 @@ class PyHab:
                 gotFirstFrame = False
                 timer = core.getTime()
                 # Regrettably cannot force it to pull a frame without playing anymore.
+                #TODO: Potential solution of load without audio for first frame extraction, then clear the object for memory? ugh.
                 tempStimObj.play()
                 tempStimObj._player.mute() # attempting to mute it. Needs to come after "play" because play unmutes.
                 while not gotFirstFrame and core.getTime() - timer < 5:
@@ -3240,6 +3241,7 @@ class PyHab:
                                                            size=[self.movieWidth[screen], self.movieHeight[screen]])
                         gotFirstFrame = True
                 if not gotFirstFrame:
+                    # This won't break things but it will just show a black screen instead.
                     print("no frame retrieved after five seconds.")
                 # This essentially reloads the stimulus and resets it to 0 for its first presentation, wheter successful or not.
                 tempStimObj.reset()
@@ -3415,10 +3417,33 @@ class PyHab:
                                                                                     self.movieHeight['C']],
                                                                               flipHoriz=False, flipVert=False,
                                                                               loop=False)
-                            self.attnGetterList[i]['firstFrameImage'] = visual.ImageStim(self.win, image=tempStimObj._player._getFrameFromStore(0),
-                                                                                         size=[self.movieWidth['C'],
-                                                                                               self.movieHeight['C']])
-                            #TODO: first frame image issue
+
+                            # This extracts the first frame, or at least tries for 5 seconds
+                            gotFirstFrame = False
+                            timer = core.getTime()
+                            # Regrettably cannot force it to pull a frame without playing anymore.
+                            # TODO: Potential solution of load without audio for first frame extraction, then clear the object for memory? ugh.
+                            self.attnGetterList[i]['file'].play()
+                            self.attnGetterList[i]['file']._player.mute()  # attempting to mute it. Needs to come after "play" because play unmutes.
+                            while not gotFirstFrame and core.getTime() - timer < 5:
+                                # attempt to directly pull first frame from ffpyplayer
+                                frameData = self.attnGetterList[i]['file']._player.getFrame(0.0)
+                                if frameData is not None:
+                                    # Parts 2 and 3 of this tuple are irrelevant to our needs
+                                    frameImage, stuff, things = frameData
+                                    # Convert the ffpyplayer.Image object to a bytearray that is interpretable to PIL, and then to ImageStim
+                                    videoByteArray = frameImage.to_bytearray()[0]
+                                    # Why use a PIL image? Because the image size of the buffer =/= the image size as rendered (at least, it can differ)
+                                    firstFrameImageTmp = Image.frombytes("RGB", frameImage.get_size(), videoByteArray)
+                                    self.attnGetterList[i]['firstFrameImage'] = visual.ImageStim(w, image=firstFrameImageTmp,
+                                                                       size=[self.movieWidth['C'],
+                                                                             self.movieHeight['C']])
+                                    gotFirstFrame = True
+                            if not gotFirstFrame:
+                                # This won't break things but it will just show a black screen instead.
+                                print("no frame retrieved after five seconds.")
+                            # This essentially reloads the stimulus and resets it to 0 for its first presentation, wheter successful or not.
+                            self.attnGetterList[i]['file'].reset()
                         if self.attnGetterList[i]['stimType'] == 'Movie + Audio':
                             self.attnGetterList[i]['audioFile'] = sound.Sound(self.attnGetterList[i]['audioLoc'])
             if self.endImage != '':  # Load image for end of experiment, if needed.
