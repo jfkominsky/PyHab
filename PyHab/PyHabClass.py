@@ -3220,8 +3220,29 @@ class PyHab:
                                                size=[self.movieWidth[screen], self.movieHeight[screen]],
                                                flipHoriz=False,
                                                flipVert=False, loop=False)
-                firstFrameImage = visual.ImageStim(w, image=tempStimObj._player._getFrameFromStore(0),
-                                                   size=[self.movieWidth[screen], self.movieHeight[screen]])
+                # This extracts the first frame, or at least tries for 5 seconds
+                gotFirstFrame = False
+                timer = core.getTime()
+                # Regrettably cannot force it to pull a frame without playing anymore.
+                tempStimObj.play()
+                tempStimObj._player.mute() # attempting to mute it. Needs to come after "play" because play unmutes.
+                while not gotFirstFrame and core.getTime() - timer < 5:
+                    # attempt to directly pull first frame from ffpyplayer
+                    frameData = tempStimObj._player.getFrame(0.0)
+                    if frameData is not None:
+                        # Parts 2 and 3 of this tuple are irrelevant to our needs
+                        frameImage, stuff, things = frameData
+                        # Convert the ffpyplayer.Image object to a bytearray that is interpretable to PIL, and then to ImageStim
+                        videoByteArray = frameImage.to_bytearray()[0]
+                        # Why use a PIL image? Because the image size of the buffer =/= the image size as rendered (at least, it can differ)
+                        firstFrameImageTmp = Image.frombytes("RGB", frameImage.get_size(), videoByteArray)
+                        firstFrameImage = visual.ImageStim(w, image=firstFrameImageTmp,
+                                                           size=[self.movieWidth[screen], self.movieHeight[screen]])
+                        gotFirstFrame = True
+                if not gotFirstFrame:
+                    print("no frame retrieved after five seconds.")
+                # This essentially reloads the stimulus and resets it to 0 for its first presentation, wheter successful or not.
+                tempStimObj.reset()
 
         elif tempStim['stimType'] == 'Animation':
             tempStimObj = tempStim['stimLoc']  # in this case it's just a string referencing a custom function
