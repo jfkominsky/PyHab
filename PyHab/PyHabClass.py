@@ -1064,13 +1064,13 @@ class PyHab:
             # print('playing')
             if not dispMovie.isPlaying:
                 dispMovie.play() # It's hard to record the timing for the video start w/out the trial number
-                if dispMovie.pts > 1: # Shouldn't be needed for the first time something plays, at least.
+                if playTime > 1: # Shouldn't be needed for the first time something plays, at least.
                     # Need to call this again because the first "seek" at the end doesn't actually "take" in the way
                     # you want it to and would mess with the sound playback if there's sound in the first 100ms or so.
                     dispMovie.seek(0.0)
             # Failsafe to prevent stuttering
             self.frameCount[screen] += 1
-            if dispMovie.pts > 1:
+            if playTime > 1: # TODO: Add some kind of safety for dealing with first play in 2025.2+
                 dispMovie.updateVideoFrame() # This forces it to advance until the "seek" takes.
                 try:
                     firstFrame.draw()
@@ -1123,7 +1123,7 @@ class PyHab:
             if self.ISI[trialType] > 0:
                 self.startPause[screen] = core.getTime()
             return 0
-        
+
     def dispImageStim(self, dispImage, screen='C'):
         """
         Very simple. Draws still-image stimuli and flips window
