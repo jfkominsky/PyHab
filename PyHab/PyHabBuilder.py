@@ -2693,7 +2693,7 @@ class PyHabBuilder:
         if type(fileSelectDlg) is not NoneType:
             path, namething = os.path.split(fileSelectDlg[0])
             # Suboptimal solution for getting duration, but possibly only available.
-            tempMovie = visual.MovieStim(self.win, fileSelectDlg[0])
+            tempMovie = visual.MovieStim(self.win, fileSelectDlg[0], size=[1280, 720]) # size avoids a crash in 2025.2+
             # In order to get duration yo uactually need to start the video...ridiculous.
             tempGetter = {'stimLoc': fileSelectDlg[0], 'stimName': namething,
                                'stimDur': tempMovie.duration}
@@ -2719,7 +2719,7 @@ class PyHabBuilder:
         if type(fileSelectDlg) is not NoneType:
             path, namething = os.path.split(fileSelectDlg[0])
             # Suboptimal solution for getting duration, but possibly only available.
-            tempMovie = visual.MovieStim(self.win, fileSelectDlg[0])
+            tempMovie = visual.MovieStim(self.win, fileSelectDlg[0], size=[1280, 720])
             tempDuration = tempMovie.duration
             soundSelectDlg = gui.fileOpenDlg(prompt="Select attention-getter AUDIO file")
             if type(soundSelectDlg) is not NoneType:
@@ -2832,7 +2832,7 @@ class PyHabBuilder:
                                 if ans2b['AGType'] == 'Audio':
                                     tempStim = sound.Sound(fileSelectDlg[0])
                                 else:
-                                    tempStim = visual.MovieStim(self.win, fileSelectDlg[0])
+                                    tempStim = visual.MovieStim(self.win, fileSelectDlg[0], size=[1280, 720])
                                 self.settings['attnGetterList'][ans2b['AGName']].update({'stimLoc': fileSelectDlg[0],
                                                                                   'stimName': namething,
                                                                                   'stimDur': tempStim.duration})
