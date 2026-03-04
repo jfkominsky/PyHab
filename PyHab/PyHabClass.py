@@ -1070,13 +1070,20 @@ class PyHab:
                     dispMovie.seek(0.0)
             # Failsafe to prevent stuttering
             self.frameCount[screen] += 1
-            if playTime > 1: # TODO: Add some kind of safety for dealing with first play in 2025.2+
+            if playTime > 1:
                 dispMovie.updateVideoFrame() # This forces it to advance until the "seek" takes.
                 try:
                     firstFrame.draw()
                 except:
                     pass # If firstFrame fails, just leave blank.
                 self.frameCount[screen] = 1 # Stick here until we actually get the playback working.
+            elif eval(__version__[0:6]) > 2025.1 and dispMovie._player.getFrame(0.0) is None: # an attempt to deal with first time playback issues.
+                dispMovie.updateVideoFrame()
+                try:
+                    firstFrame.draw()
+                except:
+                    pass
+                self.frameCount[screen] = 1
             else:
                 # Record actual movie start time
                 if trialNum > 0:
