@@ -1078,6 +1078,7 @@ class PyHab:
                     pass # If firstFrame fails, just leave blank.
                 self.frameCount[screen] = 1 # Stick here until we actually get the playback working.
             elif eval(__version__[0:6]) > 2025.1 and dispMovie._player.getFrame(0.0) is None: # an attempt to deal with first time playback issues.
+                # TODO: This is not working as intended when the video plays to he end
                 dispMovie.updateVideoFrame()
                 try:
                     firstFrame.draw()
@@ -2344,7 +2345,8 @@ class PyHab:
                 if disMovie['stim'].isPlaying:
                     disMovie['stim'].pause()
                 disMovie['stim'].seek(0.0)
-                disMovie['stim']._player._tStream._player.set_mute(True)
+                if 2023 < eval(__version__[0:6]) <= 2025.1:
+                    disMovie['stim']._player._tStream._player.set_mute(True)
             self.abortTrial(onArray, offArray, number, dataType, onArray2, offArray2, self.stimName, habDataRec, habCrit)
             return 3
         else:
