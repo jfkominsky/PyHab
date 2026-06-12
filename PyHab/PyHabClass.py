@@ -1077,14 +1077,6 @@ class PyHab:
                 except:
                     pass # If firstFrame fails, just leave blank.
                 self.frameCount[screen] = 1 # Stick here until we actually get the playback working.
-            elif eval(__version__[0:6]) > 2025.1 and dispMovie._player.getFrame(0.0) is None: # an attempt to deal with first time playback issues.
-                # TODO: This is not working as intended when the video plays to he end
-                dispMovie.updateVideoFrame()
-                try:
-                    firstFrame.draw()
-                except:
-                    pass
-                self.frameCount[screen] = 1
             else:
                 # Record actual movie start time
                 if trialNum > 0:
@@ -3197,6 +3189,7 @@ class PyHab:
         A general function for loading stimuli that can be called repeatedly.
 
         TODO: Windows audio bug when loading an audio file before a movie file means that we should change load order for everything to movie first.
+        TODO: Problems at least on MacOS with loading too many files with audio/running out of channels
 
         :param stim: stimulus name, key for stimList dict
         :type stim: str
