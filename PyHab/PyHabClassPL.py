@@ -733,7 +733,7 @@ class PyHabPL(PyHab):
                         tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOn2, 'endTime': endTrial,
                                                  'duration': onDur}
                         onArray2.append(tempGazeArray)
-                    else:
+                    elif not gazeOn:
                         offDur = endTrial - startOff
                         tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOff, 'endTime': endTrial,
                                          'duration':offDur}
@@ -758,7 +758,7 @@ class PyHabPL(PyHab):
                                              'endTime': endTrial,
                                              'duration': onDur}
                             onArray2.append(tempGazeArray)
-                        else:
+                        elif not gazeOn:
                             offDur = endTrial - startOff
                             tempGazeArray = {'trial': number, 'trialType': dataType, 'startTime': startOff,
                                              'endTime': endTrial,
